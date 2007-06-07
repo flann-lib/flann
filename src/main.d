@@ -33,6 +33,7 @@ import features;
 import nnindex;
 import kmeans;
 import bottom_up_agg_simple;
+import bottom_up_agg;
 
 
 
@@ -198,6 +199,9 @@ void main(char[][] args)
 	}
 	else if (algorithm=="aggnnex") {
 		index = new AgglomerativeExTree(inputData);
+	}
+	else if (algorithm=="agg_bu") {
+		index = new BottomUpAgglomerativeTree(inputData);
 	}
 	else if (algorithm=="agg_bu_simple") {
 		index = new BottomUpSimpleAgglomerativeTree(inputData);
