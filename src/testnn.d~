@@ -1,0 +1,303 @@
+
+/************************************************************************
+Project: aggnn
+
+  Demo software: Approximate Nearest-Neighbor Matching
+  Converted from C
+Author: David Lowe (2006)
+
+testnn.c:
+This file contains a sample program to read files of vectors and then
+perform tests of approximate nearest-neighbor matching.
+
+To run a test, use an input file such as sift10K.nn for standard input:
+% testnn <sift10K.nn
+
+ *************************************************************************/
+
+
+import std.c.stdlib;
+import std.c.stdio;
+import std.c.math;
+import std.c.string;
+import std.c.time;
+
+import kdtree;
+import agglomerativetree;
+import util;
+import resultset;
+
+version (GDebug){
+	import gpdebuger;
+}
+	
+/*--------------------------- Constants -----------------------------*/
+
+/* Set number of randomized trees to use.  More trees take more memory
+   and time to build the trees, but also have higher accuracy.  A good
+   compromise is to use 4 trees, although many more may be useful where
+   query time is much more important than precomputation time.
+ */
+const int NumTrees = 4;
+
+/* Set to TRUE to use floating point vectors rather than the unsigned char
+   that is usually used for SIFT.  This allows for testing of the floating
+   point routines.  The unsigned char vectors save memory, but computation
+   times is about the same as for float vectors.
+ */
+//const int UseFloats = true;
+
+
+/* ------------------- Local structure definitions ----------------------- */
+
+/* The set of test vectors that are used as input for matching.
+ */
+struct InputSt {
+	int vcount;         /* Number of vectors. */
+	int veclen;         /* Length of each vector. */
+	float **vecs;      /* Float vecs. */
+	int *match;         /* Array of indices to correct nearest neighbor. */
+	int *mtype;         /* Array of flags indicating if match is correct. */
+}
+
+alias InputSt* Input;
+
+
+
+void testDistance(Input input, KDTree index)
+{
+	float min = float.max;
+	float max = float.min;
+	for (int i=0;i<input.vcount;++i) {
+		float dist = DistSquared(input.vecs[i],input.vecs[input.match[i]],input.veclen);
+		
+		if (dist>max) max = dist;
+		if (dist<min) min = dist;
+	}
+	
+//	printf("Min dist: %f, max dist: %f\n",min,max);
+	
+}
+
+
+
+void testKDTree(Input input) 
+{
+
+	clock_t startTime = clock();
+	
+	KDTree index = new KDTree(input.vecs, input.vcount, input.veclen, NumTrees);
+	
+	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+	
+	fprintf(stderr,
+			"Time to build %d random tree(s) for %d vectors: %5.2f seconds\n\n",
+			NumTrees,  input.vcount, elapsed);
+	//NumTrees, (NumTrees == 1 ? "" : "s"), input.vcount, elapsed);
+
+	fprintf(stderr,
+			"  Nodes    %% correct   %% of good     Time     Time/vector\n"
+			" checked   neighbors    matches    (seconds)      (ms)\n"
+			" -------   ---------   ---------   ---------  -----------\n");
+
+	/* Create a table showing computation time and accuracy as a function
+	   of "checks", the number of neighbors that are checked.
+	   Note that we should check average of at least 2 nodes per random
+	   tree, as first neighbor found is just the query vector itself.
+	   Print statistics on success rate and time for value.
+	 */
+	 	
+	
+	for (int checks = 8; checks < 500; checks *= 4)
+		if (checks >= 2 * NumTrees) {
+			startTime = clock();
+			
+			int correct, cormatch, match;
+			correct = cormatch = match = 0;
+
+// 			for (i = 0; i < input.vcount; i++) {
+			for (int i = 0; i < input.vcount; i++) {
+				int result[2];
+
+				index.FindNeighbors(&result[0], 2, input.vecs[i], checks);
+				if (input.mtype[i])
+					match++;
+				/* Note that closest vector will have distance of 0, as it is the same
+				   vector.  Therefore, we use second neighbor, result[1].
+				 */
+				if (result[1] == input.match[i]) {
+					correct++;
+					if (input.mtype[i])
+						cormatch++;
+				}
+			}
+			elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+			fprintf(stderr, 
+					"  %5d     %6.2f      %6.2f      %6.2f      %6.3f\n",
+					checks, correct * 100.0 / cast(float) input.vcount,
+					cormatch * 100.0 / cast(float) match,
+					elapsed, 1000.0 * elapsed / input.vcount);
+		}
+	
+	delete index;
+
+}
+
+
+
+void testAggTree(Input input)
+{
+
+	clock_t startTime = clock();
+	
+	AgglomerativeTree index = new AgglomerativeTree(input.vecs, input.vcount, input.veclen);
+	
+	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+	
+	fprintf(stderr,
+			"Time to build 1 agglomerative tree(s) for %d vectors: %5.2f seconds\n\n",
+			input.vcount, elapsed);
+
+	fprintf(stderr,
+			"  %% correct   %% of good     Time     Time/vector   MSE\n"
+			"  neighbors    matches    (seconds)      (ms)					\n"
+			"  ---------   ---------   ---------  -----------   ----------\n");
+
+	/* Create a table showing computation time and accuracy as a function
+	   of "checks", the number of neighbors that are checked.
+	   Note that we should check average of at least 2 nodes per random
+	   tree, as first neighbor found is just the query vector itself.
+	   Print statistics on success rate and time for value.
+	 */
+	 	
+	
+		clock_t starttime = clock();
+		
+		int correct, cormatch, match;
+		correct = cormatch = match = 0;
+
+		float dist = 0;
+		for (int i = 1; i<2; i++) {
+// 		for (int i = 0; i < input.vcount; i++) {
+			int result[2];
+			
+			
+			ResultSet resultSet = new ResultSet(input.vecs[i][0..input.veclen], 2);
+
+			index.findNearestNeighbor(resultSet,cast(float*)input.vecs[i]);
+			
+			result[1] = resultSet.getPointId(0);
+			
+			
+			
+			if (input.mtype[i])
+				match++;
+			/* note that closest vector will have distance of 0, as it is the same
+				vector.  therefore, we use second neighbor, result[1].
+				*/
+				
+			dist += DistSquared(input.vecs[i], input.vecs[result[1]], input.veclen);
+			if (result[1] == input.match[i]) {
+				correct++;
+				if (input.mtype[i])
+					cormatch++;
+			}
+		}
+		elapsed = (cast(float) clock() - starttime) / CLOCKS_PER_SEC;
+		fprintf(stderr, 
+				"   %6.2f      %6.2f      %6.2f      %6.3f     %6.4f\n ",
+				correct * 100.0 / cast(float) input.vcount,
+				cormatch * 100.0 / cast(float) match,
+				elapsed, 1000.0 * elapsed / input.vcount,
+				dist);
+	
+	delete index;
+
+
+}
+
+
+/*----------------------------- Routines ----------------------------------*/
+
+/* Top level routine.  Read vectors from standard input, then perform
+   matching and output useful statistics.
+ */
+int main ()
+{
+// 	std.gc.disable();
+	
+	Input input = ReadNNFile(stdin);
+//	printf("Input file read.\n");
+	
+
+	//testKDTree(input);	
+	testAggTree(input);	
+	
+	
+	
+	
+	
+	version (GDebug){
+		GPDebuger.wait();
+	}
+	
+	
+
+	return 0;
+}
+
+
+
+/* Read an NN file containing vectors for nearest-neighbor matching.
+
+   The file format for NN files:
+   1. First two characters are NN to confirm file type.
+   2. Integer (vcount) giving the number of vectors.
+   3. Integer (veclen) giving the length of each vector.
+   4. Integer specifying type of vectors: 0 means integer byte values in
+   range [0,255]; 1 means floating point values.
+   5. This is followed by a list of all vectors.  Each contains:
+   A. Integer giving the sequential index of this vector (starting at 0)
+   B. Integer giving the index of the exact nearest neighbor.
+   C. Integer value 0 or 1, with 0 meaning that nearest neighbor is not
+   known to be a correct match, while 1 means it is correct
+   D. A sequence of the veclen values for the vector elements.
+ */
+Input ReadNNFile(FILE *fp)
+{
+	int i, j, vcount, veclen, vtype, seq, mat, mtype;
+	Input in_;
+
+	in_ = cast(InputSt*) malloc(InputSt.sizeof);
+	if (fscanf(fp, "NN %d %d %d", &vcount, &veclen, &vtype) != 3)
+		FatalError("Invalid NN file header.");
+
+//	assert(vtype == 0);    /* Currently only reads file with integer vecs. */
+	in_.vcount = vcount;
+	in_.veclen = veclen;
+	in_.vecs = cast(float**) malloc(vcount * (float*).sizeof);
+	in_.match = cast(int*) malloc(vcount * int.sizeof);
+	in_.mtype = cast(int*) malloc(vcount * int.sizeof);
+
+	/* Read input vectors. */
+	for (i = 0; i < vcount; i++) {
+
+		if (fscanf(fp, "%d %d %d", &seq, &mat, &mtype) != 3)
+			FatalError("Invalid NN file.");
+		assert(seq == i);
+		in_.match[i] = mat;
+		in_.mtype[i] = mtype;
+		in_.vecs[i] = cast(float*) malloc(veclen * float.sizeof);
+
+		float val;
+		/* Read an input vector. */
+		for (j = 0; j < veclen; j++) {
+			if (fscanf(fp, "%f ", &val) != 1) {
+				FatalError("Invalid vector value.");
+			}
+			in_.vecs[i][j] = val;
+		}
+	}
+	return in_;
+}
+
