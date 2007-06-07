@@ -24,7 +24,7 @@ version (GDebug){
 
 
 
-class BottomUpAgglomerativeTree : NNIndex {
+class BottomUpSimpleAgglomerativeTree : NNIndex {
 
 	// tree node data structure
 	struct NodeSt {
@@ -39,38 +39,10 @@ class BottomUpAgglomerativeTree : NNIndex {
 		float[][] points;
 		
 		TreeNode child1;
-		TreeNode child2;	
-		
-		TreeNode[] neighbors;
-		int ncount;
+		TreeNode child2;			
 	};
 	alias NodeSt* TreeNode;
 	
-/+	
-	struct NodeNeighbor {
-		TreeNode node;
-		float dist;
-		NodeNeighbor* next;
-	};+/
-		
-	
-	
-	struct LinkStruct {
-		float dist;
-		TreeNode node1;
-		TreeNode node2;
-		
-		int opCmp(LinkStruct rhs) 
-		{ 
-			if (dist < rhs.dist) {
-				return -1;
-			} if (dist > rhs.dist) {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-	};
 	
 	
 	struct BranchStruct {
@@ -103,23 +75,16 @@ class BottomUpAgglomerativeTree : NNIndex {
 	int pcount; 		// number of nodes remaining to agglomerate (should be equal to kdtree.vcount)
 	int veclen;
 	
-	TreeNode[] clusters;
-
-	int[] rmap; 	// reverse mapping from kd_indices to indices in nodes vector
-	
-	//Pool pool;		// pool for memory allocation
+	TreeNode root;
 	
 	Heap!(BranchStruct) heap;
 	//Heap!(LinkStruct) distHeap;
-	LinkStruct[] distances;
-	int dcount;
 
 	public this(Features inputData)
 	{
 		int count = inputData.count;
 		
 		this.nodes = new TreeNode[count];
-		this.rmap = new int[count];
 		for (int i=0;i<count;++i) {
 			nodes[i] = new NodeSt();
 			nodes[i].ind = i;
@@ -132,19 +97,9 @@ class BottomUpAgglomerativeTree : NNIndex {
 			
 			nodes[i].points = new float[][1];
 			nodes[i].points[0] = nodes[i].pivot;
-			nodes[i].neighbors = null;
 			
-			rmap[i] = i;
-			
-			version (GDebug){
-				GPDebuger.plotPoint(inputData.vecs[i][0..2], "b+");
-			}			
 		}
 		
-		//distHeap = new Heap!(LinkStruct)(nodes.length);
-
-		distances = new LinkStruct[nodes.length];
-		dcount = 0;
 		
 		heap = new Heap!(BranchStruct)(512);
 		
@@ -168,46 +123,28 @@ class BottomUpAgglomerativeTree : NNIndex {
 	}
 
 
-	void remove(TreeNode[] vector, TreeNode element, inout int size)
-	{
-		for (int i=0;i<size;++i) {
-			if (element is vector[i]) {
-				vector[i] = vector[size-1];
-				size--;
-				return;
-			}
-		}
-	}
-	
 
-	private void removeFromNeighborList(TreeNode theNode, TreeNode removeNode)
+	private float findNearestClusters(out TreeNode c1, out TreeNode c2)
 	{
-		if (theNode.neighbors==null) {
-			return;
-		}
-		
-		theNode.neighbors.remove(removeNode, theNode.ncount);	
-		
-	}
-
-
-	LinkStruct getMinDistance() 
-	{
-		float dist = float.max;
-		int minIndex = -1;
-		
-		for (int i=0;i<dcount;++i) {
-			if (distances[i].dist<dist) {
-				minIndex = i;
-				dist = distances[i].dist;
+		float minDist = float.max;
+		int ind1,ind2;
+		for (int i=0;i<pcount-1;++i) {
+			for (int j=i+1;j<pcount;++j) {
+				float dist = squaredDist(nodes[i].pivot, nodes[j].pivot) + nodes[i].variance + nodes[j].variance;
+				//float dist = squaredDist(nodes[i].pivot, nodes[j].pivot);
+				if (dist<minDist) {
+					ind1 = i;
+					ind2 = j;
+					minDist = dist;
+				}
 			}
 		}
 		
-		return distances[minIndex];
-	}
-
-	void removeDistance(TreeNode node1, TreeNode node2)
-	{
+		c1 = nodes[ind1];
+		c2 = nodes[ind2];
+		
+		writef("Min dist: %f\n",minDist);
+		return minDist;
 	}
 
 	/**
@@ -215,74 +152,24 @@ class BottomUpAgglomerativeTree : NNIndex {
 	*/
 	public void buildIndex() 
 	{
-		computeNNPairs();
-		
-		while (dcount!=0) {
-			LinkStruct ls = getMinDistance();
-			//distHeap.popMin(ls);
+		while (pcount>1) {
+			TreeNode c1;
+			TreeNode c2;
+			float distance = findNearestClusters(c1,c2);
+			removePoint(c1);
+			removePoint(c2);
+			TreeNode c = agglomerate(c1,c2, distance);
+			addPoint(c);
 			
-			TreeNode newNode = agglomerate(ls.node1,ls.node2, ls.dist);
-			
-			removePoint(ls.node1);
-			removePoint(ls.node2);			
-			addPoint(newNode);
-			
-			
-			for (int i=0; i<ls.node1.ncount;++i) {
-						
-				TreeNode node = ls.node1.neighbors[i];
-				
-				removeFromNeighborList(node,ls.node1);				
-				removeDistance(node,ls.node1);
-				
-				computeNearestNeighbor(node);		
-			}
-			
-			
-			for (int i=0; i<ls.node2.ncount;++i) {
-						
-				TreeNode node = ls.node2.neighbors[i];
-				
-				removeFromNeighborList(node,ls.node2);				
-				removeDistance(node,ls.node2);
-				
-				computeNearestNeighbor(node);		
-			}
+			writef("%d\n",pcount);
 		}
+		
+		root = nodes[0];
+
+		writef("Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));		
 
 	}
 	
-	
-	private void computeNearestNeighbor(TreeNode node)
-	{
-		float distance;
-		TreeNode nn = getNearestNeighbor(node, distance);
-		
-		LinkStruct ls;
-		ls.dist = distance;
-		ls.node1 = node;
-		ls.node2 = nn;
-		
-		//distHeap.insert(ls);
-		distances[dcount] = ls;
-		
-		addNodeNeighbor(node,nn,distance);
-		addNodeNeighbor(nn,node,distance);
-	}
-	
-	
-	private void addNodeNeighbor(TreeNode node, TreeNode neighbor, float dist)
-	{
-		node.neighbors ~= neighbor;
-		node.ncount++;
-	}
-	
-	public void computeNNPairs()
-	{
-		for (int i=0;i<nodes.length;++i) {
-			computeNearestNeighbor(nodes[i]);
-		}
-	}
 	
 	
 
@@ -397,10 +284,7 @@ class BottomUpAgglomerativeTree : NNIndex {
 	
 	public void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck) 
 	{
-		version (GDebug){
-			GPDebuger.plotPoint(vec[0..2], "r+");
-		}
-		
+
 		checks = 0;		
 		this.maxCheck = maxCheck;
 		
@@ -409,14 +293,10 @@ class BottomUpAgglomerativeTree : NNIndex {
 		int imin = 0;
 		float minval = float.max;
 		
-		for (int i=0;i<clusters.length;++i) {
-			float dist = squaredDist(vec, clusters[i].pivot);
-			
-			heap.insert(BranchStruct(clusters[i], dist));
-		}
-		
-		BranchStruct branch;
-		
+		float dist = squaredDist(vec, root.pivot);
+		heap.insert(BranchStruct(root, dist));
+
+		BranchStruct branch;		
 		while (checks<maxCheck && heap.popMin(branch)) {
 			findNN(resultSet, vec, branch.node);
 		}
@@ -487,10 +367,8 @@ class BottomUpAgglomerativeTree : NNIndex {
 	{
 		Queue!(TreeNode) q = new Queue!(TreeNode)(numClusters);
 		
-		for (int i=0;i<clusters.length;++i) {
-			q.push(clusters[i]);
-		}
-
+		q.push(root);
+		
 		while(!q.full) {
 			TreeNode t;
 			q.pop(t);

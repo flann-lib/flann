@@ -32,7 +32,7 @@ import resultset;
 import features;
 import nnindex;
 import kmeans;
-import bottom_up_agg;
+import bottom_up_agg_simple;
 
 
 
@@ -68,8 +68,8 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 	int correct, cormatch, match;
 	correct = cormatch = match = 0;
 
-//	for (int i = 0; i < testData.count; i++) {
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < testData.count; i++) {
+//	for (int i = 0; i < 1; i++) {
 	
 		resultSet.init(testData.vecs[i]);
 
@@ -199,11 +199,13 @@ void main(char[][] args)
 	else if (algorithm=="aggnnex") {
 		index = new AgglomerativeExTree(inputData);
 	}
-	else if (algorithm=="buagg") {
-		index = new BottomUpAgglomerativeTree(inputData);
+	else if (algorithm=="agg_bu_simple") {
+		index = new BottomUpSimpleAgglomerativeTree(inputData);
 	}
 	else if (algorithm=="kmeans") {
 		index = new KMeansTree(inputData, branching);
+	} else {
+		throw new Exception("No such algorithm.");
 	}
 		
 	testNNIndex(index,testData, nn, checks);
