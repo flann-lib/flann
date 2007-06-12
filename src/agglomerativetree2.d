@@ -72,8 +72,7 @@ class AgglomerativeExTree : NNIndex {
 	}; 
 
 
-	const int NUM_KDTREES = 4;
-	const int KD_MAXCHECK = 128;
+
 	const float SIM_THRESHOLD = 5e-6;;
 
 	//KDTree kdtree;
@@ -157,7 +156,7 @@ class AgglomerativeExTree : NNIndex {
 	/**
 		Method that performs the agglomerative clustering.
 	*/
-	public void buildIndex1() 
+	public void buildIndex() 
 	{
 		int last = -1;
 		
@@ -210,7 +209,7 @@ class AgglomerativeExTree : NNIndex {
 	/**
 		Method that performs the agglomerative clustering.
 	*/
-	public void buildIndex() 
+	public void buildIndex1() 
 	{
 		int last = -1;
 		int chainAgglomerations = 0;
