@@ -92,6 +92,7 @@ class AgglomerativeExTree : NNIndex {
 	
 	Heap!(BranchStruct) heap;
 
+	int pointCounter;
 
 	public this(Features inputData)
 	{
@@ -110,6 +111,7 @@ class AgglomerativeExTree : NNIndex {
 		
 		this.nodes = new TreeNode[vcount];
 		this.rmap = new int[vcount];
+		this.pointCounter = 0;
 		for (int i=0;i<vcount;++i) {
 			nodes[i] = new NodeSt();
 			nodes[i].ind = i;
@@ -118,7 +120,7 @@ class AgglomerativeExTree : NNIndex {
 			nodes[i].radius = 0.0;
 			nodes[i].child1 = nodes[i].child2 = null;
 			nodes[i].size = 1;
-			nodes[i].orig_id = i;
+			nodes[i].orig_id = pointCounter++;
 			
 			nodes[i].points = new float[][1];
 			nodes[i].points[0] = nodes[i].pivot;
@@ -167,7 +169,7 @@ class AgglomerativeExTree : NNIndex {
 				TreeNode v = selectRandomPoint();				
 				chain[last] = v;
 				removePoint(v);
-				sim[last] = 0;				
+				sim[last] = float.max;				
 			}
 			
 			if (pcount!=0) {
@@ -175,7 +177,7 @@ class AgglomerativeExTree : NNIndex {
 				TreeNode s = getNearestNeighbor(chain[last]);
 				float sm = similarity(chain[last],s);
 			
-				if (sm>sim[last]) { 
+				if (sm<sim[last]) { 
 					// no RNN, adding s to the chain
 					last++;
 					chain[last] = s;
@@ -199,7 +201,7 @@ class AgglomerativeExTree : NNIndex {
 		
 		
 		writef("Top level clusters: %d\n",clusters.length);
-		writef("Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
+		writef("Mean cluster variance for %d top level clusters: %f\n",4,meanClusterVariance(4));
 		writef("Root radius: %f\n",chain[0].radius);
 	}
 	
@@ -298,9 +300,29 @@ class AgglomerativeExTree : NNIndex {
 	*/
 	private float similarity(TreeNode n1, TreeNode n2) 
 	{
-		return 1/(n1.variance +  n2.variance +
+		return (n1.variance +  n2.variance +
 					squaredDist(n1.pivot,n2.pivot));
 	}
+	
+	
+	private void write(TreeNode node) 
+	{
+		writef("#%d ",node.orig_id);
+/+		writef("{");
+		for (int i=0;i<node.pivot.length;++i) {
+			if (i!=0) writef(",");
+			writef("%f",node.pivot[i]);
+		}
+		writef("}");+/
+	}
+
+	
+	
+	
+	
+	
+	
+	
 		
 	/*
 		Methods that performs the agglomeration fo two clusters
@@ -335,10 +357,22 @@ class AgglomerativeExTree : NNIndex {
 			}
 		}
 		bt_new.radius = maxDist;
+		bt_new.orig_id = pointCounter++;
+
 		
 		bt_new.ind = pcount;
 		nodes[pcount++] = bt_new;	
 		
+		
+		
+		writef("Agglomerate: ");
+		write(node1);
+		writef(" + ");
+		write(node2);
+		writef(" = ");
+		write(bt_new);
+		writef("\n");
+
 		
 /+		version (GDebug){
 			GPDebuger.plotLine(node1.pivot[0..2], node2.pivot[0..2]);

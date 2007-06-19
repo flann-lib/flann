@@ -72,7 +72,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 	}; 
 
 	TreeNode[] nodes;  // vector of nodes to agglomerate
-	int pcount; 		// number of nodes remaining to agglomerate (should be equal to kdtree.vcount)
+	int pcount;
 	int veclen;
 	
 	TreeNode root;
@@ -80,11 +80,14 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 	Heap!(BranchStruct) heap;
 	//Heap!(LinkStruct) distHeap;
 
+	int pointCounter;
+
 	public this(Features inputData)
 	{
 		int count = inputData.count;
 		
 		this.nodes = new TreeNode[count];
+		pointCounter = 0;
 		for (int i=0;i<count;++i) {
 			nodes[i] = new NodeSt();
 			nodes[i].ind = i;
@@ -93,7 +96,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 			nodes[i].radius = 0.0;
 			nodes[i].child1 = nodes[i].child2 = null;
 			nodes[i].size = 1;
-			nodes[i].orig_id = i;
+			nodes[i].orig_id = pointCounter++;
 			
 			nodes[i].points = new float[][1];
 			nodes[i].points[0] = nodes[i].pivot;
@@ -143,7 +146,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		c1 = nodes[ind1];
 		c2 = nodes[ind2];
 		
-		writef("Min dist: %f\n",minDist);
+//		writef("Min dist: %f\n",minDist);
 		return minDist;
 	}
 
@@ -159,15 +162,13 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 			removePoint(c1);
 			removePoint(c2);
 			TreeNode c = agglomerate(c1,c2, distance);
-			addPoint(c);
-			
-			writef("%d\n",pcount);
+			addPoint(c);			
 		}
 		
 		root = nodes[0];
 
-		writef("Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));		
-
+		writef("Mean cluster variance for %d top level clusters: %f\n",4,meanClusterVariance(4));		
+		writef("Root radius: %f\n",root.radius);
 	}
 	
 	
@@ -207,13 +208,15 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		pcount--;
 	}
 	
-	/* 
-		Returns the similarity between two nodes 
-	*/
-	private float similarity(TreeNode n1, TreeNode n2) 
+	private void write(TreeNode node) 
 	{
-		return 1/(n1.variance +  n2.variance +
-					squaredDist(n1.pivot,n2.pivot));
+		writef("#%d ",node.orig_id);
+/+		writef("{");
+		for (int i=0;i<node.pivot.length;++i) {
+			if (i!=0) writef(",");
+			writef("%f",node.pivot[i]);
+		}
+		writef("}");+/
 	}
 		
 	/*
@@ -228,14 +231,16 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		TreeNode bt_new = new NodeSt();
 		
 		bt_new.pivot = new float[veclen];
+	
+		bt_new.size = n + m;
 		for (int i=0;i<veclen;++i) {
-			bt_new.size = n + m;
 			bt_new.pivot[i] = (n*node1.pivot[i]+m*node2.pivot[i])/bt_new.size;
 		}
-		bt_new.variance = (n*node1.variance+m*node2.variance+ (n*m*distance)/(n+m))/(n+m);		
+		bt_new.variance = (n*node1.variance+m*node2.variance + (n*m*distance)/(bt_new.size))/(bt_new.size);		
 		bt_new.child1 = node1;
 		bt_new.child2 = node2;
-		bt_new.orig_id = -1;
+		
+		// new node's points is the contatenation of the child nodes' points
 		bt_new.points = node1.points ~ node2.points;
 		
 		// compute new clusters' radius (the max distance from teh cluster center
@@ -248,6 +253,17 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 			}
 		}
 		bt_new.radius = maxDist;
+		bt_new.orig_id = pointCounter++;
+
+		
+		
+		writef("Agglomerate: ");
+		write(node1);
+		writef(" + ");
+		write(node2);
+		writef(" = ");
+		write(bt_new);
+		writef("\n");
 		
 		
 		return bt_new;
