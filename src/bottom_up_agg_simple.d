@@ -232,6 +232,9 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		
 		bt_new.pivot = new float[veclen];
 	
+		
+		distance = squaredDist(node1.pivot, node2.pivot);
+	
 		bt_new.size = n + m;
 		for (int i=0;i<veclen;++i) {
 			bt_new.pivot[i] = (n*node1.pivot[i]+m*node2.pivot[i])/bt_new.size;
@@ -379,7 +382,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 	}
 	
 	
-	public float meanClusterVariance(int numClusters)
+	public float meanClusterVariance1(int numClusters)
 	{
 		Queue!(TreeNode) q = new Queue!(TreeNode)(numClusters);
 		
@@ -424,4 +427,47 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		return meanVariance;		
 	}
 
+
+	public float meanClusterVariance(int numClusters)
+	{
+		TreeNode clusters[] = new TreeNode[10];
+		
+		int clusterCount = 1;
+		clusters[0] = root;
+		 
+		float meanVariance = root.variance*root.size;
+		 
+		while (clusterCount<numClusters) {
+			
+			float minVariance = float.max;
+			int splitIndex = -1;
+			
+			for (int i=0;i<clusterCount;++i) {
+			
+			
+				if (!(clusters[i].child1 is null) && !(clusters[i].child1 is null)) {
+					float variance = meanVariance - clusters[i].variance*clusters[i].size +
+							clusters[i].child1.variance*clusters[i].child1.size +
+							clusters[i].child2.variance*clusters[i].child2.size;
+					
+					if (variance<minVariance) {
+						minVariance = variance;
+						splitIndex = i;
+					}
+				}			
+			}
+			
+			meanVariance = minVariance;
+			
+			if (clusterCount==clusters.length) {
+				clusters.length = clusters.length*2;
+			}
+			
+			TreeNode toSplit = clusters[splitIndex];
+			clusters[splitIndex] = toSplit.child1;
+			clusters[clusterCount++] = toSplit.child2;
+		}
+		
+		return meanVariance/root.size;
+	}
 }

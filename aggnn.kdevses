@@ -1,19 +1,25 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <!DOCTYPE KDevPrjSession>
 <KDevPrjSession>
- <DocsAndViews NumberOfDocuments="4" >
+ <DocsAndViews NumberOfDocuments="6" >
   <Doc0 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/agglomerativetree2.d" >
-   <View0 Encoding="" line="0" Type="Source" />
+   <View0 Encoding="" Type="Source" />
   </Doc0>
-  <Doc1 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/bottom_up_agg.d" >
-   <View0 Encoding="" line="136" Type="Source" />
+  <Doc1 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/kmeans.d" >
+   <View0 Encoding="" Type="Source" />
   </Doc1>
-  <Doc2 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/kmeans.d" >
-   <View0 Encoding="" line="335" Type="Source" />
+  <Doc2 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/main.d" >
+   <View0 Encoding="" Type="Source" />
   </Doc2>
-  <Doc3 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/main.d" >
-   <View0 Encoding="" line="70" Type="Source" />
+  <Doc3 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/bottom_up_agg_simple.d" >
+   <View0 Encoding="" Type="Source" />
   </Doc3>
+  <Doc4 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/bottom_up_agg.d" >
+   <View0 Encoding="" Type="Source" />
+  </Doc4>
+  <Doc5 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/convert/convert.d" >
+   <View0 Encoding="" line="28" Type="Source" />
+  </Doc5>
  </DocsAndViews>
  <pluginList>
   <kdevdebugger>
@@ -24,8 +30,11 @@
     <breakpoint1 location="/home/marius/ubc/projects/nn/aggnn/src/heap.d:80" type="1" tracingFormatString="" traceFormatStringEnabled="0" condition="" tracingEnabled="0" enabled="1" >
      <tracedExpressions/>
     </breakpoint1>
+    <breakpoint2 location="/home/marius/ubc/projects/nn/aggnn_git/src/bottom_up_agg_simple.d:158" type="1" tracingFormatString="" traceFormatStringEnabled="0" condition="" tracingEnabled="0" enabled="1" >
+     <tracedExpressions/>
+    </breakpoint2>
    </breakpointList>
-   <showInternalCommands value="0" />
+   <showInternalCommands value="1" />
   </kdevdebugger>
   <kdevastyle>
    <Extensions ext="*.cpp *.h,*.c *.h,*.cxx *.hxx,*.c++ *.h++,*.cc *.hh,*.C *.H,*.diff,*.inl,*.java,*.moc,*.patch,*.tlh,*.xpm" />

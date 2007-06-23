@@ -43,6 +43,18 @@ class AgglomerativeExTree : NNIndex {
 	};
 	alias NodeSt* TreeNode;
 	
+	struct BallNodeSt {
+		
+		float[] pivot; // center of this node
+		float variance; // the variance of the points in the node
+		int size;  // number of points in the node. Should be \sum{children.size}
+		float radius;
+		
+		float[][] points;
+		
+		BallTreeNode children[];
+	};
+	alias BallNodeSt* BallTreeNode;
 		
 	
 	struct BranchStruct {
@@ -76,43 +88,38 @@ class AgglomerativeExTree : NNIndex {
 	const float SIM_THRESHOLD = 5e-6;;
 
 	//KDTree kdtree;
-	
-	TreeNode[] chain; // the chain array used by the agglomerative algorithm
-	float[] sim;	// the sim array used by the agglomerative algorithm
-	
+		
 	TreeNode[] nodes;  // vector of nodes to agglomerate
 	int pcount; 		// number of nodes remaining to agglomerate (should be equal to kdtree.vcount)
 	int veclen;
 	
-	TreeNode[] clusters;
+	TreeNode root;
+	BallTreeNode btRoot;
 
-	int[] rmap; 	// reverse mapping from kd_indices to indices in nodes vector
-	
 	//Pool pool;		// pool for memory allocation
 	
 	Heap!(BranchStruct) heap;
 
 	int pointCounter;
 
+	int indexSize;
+	
 	public this(Features inputData)
 	{
 //		kdtree = new KDTree(inputData.vecs,inputData.veclen, NUM_KDTREES);
 		
 //		pool = kdtree.pool;
 		
-		int vcount = inputData.count;
-		
-		this.chain = new TreeNode[vcount];
-		this.sim = new float[vcount];
-		
+		pcount = inputData.count;
+		indexSize = pcount;
+				
 		version (GDebug){
 			GPDebuger.sendCommand("hold on");
 		}
 		
-		this.nodes = new TreeNode[vcount];
-		this.rmap = new int[vcount];
+		this.nodes = new TreeNode[pcount];
 		this.pointCounter = 0;
-		for (int i=0;i<vcount;++i) {
+		for (int i=0;i<pcount;++i) {
 			nodes[i] = new NodeSt();
 			nodes[i].ind = i;
 			nodes[i].pivot = inputData.vecs[i];
@@ -125,18 +132,14 @@ class AgglomerativeExTree : NNIndex {
 			nodes[i].points = new float[][1];
 			nodes[i].points[0] = nodes[i].pivot;
 			
-			rmap[i] = i;
-			
 			version (GDebug){
 				GPDebuger.plotPoint(inputData.vecs[i][0..2], "b+");
 			}			
 		}
-		
-		
+				
 		heap = new Heap!(BranchStruct)(512);
 		
 		this.veclen = inputData.veclen;
-		this.pcount = vcount;
 	}
 	
 	public ~this() 
@@ -146,7 +149,7 @@ class AgglomerativeExTree : NNIndex {
 	
 	public int size() 
 	{
-		return pcount;
+		return indexSize;
 	}
 	
 	public int numTrees()
@@ -154,12 +157,14 @@ class AgglomerativeExTree : NNIndex {
 		return 1;
 	}
 
-
 	/**
 		Method that performs the agglomerative clustering.
 	*/
 	public void buildIndex() 
 	{
+		TreeNode[] chain = new TreeNode[pcount]; // the chain array used by the agglomerative algorithm
+		float[] sim = new float[pcount];		// the sim array used by the agglomerative algorithm
+		
 		int last = -1;
 		
 		while ( pcount !=0 || last>0) {
@@ -195,83 +200,67 @@ class AgglomerativeExTree : NNIndex {
 			}
 		}
 		
-		if (last>=0) {
-			clusters ~= chain[0..last+1];
-		}
-		
-		
-		writef("Top level clusters: %d\n",clusters.length);
-		writef("Mean cluster variance for %d top level clusters: %f\n",4,meanClusterVariance(4));
-		writef("Root radius: %f\n",chain[0].radius);
-	}
-	
-	
-	
-	const int MAX_CHAIN_AGG = 10;
-	/**
-		Method that performs the agglomerative clustering.
-	*/
-	public void buildIndex1() 
-	{
-		int last = -1;
-		int chainAgglomerations = 0;
-		
-		while ( pcount !=0 || last>0) {
-		
-			//start new chain with random point
-			if (last<0 && pcount!=0) {
-				// initialize new chain with random point
-				last = 0;
-				TreeNode v = selectRandomPoint();
-				chain[last] = v;
-				removePoint(v);
-				sim[last] = 0;				
-			}
-			
-			if (pcount!=0) {
-		
-				TreeNode s = getNearestNeighbor(chain[last]);
-				float sm = similarity(chain[last],s);
-			
-				if (sm>sim[last]) { 
-					// no RNN, adding s to the chain
-					last++;
-					chain[last] = s;
-					removePoint(s);
-					sim[last] = sm;
-				}
-				else {
-					if (chainAgglomerations<MAX_CHAIN_AGG) {
-						agglomerateAdd(chain[last],chain[last-1]);
-						last -= 2;
-						chainAgglomerations++;
-					} else {
-						// max chain agglomerations reached, start with new chain
-						
-						while (last>=0) {
-							nodes[pcount++] = chain[last--];
-							nodes[pcount-1].ind = pcount-1;
-						}
-						chainAgglomerations = 0;
-					}
-				}
-			} else if (last>0) {
-					agglomerateAdd(chain[last],chain[last-1]);
-					last -= 2;
+		assert(last==0);
+		root = chain[0];
 				
-			}
-		}
+		writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));
+		writef("Root radius: %f\n",root.radius);
+		writef("Root variance: %f\n",root.variance);		
 		
-		if (last>=0) {
-			clusters ~= chain[0..last+1];
-		}
+		btRoot = new BallNodeSt();
 		
-		
-		writef("Top level clusters: %d\n",clusters.length);
-		writef("Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
-		writef("Root radius: %f\n",chain[0].radius);
-	}
+		btRoot.variance = root.variance;
+		btRoot.pivot = root.pivot;
+		btRoot.size = root.size;
+		btRoot.radius = root.radius;
+		btRoot.points = root.points;
 
+
+		buildBallTree(btRoot,root);
+	}
+	
+	
+	
+	void push_back(T)(T[] vector, T element) 
+	{
+		vector.length = vector.length+1;
+		vector[vector.length-1] = element;
+	}
+	
+	
+	
+	float shrinkFactor = 2;
+	
+	
+	private void buildBallTree(BallTreeNode btNode, TreeNode node)
+	{
+		if (node is null) 
+			return;
+		
+		if (btNode.variance<shrinkFactor*node.variance) {
+			buildBallTree(btNode,node.child1);
+			buildBallTree(btNode,node.child2);
+		}
+		else {
+			BallTreeNode newBtNode =  new BallNodeSt();
+			
+			newBtNode.variance = node.variance;
+			newBtNode.pivot = node.pivot;
+			newBtNode.size = node.size;
+			newBtNode.radius = node.radius;
+			newBtNode.points = node.points;
+
+			push_back!(BallTreeNode)(btNode.children,newBtNode);
+			
+			buildBallTree(newBtNode,node.child1);
+			buildBallTree(newBtNode,node.child2);
+			
+		}
+		
+	}
+	
+	
+	
 	
 	/* Selects a random cluster from the 
 		current clusters
@@ -344,7 +333,6 @@ class AgglomerativeExTree : NNIndex {
 		bt_new.variance = (n*node1.variance+m*node2.variance+ (n*m*dist)/(n+m))/(n+m);		
 		bt_new.child1 = node1;
 		bt_new.child2 = node2;
-		bt_new.orig_id = -1;
 		bt_new.points = node1.points ~ node2.points;
 		
 		// compute new clusters' radius (the max distance from teh cluster center
@@ -365,13 +353,13 @@ class AgglomerativeExTree : NNIndex {
 		
 		
 		
-		writef("Agglomerate: ");
-		write(node1);
-		writef(" + ");
-		write(node2);
-		writef(" = ");
-		write(bt_new);
-		writef("\n");
+// 		writef("Agglomerate: ");
+// 		write(node1);
+// 		writef(" + ");
+// 		write(node2);
+// 		writef(" = ");
+// 		write(bt_new);
+// 		writef("\n");
 
 		
 /+		version (GDebug){
@@ -426,11 +414,8 @@ class AgglomerativeExTree : NNIndex {
 		int imin = 0;
 		float minval = float.max;
 		
-		for (int i=0;i<clusters.length;++i) {
-			float dist = squaredDist(vec, clusters[i].pivot);
-			
-			heap.insert(BranchStruct(clusters[i], dist));
-		}
+		float dist = squaredDist(vec, root.pivot);	
+		heap.insert(BranchStruct(root, dist));
 		
 		BranchStruct branch;
 		
@@ -500,13 +485,11 @@ class AgglomerativeExTree : NNIndex {
 	}
 	
 	
-	public float meanClusterVariance(int numClusters)
+	public float meanClusterVariance1(int numClusters)
 	{
 		Queue!(TreeNode) q = new Queue!(TreeNode)(numClusters);
 		
-		for (int i=0;i<clusters.length;++i) {
-			q.push(clusters[i]);
-		}
+		q.push(root);
 
 		while(!q.full) {
 			TreeNode t;
@@ -526,6 +509,9 @@ class AgglomerativeExTree : NNIndex {
 		for (int i=0;i<q.size;++i) {
 			float[][] clusterPoints = getClusterPoints(q[i]);
 			variances[i] = computeVariance(clusterPoints);
+			
+			writef("%f - %f\n",variances[i],q[i].variance);
+			
 			clusterSize[i] = clusterPoints.length;
 		}
 		
@@ -542,9 +528,58 @@ class AgglomerativeExTree : NNIndex {
 			writef("Cluster %d size: %d\n",i, clusterSize[i]);
 		}
 		
-		
-		
 		return meanVariance;		
 	}
+	
+	public float meanClusterVariance(int numClusters)
+	{
+		TreeNode clusters[] = new TreeNode[10];
+		
+		int clusterCount = 1;
+		clusters[0] = root;
+		 
+		float meanVariance = root.variance*root.size;
+		 
+		while (clusterCount<numClusters) {
+			
+			float minVariance = float.max;
+			int splitIndex = -1;
+			
+			for (int i=0;i<clusterCount;++i) {
+			
+			
+				if (!(clusters[i].child1 is null) && !(clusters[i].child1 is null)) {
+					float variance = meanVariance - clusters[i].variance*clusters[i].size +
+							clusters[i].child1.variance*clusters[i].child1.size +
+							clusters[i].child2.variance*clusters[i].child2.size;
+					
+					if (variance<minVariance) {
+						minVariance = variance;
+						splitIndex = i;
+					}
+				}			
+			}
+			
+			meanVariance = minVariance;
+			
+			// increase vector if needed
+			if (clusterCount==clusters.length) {
+				clusters.length = clusters.length*2;
+			}
+			
+			// split node
+			TreeNode toSplit = clusters[splitIndex];
+			clusters[splitIndex] = toSplit.child1;
+			clusters[clusterCount++] = toSplit.child2;
+		}
+		
+		for (int i=0;i<numClusters;++i) {
+			writef("Cluster %d size: %d\n",i,clusters[i].size);
+		}
+		
+		
+		return meanVariance/root.size;
+	}
+	
 
 }

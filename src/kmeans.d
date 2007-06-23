@@ -332,7 +332,7 @@ class KMeansTree : NNIndex
 		root = new KMeansCluster(indices,1, this);
 		root.computeClustering();
 		
-		writef("Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));		
+		writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
 		
 		//testClustering(root);
 	}
