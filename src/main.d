@@ -34,6 +34,7 @@ import nnindex;
 import kmeans;
 import bottom_up_agg_simple;
 import bottom_up_agg;
+import balltree;
 
 
 
@@ -48,7 +49,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 	
 	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
 	
-	writef("Time to build %d random tree%s for %d vectors: %5.2f seconds\n\n",
+	writef("Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
 		index.numTrees, index.numTrees == 1 ? "" : "s", index.size, elapsed);
 
 	writef("  Nodes    %% correct   %% of good     Time     Time/vector\n"
@@ -208,7 +209,11 @@ void main(char[][] args)
 	}
 	else if (algorithm=="kmeans") {
 		index = new KMeansTree(inputData, branching);
-	} else {
+	}
+	else if (algorithm=="balltree") {
+		index = new BallTree(inputData);
+	} 
+	else {
 		throw new Exception("No such algorithm.");
 	}
 		

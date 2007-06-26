@@ -43,20 +43,6 @@ class AgglomerativeExTree : NNIndex {
 	};
 	alias NodeSt* TreeNode;
 	
-	struct BallNodeSt {
-		
-		float[] pivot; // center of this node
-		float variance; // the variance of the points in the node
-		int size;  // number of points in the node. Should be \sum{children.size}
-		float radius;
-		
-		float[][] points;
-		
-		BallTreeNode children[];
-	};
-	alias BallNodeSt* BallTreeNode;
-		
-	
 	struct BranchStruct {
 		TreeNode node;        		/* Tree node at which search resumes */
 		float mindistsq;     		/* Minimum distance to query. */
@@ -83,33 +69,21 @@ class AgglomerativeExTree : NNIndex {
 		
 	}; 
 
-
-
 	const float SIM_THRESHOLD = 5e-6;;
 
-	//KDTree kdtree;
-		
 	TreeNode[] nodes;  // vector of nodes to agglomerate
 	int pcount; 		// number of nodes remaining to agglomerate (should be equal to kdtree.vcount)
 	int veclen;
 	
 	TreeNode root;
-	BallTreeNode btRoot;
 
-	//Pool pool;		// pool for memory allocation
-	
 	Heap!(BranchStruct) heap;
 
 	int pointCounter;
-
 	int indexSize;
 	
 	public this(Features inputData)
 	{
-//		kdtree = new KDTree(inputData.vecs,inputData.veclen, NUM_KDTREES);
-		
-//		pool = kdtree.pool;
-		
 		pcount = inputData.count;
 		indexSize = pcount;
 				
@@ -131,10 +105,7 @@ class AgglomerativeExTree : NNIndex {
 			
 			nodes[i].points = new float[][1];
 			nodes[i].points[0] = nodes[i].pivot;
-			
-			version (GDebug){
-				GPDebuger.plotPoint(inputData.vecs[i][0..2], "b+");
-			}			
+	
 		}
 				
 		heap = new Heap!(BranchStruct)(512);
@@ -206,59 +177,7 @@ class AgglomerativeExTree : NNIndex {
 		writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));
 		writef("Root radius: %f\n",root.radius);
 		writef("Root variance: %f\n",root.variance);		
-		
-		btRoot = new BallNodeSt();
-		
-		btRoot.variance = root.variance;
-		btRoot.pivot = root.pivot;
-		btRoot.size = root.size;
-		btRoot.radius = root.radius;
-		btRoot.points = root.points;
-
-
-		buildBallTree(btRoot,root);
 	}
-	
-	
-	
-	void push_back(T)(T[] vector, T element) 
-	{
-		vector.length = vector.length+1;
-		vector[vector.length-1] = element;
-	}
-	
-	
-	
-	float shrinkFactor = 2;
-	
-	
-	private void buildBallTree(BallTreeNode btNode, TreeNode node)
-	{
-		if (node is null) 
-			return;
-		
-		if (btNode.variance<shrinkFactor*node.variance) {
-			buildBallTree(btNode,node.child1);
-			buildBallTree(btNode,node.child2);
-		}
-		else {
-			BallTreeNode newBtNode =  new BallNodeSt();
-			
-			newBtNode.variance = node.variance;
-			newBtNode.pivot = node.pivot;
-			newBtNode.size = node.size;
-			newBtNode.radius = node.radius;
-			newBtNode.points = node.points;
-
-			push_back!(BallTreeNode)(btNode.children,newBtNode);
-			
-			buildBallTree(newBtNode,node.child1);
-			buildBallTree(newBtNode,node.child2);
-			
-		}
-		
-	}
-	
 	
 	
 	
@@ -292,25 +211,6 @@ class AgglomerativeExTree : NNIndex {
 		return (n1.variance +  n2.variance +
 					squaredDist(n1.pivot,n2.pivot));
 	}
-	
-	
-	private void write(TreeNode node) 
-	{
-		writef("#%d ",node.orig_id);
-/+		writef("{");
-		for (int i=0;i<node.pivot.length;++i) {
-			if (i!=0) writef(",");
-			writef("%f",node.pivot[i]);
-		}
-		writef("}");+/
-	}
-
-	
-	
-	
-	
-	
-	
 	
 		
 	/*
@@ -400,6 +300,7 @@ class AgglomerativeExTree : NNIndex {
 	int checks;
 	int maxCheck;
 	
+	
 	public void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck) 
 	{
 		version (GDebug){
@@ -458,6 +359,15 @@ class AgglomerativeExTree : NNIndex {
 		}
 	}
 	
+	
+	
+	
+	
+	
+	
+	/+
+		----------------------------------------------------------
+	+/
 	
 	float[][] getClusterPoints(TreeNode node)
 	{

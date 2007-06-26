@@ -27,7 +27,7 @@ endif
 
 	
 ifeq ($(PROFILE),debug)
-	DFLAGS = -g -fdebug
+	DFLAGS = -g -frelease
 	#DFLAGS := ${DFLAGS} -g -frelease
 	CFLAGS = ${WARNS} -g
 else
