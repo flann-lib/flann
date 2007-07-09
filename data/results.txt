@@ -1,0 +1,8 @@
+
+											Build Time			Approx 90%			Aprox 95%				Exact
+-----------------------------------------------------------------------
+Linear								0								-								-
+KD-Tree(1 tree)	
+kd-tree(10 trees)
+kmeans
+agglom

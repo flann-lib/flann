@@ -213,6 +213,9 @@ void main(char[][] args)
 	else if (algorithm=="balltree") {
 		index = new BallTree(inputData);
 	} 
+	else if (algorithm=="linear") {
+		index = new LinearSearch(inputData);
+	} 
 	else {
 		throw new Exception("No such algorithm.");
 	}

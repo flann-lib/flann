@@ -30,8 +30,6 @@ class ResultSet
 	
 	int count;
 	
-	float worst_dist;
-	
 	public this(int capacity) 
 	{
 		points = new Point[capacity];
@@ -87,6 +85,11 @@ class ResultSet
 		}
 		
 		return true;
+	}
+	
+	public float worstDist()
+	{
+		return points[count-1].dist;
 	}
 	
 	
