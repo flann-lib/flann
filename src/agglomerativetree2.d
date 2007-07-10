@@ -334,7 +334,7 @@ class AgglomerativeExTree : NNIndex {
 		}
 
 		if (node.child1 == null && node.child2 == null) {
-			resultSet.addPoint(Point(node.pivot, node.orig_id));
+			resultSet.addPoint(node.pivot, node.orig_id);
 			checks++;
 
 			return true;
@@ -483,9 +483,9 @@ class AgglomerativeExTree : NNIndex {
 			clusters[clusterCount++] = toSplit.child2;
 		}
 		
-		for (int i=0;i<numClusters;++i) {
-			writef("Cluster %d size: %d\n",i,clusters[i].size);
-		}
+// 		for (int i=0;i<numClusters;++i) {
+// 			writef("Cluster %d size: %d\n",i,clusters[i].size);
+// 		}
 		
 		
 		return meanVariance/root.size;

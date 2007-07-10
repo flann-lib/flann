@@ -35,6 +35,7 @@ import kmeans;
 import bottom_up_agg_simple;
 import bottom_up_agg;
 import balltree;
+import linearsearch;
 
 
 
@@ -70,7 +71,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 	int correct, cormatch, match;
 	correct = cormatch = match = 0;
 
-	for (int i = 0; i < testData.count; i++) {
+ 	for (int i = 0; i < testData.count; i++) {
 //	for (int i = 0; i < 1; i++) {
 	
 		resultSet.init(testData.vecs[i]);

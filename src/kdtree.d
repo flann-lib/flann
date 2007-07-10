@@ -158,7 +158,7 @@ class KDTree : NNIndex{
 		this.veclen = veclen;
 		this.vecs = vecs;
 		this.trees = pool.malloc!(Tree)(numTrees_);
-		this.heap = new Heap!(BranchSt)(512);
+		this.heap = new Heap!(BranchSt)(vecs.length);
 		this.checkID = -1000;
 		
 		this.freeIndSize = 0;
@@ -604,7 +604,7 @@ class KDTree : NNIndex{
 				return;
 			this.vind[node.divfeat] = this.checkID;
 		
-			result.addPoint(Point(vecs[node.divfeat],node.divfeat));
+			result.addPoint(vecs[node.divfeat],node.divfeat);
 			//CheckNeighbor(result, node.divfeat, vec);
 			return;
 		}

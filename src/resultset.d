@@ -63,9 +63,11 @@ class ResultSet
 		return count == points.length;
 	}
 	
-	public bool addPoint(Point p) 
+	public bool addPoint(float[] point, int index) 
 	{
-		p.dist = target.squaredDist(p.point);
+		Point p = Point(point,index);
+	
+		p.dist = target.squaredDist(point);
 		
 		if (count<points.length) {
 			points[count++] = p;	

@@ -202,9 +202,9 @@ class BallTree : NNIndex {
 		
 		while (checks<maxCheck && btHeap.popMin(branch)) {
 			if (branch.mindistsq-branch.node.radius>resultSet.worstDist) {
-				writef("Distance to ball: %f\n",branch.mindistsq);
+/+				writef("Distance to ball: %f\n",branch.mindistsq);
 				writef("Ball radius: %f\n",branch.node.radius);
-				writef("Worst distance: %f\n\n",resultSet.worstDist());
+				writef("Worst distance: %f\n\n",resultSet.worstDist());+/
 			}
 			findNN(resultSet, vec, branch.node);
 		}
@@ -214,7 +214,7 @@ class BallTree : NNIndex {
 	private bool findNN(ResultSet resultSet, float[] vec, BallTreeNode node) 
 	{
 		if (node.children.length == 0) {
-			resultSet.addPoint(Point(node.pivot, node.orig_id));
+			resultSet.addPoint(node.pivot, node.orig_id);
 			checks++;
 
 			return true;

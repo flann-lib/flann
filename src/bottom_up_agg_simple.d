@@ -330,7 +330,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		}
 
 		if (node.child1 == null && node.child2 == null) {
-			resultSet.addPoint(Point(node.pivot, node.orig_id));
+			resultSet.addPoint(node.pivot, node.orig_id);
 			checks++;
 
 			return true;

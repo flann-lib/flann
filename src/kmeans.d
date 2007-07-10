@@ -212,24 +212,23 @@ private class KMeansCluster
 	
 		float[][] vecs = clustering.vecs;
 		
+
+		
 		if (childs.length==0) {
 			if (indices.length==0) {
 				throw new Exception("Reached empty cluster. This shouldn't happen.\n");
 			}
-	
+			
 			for (int i=0;i<indices.length;++i) {
-				result.addPoint(Point(vecs[indices[i]], indices[i]));
-				checks++;
+				result.addPoint(vecs[indices[i]], indices[i]);
 			}	
+			checks++;
 		} 
 		else {
 			int nc = childs.length;
 			int ci = getNearestCenter(vec);
 			float[] c = centers[ci];
 			
-/+			if (count<30) {
-				printf("Nearest center: %d\n",ci);
-			}+/
 			
 			if (maxCheck>0) { 
 				for (int i=0;i<nc;++i) {
@@ -249,9 +248,7 @@ private class KMeansCluster
 			}
 	
 			childs[ci].findNN(result,vec, maxCheck, checks, heap);
-		}
-		
-		count++;
+		}		
 	}
 
 	/** Method the computes the nearest cluster center to 
@@ -301,7 +298,7 @@ class KMeansTree : NNIndex
 	private KMeansCluster root;
 	private float[][] vecs;
 	private int flength;
-
+	private BranchHeap heap;	
 
 	
 	public this(Features inputData, int branching)
@@ -309,6 +306,9 @@ class KMeansTree : NNIndex
 		this.branching = branching;
 		this.vecs = inputData.vecs;
 		this.flength = inputData.veclen;
+		
+		heap = new BranchHeap(inputData.count);
+
 	}
 
 	public int size() 
@@ -332,7 +332,7 @@ class KMeansTree : NNIndex
 		root = new KMeansCluster(indices,1, this);
 		root.computeClustering();
 		
-		writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
+		//writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
 		
 		//testClustering(root);
 	}
@@ -354,12 +354,12 @@ class KMeansTree : NNIndex
 	void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
 		static int count = 0;
-		BranchHeap heap = new BranchHeap(512);
+		heap.init();
 		
 		int checks = 0;
 // 		Heap heap = new
 		root.findNN(result, vec, maxCheck, checks, heap);
-	
+		
 		BranchSt branch;
 		while (checks<maxCheck && heap.popMin(branch)) {
 /+			if (count++<10) {
