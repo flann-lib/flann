@@ -1,3 +1,7 @@
+/*******
+ Project: aggnn
+*/
+
 module serialization.basicarchive;
 
 import serialization.classregister;
@@ -176,7 +180,7 @@ protected:
 			
 			char[] name = class_register.by_classinfo[x.classinfo].name;
 			describe_array(name);
-			class_register.by_classinfo[x.classinfo].call_describe(x, this);
+			class_register.by_classinfo[x.classinfo].call_describe(cast(void *)x, this);
 		}
 		else if (write_or_read == WriteRead.Read)
 		{
@@ -214,7 +218,7 @@ protected:
 			}
 			
 			x = cast(T) class_register.by_name[name].create();
-			class_register.by_name[name].call_describe(x, this); 
+			class_register.by_name[name].call_describe(cast(void*)x, this); 
 		}
 	}
 
