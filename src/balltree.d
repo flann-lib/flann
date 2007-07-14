@@ -18,7 +18,11 @@ import nnindex;
 import agglomerativetree2;
 
 
+mixin ModuleConstructor!(BallTree);
+
 class BallTree : NNIndex {
+
+	static const NAME = "balltree";
 
 	struct BallNodeSt {
 		
@@ -73,13 +77,18 @@ class BallTree : NNIndex {
 	
 	AgglomerativeExTree aggTree;
 	
-	public this(Features inputData)
+	
+	private this()
+	{
+	}
+	
+	public this(Features inputData, Params params)
 	{
 //		kdtree = new KDTree(inputData.vecs,inputData.veclen, NUM_KDTREES);
 		
 //		pool = kdtree.pool;
 
-		aggTree = new AgglomerativeExTree(inputData);
+		aggTree = new AgglomerativeExTree(inputData,params);
 		
 		btHeap = new Heap!(BallBranchStruct)(inputData.count);
 		
@@ -249,6 +258,13 @@ class BallTree : NNIndex {
 	}
 
 	
+	void describe(T)(T ar)
+	{
+	}	
 	
-
+	void save(string file)
+	{
+		Serializer s = new Serializer(file, FileMode.Out);
+		s.describe(this);
+	}
 }

@@ -9,6 +9,7 @@ Author: Marius Muja (2007)
 *************************************************************************/
 import std.stdio;
 
+
 import util;
 import heap;
 import kdtree;
@@ -22,8 +23,11 @@ version (GDebug){
 }
 
 
+//mixin ModuleConstructor!(AgglomerativeTree);
 
 class AgglomerativeTree : NNIndex{
+
+	static string NAME = "aggnn";
 
 	// tree node data structure
 	struct NodeSt {
@@ -92,9 +96,16 @@ class AgglomerativeTree : NNIndex{
 	
 	int indexSize;
 
-	public this(Features inputData)
+	private this()
 	{
-		kdtree = new KDTree(inputData.vecs,inputData.veclen, NUM_KDTREES);
+	}
+
+
+	public this(Features inputData, Params params)
+	{
+		Params kd_params;
+		kd_params.numTrees = NUM_KDTREES;
+		kdtree = new KDTree(inputData, kd_params);
 		
 		pool = kdtree.pool;
 		
@@ -358,6 +369,16 @@ class AgglomerativeTree : NNIndex{
 			
 			return findNN(resultSet, vec, bestNode);
 		}
+	}
+
+	void describe(T)(T ar)
+	{
+	}
+
+	void save(string file)
+	{
+		Serializer s = new Serializer(file, FileMode.Out);
+		s.describe(this);
 	}
 
 }

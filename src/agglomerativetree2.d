@@ -17,14 +17,19 @@ import resultset;
 import features;
 import nnindex;
 
+
 //import debuger;
 version (GDebug){
 	import gpdebuger;
 }
 
 
+mixin ModuleConstructor!(AgglomerativeExTree);
+
 
 class AgglomerativeExTree : NNIndex {
+
+	static string NAME = "aggnnex";
 
 	// tree node data structure
 	struct NodeSt {
@@ -39,7 +44,22 @@ class AgglomerativeExTree : NNIndex {
 		float[][] points;
 		
 		TreeNode child1;
-		TreeNode child2;	
+		TreeNode child2;
+			
+		void describe(T)(T ar)
+		{
+			ar.describe(ind);
+			ar.describe(pivot);
+			ar.describe(variance);
+			ar.describe(size);
+			ar.describe(radius);
+			ar.describe(orig_id);
+//			ar.describe(points);
+			if (size>1) {
+				ar.describe(child1);
+				ar.describe(child2);
+			}
+		}
 	};
 	alias NodeSt* TreeNode;
 	
@@ -82,7 +102,13 @@ class AgglomerativeExTree : NNIndex {
 	int pointCounter;
 	int indexSize;
 	
-	public this(Features inputData)
+	
+	private this()
+	{
+		heap = new Heap!(BranchStruct)(512);
+	}
+	
+	public this(Features inputData, Params params)
 	{
 		pcount = inputData.count;
 		indexSize = pcount;
@@ -108,7 +134,7 @@ class AgglomerativeExTree : NNIndex {
 	
 		}
 				
-		heap = new Heap!(BranchStruct)(512);
+		heap = new Heap!(BranchStruct)(inputData.count);
 		
 		this.veclen = inputData.veclen;
 	}
@@ -491,5 +517,18 @@ class AgglomerativeExTree : NNIndex {
 		return meanVariance/root.size;
 	}
 	
+	void describe(T)(T ar)
+	{
+		ar.describe(pcount);
+		ar.describe(veclen);
+		ar.describe(root);
+		ar.describe(indexSize);
+	}
+
+	void save(string file)
+	{
+		Serializer s = new Serializer(file, FileMode.Out);
+		s.describe(this);
+	}
 
 }

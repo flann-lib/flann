@@ -20,6 +20,8 @@ void print_vec(float[] v)
 }
 
 
+mixin ModuleConstructor!(KMeansTree);
+
 
 struct BranchSt {
 	KMeansCluster node;           /* Tree node at which search resumes */
@@ -294,16 +296,23 @@ private class KMeansCluster
 
 class KMeansTree : NNIndex
 {
+
+	static const NAME = "kmeans";
+
 	private int branching;
 	private KMeansCluster root;
 	private float[][] vecs;
 	private int flength;
 	private BranchHeap heap;	
 
-	
-	public this(Features inputData, int branching)
+
+	private this()
 	{
-		this.branching = branching;
+	}
+	
+	public this(Features inputData, Params params)
+	{
+		this.branching = params.branching;
 		this.vecs = inputData.vecs;
 		this.flength = inputData.veclen;
 		
@@ -444,5 +453,15 @@ class KMeansTree : NNIndex
 		return meanVariance;		
 	}
 
+
+	void describe(T)(T ar)
+	{
+	}
+
+	void save(string file)
+	{
+		Serializer s = new Serializer(file, FileMode.Out);
+		s.describe(this);
+	}
 
 }

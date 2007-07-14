@@ -3,7 +3,7 @@ Project: aggnn
 */
 
 
-private import resultset;
+import resultset;
 
 interface NNIndex 
 {
@@ -27,5 +27,7 @@ interface NNIndex
 	 The number of trees in this index 
 	*/
  	int numTrees();
-
+ 	
+ 	
+ 	void save(string file);
 }

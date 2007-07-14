@@ -16,7 +16,6 @@ class Features {
 		int[] mtype;         /* Array of flags indicating if match is correct. */
 
 
-
 	/** 
 		Read an NN file containing vectors for nearest-neighbor matching.
 	

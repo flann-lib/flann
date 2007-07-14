@@ -18,7 +18,7 @@
       <mainprogram>/home/marius/ubc/projects/nn/aggnn_git/aggnn</mainprogram>
       <directoryradio>executable</directoryradio>
       <programargs>-a kdtree -i data/sift10K.nn -n 1 -c 128</programargs>
-      <globaldebugarguments> -i data/sift1K.nn -n 10 -c 8 -a balltree</globaldebugarguments>
+      <globaldebugarguments>-i data/sift1K.nn -a aggnnex -n 1 -c 16 -l test.save</globaldebugarguments>
       <globalcwd>/home/marius/ubc/projects/nn/aggnn_git</globalcwd>
       <useglobalprogram>false</useglobalprogram>
       <terminal>false</terminal>
@@ -39,7 +39,7 @@
       <makebin></makebin>
       <defaulttarget></defaulttarget>
       <makeoptions></makeoptions>
-      <selectedenvironment>debug_unittest</selectedenvironment>
+      <selectedenvironment>debug</selectedenvironment>
       <environments>
         <default/>
         <debug>
@@ -78,7 +78,7 @@
       <otherbin></otherbin>
       <defaulttarget></defaulttarget>
       <otheroptions></otheroptions>
-      <selectedenvironment>default</selectedenvironment>
+      <selectedenvironment>debug</selectedenvironment>
       <environments>
         <debug/>
         <vector/>

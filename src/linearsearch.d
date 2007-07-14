@@ -9,24 +9,33 @@ Author: Marius Muja (2007)
 
 import std.stdio;
 
+import serialization.serializer;
+
 import util;
-import heap;
 import resultset;
 import features;
 import nnindex;
 
-import agglomerativetree2;
 
+mixin ModuleConstructor!(LinearSearch);
 
 class LinearSearch : NNIndex {
 
+	void describe(T)(T ar)
+	{
+	}
 
+
+	static string NAME = "linear";
 	
 	Features dataset;
 
+	private this() 
+	{
+	}
 
 	
-	public this(Features inputData)
+	public this(Features inputData, Params params)
 	{
 		dataset = inputData;
 		
@@ -61,5 +70,10 @@ class LinearSearch : NNIndex {
 	}
 	
 
+	void save(string file)
+	{
+		Serializer s = new Serializer(file, FileMode.Out);
+		s.describe(this);
+	}
 
 }

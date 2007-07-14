@@ -37,6 +37,53 @@ extern (C) {
 }
 
 
+/*---------------parameters----------------------*/
+
+struct Params {
+	int numTrees;
+	int branching;
+}
+
+
+/*---------------- index registry--------------------*/
+
+import nnindex;
+import features;
+
+alias NNIndex delegate(Features, Params) index_delegate;
+static index_delegate[string] indexRegistry;
+
+alias NNIndex delegate(string) load_index_delegate;
+static load_index_delegate[string] loadIndexRegistry;
+
+
+/*------------------- module constructor template--------------------*/
+
+template ModuleConstructor(T)
+{
+	
+	import serialization.serializer;
+	import std.stream;
+	
+	static this() 
+	{
+		indexRegistry[T.NAME] = delegate(Features inputData, Params params) {return cast(NNIndex) new T(inputData, params);};
+		
+		Serializer.registerClassConstructor!(T)({return new T();});
+		
+		loadIndexRegistry[T.NAME] = delegate(string file) 
+			{ Serializer s = new Serializer(file, FileMode.In);
+				T index;
+				s.describe(index);
+				return cast(NNIndex)index;
+				};
+	}
+}
+
+
+
+
+
 /*----------------------- Error messages --------------------------------*/
  
 /* Print message and quit. */

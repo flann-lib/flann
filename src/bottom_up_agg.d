@@ -22,9 +22,11 @@ version (GDebug){
 	import gpdebuger;
 }
 
-
+//mixin ModuleConstructor!(BottomUpAgglomerativeTree);
 
 class BottomUpAgglomerativeTree : NNIndex {
+
+	static const NAME = "agg_bu";
 
 	// tree node data structure
 	struct NodeSt {
@@ -110,7 +112,13 @@ class BottomUpAgglomerativeTree : NNIndex {
 	LinkStruct[] distances;
 	int dcount;
 
-	public this(Features inputData)
+
+	private this()
+	{
+	}
+
+
+	public this(Features inputData, Params params)
 	{
 		int count = inputData.count;
 		
@@ -587,5 +595,14 @@ class BottomUpAgglomerativeTree : NNIndex {
 		
 		return meanVariance;		
 	}
+	
+	void describe(T)(T ar)
+	{
+	}	
 
+	void save(string file)
+	{
+		Serializer s = new Serializer(file, FileMode.Out);
+		s.describe(this);
+	}
 }
