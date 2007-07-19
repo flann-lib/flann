@@ -10,15 +10,16 @@
     <projectname>aggnn</projectname>
     <projectdirectory>.</projectdirectory>
     <absoluteprojectpath>false</absoluteprojectpath>
-    <description></description>
-    <defaultencoding></defaultencoding>
+    <description/>
+    <defaultencoding/>
+    <versioncontrol/>
   </general>
   <kdevcustomproject>
     <run>
       <mainprogram>/home/marius/ubc/projects/nn/aggnn_git/aggnn</mainprogram>
       <directoryradio>executable</directoryradio>
       <programargs>-a kdtree -i data/sift10K.nn -n 1 -c 128</programargs>
-      <globaldebugarguments>-i data/sift1K.nn -a aggnnex -n 1 -c 16 -l test.save</globaldebugarguments>
+      <globaldebugarguments>-i data/sift20.nn -n 1 -c 20 -a aggnnex</globaldebugarguments>
       <globalcwd>/home/marius/ubc/projects/nn/aggnn_git</globalcwd>
       <useglobalprogram>false</useglobalprogram>
       <terminal>false</terminal>
@@ -29,56 +30,150 @@
     </run>
     <build>
       <buildtool>make</buildtool>
-      <builddir></builddir>
+      <builddir/>
     </build>
     <make>
       <abortonerror>false</abortonerror>
       <numberofjobs>1</numberofjobs>
       <prio>0</prio>
       <dontact>false</dontact>
-      <makebin></makebin>
-      <defaulttarget></defaulttarget>
-      <makeoptions></makeoptions>
-      <selectedenvironment>debug</selectedenvironment>
+      <makebin/>
+      <defaulttarget/>
+      <makeoptions/>
+      <selectedenvironment>profile</selectedenvironment>
       <environments>
         <default/>
         <debug>
-          <envvar value="debug" name="PROFILE" />
+          <envvar value="debug" name="CONFIGURATION" />
         </debug>
-        <vector>
-          <envvar value="debug" name="PROFILE" />
-          <envvar value="vector" name="TARGET" />
-          <envvar value="yes" name="UNIT_TEST" />
-        </vector>
         <debug_unittest>
-          <envvar value="debug" name="PROFILE" />
+          <envvar value="debug" name="CONFIGURATION" />
           <envvar value="yes" name="UNIT_TEST" />
         </debug_unittest>
+        <profile>
+          <envvar value="debug" name="CONFIGURATION" />
+          <envvar value="gprof" name="PROFILER" />
+        </profile>
       </environments>
     </make>
     <filetypes>
-      <filetype>*.java</filetype>
       <filetype>*.h</filetype>
-      <filetype>*.H</filetype>
-      <filetype>*.hh</filetype>
-      <filetype>*.hxx</filetype>
-      <filetype>*.hpp</filetype>
       <filetype>*.c</filetype>
-      <filetype>*.C</filetype>
-      <filetype>*.cc</filetype>
       <filetype>*.cpp</filetype>
       <filetype>*.c++</filetype>
-      <filetype>*.cxx</filetype>
       <filetype>Makefile</filetype>
-      <filetype>CMakeLists.txt</filetype>
+      <filetype>*.d</filetype>
     </filetypes>
-    <blacklist/>
+    <blacklist>
+      <path>tmp</path>
+      <path>tmp/rebuild-0.67</path>
+      <path>tmp/rebuild-0.67/Makefile</path>
+      <path>tmp/rebuild-0.67/access.c</path>
+      <path>tmp/rebuild-0.67/aggregate.h</path>
+      <path>tmp/rebuild-0.67/array.c</path>
+      <path>tmp/rebuild-0.67/arraytypes.h</path>
+      <path>tmp/rebuild-0.67/attrib.c</path>
+      <path>tmp/rebuild-0.67/attrib.h</path>
+      <path>tmp/rebuild-0.67/cast.c</path>
+      <path>tmp/rebuild-0.67/choosedc.c</path>
+      <path>tmp/rebuild-0.67/class.c</path>
+      <path>tmp/rebuild-0.67/compile.c</path>
+      <path>tmp/rebuild-0.67/compile.h</path>
+      <path>tmp/rebuild-0.67/complex_t.h</path>
+      <path>tmp/rebuild-0.67/cond.c</path>
+      <path>tmp/rebuild-0.67/cond.h</path>
+      <path>tmp/rebuild-0.67/config.c</path>
+      <path>tmp/rebuild-0.67/config.h</path>
+      <path>tmp/rebuild-0.67/constfold.c</path>
+      <path>tmp/rebuild-0.67/dchar.c</path>
+      <path>tmp/rebuild-0.67/dchar.h</path>
+      <path>tmp/rebuild-0.67/declaration.c</path>
+      <path>tmp/rebuild-0.67/declaration.h</path>
+      <path>tmp/rebuild-0.67/delegatize.c</path>
+      <path>tmp/rebuild-0.67/doc.c</path>
+      <path>tmp/rebuild-0.67/doc.h</path>
+      <path>tmp/rebuild-0.67/dsymbol.c</path>
+      <path>tmp/rebuild-0.67/dsymbol.h</path>
+      <path>tmp/rebuild-0.67/dump.c</path>
+      <path>tmp/rebuild-0.67/dymoduleinit.d</path>
+      <path>tmp/rebuild-0.67/entity.c</path>
+      <path>tmp/rebuild-0.67/enum.c</path>
+      <path>tmp/rebuild-0.67/enum.h</path>
+      <path>tmp/rebuild-0.67/expression.c</path>
+      <path>tmp/rebuild-0.67/expression.h</path>
+      <path>tmp/rebuild-0.67/func.c</path>
+      <path>tmp/rebuild-0.67/gnuc.c</path>
+      <path>tmp/rebuild-0.67/gnuc.h</path>
+      <path>tmp/rebuild-0.67/hdrgen.c</path>
+      <path>tmp/rebuild-0.67/hdrgen.h</path>
+      <path>tmp/rebuild-0.67/html.c</path>
+      <path>tmp/rebuild-0.67/html.h</path>
+      <path>tmp/rebuild-0.67/id.c</path>
+      <path>tmp/rebuild-0.67/id.h</path>
+      <path>tmp/rebuild-0.67/identifier.c</path>
+      <path>tmp/rebuild-0.67/identifier.h</path>
+      <path>tmp/rebuild-0.67/idgen.c</path>
+      <path>tmp/rebuild-0.67/impcnvgen.c</path>
+      <path>tmp/rebuild-0.67/impcnvtab.c</path>
+      <path>tmp/rebuild-0.67/import.c</path>
+      <path>tmp/rebuild-0.67/import.h</path>
+      <path>tmp/rebuild-0.67/inifile.c</path>
+      <path>tmp/rebuild-0.67/init.c</path>
+      <path>tmp/rebuild-0.67/init.h</path>
+      <path>tmp/rebuild-0.67/inline.c</path>
+      <path>tmp/rebuild-0.67/interpret.c</path>
+      <path>tmp/rebuild-0.67/lexer.c</path>
+      <path>tmp/rebuild-0.67/lexer.h</path>
+      <path>tmp/rebuild-0.67/link.c</path>
+      <path>tmp/rebuild-0.67/lstring.c</path>
+      <path>tmp/rebuild-0.67/lstring.h</path>
+      <path>tmp/rebuild-0.67/macro.c</path>
+      <path>tmp/rebuild-0.67/macro.h</path>
+      <path>tmp/rebuild-0.67/mangle.c</path>
+      <path>tmp/rebuild-0.67/mars.c</path>
+      <path>tmp/rebuild-0.67/mars.h</path>
+      <path>tmp/rebuild-0.67/mem.c</path>
+      <path>tmp/rebuild-0.67/mem.h</path>
+      <path>tmp/rebuild-0.67/module.c</path>
+      <path>tmp/rebuild-0.67/module.h</path>
+      <path>tmp/rebuild-0.67/mtype.c</path>
+      <path>tmp/rebuild-0.67/mtype.h</path>
+      <path>tmp/rebuild-0.67/opover.c</path>
+      <path>tmp/rebuild-0.67/optimize.c</path>
+      <path>tmp/rebuild-0.67/parse.c</path>
+      <path>tmp/rebuild-0.67/parse.h</path>
+      <path>tmp/rebuild-0.67/port.h</path>
+      <path>tmp/rebuild-0.67/response.c</path>
+      <path>tmp/rebuild-0.67/response.h</path>
+      <path>tmp/rebuild-0.67/root.c</path>
+      <path>tmp/rebuild-0.67/root.h</path>
+      <path>tmp/rebuild-0.67/scope.c</path>
+      <path>tmp/rebuild-0.67/scope.h</path>
+      <path>tmp/rebuild-0.67/statement.c</path>
+      <path>tmp/rebuild-0.67/statement.h</path>
+      <path>tmp/rebuild-0.67/staticassert.c</path>
+      <path>tmp/rebuild-0.67/staticassert.h</path>
+      <path>tmp/rebuild-0.67/stringtable.c</path>
+      <path>tmp/rebuild-0.67/stringtable.h</path>
+      <path>tmp/rebuild-0.67/struct.c</path>
+      <path>tmp/rebuild-0.67/template.c</path>
+      <path>tmp/rebuild-0.67/template.h</path>
+      <path>tmp/rebuild-0.67/testtango.d</path>
+      <path>tmp/rebuild-0.67/total.h</path>
+      <path>tmp/rebuild-0.67/unialpha.c</path>
+      <path>tmp/rebuild-0.67/utf.c</path>
+      <path>tmp/rebuild-0.67/utf.h</path>
+      <path>tmp/rebuild-0.67/version.c</path>
+      <path>tmp/rebuild-0.67/version.h</path>
+      <path>tmp/rebuild-0.67/whereami.c</path>
+      <path>tmp/rebuild-0.67/whereami.h</path>
+    </blacklist>
     <other>
       <prio>0</prio>
-      <otherbin></otherbin>
-      <defaulttarget></defaulttarget>
-      <otheroptions></otheroptions>
-      <selectedenvironment>debug</selectedenvironment>
+      <otherbin/>
+      <defaulttarget/>
+      <otheroptions/>
+      <selectedenvironment>default</selectedenvironment>
       <environments>
         <debug/>
         <vector/>
@@ -88,11 +183,11 @@
   </kdevcustomproject>
   <kdevdebugger>
     <general>
-      <dbgshell></dbgshell>
-      <gdbpath></gdbpath>
-      <configGdbScript></configGdbScript>
-      <runShellScript></runShellScript>
-      <runGdbScript></runGdbScript>
+      <dbgshell/>
+      <gdbpath/>
+      <configGdbScript/>
+      <runShellScript/>
+      <runGdbScript/>
       <breakonloadinglibs>true</breakonloadinglibs>
       <separatetty>false</separatetty>
       <floatingtoolbar>false</floatingtoolbar>
@@ -195,7 +290,7 @@
       <resolveIncludePathsUsingMakeExperimental>false</resolveIncludePathsUsingMakeExperimental>
     </codecompletion>
     <creategettersetter>
-      <prefixGet></prefixGet>
+      <prefixGet/>
       <prefixSet>set</prefixSet>
       <prefixVariable>m_,_</prefixVariable>
       <parameterName>theValue</parameterName>
@@ -225,4 +320,16 @@
       <hidenonprojectfiles>false</hidenonprojectfiles>
     </tree>
   </kdevfileview>
+  <ctagspart>
+    <customArguments/>
+    <customTagfilePath>/home/marius/ubc/projects/nn/aggnn_git/tags</customTagfilePath>
+    <activeTagsFiles/>
+  </ctagspart>
+  <kdevdocumentation>
+    <projectdoc>
+      <docsystem/>
+      <docurl/>
+      <usermanualurl/>
+    </projectdoc>
+  </kdevdocumentation>
 </kdevelop>

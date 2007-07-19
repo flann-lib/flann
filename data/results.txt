@@ -1,11 +1,10 @@
 
-											Build Time			Approx 90%(Checks)			Aprox 95%						Exact
+                      Build Time      Approx 90%(Checks)      Aprox 95%           Exact
 ---------------------------------------------------------------------------------------
-Linear								0								-												-										37.75
-KD-Tree(1 tree)				0.19						3.59 (438)							7.02 (907) 					51.74 (9500)
-kd-tree(10 trees)			1.50						1.81 (186)							3.04 (360)					34.85 (4890)
-kmeans (branching 2)	3.09						5.46 (106)							8.73 (182)					
-kmeans (branching 32)	5.10						1.57 (17)								2.50 (30)
-agg-binary						68.56						5.21 (154)							8.25 (264)
-agg-restructured			68.72						3.47 (10)								4.23 (24)					
-
+Linear                0               -                       -                   37.75
+KD-Tree(1 tree)       0.19            3.59 (438)              7.02 (907)          51.74 (9500)
+kd-tree(10 trees)     1.50            1.81 (186)              3.04 (360)          34.85 (4890)
+kmeans (branching 2)  3.09            5.46 (106)              8.73 (182)
+kmeans (branching 32) 5.10            1.57 (17)               2.50 (30)
+agg-binary            68.56           5.21 (154)              8.25 (264)	  45.33 / 8.20 (approx - 98.27%)
+agg-restructured      68.72           3.47 (10)               4.23 (24)		  52.57 / 14.05 (approx - 98.24%)

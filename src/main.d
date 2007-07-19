@@ -24,19 +24,17 @@ import std.c.math;
 import std.c.time;
 
 
-import optparse;
-import kdtree;
-//import agglomerativetree;
-import agglomerativetree2;
-import util;
-import resultset;
-import features;
-import nnindex;
-import kmeans;
-import bottom_up_agg_simple;
-//import bottom_up_agg;
-import balltree;
-import linearsearch;
+import util.optparse;
+import util.utils;
+import util.resultset;
+import util.features;
+import algo.kdtree;
+import algo.agglomerativetree2;
+import algo.nnindex;
+import algo.kmeans;
+import algo.bottom_up_agg_simple;
+import algo.balltree;
+import algo.linearsearch;
 
 
 
@@ -65,7 +63,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 	correct = cormatch = match = 0;
 
  	for (int i = 0; i < testData.count; i++) {
-//	for (int i = 0; i < 1; i++) {
+//  	for (int i = 18; i < 19; i++) {
 	
 		resultSet.init(testData.vecs[i]);
 
@@ -83,6 +81,9 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 			if (testData.mtype[i])
 				cormatch++;
 		}
+/+		else {
+			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
+		}+/
 	}
 	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
 	writef("  %5d     %6.2f      %6.2f      %6.2f      %6.3f\n",
@@ -235,11 +236,11 @@ void main(char[][] args)
 	
 		writef("Loading index from file %s... ",loadFile);
 		fflush(stdout);
-		//index = loadIndexRegistry[algorithm](loadFile);
-		Serializer s = new Serializer(loadFile, FileMode.In);
+		index = loadIndexRegistry[algorithm](loadFile);
+/+		Serializer s = new Serializer(loadFile, FileMode.In);
 		AgglomerativeExTree index2;
 		s.describe(index2);
-		index = index2;
+		index = index2;+/
 		writefln("done");
 	}
 	else {
