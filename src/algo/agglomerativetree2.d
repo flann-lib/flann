@@ -13,7 +13,7 @@ import std.math;
 import util.utils;
 import util.heap;
 import util.resultset;
-import util.features;
+import util.features;	
 import algo.nnindex;
 
 
@@ -317,21 +317,63 @@ class AgglomerativeExTree : NNIndex {
 		return bestNode;
 	}
 	
+// 	int nodes_checked;
 	
 	public void findNeighbors(ResultSet resultSet, float[] vec, int maxChecks) 
-	{	
-		heap.init();		
-		heap.insert(BranchStruct(root, 0));
-					
-		int checks = 0;		
-		BranchStruct branch;
-		while (checks++<maxChecks && heap.popMin(branch)) {
-			findNN(resultSet, vec, branch.node);
+	{		
+// 		nodes_checked = 0;
+		if (maxChecks==-1) {
+			findExactNN(resultSet, vec, root);
 		}
+		else {
+			heap.init();		
+			heap.insert(BranchStruct(root, 0));
+						
+			int checks = 0;		
+			BranchStruct branch;
+			while (checks++<maxChecks && heap.popMin(branch)) {
+				findNN(resultSet, vec, branch.node);
+			}
+		}
+//		writefln("Nodes checked: %d",nodes_checked);
 	}
 	
 	
-	private bool findNN(ResultSet resultSet, float[] vec, TreeNode node) 
+	private void findExactNN(ResultSet resultSet, float[] vec, TreeNode node)
+	{
+		float bsq = squaredDist(vec, node.pivot);
+		float rsq = node.radius;
+		float wsq = resultSet.worstDist;
+		
+		float val = bsq-rsq-wsq;
+		float val2 = val*val-4*rsq*wsq;
+		
+// //  		if (val>0) {
+		if (val>0 && val2>0) {
+			return;
+		}
+		
+		if (node.child1 == null && node.child2 == null) {
+// 			nodes_checked++;
+			resultSet.addPoint(node.pivot, node.orig_id);
+			return;
+		}
+		else {
+			float dist1 = squaredDist(vec, node.child1.pivot);
+			float dist2 = squaredDist(vec, node.child2.pivot);
+			
+			float diff = dist1-dist2;	
+			TreeNode bestNode = (diff<0)?node.child1:node.child2;
+			TreeNode otherNode = (diff<0)?node.child2:node.child1;
+						
+			findExactNN(resultSet, vec, bestNode);
+			findExactNN(resultSet, vec, otherNode);
+			
+		}		
+	}
+	
+	
+	private void findNN(ResultSet resultSet, float[] vec, TreeNode node) 
 	{		
 		float bsq = squaredDist(vec, node.pivot);
 		float rsq = node.radius;
@@ -340,10 +382,9 @@ class AgglomerativeExTree : NNIndex {
 		float val = bsq-rsq-wsq;
 		float val2 = val*val-4*rsq*wsq;
 		
-		
 // //  		if (val>0) {
 		if (val>0 && val2>0) {
-			return true;
+			return;
 		}
 		
 		if (node.child1 == null && node.child2 == null) {
@@ -366,7 +407,7 @@ class AgglomerativeExTree : NNIndex {
 			
 			heap.insert(BranchStruct(otherNode, maxdist));
 			
-			return findNN(resultSet, vec, bestNode);
+			findNN(resultSet, vec, bestNode);
 		}
 	}
 	

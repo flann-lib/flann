@@ -59,6 +59,8 @@ private class KMeansCluster
 		int[] indices;
 		int level;
 	
+		float[] pivot;
+		float radius;
 		float[] centers[];
 		KMeansCluster childs[];
 	}
@@ -100,6 +102,8 @@ private class KMeansCluster
 		
 		// choose the initial cluster centers
 		centers = new float[][nc];
+		float[] radiuses = new float[nc];
+		radiuses[] = 0;
 		for (int i=0;i<nc;++i) {
 			centers[i] = vecs[indices[cind[i]]];
 		}
@@ -164,11 +168,7 @@ private class KMeansCluster
 			
 	
 			// reassign points to clusters
-			//writef("%d %d\n",n,nc);
 			for (int i=0;i<n;++i) {
-/+				if (i%100==0) {
-					writef("i=%d\n",i);
-				}+/
 				float sq_dist = squaredDist(vecs[indices[i]],centers[0]); 
 				int new_centroid = 0;
 				for (int j=1;j<nc;++j) {
@@ -177,6 +177,9 @@ private class KMeansCluster
 						new_centroid = j;
 						sq_dist = new_sq_dist;
 					}
+				}
+				if (sq_dist>radiuses[new_centroid]) {
+					radiuses[new_centroid] = sq_dist;
 				}
 				if (new_centroid != belongs_to[i]) {
 					belongs_to[i] = new_centroid;
@@ -197,9 +200,10 @@ private class KMeansCluster
 				if (belongs_to[i]==c) {
 					child_indices[cnt_indices++] = indices[i];
 				}
-	
 			}
 			childs[c] = new KMeansCluster(child_indices,level+1,clustering);
+			childs[c].radius = radiuses[c];
+			childs[c].pivot = centers[c];
 			childs[c].computeClustering();
 		}
 	}
@@ -208,13 +212,25 @@ private class KMeansCluster
 	Method that searches for the nearest-neighbot of a 
 	query point q
 	*/
-	public void findNN(ResultSet result,float[] vec, ref BranchHeap heap, int maxCheck)
+	public void findNN(ResultSet result,float[] vec, ref BranchHeap heap)
 	{
-		static int count = 0;
+		if (pivot!=null) {
+			float bsq = squaredDist(vec, pivot);
+			float rsq = radius;
+			float wsq = result.worstDist;
+			
+			float val = bsq-rsq-wsq;
+			float val2 = val*val-4*rsq*wsq;
+			
+			
+	//  		if (val>0) {
+			if (val>0 && val2>0) {
+				return true;
+			}
+		}
+	
 	
 		float[][] vecs = clustering.vecs;
-		
-
 		
 		if (childs.length==0) {
 			if (indices.length==0) {
@@ -227,50 +243,104 @@ private class KMeansCluster
 		} 
 		else {
 			int nc = childs.length;
-			int ci = getNearestCenter(vec);
-			float[] c = centers[ci];
+			float distances[] = new float[nc];
+			int ci = getNearestCenter(vec, distances);
 			
-			
-			if (maxCheck>0) { 
-				for (int i=0;i<nc;++i) {
-					if (i!=ci) {
-						float dist = squaredDist(vec,centers[i]);
-						
-/+						if (count<30) {
-							printf("Distance to cluster to insert: %f\n",dist);
-//							print_vec(centers[i]);
-		//					printf("\n");
-	//						print_vec(vec);
-						}+/
-						heap.insert(BranchSt(childs[i],dist));
-						
-					}
+			for (int i=0;i<nc;++i) {
+				if (i!=ci) {
+					heap.insert(BranchSt(childs[i],distances[i]));
 				}
 			}
 	
-			childs[ci].findNN(result,vec, heap, maxCheck);
+			childs[ci].findNN(result,vec, heap);
 		}		
 	}
-
+	
 	/** Method the computes the nearest cluster center to 
 	the query point q */
-	private int getNearestCenter(float[] q)
+	private int getNearestCenter(float[] q, ref float[] distances)
 	{
 		int nc = childs.length;
 	
 		int best_index = 0;
-		float dist = squaredDist(q,centers[best_index]);
-	
+		distances[best_index] = squaredDist(q,centers[best_index]);
+		
 		for (int i=1;i<nc;++i) {
-			float tmp = squaredDist(q,centers[i]);
-			if (tmp<dist) {
+			distances[i] = squaredDist(q,centers[i]);
+			if (distances[i]<distances[best_index]) {
 				best_index = i;
-				dist = tmp;
 			}
 		}
 		
 		return best_index;
 	}
+
+
+	public void findExactNN(ResultSet result,float[] vec)
+	{
+		if (pivot!=null) {
+			float bsq = squaredDist(vec, pivot);
+			float rsq = radius;
+			float wsq = result.worstDist;
+			
+			float val = bsq-rsq-wsq;
+			float val2 = val*val-4*rsq*wsq;
+			
+			
+	//  		if (val>0) {
+			if (val>0 && val2>0) {
+				return true;
+			}
+		}
+	
+	
+		float[][] vecs = clustering.vecs;
+		if (childs.length==0) {
+			if (indices.length==0) {
+				throw new Exception("Reached empty cluster. This shouldn't happen.\n");
+			}
+			
+			for (int i=0;i<indices.length;++i) {
+				result.addPoint(vecs[indices[i]], indices[i]);
+			}	
+		} 
+		else {
+			int nc = childs.length;
+			int[] sort_indices = new int[nc];	
+			for (int i=0; i<nc; ++i) {
+				sort_indices[i] = i;
+			}
+			//getCenterOrdering(vec, sort_indices);
+
+			for (int i=0; i<nc; ++i) {
+// 				childs[sort_indices[i]].findExactNN(result,vec);
+ 				childs[i].findExactNN(result,vec);
+			}
+		}		
+	}
+
+
+	/** Method the computes the nearest cluster center to 
+	the query point q */
+	private void getCenterOrdering(float[] q, ref int[] sort_indices)
+	{
+		int nc = childs.length;
+		float distances[] = new float[nc];
+		
+		for (int i=0;i<nc;++i) {
+			float dist = squaredDist(q,centers[i]);
+			
+			int j=0;
+			while (distances[j]<dist) j++;
+			for (int k=i;k>j;--k) {
+				distances[k] = distances[k-1];
+			}
+			distances[j] = dist;
+		}		
+	}
+
+
+
 	
 	/** Method that computes the distance from the query point q
 		from inside region with center c to the border between this 
@@ -341,36 +411,25 @@ class KMeansTree : NNIndex
 		root.computeClustering();
 		
 		//writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
-		
-		//testClustering(root);
 	}
 	
-	void testClustering(KMeansCluster node)
-	{
-		if (node.childs.length==0) {
-			for (int i=0;i<node.indices.length;++i) {
-				fprintf(stderr,"%d\n",node.indices[i]);
-			}
-		}
-		else {
-			for (int i=0;i<node.childs.length;++i) {
-				testClustering(node.childs[i]);
-			}
-		}
-	}
 
 	void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
-		static int count = 0;
-		heap.init();
-		
-		int checks = 0;
-		root.findNN(result, vec, heap, maxCheck);
-		
-		BranchSt branch;
-		while (checks++<maxCheck && heap.popMin(branch)) {
-			KMeansCluster cluster = branch.node;			
-// 			cluster.findNN(result,vec, heap, maxCheckf);
+		if (maxCheck==-1) {
+			root.findExactNN(result, vec);
+		}
+		else {
+			heap.init();			
+			
+			root.findNN(result, vec, heap);
+			
+			int checks = 0;			
+			BranchSt branch;
+			while (checks++<maxCheck && heap.popMin(branch)) {
+				KMeansCluster cluster = branch.node;			
+				cluster.findNN(result,vec, heap);
+			}
 		}
 	}
 	

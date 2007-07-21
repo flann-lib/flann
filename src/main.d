@@ -44,10 +44,8 @@ import algo.linearsearch;
 
 void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 {
-	writef("  Nodes    %% correct   %% of good     Time     Time/vector\n"
-			" checked   neighbors    matches    (seconds)      (ms)\n"
-			" -------   ---------   ---------   ---------  -----------\n");
-
+	writef("Searching... ");
+	fflush(stdout);
 	/* Create a table showing computation time and accuracy as a function
 	   of "checks", the number of neighbors that are checked.
 	   Note that we should check average of at least 2 nodes per random
@@ -85,14 +83,17 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
 		}+/
 	}
+	writefln("done");
+	
 	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+	writef("  Nodes    %% correct   %% of good     Time     Time/vector\n"
+			" checked   neighbors    matches    (seconds)      (ms)\n"
+			" -------   ---------   ---------   ---------  -----------\n");
 	writef("  %5d     %6.2f      %6.2f      %6.2f      %6.3f\n",
 			checks, correct * 100.0 / cast(float) testData.count,
 			cormatch * 100.0 / cast(float) match,
 			elapsed, 1000.0 * elapsed / testData.count);
 	
-//		delete index;
-
 }
 
 
@@ -123,7 +124,7 @@ void main(char[][] args)
 	auto optPrintAlgos = new FlagTrueOption("p", "print-algorithms", "print-algorithms");
 	optPrintAlgos.helpMessage = "Display available algorithms";
 	
-	auto optInputFile = new StringOption("i", "input", "input_file", "-", "FILE");
+	auto optInputFile = new StringOption("i", "input", "input_file", null, "FILE");
 	optInputFile.helpMessage = "Read input vectors from FILE";
 	
 	auto optTestFile = new StringOption("t", "test", "test_file", null, "FILE");
@@ -138,7 +139,7 @@ void main(char[][] args)
 	auto optNN = new NumericOption!(uint)("n", "nn", "nn", 1u, "NN");
 	optNN.helpMessage = "Search should return NN nearest-neighbors";
 	
-	auto optChecks = new NumericOption!(uint)("c", "checks", "checks", 32u, "NUM");
+	auto optChecks = new NumericOption!(int)("c", "checks", "checks", 32u, "NUM");
 	optChecks.helpMessage = "Stop searching after exploring NUM features.";
 	
 	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 4u, "NUM");
@@ -190,50 +191,32 @@ void main(char[][] args)
 
 
 	char[] inputFile = unbox!(char[])(optParser["input_file"]);
-	if (inputFile is null) {
-		writefln("Input file is required.");
-		exit(1);
-	}
-	
-	
 	char[] testFile = unbox!(char[])(optParser["test_file"]);
 	char[] saveFile = unbox!(char[])(optParser["save_file"]);
 	char[] loadFile = unbox!(char[])(optParser["load_file"]);
 	char[] algorithm = unbox!(char[])(optParser["algorithm"]);
 	uint nn = unbox!(uint)(optParser["nn"]);
-	uint checks = unbox!(uint)(optParser["checks"]);
+	int checks = unbox!(int)(optParser["checks"]);
 	Params params;
 	params.numTrees = unbox!(uint)(optParser["num_trees"]);
 	params.branching = unbox!(uint)(optParser["branching"]);
 
-	Features inputData = new Features();
-	if (inputFile=="-") { //read from stdin
-		inputData.readFromFile(null); 
-	}
-	else {
-		inputData.readFromFile(inputFile);
-	}
-	
-	Features testData;
-	if (testFile is null) {
-		testData = inputData;
-	}
-	else {
-		testData = new Features();
-		testData.readFromFile(testFile);
-	}
-
 	if (!(algorithm in indexRegistry)) {
-		writefln("Algorithm not supported... exiting.");
+		writefln("Algorithm not supported.");
+		writefln("Available algorithms:");
+		foreach (algo,val; indexRegistry) {
+			writefln("\t%s",algo);
+		}
+		writefln("Bailing out...");
 		exit(0);
 	}
-	
 	writef("Algorithm: %s\n",algorithm);
-	
-	
+
+
+	Features inputData = null;
+
 	NNIndex index;
 	if (loadFile !is null) {
-	
 		writef("Loading index from file %s... ",loadFile);
 		fflush(stdout);
 		index = loadIndexRegistry[algorithm](loadFile);
@@ -244,6 +227,23 @@ void main(char[][] args)
 		writefln("done");
 	}
 	else {
+	
+		if (inputFile=="-") { //read from stdin
+			writefln("Reading input data from stdin...");
+			inputData = new Features();
+			inputData.readFromFile(null); 
+		}
+		else if (inputFile !is null) {
+			writef("Reading input data from %s... ",inputFile);
+			fflush(stdout);
+			inputData = new Features();
+			inputData.readFromFile(inputFile);
+			writefln("done");
+		}
+	
+		if (inputData is null) {
+			throw new Exception("No input data given.");
+		}
 		index = indexRegistry[algorithm](inputData, params);
 		
 		writefln("Building index... ");
@@ -253,9 +253,23 @@ void main(char[][] args)
 		
 		writef("Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, elapsed);
-	} 
-			
-
+	}
+	
+	Features testData;
+	if ((testFile is null) && (inputData !is null)) {
+		testData = inputData;
+	}
+	else if (testFile !is null) {
+		writef("Reading test data from %s... ",testFile);
+		fflush(stdout);
+		testData = new Features();
+		testData.readFromFile(testFile);
+		writefln("done");
+	}
+		
+	if (testData is null) {
+		throw new Exception("No test data given.");
+	}
 	testNNIndex(index,testData, nn, checks);
 	
 	if (saveFile !is null) {

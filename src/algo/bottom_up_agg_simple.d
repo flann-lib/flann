@@ -246,7 +246,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		// new node's points is the contatenation of the child nodes' points
 		bt_new.points = node1.points ~ node2.points;
 		
-		// compute new clusters' radius (the max distance from teh cluster center
+		// compute new clusters' radius (the max distance from the cluster center
 		// to the farthest point in the cluster
 		float maxDist = float.min;
 		foreach (int i, float[] p; bt_new.points) {
@@ -260,13 +260,13 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 
 		
 		
-		writef("Agglomerate: ");
+/+		writef("Agglomerate: ");
 		write(node1);
 		writef(" + ");
 		write(node2);
 		writef(" = ");
 		write(bt_new);
-		writef("\n");
+		writef("\n");+/
 		
 		
 		return bt_new;
@@ -317,12 +317,9 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 			GPDebuger.plotPoint(node.pivot[0..2], "c+");
 		}
 		
-		
 		if (squaredDist(vec, node.pivot)-node.radius>resultSet.worstDist) {
 			return true;
 		}
-		
-		
 
 		if (node.child1 == null && node.child2 == null) {
 			resultSet.addPoint(node.pivot, node.orig_id);

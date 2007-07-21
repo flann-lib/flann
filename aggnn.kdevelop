@@ -10,8 +10,8 @@
     <projectname>aggnn</projectname>
     <projectdirectory>.</projectdirectory>
     <absoluteprojectpath>false</absoluteprojectpath>
-    <description/>
-    <defaultencoding/>
+    <description></description>
+    <defaultencoding></defaultencoding>
     <versioncontrol/>
   </general>
   <kdevcustomproject>
@@ -19,7 +19,7 @@
       <mainprogram>/home/marius/ubc/projects/nn/aggnn_git/aggnn</mainprogram>
       <directoryradio>executable</directoryradio>
       <programargs>-a kdtree -i data/sift10K.nn -n 1 -c 128</programargs>
-      <globaldebugarguments>-i data/sift20.nn -n 1 -c 20 -a aggnnex</globaldebugarguments>
+      <globaldebugarguments>-i data/sift10K.nn -n 1 -c -1 -a aggnnex -l agg10K.save</globaldebugarguments>
       <globalcwd>/home/marius/ubc/projects/nn/aggnn_git</globalcwd>
       <useglobalprogram>false</useglobalprogram>
       <terminal>false</terminal>
@@ -30,17 +30,17 @@
     </run>
     <build>
       <buildtool>make</buildtool>
-      <builddir/>
+      <builddir></builddir>
     </build>
     <make>
       <abortonerror>false</abortonerror>
       <numberofjobs>1</numberofjobs>
       <prio>0</prio>
       <dontact>false</dontact>
-      <makebin/>
-      <defaulttarget/>
-      <makeoptions/>
-      <selectedenvironment>profile</selectedenvironment>
+      <makebin></makebin>
+      <defaulttarget></defaulttarget>
+      <makeoptions></makeoptions>
+      <selectedenvironment>debug</selectedenvironment>
       <environments>
         <default/>
         <debug>
@@ -170,10 +170,10 @@
     </blacklist>
     <other>
       <prio>0</prio>
-      <otherbin/>
-      <defaulttarget/>
-      <otheroptions/>
-      <selectedenvironment>default</selectedenvironment>
+      <otherbin></otherbin>
+      <defaulttarget></defaulttarget>
+      <otheroptions></otheroptions>
+      <selectedenvironment>debug</selectedenvironment>
       <environments>
         <debug/>
         <vector/>
@@ -183,11 +183,11 @@
   </kdevcustomproject>
   <kdevdebugger>
     <general>
-      <dbgshell/>
-      <gdbpath/>
-      <configGdbScript/>
-      <runShellScript/>
-      <runGdbScript/>
+      <dbgshell></dbgshell>
+      <gdbpath></gdbpath>
+      <configGdbScript></configGdbScript>
+      <runShellScript></runShellScript>
+      <runGdbScript></runGdbScript>
       <breakonloadinglibs>true</breakonloadinglibs>
       <separatetty>false</separatetty>
       <floatingtoolbar>false</floatingtoolbar>
@@ -290,7 +290,7 @@
       <resolveIncludePathsUsingMakeExperimental>false</resolveIncludePathsUsingMakeExperimental>
     </codecompletion>
     <creategettersetter>
-      <prefixGet/>
+      <prefixGet></prefixGet>
       <prefixSet>set</prefixSet>
       <prefixVariable>m_,_</prefixVariable>
       <parameterName>theValue</parameterName>
