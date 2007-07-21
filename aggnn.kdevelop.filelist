@@ -4,7 +4,3 @@ src
 src/convert
 src/convert/convert.d
 src/main.d
-src/serialization
-src/serialization/basicarchive.d
-src/serialization/classregister.d
-src/serialization/serializer.d
