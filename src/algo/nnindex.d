@@ -2,10 +2,14 @@
 Project: aggnn
 */
 
+module algo.nnindex;
 
-private import resultset;
+import std.stream;
+import serialization.serializer;
 
-interface NNIndex 
+import util.resultset;
+
+abstract class NNIndex 
 {
 	/**
 		Method responsible with building the index.
@@ -27,5 +31,11 @@ interface NNIndex
 	 The number of trees in this index 
 	*/
  	int numTrees();
-
+ 	
+ 	
+ 	void save(string file)
+	{
+		Serializer s = new Serializer(file, FileMode.Out);
+		s.describe(this);
+	}
 }

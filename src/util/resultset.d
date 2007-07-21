@@ -2,9 +2,10 @@
 Project: aggnn
 */
 
+module util.resultset;
 
-import heap;
-import util;
+import util.heap;
+import util.utils;
 
 
 struct Point {
@@ -91,7 +92,7 @@ class ResultSet
 	
 	public float worstDist()
 	{
-		return points[count-1].dist;
+		return (count<points.length) ? float.max : points[count-1].dist;
 	}
 	
 	

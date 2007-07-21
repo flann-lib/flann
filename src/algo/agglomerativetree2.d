@@ -1,4 +1,3 @@
-
 /************************************************************************
 Project: aggnn
 
@@ -9,22 +8,20 @@ Author: Marius Muja (2007)
 *************************************************************************/
 
 import std.stdio;
+import std.math;
 
-import util;
-import heap;
-import kdtree;
-import resultset;
-import features;
-import nnindex;
-
-//import debuger;
-version (GDebug){
-	import gpdebuger;
-}
+import util.utils;
+import util.heap;
+import util.resultset;
+import util.features;	
+import algo.nnindex;
 
 
+mixin AlgorithmRegistry!(AgglomerativeExTree);
 
 class AgglomerativeExTree : NNIndex {
+
+	static string NAME = "aggnnex";
 
 	// tree node data structure
 	struct NodeSt {
@@ -39,7 +36,22 @@ class AgglomerativeExTree : NNIndex {
 		float[][] points;
 		
 		TreeNode child1;
-		TreeNode child2;	
+		TreeNode child2;
+			
+		void describe(T)(T ar)
+		{
+			ar.describe(ind);
+			ar.describe(pivot);
+			ar.describe(variance);
+			ar.describe(size);
+			ar.describe(radius);
+			ar.describe(orig_id);
+//			ar.describe(points);
+			if (size>1) {
+				ar.describe(child1);
+				ar.describe(child2);
+			}
+		}
 	};
 	alias NodeSt* TreeNode;
 	
@@ -49,6 +61,7 @@ class AgglomerativeExTree : NNIndex {
 		
 		int opCmp(BranchStruct rhs) 
 		{ 
+		
 			if (mindistsq < rhs.mindistsq) {
 				return -1;
 			} if (mindistsq > rhs.mindistsq) {
@@ -69,8 +82,6 @@ class AgglomerativeExTree : NNIndex {
 		
 	}; 
 
-	const float SIM_THRESHOLD = 5e-6;;
-
 	TreeNode[] nodes;  // vector of nodes to agglomerate
 	int pcount; 		// number of nodes remaining to agglomerate (should be equal to kdtree.vcount)
 	int veclen;
@@ -82,7 +93,13 @@ class AgglomerativeExTree : NNIndex {
 	int pointCounter;
 	int indexSize;
 	
-	public this(Features inputData)
+	
+	private this()
+	{
+		heap = new Heap!(BranchStruct)(512);
+	}
+	
+	public this(Features inputData, Params params)
 	{
 		pcount = inputData.count;
 		indexSize = pcount;
@@ -108,7 +125,7 @@ class AgglomerativeExTree : NNIndex {
 	
 		}
 				
-		heap = new Heap!(BranchStruct)(512);
+		heap = new Heap!(BranchStruct)(inputData.count);
 		
 		this.veclen = inputData.veclen;
 	}
@@ -174,7 +191,7 @@ class AgglomerativeExTree : NNIndex {
 		assert(last==0);
 		root = chain[0];
 				
-		writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));
+		writef("Mean cluster variance for %d top level clusters: %f\n",10,meanClusterVariance(10));
 		writef("Root radius: %f\n",root.radius);
 		writef("Root variance: %f\n",root.variance);		
 	}
@@ -252,6 +269,9 @@ class AgglomerativeExTree : NNIndex {
 		nodes[pcount++] = bt_new;	
 		
 		
+		void write(TreeNode node) {
+			writef("%d",node.orig_id);
+		}
 		
 // 		writef("Agglomerate: ");
 // 		write(node1);
@@ -270,6 +290,9 @@ class AgglomerativeExTree : NNIndex {
 		return bt_new.ind;
 	}
 	
+	
+	
+	
 	/* 
 		Returns the nearest neighbor of a given clusters
 	*/
@@ -278,16 +301,15 @@ class AgglomerativeExTree : NNIndex {
 		float minDist = float.max;
 		TreeNode bestNode;
 		for (int i=0;i<pcount;++i) {
-			if (!(node is nodes[i])) {
+			if (node !is nodes[i]) {
 				float dist = squaredDist(node.pivot,nodes[i].pivot)+node.variance+nodes[i].variance;
-//				float dist = squaredDist(node.pivot,nodes[i].pivot);
 				
 				if (dist<minDist) {
 					minDist = dist;
 					bestNode = nodes[i];
 				}
 			} else {
-				writef("Equal!!!\n");
+				throw new Exception("Equal!!!\n");
 			}
 			
 		}
@@ -295,48 +317,78 @@ class AgglomerativeExTree : NNIndex {
 		return bestNode;
 	}
 	
+// 	int nodes_checked;
 	
-	
-	int checks;
-	int maxCheck;
-	
-	
-	public void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck) 
-	{
-		version (GDebug){
-			GPDebuger.plotPoint(vec[0..2], "r+");
+	public void findNeighbors(ResultSet resultSet, float[] vec, int maxChecks) 
+	{		
+// 		nodes_checked = 0;
+		if (maxChecks==-1) {
+			findExactNN(resultSet, vec, root);
 		}
-		
-		checks = 0;		
-		this.maxCheck = maxCheck;
-		
-		heap.init();
-	
-		int imin = 0;
-		float minval = float.max;
-		
-		float dist = squaredDist(vec, root.pivot);	
-		heap.insert(BranchStruct(root, dist));
-		
-		BranchStruct branch;
-		
-		while (checks<maxCheck && heap.popMin(branch)) {
-			findNN(resultSet, vec, branch.node);
+		else {
+			heap.init();		
+			heap.insert(BranchStruct(root, 0));
+						
+			int checks = 0;		
+			BranchStruct branch;
+			while (checks++<maxChecks && heap.popMin(branch)) {
+				findNN(resultSet, vec, branch.node);
+			}
 		}
-				
+//		writefln("Nodes checked: %d",nodes_checked);
 	}
 	
-	private bool findNN(ResultSet resultSet, float[] vec, TreeNode node) 
+	
+	private void findExactNN(ResultSet resultSet, float[] vec, TreeNode node)
 	{
-		version (GDebug){
-			GPDebuger.plotLine(node.child1.pivot[0..2], node.child2.pivot[0..2]);
-			GPDebuger.plotPoint(node.pivot[0..2], "c+");
+		float bsq = squaredDist(vec, node.pivot);
+		float rsq = node.radius;
+		float wsq = resultSet.worstDist;
+		
+		float val = bsq-rsq-wsq;
+		float val2 = val*val-4*rsq*wsq;
+		
+// //  		if (val>0) {
+		if (val>0 && val2>0) {
+			return;
 		}
-
+		
+		if (node.child1 == null && node.child2 == null) {
+// 			nodes_checked++;
+			resultSet.addPoint(node.pivot, node.orig_id);
+			return;
+		}
+		else {
+			float dist1 = squaredDist(vec, node.child1.pivot);
+			float dist2 = squaredDist(vec, node.child2.pivot);
+			
+			float diff = dist1-dist2;	
+			TreeNode bestNode = (diff<0)?node.child1:node.child2;
+			TreeNode otherNode = (diff<0)?node.child2:node.child1;
+						
+			findExactNN(resultSet, vec, bestNode);
+			findExactNN(resultSet, vec, otherNode);
+			
+		}		
+	}
+	
+	
+	private void findNN(ResultSet resultSet, float[] vec, TreeNode node) 
+	{		
+		float bsq = squaredDist(vec, node.pivot);
+		float rsq = node.radius;
+		float wsq = resultSet.worstDist;
+		
+		float val = bsq-rsq-wsq;
+		float val2 = val*val-4*rsq*wsq;
+		
+// //  		if (val>0) {
+		if (val>0 && val2>0) {
+			return;
+		}
+		
 		if (node.child1 == null && node.child2 == null) {
 			resultSet.addPoint(node.pivot, node.orig_id);
-			checks++;
-
 			return true;
 		}
 		else {
@@ -355,14 +407,9 @@ class AgglomerativeExTree : NNIndex {
 			
 			heap.insert(BranchStruct(otherNode, maxdist));
 			
-			return findNN(resultSet, vec, bestNode);
+			findNN(resultSet, vec, bestNode);
 		}
 	}
-	
-	
-	
-	
-	
 	
 	
 	/+
@@ -491,5 +538,12 @@ class AgglomerativeExTree : NNIndex {
 		return meanVariance/root.size;
 	}
 	
+	void describe(T)(T ar)
+	{
+		ar.describe(pcount);
+		ar.describe(veclen);
+		ar.describe(root);
+		ar.describe(indexSize);
+	}
 
 }

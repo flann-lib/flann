@@ -51,8 +51,10 @@ class Heap {
 	public void insert(in T value)
 	{
 		/* If heap is full, then return without adding this element. */
-		if (count == heap.length)
-			return;
+		if (count == heap.length-1) {
+			heap.length = heap.length * 2;
+			//return;
+		}
 	
 		int loc = ++(count);   /* Remember 1-based indexing. */
 	

@@ -1,4 +1,10 @@
+/*
+ Project: aggnn
+*/
+
+
 /*******************************************************************************
+
 
 	Based on work from Tom S (h3r3tic) and Clay Smith
 	
@@ -168,6 +174,7 @@ unittest
 
 	writefln("Unittest - Serializer - plain data - done");
 }
+
 
 // arrays and associative arrays
 unittest

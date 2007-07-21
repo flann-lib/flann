@@ -40,18 +40,23 @@ import std.c.string;
 
 import std.gc;
 
-import util;
-import heap;
-import nnindex;
-import resultset;
+import util.utils;
+import util.heap;
+import util.features;
+import util.resultset;
+import algo.nnindex;
 
 
+
+mixin AlgorithmRegistry!(KDTree);
 
 /* Contains the k-d trees and other information for indexing a set of points
    for nearest-neighbor matching.
  */
 
 class KDTree : NNIndex{
+
+	static const NAME = "kdtree";
 
 	int numTrees_;       /* Number of randomized trees that are used. */
 	int checkCount;     /* Number of neighbors checked so far in this lookup. */
@@ -140,6 +145,11 @@ class KDTree : NNIndex{
 	alias BranchSt* Branch;
 	
 	
+	private this()
+	{
+	}
+
+	
 	/*------------------------ Build k-d tree index ---------------------------*/
 	
 	/* Build and return the k-d tree index used to find nearest neighbors to
@@ -149,14 +159,14 @@ class KDTree : NNIndex{
 	veclen: the length of each vector.
 	numTrees_: the number of randomized trees to build.
 	*/
-	public this(float[][] vecs, int veclen, int numTrees_)
+	public this(Features inputData, Params params)
 	{
 		//std.gc.disable();
 		pool = new Pool();    /* All data for the index goes into this pool. */
-		this.numTrees_ = numTrees_;
-		this.vcount = vecs.length;
-		this.veclen = veclen;
-		this.vecs = vecs;
+		this.numTrees_ = params.numTrees;
+		this.vcount = inputData.count;
+		this.veclen = inputData.veclen;
+		this.vecs = inputData.vecs;
 		this.trees = pool.malloc!(Tree)(numTrees_);
 		this.heap = new Heap!(BranchSt)(vecs.length);
 		this.checkID = -1000;
@@ -560,12 +570,6 @@ class KDTree : NNIndex{
 		this.heap.init();
 		this.checkID -= 1;  /* Set a different unique ID for each search. */
 	
-		/* Make sure this.dsqs is long enough to hold numNN values. */
-/+		if (result.length > this.dsqlen) {
-			this.dsqs = this.pool.malloc!(float)(result.length);
-			this.dsqlen = result.length;
-		}+/
-	
 		/* Search once through each tree down to root. */
 		for (i = 0; i < this.numTrees_; i++) {
 			SearchLevel(result, vec, this.trees[i], 0.0, maxCheck);
@@ -694,5 +698,8 @@ class KDTree : NNIndex{
 	}
 	
 	
+	void describe(T)(T ar)
+	{
+	}		
 	
 }

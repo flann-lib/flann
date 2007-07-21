@@ -25,10 +25,14 @@ ifdef UNIT_TEST
 	DFLAGS := ${DFLAGS} -funittest
 endif
 
+
+ifeq ($(PROFILER),gprof)
+	DFLAGS := $(DFLAGS) -pg
+	LINKFLAGS := $(LINKFLAGS) -pg
+endif
 	
-ifeq ($(PROFILE),debug)
-	DFLAGS = -g -frelease
-	#DFLAGS := ${DFLAGS} -g -frelease
+ifeq ($(CONFIGURATION),debug)
+	DFLAGS := ${DFLAGS} -g -fdebug
 	CFLAGS = ${WARNS} -g
 else
 	DFLAGS := ${DFLAGS} -O3 -finline -frelease
@@ -48,7 +52,7 @@ LINK = gdc
 # --------------------- Dirs  ----------------------------
 
 SRC_DIR = src
-BUILD_DIR = ~/tmp/${TARGET}_build
+BUILD_DIR = $(HOME)/tmp/${TARGET}_build
 DEPS_DIR = ${BUILD_DIR}/deps
 OBJ_DIR = ${BUILD_DIR}/obj
 DOC_DIR = doc

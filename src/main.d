@@ -23,19 +23,20 @@ import std.c.stdlib;
 import std.c.math;
 import std.c.time;
 
-import optparse;
-import kdtree;
-import agglomerativetree;
-import agglomerativetree2;
-import util;
-import resultset;
-import features;
-import nnindex;
-import kmeans;
-import bottom_up_agg_simple;
-import bottom_up_agg;
-import balltree;
-import linearsearch;
+
+import util.optparse;
+import util.utils;
+import util.resultset;
+import util.features;
+import algo.kdtree;
+import algo.agglomerativetree2;
+import algo.nnindex;
+import algo.kmeans;
+import algo.bottom_up_agg_simple;
+import algo.balltree;
+import algo.linearsearch;
+
+
 
 
 
@@ -43,20 +44,8 @@ import linearsearch;
 
 void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 {
-	writefln("Building index...");
-
-	clock_t startTime = clock();
-	index.buildIndex();
-	
-	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
-	
-	writef("Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
-		index.numTrees, index.numTrees == 1 ? "" : "s", index.size, elapsed);
-
-	writef("  Nodes    %% correct   %% of good     Time     Time/vector\n"
-			" checked   neighbors    matches    (seconds)      (ms)\n"
-			" -------   ---------   ---------   ---------  -----------\n");
-
+	writef("Searching... ");
+	fflush(stdout);
 	/* Create a table showing computation time and accuracy as a function
 	   of "checks", the number of neighbors that are checked.
 	   Note that we should check average of at least 2 nodes per random
@@ -66,13 +55,13 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 
 	ResultSet resultSet = new ResultSet(nn+1);
 	
-	startTime = clock();
+	clock_t startTime = clock();
 	
 	int correct, cormatch, match;
 	correct = cormatch = match = 0;
 
  	for (int i = 0; i < testData.count; i++) {
-//	for (int i = 0; i < 1; i++) {
+//  	for (int i = 18; i < 19; i++) {
 	
 		resultSet.init(testData.vecs[i]);
 
@@ -90,16 +79,34 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 			if (testData.mtype[i])
 				cormatch++;
 		}
+/+		else {
+			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
+		}+/
 	}
-	elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+	writefln("done");
+	
+	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+	writef("  Nodes    %% correct   %% of good     Time     Time/vector\n"
+			" checked   neighbors    matches    (seconds)      (ms)\n"
+			" -------   ---------   ---------   ---------  -----------\n");
 	writef("  %5d     %6.2f      %6.2f      %6.2f      %6.3f\n",
 			checks, correct * 100.0 / cast(float) testData.count,
 			cormatch * 100.0 / cast(float) match,
 			elapsed, 1000.0 * elapsed / testData.count);
 	
-//		delete index;
-
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** 
 	Program entry point 
@@ -114,16 +121,25 @@ void main(char[][] args)
 	auto optAlgo = new StringOption("a", "algorithm", "algorithm", "kdtree", "ALGO");
 	optAlgo.helpMessage = "Use the ALGO nn search algorithm (default: kdtree)";
 	
-	auto optInputFile = new StringOption("i", "input", "input_file", "-", "FILE");
+	auto optPrintAlgos = new FlagTrueOption("p", "print-algorithms", "print-algorithms");
+	optPrintAlgos.helpMessage = "Display available algorithms";
+	
+	auto optInputFile = new StringOption("i", "input", "input_file", null, "FILE");
 	optInputFile.helpMessage = "Read input vectors from FILE";
 	
 	auto optTestFile = new StringOption("t", "test", "test_file", null, "FILE");
 	optTestFile.helpMessage = "Read test vectors from FILE (if not given the input file is used)";
 	
+	auto optSaveFile = new StringOption("s", "save", "save_file", null, "FILE");
+	optSaveFile.helpMessage = "Save the built index to this file.";
+	
+	auto optLoadFile = new StringOption("l", "load", "load_file", null, "FILE");
+	optLoadFile.helpMessage = "Load the index from this file. The type of index (algorithm) must be specified.";
+	
 	auto optNN = new NumericOption!(uint)("n", "nn", "nn", 1u, "NN");
 	optNN.helpMessage = "Search should return NN nearest-neighbors";
 	
-	auto optChecks = new NumericOption!(uint)("c", "checks", "checks", 32u, "NUM");
+	auto optChecks = new NumericOption!(int)("c", "checks", "checks", 32u, "NUM");
 	optChecks.helpMessage = "Stop searching after exploring NUM features.";
 	
 	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 4u, "NUM");
@@ -138,8 +154,11 @@ void main(char[][] args)
 	
 	// Next, add these options to the parser
 	optParser.addOption(optAlgo);
+	optParser.addOption(optPrintAlgos);
 	optParser.addOption(optInputFile);
 	optParser.addOption(optTestFile);
+	optParser.addOption(optSaveFile);
+	optParser.addOption(optLoadFile);
 	optParser.addOption(optNN);
 	optParser.addOption(optChecks);
 	optParser.addOption(optNumTrees);
@@ -158,70 +177,109 @@ void main(char[][] args)
 			writefln("");
 			exit(0);
 	}
+	
+	
+	if( unbox!(bool)(optParser["print-algorithms"]) )
+	{
+		writefln("Available algorithms:");
+		foreach (algo,val; indexRegistry) {
+			writefln("\t%s",algo);
+		}
+		writefln();
+		exit(0);
+	}
+
 
 	char[] inputFile = unbox!(char[])(optParser["input_file"]);
-	if (inputFile is null) {
-		writefln("Input file is required.");
-		exit(1);
-	}
-	
 	char[] testFile = unbox!(char[])(optParser["test_file"]);
+	char[] saveFile = unbox!(char[])(optParser["save_file"]);
+	char[] loadFile = unbox!(char[])(optParser["load_file"]);
 	char[] algorithm = unbox!(char[])(optParser["algorithm"]);
 	uint nn = unbox!(uint)(optParser["nn"]);
-	uint checks = unbox!(uint)(optParser["checks"]);
-	uint numTrees = unbox!(uint)(optParser["num_trees"]);
-	uint branching = unbox!(uint)(optParser["branching"]);
+	int checks = unbox!(int)(optParser["checks"]);
+	Params params;
+	params.numTrees = unbox!(uint)(optParser["num_trees"]);
+	params.branching = unbox!(uint)(optParser["branching"]);
 
-	Features inputData = new Features();
-	if (inputFile=="-") { //read from stdin
-		inputData.readFromFile(null); 
+	if (!(algorithm in indexRegistry)) {
+		writefln("Algorithm not supported.");
+		writefln("Available algorithms:");
+		foreach (algo,val; indexRegistry) {
+			writefln("\t%s",algo);
+		}
+		writefln("Bailing out...");
+		exit(0);
+	}
+	writef("Algorithm: %s\n",algorithm);
+
+
+	Features inputData = null;
+
+	NNIndex index;
+	if (loadFile !is null) {
+		writef("Loading index from file %s... ",loadFile);
+		fflush(stdout);
+		index = loadIndexRegistry[algorithm](loadFile);
+/+		Serializer s = new Serializer(loadFile, FileMode.In);
+		AgglomerativeExTree index2;
+		s.describe(index2);
+		index = index2;+/
+		writefln("done");
 	}
 	else {
-		inputData.readFromFile(inputFile);
+	
+		if (inputFile=="-") { //read from stdin
+			writefln("Reading input data from stdin...");
+			inputData = new Features();
+			inputData.readFromFile(null); 
+		}
+		else if (inputFile !is null) {
+			writef("Reading input data from %s... ",inputFile);
+			fflush(stdout);
+			inputData = new Features();
+			inputData.readFromFile(inputFile);
+			writefln("done");
+		}
+	
+		if (inputData is null) {
+			throw new Exception("No input data given.");
+		}
+		index = indexRegistry[algorithm](inputData, params);
+		
+		writefln("Building index... ");
+		clock_t startTime = clock();
+		index.buildIndex();
+		float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+		
+		writef("Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
+			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, elapsed);
 	}
 	
 	Features testData;
-	if (testFile is null) {
+	if ((testFile is null) && (inputData !is null)) {
 		testData = inputData;
 	}
-	else {
+	else if (testFile !is null) {
+		writef("Reading test data from %s... ",testFile);
+		fflush(stdout);
 		testData = new Features();
 		testData.readFromFile(testFile);
-	}
-
-
-	NNIndex index;
-	
-	writef("Algorithm: %s\n",algorithm);
-	if (algorithm=="kdtree") {
-		index = new KDTree(inputData.vecs, inputData.veclen, numTrees);
-	}
-	else if (algorithm=="aggnn") {
-		index = new AgglomerativeTree(inputData);
-	}
-	else if (algorithm=="aggnnex") {
-		index = new AgglomerativeExTree(inputData);
-	}
-	else if (algorithm=="agg_bu") {
-		index = new BottomUpAgglomerativeTree(inputData);
-	}
-	else if (algorithm=="agg_bu_simple") {
-		index = new BottomUpSimpleAgglomerativeTree(inputData);
-	}
-	else if (algorithm=="kmeans") {
-		index = new KMeansTree(inputData, branching);
-	}
-	else if (algorithm=="balltree") {
-		index = new BallTree(inputData);
-	} 
-	else if (algorithm=="linear") {
-		index = new LinearSearch(inputData);
-	} 
-	else {
-		throw new Exception("No such algorithm.");
+		writefln("done");
 	}
 		
+	if (testData is null) {
+		throw new Exception("No test data given.");
+	}
 	testNNIndex(index,testData, nn, checks);
+	
+	if (saveFile !is null) {
+		writef("Saving index to file %s... ",saveFile);
+		fflush(stdout);
+		index.save(saveFile);
+		writefln("done");
+	}
+
+	
 	
 	return 0;
 }

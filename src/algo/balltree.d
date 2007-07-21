@@ -8,17 +8,22 @@ Author: Marius Muja (2007)
 *************************************************************************/
 
 import std.stdio;
+import std.math;
 
-import util;
-import heap;
-import resultset;
-import features;
-import nnindex;
+import util.utils;
+import util.heap;
+import util.resultset;
+import util.features;
+import algo.nnindex;
 
-import agglomerativetree2;
+import algo.agglomerativetree2;
 
+
+mixin AlgorithmRegistry!(BallTree);
 
 class BallTree : NNIndex {
+
+	static const NAME = "balltree";
 
 	struct BallNodeSt {
 		
@@ -31,6 +36,19 @@ class BallTree : NNIndex {
 		float[][] points;
 		
 		BallTreeNode children[];
+		
+		void describe(T)(T ar)
+		{
+			ar.describe(pivot);
+			ar.describe(variance);
+			ar.describe(size);
+			ar.describe(radius);
+			ar.describe(orig_id);
+			if (size>1) {
+				ar.describe(children);
+			}
+		}	
+
 	};
 	alias BallNodeSt* BallTreeNode;
 		
@@ -73,16 +91,16 @@ class BallTree : NNIndex {
 	
 	AgglomerativeExTree aggTree;
 	
-	public this(Features inputData)
+	
+	private this()
 	{
-//		kdtree = new KDTree(inputData.vecs,inputData.veclen, NUM_KDTREES);
-		
-//		pool = kdtree.pool;
-
-		aggTree = new AgglomerativeExTree(inputData);
-		
-		btHeap = new Heap!(BallBranchStruct)(inputData.count);
-		
+		btHeap = new Heap!(BallBranchStruct)(512);
+	}
+	
+	public this(Features inputData, Params params)
+	{
+		this();
+		aggTree = new AgglomerativeExTree(inputData,params);
 	}
 	
 	public ~this() 
@@ -177,46 +195,35 @@ class BallTree : NNIndex {
 		
 	}
 	
-	
-	
-	
-	
-	int checks;
-	int maxCheck;
-	
-	
-	public void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck) 
+		
+	public void findNeighbors(ResultSet resultSet, float[] vec, int maxChecks) 
 	{
-		checks = 0;		
-		this.maxCheck = maxCheck;
-		
 		btHeap.init();
-	
-		int imin = 0;
-		float minval = float.max;
+		btHeap.insert(BallBranchStruct(btRoot, 0));
 		
-		float dist = squaredDist(vec, btRoot.pivot);	
-		btHeap.insert(BallBranchStruct(btRoot, dist));
-		
+		int checks = 0;
 		BallBranchStruct branch;
 		
-		while (checks<maxCheck && btHeap.popMin(branch)) {
-			if (branch.mindistsq-branch.node.radius>resultSet.worstDist) {
-/+				writef("Distance to ball: %f\n",branch.mindistsq);
-				writef("Ball radius: %f\n",branch.node.radius);
-				writef("Worst distance: %f\n\n",resultSet.worstDist());+/
-			}
+		while (checks++<maxChecks && btHeap.popMin(branch)) {
 			findNN(resultSet, vec, branch.node);
 		}
-				
 	}
 	
 	private bool findNN(ResultSet resultSet, float[] vec, BallTreeNode node) 
 	{
+		float ball_dist = sqrt(squaredDist(vec, node.pivot));
+		float node_radius = sqrt(node.radius);
+		float dist = (ball_dist-node_radius)*(ball_dist-node_radius);
+		float worst_dist = resultSet.worstDist;
+		
+ 		if (dist>worst_dist) {
+// 		if (ball_dist-node_radius>worst_dist) {
+			return true;
+		}
+
+	
 		if (node.children.length == 0) {
 			resultSet.addPoint(node.pivot, node.orig_id);
-			checks++;
-
 			return true;
 		}
 		else {
@@ -249,6 +256,10 @@ class BallTree : NNIndex {
 	}
 
 	
-	
-
+	void describe(T)(T ar)
+	{
+		ar.describe(pcount);
+		ar.describe(veclen);
+		ar.describe(btRoot);
+	}	
 }

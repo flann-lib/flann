@@ -9,24 +9,33 @@ Author: Marius Muja (2007)
 
 import std.stdio;
 
-import util;
-import heap;
-import resultset;
-import features;
-import nnindex;
+import serialization.serializer;
 
-import agglomerativetree2;
+import util.utils;
+import util.resultset;
+import util.features;
+import algo.nnindex;
 
+
+mixin AlgorithmRegistry!(LinearSearch);
 
 class LinearSearch : NNIndex {
 
+	void describe(T)(T ar)
+	{
+	}
 
+
+	static string NAME = "linear";
 	
 	Features dataset;
 
+	private this() 
+	{
+	}
 
 	
-	public this(Features inputData)
+	public this(Features inputData, Params params)
 	{
 		dataset = inputData;
 		
@@ -35,7 +44,6 @@ class LinearSearch : NNIndex {
 	public ~this() 
 	{
 	}
-	
 	
 	public int size() 
 	{
@@ -60,6 +68,5 @@ class LinearSearch : NNIndex {
 		}
 	}
 	
-
 
 }

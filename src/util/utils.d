@@ -8,6 +8,8 @@ Conversion to D: Marius Muja
 
 *************************************************************************/
 
+module util.utils;
+
 import std.c.stdlib;
 import std.stdio;
 
@@ -24,7 +26,7 @@ template ABS(T) {
 }
 
 
-void swap(T) (inout T a, inout T b) {
+void swap(T) (ref T a, ref T b) {
      T t = a;
      a = b;
      b = t;
@@ -35,6 +37,53 @@ extern (C) {
 	double drand48();
 	double lrand48();
 }
+
+
+/*---------------parameters----------------------*/
+
+struct Params {
+	int numTrees;
+	int branching;
+}
+
+
+/*---------------- index registry--------------------*/
+
+import algo.nnindex;
+import util.features;
+
+alias NNIndex delegate(Features, Params) index_delegate;
+static index_delegate[string] indexRegistry;
+
+alias NNIndex delegate(string) load_index_delegate;
+static load_index_delegate[string] loadIndexRegistry;
+
+
+/*------------------- module constructor template--------------------*/
+
+template AlgorithmRegistry(T)
+{
+	
+	import serialization.serializer;
+	import std.stream;
+	
+	static this() 
+	{
+		indexRegistry[T.NAME] = delegate(Features inputData, Params params) {return cast(NNIndex) new T(inputData, params);};
+		
+		Serializer.registerClassConstructor!(T)({return new T();});
+		
+		loadIndexRegistry[T.NAME] = delegate(string file) 
+			{ Serializer s = new Serializer(file, FileMode.In);
+				T index;
+				s.describe(index);
+				return cast(NNIndex)index;
+				};
+	}
+}
+
+
+
 
 
 /*----------------------- Error messages --------------------------------*/
