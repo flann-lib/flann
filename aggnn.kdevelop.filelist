@@ -1,2 +1,6 @@
 # KDevelop Custom Project File List
 Makefile
+src
+src/convert
+src/convert/convert.d
+src/main.d
