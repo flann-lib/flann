@@ -95,7 +95,7 @@ class Features {
 		string[] tokens = firstLine.split();
 		veclen = tokens.length;
 		
-		writefln("veclen: %d",veclen);
+// 		writefln("veclen: %d",veclen);
 		
 		vecs = new float[][10]; // an initial size
 		
@@ -127,7 +127,7 @@ class Features {
 		}
 		
 		vecs = vecs[0..count];
-		writefln("read %d vectors",count);
+// 		writefln("read %d vectors",count);
 
 		//dumpDatabase();
 	}

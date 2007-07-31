@@ -310,11 +310,11 @@ private class KMeansCluster
 			for (int i=0; i<nc; ++i) {
 				sort_indices[i] = i;
 			}
-			//getCenterOrdering(vec, sort_indices);
+			getCenterOrdering(vec, sort_indices);
 
 			for (int i=0; i<nc; ++i) {
-// 				childs[sort_indices[i]].findExactNN(result,vec);
- 				childs[i].findExactNN(result,vec);
+ 				childs[sort_indices[i]].findExactNN(result,vec);
+// 				childs[i].findExactNN(result,vec);
 			}
 		}		
 	}

@@ -557,11 +557,30 @@ class KDTree : NNIndex{
 	*/
 	public void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
-		GetNeighbors(result, vec, maxCheck);
+		if (maxCheck==-1) {
+			GetExactNeighbors(result, vec);
+		} else {
+			GetNeighbors(result, vec, maxCheck);
+		}
+	}
+	
+	private void GetExactNeighbors(ResultSet result, float[] vec)
+	{
+		int i;
+		BranchSt branch;
+	
+		this.checkID -= 1;  /* Set a different unique ID for each search. */
+	
+		/* Search once through each tree down to root. */
+		for (i = 0; i < this.numTrees_; i++) {
+			SearchLevelExact(result, vec, this.trees[i], 0.0);
+		}
+		assert(result.full);
 	}
 	
 	private void GetNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
+	
 		int i;
 		BranchSt branch;
 	
@@ -581,6 +600,7 @@ class KDTree : NNIndex{
 			SearchLevel(result, vec, branch.node,
 					branch.mindistsq, maxCheck);
 		}
+		
 		assert(result.full);
 	}
 	
@@ -594,6 +614,11 @@ class KDTree : NNIndex{
 	{
 		float val, diff;
 		Tree bestChild, otherChild;
+	
+// 		if (mindistsq > result.worstDist) {
+// 			return;
+// 		}
+
 	
 		/* If this is a leaf node, then do check and return. */
 		if (node.child1 == null  &&  node.child2 == null) {
@@ -627,12 +652,54 @@ class KDTree : NNIndex{
 			adding exceeds their value.
 		*/
 		if (2 * this.checkCount < maxCheck  ||  !result.full) {
-			this.heap.insert( BranchSt(otherChild, cast(int)(mindistsq + diff * diff)) );
+			this.heap.insert( BranchSt(otherChild, mindistsq + diff * diff) );
 		}
 	
 		/* Call recursively to search next level down. */
 		SearchLevel(result, vec, bestChild, mindistsq, maxCheck);
 	}
+	
+	
+	private void SearchLevelExact(ResultSet result, float[] vec, Tree node, float mindistsq)
+	{
+		float val, diff;
+		Tree bestChild, otherChild;
+	
+/+		if (mindistsq > result.worstDist) {
+			return;
+		}+/
+	
+	
+		/* If this is a leaf node, then do check and return. */
+		if (node.child1 == null  &&  node.child2 == null) {
+		
+			this.checkCount += 1;
+		
+			/* Do not check same node more than once when searching multiple trees.
+				Once a vector is checked, we set its location in this.vind to the
+				current this.checkID.
+			*/
+			if (this.vind[node.divfeat] == this.checkID)
+				return;
+			this.vind[node.divfeat] = this.checkID;
+		
+			result.addPoint(vecs[node.divfeat],node.divfeat);
+			//CheckNeighbor(result, node.divfeat, vec);
+			return;
+		}
+	
+		/* Which child branch should be taken first? */
+		val = vec[node.divfeat];
+		diff = val - node.divval;
+		bestChild = (diff < 0) ? node.child1 : node.child2;
+		otherChild = (diff < 0) ? node.child2 : node.child1;
+	
+	
+		/* Call recursively to search next level down. */
+		SearchLevelExact(result, vec, bestChild, mindistsq);
+		SearchLevelExact(result, vec, otherChild, mindistsq+diff * diff);
+	}
+	
 	
 	
 	float[][] getClusterPoints(Tree node)

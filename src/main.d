@@ -28,6 +28,7 @@ import util.optparse;
 import util.utils;
 import util.resultset;
 import util.features;
+import util.progressbar;
 import algo.kdtree;
 import algo.agglomerativetree2;
 import algo.nnindex;
@@ -44,8 +45,7 @@ import algo.linearsearch;
 
 void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 {
-	writef("Searching... ");
-	fflush(stdout);
+	writefln("Searching... ");
 	/* Create a table showing computation time and accuracy as a function
 	   of "checks", the number of neighbors that are checked.
 	   Note that we should check average of at least 2 nodes per random
@@ -60,9 +60,14 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 	int correct, cormatch, match;
 	correct = cormatch = match = 0;
 
+	ProgressBar progressBar = new ProgressBar(testData.count, 70);
+	progressBar.start();
+
  	for (int i = 0; i < testData.count; i++) {
 //  	for (int i = 18; i < 19; i++) {
-	
+		
+		progressBar.tick();
+		
 		resultSet.init(testData.vecs[i]);
 
 		index.findNeighbors(resultSet,testData.vecs[i], checks);			
@@ -83,7 +88,6 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
 		}+/
 	}
-	writefln("done");
 	
 	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
 	writef("  Nodes    %% correct    Time     Time/vector\n"
@@ -279,10 +283,6 @@ void main(char[][] args)
 		testData.readMatches(matchFile);
 	}
 	
-	
-	for (int i=0;i<20;++i) {
-		writef("%d ",testData.match[i]);
-	}
 	
 	if (testData.match is null) {
 		throw new Exception("There are no correct matches to compare to, aborting test phase.");
