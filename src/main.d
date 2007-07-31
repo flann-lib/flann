@@ -69,15 +69,15 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 		int nn_index = resultSet.getPointIndex(1);
 
 	
-		if (testData.mtype[i])
-			match++;
+/+		if (testData.mtype[i])
+			match++;+/
 		/* Note that closest vector will have distance of 0, as it is the same
 			vector.  Therefore, we use second neighbor, result[1].
 			*/
 		if (nn_index == testData.match[i]) {
 			correct++;
-			if (testData.mtype[i])
-				cormatch++;
+/+			if (testData.mtype[i])
+				cormatch++;+/
 		}
 /+		else {
 			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
@@ -86,12 +86,11 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 	writefln("done");
 	
 	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
-	writef("  Nodes    %% correct   %% of good     Time     Time/vector\n"
-			" checked   neighbors    matches    (seconds)      (ms)\n"
-			" -------   ---------   ---------   ---------  -----------\n");
-	writef("  %5d     %6.2f      %6.2f      %6.2f      %6.3f\n",
+	writef("  Nodes    %% correct    Time     Time/vector\n"
+			" checked   neighbors   (seconds)      (ms)\n"
+			" -------   ---------   ---------  -----------\n");
+	writef("  %5d     %6.2f      %6.2f      %6.3f\n",
 			checks, correct * 100.0 / cast(float) testData.count,
-			cormatch * 100.0 / cast(float) match,
 			elapsed, 1000.0 * elapsed / testData.count);
 	
 }
@@ -130,6 +129,9 @@ void main(char[][] args)
 	auto optTestFile = new StringOption("t", "test", "test_file", null, "FILE");
 	optTestFile.helpMessage = "Read test vectors from FILE (if not given the input file is used)";
 	
+	auto optMatchFile = new StringOption("m", "match", "match_file", null, "FILE");
+	optMatchFile.helpMessage = "The match file.";
+	
 	auto optSaveFile = new StringOption("s", "save", "save_file", null, "FILE");
 	optSaveFile.helpMessage = "Save the built index to this file.";
 	
@@ -157,6 +159,7 @@ void main(char[][] args)
 	optParser.addOption(optPrintAlgos);
 	optParser.addOption(optInputFile);
 	optParser.addOption(optTestFile);
+	optParser.addOption(optMatchFile);
 	optParser.addOption(optSaveFile);
 	optParser.addOption(optLoadFile);
 	optParser.addOption(optNN);
@@ -192,6 +195,7 @@ void main(char[][] args)
 
 	char[] inputFile = unbox!(char[])(optParser["input_file"]);
 	char[] testFile = unbox!(char[])(optParser["test_file"]);
+	char[] matchFile = unbox!(char[])(optParser["match_file"]);
 	char[] saveFile = unbox!(char[])(optParser["save_file"]);
 	char[] loadFile = unbox!(char[])(optParser["load_file"]);
 	char[] algorithm = unbox!(char[])(optParser["algorithm"]);
@@ -270,6 +274,20 @@ void main(char[][] args)
 	if (testData is null) {
 		throw new Exception("No test data given.");
 	}
+	
+	if (matchFile !is null) {
+		testData.readMatches(matchFile);
+	}
+	
+	
+	for (int i=0;i<20;++i) {
+		writef("%d ",testData.match[i]);
+	}
+	
+	if (testData.match is null) {
+		throw new Exception("There are no correct matches to compare to, aborting test phase.");
+	}
+	
 	testNNIndex(index,testData, nn, checks);
 	
 	if (saveFile !is null) {
