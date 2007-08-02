@@ -9,6 +9,8 @@ import std.stream;
 import std.conv;
 
 
+alias float[] feature;
+
 
 class Features {
 
@@ -20,7 +22,7 @@ class Features {
 
 		int count;         /* Number of vectors. */
 		int veclen;         /* Length of each vector. */
-		float[][] vecs;      /* Float vecs. */
+		feature[] vecs;      /* Float vecs. */
 		int[] match;         /* Array of indices to correct nearest neighbor. */
 // 		int[] mtype;         /* Array of flags indicating if match is correct. */
 

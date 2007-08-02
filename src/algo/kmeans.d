@@ -63,6 +63,7 @@ private class KMeansCluster
 {
 	private {
 		KMeansTree clustering;
+		feature[] points;
 		int[] indices;
 // 		int level;
 	
@@ -75,9 +76,9 @@ private class KMeansCluster
 	{
 	}
 
-	public this(int[] indices, KMeansTree clustering)
+	public this(feature[] points, KMeansTree clustering)
 	{
-		this.indices = indices;
+		this.points = points;
 // 		this.level = level;
 		this.clustering = clustering;
 	}
@@ -87,7 +88,7 @@ private class KMeansCluster
 	*/
 	void computeClustering()
 	{
-		int n = indices.length;
+		int n = points.length;
 		int nc = clustering.branching;
 	
 		if (n<nc) {
@@ -115,16 +116,16 @@ private class KMeansCluster
 		float[] radiuses = new float[nc];
 		radiuses[] = 0;
 		for (int i=0;i<nc;++i) {
-			centers[i] = vecs[indices[cind[i]]];
+			centers[i] = points[cind[i]];
 		}
 	
 		// assign points to clusters
 		int[] belongs_to = new int[n];
 		for (int i=0;i<n;++i) {
-			float sq_dist = squaredDist(vecs[indices[i]],centers[0]); 
+			float sq_dist = squaredDist(points[i],centers[0]); 
 			belongs_to[i] = 0;
 			for (int j=1;j<nc;++j) {
-				float new_sq_dist = squaredDist(vecs[indices[i]],centers[j]);
+				float new_sq_dist = squaredDist(points[i],centers[j]);
 				if (sq_dist>new_sq_dist) {
 					belongs_to[i] = j;
 					sq_dist = new_sq_dist;
@@ -160,7 +161,7 @@ private class KMeansCluster
 				for (int j=0;j<nc;++j) {
 					if (belongs_to[i]==j) {
 						for (int k=0;k<flength;++k) {
-							centers[j][k]+=vecs[indices[i]][k];
+							centers[j][k]+=points[i][k];
 						}
 						count[j]++;
 					}
@@ -179,10 +180,10 @@ private class KMeansCluster
 	
 			// reassign points to clusters
 			for (int i=0;i<n;++i) {
-				float sq_dist = squaredDist(vecs[indices[i]],centers[0]); 
+				float sq_dist = squaredDist(points[i],centers[0]); 
 				int new_centroid = 0;
 				for (int j=1;j<nc;++j) {
-					float new_sq_dist = squaredDist(vecs[indices[i]],centers[j]);
+					float new_sq_dist = squaredDist(points[i],centers[j]);
 					if (sq_dist>new_sq_dist) {
 						new_centroid = j;
 						sq_dist = new_sq_dist;
@@ -204,16 +205,20 @@ private class KMeansCluster
 		childs = new KMeansCluster[nc];
 		for (int c=0;c<nc;++c) {
 			int s = count[c];
+			feature[] child_points = new feature[s];
 			int[] child_indices = new int[s];
 			int cnt_indices = 0;
 			for (int i=0;i<n;++i) {
 				if (belongs_to[i]==c) {
-					child_indices[cnt_indices++] = indices[i];
+					child_points[cnt_indices] = points[i];
+					child_indices[cnt_indices] = indices[i];
+					cnt_indices++;
 				}
 			}
-			childs[c] = new KMeansCluster(child_indices,clustering);
+			childs[c] = new KMeansCluster(child_points,clustering);
 			childs[c].radius = radiuses[c];
 			childs[c].pivot = centers[c];
+			childs[c].indices = child_indices;
 			childs[c].computeClustering();
 		}
 	}
@@ -243,12 +248,12 @@ private class KMeansCluster
 		float[][] vecs = clustering.vecs;
 		
 		if (childs.length==0) {
-			if (indices.length==0) {
+			if (points.length==0) {
 				throw new Exception("Reached empty cluster. This shouldn't happen.\n");
 			}
 			
-			for (int i=0;i<indices.length;++i) {
-				result.addPoint(vecs[indices[i]], indices[i]);
+			for (int i=0;i<points.length;++i) {
+				result.addPoint(points[i], indices[i]);
 			}	
 		} 
 		else {
@@ -374,7 +379,7 @@ private class KMeansCluster
 	void describe(T)(T ar)
 	{
 //		ar.describe(clustering);
-		ar.describe(indices);
+		ar.describe(points);
 	}
 }
 
@@ -425,7 +430,8 @@ class KMeansTree : NNIndex
 			indices[i] = i;
 		}
 	
-		root = new KMeansCluster(indices, this);
+		root = new KMeansCluster(vecs, this);
+		root.indices = indices;
 		root.computeClustering();
 		
 		//writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
