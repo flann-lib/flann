@@ -64,11 +64,10 @@ private class KMeansCluster
 	private {
 		KMeansTree clustering;
 		int[] indices;
-		int level;
+// 		int level;
 	
 		float[] pivot;
 		float radius;
-		float[] centers[];
 		KMeansCluster childs[];
 	}
 	
@@ -76,10 +75,10 @@ private class KMeansCluster
 	{
 	}
 
-	public this(int[] indices, int level, KMeansTree clustering)
+	public this(int[] indices, KMeansTree clustering)
 	{
 		this.indices = indices;
-		this.level = level;
+// 		this.level = level;
 		this.clustering = clustering;
 	}
 
@@ -112,7 +111,7 @@ private class KMeansCluster
 		}
 		
 		// choose the initial cluster centers
-		centers = new float[][nc];
+		float[][] centers = new float[][nc];
 		float[] radiuses = new float[nc];
 		radiuses[] = 0;
 		for (int i=0;i<nc;++i) {
@@ -212,7 +211,7 @@ private class KMeansCluster
 					child_indices[cnt_indices++] = indices[i];
 				}
 			}
-			childs[c] = new KMeansCluster(child_indices,level+1,clustering);
+			childs[c] = new KMeansCluster(child_indices,clustering);
 			childs[c].radius = radiuses[c];
 			childs[c].pivot = centers[c];
 			childs[c].computeClustering();
@@ -274,10 +273,10 @@ private class KMeansCluster
 		int nc = childs.length;
 	
 		int best_index = 0;
-		distances[best_index] = squaredDist(q,centers[best_index]);
+		distances[best_index] = squaredDist(q,childs[best_index].pivot);
 		
 		for (int i=1;i<nc;++i) {
-			distances[i] = squaredDist(q,centers[i]);
+			distances[i] = squaredDist(q,childs[i].pivot);
 			if (distances[i]<distances[best_index]) {
 				best_index = i;
 			}
@@ -339,7 +338,7 @@ private class KMeansCluster
 		float distances[] = new float[nc];
 		
 		for (int i=0;i<nc;++i) {
-			float dist = squaredDist(q,centers[i]);
+			float dist = squaredDist(q,childs[i].pivot);
 			
 			int j=0;
 			while (distances[j]<dist && j<i) j++;
@@ -426,7 +425,7 @@ class KMeansTree : NNIndex
 			indices[i] = i;
 		}
 	
-		root = new KMeansCluster(indices,1, this);
+		root = new KMeansCluster(indices, this);
 		root.computeClustering();
 		
 		//writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
