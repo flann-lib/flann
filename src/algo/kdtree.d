@@ -571,6 +571,8 @@ class KDTree : NNIndex{
 	
 		this.checkID -= 1;  /* Set a different unique ID for each search. */
 	
+		leafs = 0;
+	
 		/* Search once through each tree down to root. */
 		for (i = 0; i < this.numTrees_; i++) {
 			SearchLevelExact(result, vec, this.trees[i], 0.0);
@@ -659,6 +661,7 @@ class KDTree : NNIndex{
 		SearchLevel(result, vec, bestChild, mindistsq, maxCheck);
 	}
 	
+	int leafs = 0;
 	
 	private void SearchLevelExact(ResultSet result, float[] vec, Tree node, float mindistsq)
 	{

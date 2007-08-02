@@ -23,11 +23,11 @@ void print_vec(float[] v)
 mixin AlgorithmRegistry!(KMeansTree);
 
 
-struct BranchSt {
-	KMeansCluster node;           /* Tree node at which search resumes */
+struct BranchStruct(T) {
+	T node;           /* Tree node at which search resumes */
 	float mindistsq;     /* Minimum distance to query for all nodes below. */
 	
-	int opCmp(BranchSt rhs) 
+	int opCmp(BranchStruct!(T) rhs) 
 	{ 
 		if (mindistsq < rhs.mindistsq) {
 			return -1;
@@ -38,7 +38,7 @@ struct BranchSt {
 		}
 	}
 	
-	static BranchSt opCall(KMeansCluster aNode, float dist) 
+	static BranchStruct!(T) opCall(T aNode, float dist) 
 	{
 		BranchSt s;
 		s.node = aNode;
@@ -49,8 +49,15 @@ struct BranchSt {
 	
 }; 
 
+alias BranchStruct!(KMeansCluster) BranchSt;
 
 alias Heap!(BranchSt) BranchHeap;
+
+static this() {
+
+Serializer.registerClass!(KMeansCluster)();
+
+}
 
 private class KMeansCluster
 {
@@ -63,6 +70,10 @@ private class KMeansCluster
 		float radius;
 		float[] centers[];
 		KMeansCluster childs[];
+	}
+	
+	public this()
+	{
 	}
 
 	public this(int[] indices, int level, KMeansTree clustering)
@@ -307,9 +318,9 @@ private class KMeansCluster
 		else {
 			int nc = childs.length;
 			int[] sort_indices = new int[nc];	
-			for (int i=0; i<nc; ++i) {
+/+			for (int i=0; i<nc; ++i) {
 				sort_indices[i] = i;
-			}
+			}+/
 			getCenterOrdering(vec, sort_indices);
 
 			for (int i=0; i<nc; ++i) {
@@ -331,11 +342,13 @@ private class KMeansCluster
 			float dist = squaredDist(q,centers[i]);
 			
 			int j=0;
-			while (distances[j]<dist) j++;
+			while (distances[j]<dist && j<i) j++;
 			for (int k=i;k>j;--k) {
 				distances[k] = distances[k-1];
+				sort_indices[k] = sort_indices[k-1];
 			}
 			distances[j] = dist;
+			sort_indices[j] = i;
 		}		
 	}
 
@@ -359,6 +372,11 @@ private class KMeansCluster
 		return sum*sum/sum2;
 	}
 
+	void describe(T)(T ar)
+	{
+//		ar.describe(clustering);
+		ar.describe(indices);
+	}
 }
 
 
@@ -377,6 +395,7 @@ class KMeansTree : NNIndex
 
 	private this()
 	{
+		heap = new BranchHeap(512);
 	}
 	
 	public this(Features inputData, Params params)
@@ -510,6 +529,10 @@ class KMeansTree : NNIndex
 
 	void describe(T)(T ar)
 	{
+		ar.describe(branching);
+		ar.describe(flength);
+		ar.describe(vecs);
+		ar.describe(root);
 	}
 
 

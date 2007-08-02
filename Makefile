@@ -22,7 +22,7 @@ WARNS = -W -Wall
 
 
 ifdef UNIT_TEST
-	DFLAGS := ${DFLAGS} -funittest
+	DFLAGS := ${DFLAGS} -funittest -fdebug
 endif
 
 

@@ -198,14 +198,19 @@ class BallTree : NNIndex {
 		
 	public void findNeighbors(ResultSet resultSet, float[] vec, int maxChecks) 
 	{
-		btHeap.init();
-		btHeap.insert(BallBranchStruct(btRoot, 0));
-		
-		int checks = 0;
-		BallBranchStruct branch;
-		
-		while (checks++<maxChecks && btHeap.popMin(branch)) {
-			findNN(resultSet, vec, branch.node);
+		if (maxChecks==-1) {
+			findExactNN(resultSet, vec, btRoot);	
+		}
+		else {
+			btHeap.init();
+			btHeap.insert(BallBranchStruct(btRoot, 0));
+			
+			int checks = 0;
+			BallBranchStruct branch;
+			
+			while (checks++<maxChecks && btHeap.popMin(branch)) {
+				findNN(resultSet, vec, branch.node);
+			}
 		}
 	}
 	
@@ -255,7 +260,61 @@ class BallTree : NNIndex {
 		}
 	}
 
+	private void findExactNN(ResultSet resultSet, float[] vec, BallTreeNode node) 
+	{
+		float bsq = squaredDist(vec, node.pivot);
+		float rsq = node.radius;
+		float wsq = resultSet.worstDist;
+		
+		float val = bsq-rsq-wsq;
+		float val2 = val*val-4*rsq*wsq;
+		
+// //  		if (val>0) {
+		if (val>0 && val2>0) {
+			return;
+		}
+
 	
+		if (node.children.length == 0) {
+			resultSet.addPoint(node.pivot, node.orig_id);
+			return true;
+		}
+		else {
+		
+			float bestDist = float.max;
+			int bestIndex = -1;
+			
+			
+			int nc = node.children.length;
+			int[] sort_indices = new int[nc];	
+			
+			getCenterOrdering(node, vec, sort_indices);
+
+			for (int i=0; i<nc; ++i) {
+				findExactNN(resultSet, vec, node.children[sort_indices[i]]);
+			}
+		}
+	}
+
+	private void getCenterOrdering(BallTreeNode node, float[] q, ref int[] sort_indices)
+	{
+		int nc = node.children.length;
+		float distances[] = new float[nc];
+		
+		for (int i=0;i<nc;++i) {
+			float dist = squaredDist(q,node.children[i].pivot);
+			
+			int j=0;
+			while (distances[j]<dist && j<i) j++;
+			for (int k=i;k>j;--k) {
+				distances[k] = distances[k-1];
+				sort_indices[k] = sort_indices[k-1];
+			}
+			distances[j] = dist;
+			sort_indices[j] = i;
+		}		
+	}
+
 	void describe(T)(T ar)
 	{
 		ar.describe(pcount);

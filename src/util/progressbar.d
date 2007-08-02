@@ -42,7 +42,7 @@ class ProgressBar
 			writef("\x08\x08\x08\x08\x08\x08=====]\n");
 			crtValue++;
 		}
-		else {
+		else if (crtValue<maxValue) {
 			int newWidth = (crtValue*maxWidth)/maxValue;
 			if (newWidth!=crtWidth) {
 				

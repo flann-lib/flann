@@ -264,6 +264,39 @@ private
 				ar.describe(a);
 			}
 	}
+	
+	
+	class E {
+		F member;
+		
+		this()
+		{
+			member = null;
+		}
+		
+		this (F m) {
+			member = m;
+		}
+		
+		void describe(T)(T ar)
+		{
+			ar.describe(member);
+		}
+	}
+	
+	
+	class F {
+		E member;
+		
+		this() {
+			member = new E(this);
+		}
+		
+		void describe(T)(T ar)
+		{
+			ar.describe(member);
+		}
+	}
 }
 
 // structs and classes
@@ -274,6 +307,9 @@ unittest
 	Serializer.registerClass!(A)();
 	Serializer.registerClass!(B)();
 	Serializer.registerClassConstructor!(C)({ return new C(0); });
+	
+	Serializer.registerClass!(E)();
+	Serializer.registerClass!(F)();
 	
 	S sv, svr;
 	sv.a = 3;
@@ -289,8 +325,11 @@ unittest
 	A b_in_av = bv, b_in_avr;
 	A b_in_a_notrackv = bv, b_in_a_notrackvr;
 	
+	
 	C cv = new C(3), cvr;
 
+
+	F fv = new F, fvr;
 	{
 		Serializer s = new Serializer("class_struct_unittest", FileMode.Out);
 			
@@ -300,6 +339,8 @@ unittest
 		s.describe(b_in_av);
 		s.describe(b_in_a_notrackv, Serializer.Tracking.Off);
 		s.describe(cv);
+		
+		s.describe(fv);
 		
 		delete s;
 	}

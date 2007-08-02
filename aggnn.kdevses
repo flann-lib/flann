@@ -3,25 +3,25 @@
 <KDevPrjSession>
  <DocsAndViews NumberOfDocuments="8" >
   <Doc0 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/optparse.d" >
-   <View0 Encoding="" line="0" Type="Source" />
+   <View0 Encoding="" Type="Source" />
   </Doc0>
   <Doc1 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/resultset.d" >
-   <View0 Encoding="" line="0" Type="Source" />
+   <View0 Encoding="" Type="Source" />
   </Doc1>
   <Doc2 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/main.d" >
-   <View0 Encoding="" line="47" Type="Source" />
+   <View0 Encoding="" Type="Source" />
   </Doc2>
   <Doc3 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/kdtree.d" >
-   <View0 Encoding="" line="687" Type="Source" />
+   <View0 Encoding="" Type="Source" />
   </Doc3>
   <Doc4 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/agglomerativetree2.d" >
-   <View0 Encoding="" line="0" Type="Source" />
+   <View0 Encoding="" Type="Source" />
   </Doc4>
   <Doc5 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/progressbar.d" >
-   <View0 Encoding="" line="15" Type="Source" />
+   <View0 Encoding="" Type="Source" />
   </Doc5>
   <Doc6 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/features.d" >
-   <View0 Encoding="" line="129" Type="Source" />
+   <View0 Encoding="" Type="Source" />
   </Doc6>
   <Doc7 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/kmeans.d" >
    <View0 Encoding="" line="389" Type="Source" />
