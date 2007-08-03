@@ -32,7 +32,7 @@ ifeq ($(PROFILER),gprof)
 endif
 	
 ifeq ($(CONFIGURATION),debug)
-	DFLAGS := ${DFLAGS} -g -frelease
+	DFLAGS := ${DFLAGS} -g -fdebug
 	CFLAGS = ${WARNS} -g
 else
 	DFLAGS := ${DFLAGS} -O3 -finline -frelease
@@ -66,6 +66,8 @@ OBJ := $(shell find $(SRC_DIR) -type f ! -regex '.*[.]svn.*' ! -name '*~' | xarg
 OBJS = ${patsubst ${SRC_DIR}/%, ${OBJ_DIR}/%, ${OBJ}}
 
 DEPS = ${patsubst ${SRC_DIR}/%.o, ${DEPS_DIR}/%.dep, ${OBJ}}
+
+$(shell rm build_file_list)
 
 # ------------------------ Rules --------------------------------
 
@@ -121,6 +123,7 @@ ${OBJ_DIR}/%.o : ${SRC_DIR}/%.c ${DEPS_DIR}/%.dep Makefile
 #---------- compile d files
 ${OBJ_DIR}/%.o : ${SRC_DIR}/%.d Makefile
 	@if [ ! -d `dirname $@` ] ; then mkdir -p `dirname $@`; fi
+	@echo $< >> build_file_list
 	${DC} -c ${DFLAGS} -I${SRC_DIR} $< -o $@
 #---------------------- Link objects -------------------------------
 

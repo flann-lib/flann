@@ -148,8 +148,8 @@ void main(char[][] args)
 	auto optChecks = new NumericOption!(int)("c", "checks", "checks", 32u, "NUM");
 	optChecks.helpMessage = "Stop searching after exploring NUM features.";
 	
-	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 4u, "NUM");
-	optNumTrees.helpMessage = "Number of trees to build (default: 4).";
+	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 1u, "NUM");
+	optNumTrees.helpMessage = "Number of trees to build (default: 1).";
 	
 	auto optBranching = new NumericOption!(uint)("b", "branching", "branching", 2u, "NUM");
 	optBranching.helpMessage = "Branching factor (where applicable, for example kmeans) (default: 2).";

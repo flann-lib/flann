@@ -2,6 +2,8 @@
 Project: aggnn
 */
 
+module algo.kmeans;
+
 import std.stdio;
 
 
@@ -10,6 +12,7 @@ import util.resultset;
 import util.heap;
 import util.utils;
 import util.features;
+import std.c.time;
 
 
 void print_vec(float[] v)
@@ -54,50 +57,51 @@ alias BranchStruct!(KMeansCluster) BranchSt;
 alias Heap!(BranchSt) BranchHeap;
 
 static this() {
-
-Serializer.registerClass!(KMeansCluster)();
-
+//	Serializer.registerClass!(KMeansCluster)();
 }
 
 private class KMeansCluster
 {
 	private {
-		KMeansTree clustering;
-		feature[] points;
-		int[] indices;
-// 		int level;
+		Feature[] points;
 	
 		float[] pivot;
 		float radius;
-		KMeansCluster childs[];
+		
+		KMeansCluster[] childs;
+	}
+	
+	void describe(T)(T ar)
+	{
+		ar.describe(points);
+		ar.describe(pivot);
+		ar.describe(radius);
+		
+		ar.describe(childs);
 	}
 	
 	public this()
 	{
 	}
 
-	public this(feature[] points, KMeansTree clustering)
+	public this(Feature[] points)
 	{
 		this.points = points;
-// 		this.level = level;
-		this.clustering = clustering;
 	}
 
 	/** 
 	Method that computes the k-means clustering 
 	*/
-	void computeClustering()
+	void computeClustering(int branching)
 	{
 		int n = points.length;
-		int nc = clustering.branching;
-	
+		int nc = branching;
+		int flength = points[0].data.length;
+		
+		
 		if (n<nc) {
 			return;
 		}
-	
-		float[][] vecs = clustering.vecs;
-		int flength = clustering.flength;
-	
 	
 		int cind[] = new int[nc];
 		
@@ -116,16 +120,16 @@ private class KMeansCluster
 		float[] radiuses = new float[nc];
 		radiuses[] = 0;
 		for (int i=0;i<nc;++i) {
-			centers[i] = points[cind[i]];
+			centers[i] = points[cind[i]].data;
 		}
 	
 		// assign points to clusters
 		int[] belongs_to = new int[n];
 		for (int i=0;i<n;++i) {
-			float sq_dist = squaredDist(points[i],centers[0]); 
+			float sq_dist = squaredDist(points[i].data,centers[0]); 
 			belongs_to[i] = 0;
 			for (int j=1;j<nc;++j) {
-				float new_sq_dist = squaredDist(points[i],centers[j]);
+				float new_sq_dist = squaredDist(points[i].data,centers[j]);
 				if (sq_dist>new_sq_dist) {
 					belongs_to[i] = j;
 					sq_dist = new_sq_dist;
@@ -137,7 +141,8 @@ private class KMeansCluster
 		//float[] centroids[] = new float[][nc];
 		
 		for (int i=0;i<nc;++i) {
-			centers[i] = new float[flength];
+// 			centers[i] = new Feature();
+			centers[i] = new float[](flength);
 		}
 		
 		int[] count = new int[nc];
@@ -161,7 +166,7 @@ private class KMeansCluster
 				for (int j=0;j<nc;++j) {
 					if (belongs_to[i]==j) {
 						for (int k=0;k<flength;++k) {
-							centers[j][k]+=points[i][k];
+							centers[j][k]+=points[i].data[k];
 						}
 						count[j]++;
 					}
@@ -180,10 +185,10 @@ private class KMeansCluster
 	
 			// reassign points to clusters
 			for (int i=0;i<n;++i) {
-				float sq_dist = squaredDist(points[i],centers[0]); 
+				float sq_dist = squaredDist(points[i].data,centers[0]); 
 				int new_centroid = 0;
 				for (int j=1;j<nc;++j) {
-					float new_sq_dist = squaredDist(points[i],centers[j]);
+					float new_sq_dist = squaredDist(points[i].data,centers[j]);
 					if (sq_dist>new_sq_dist) {
 						new_centroid = j;
 						sq_dist = new_sq_dist;
@@ -205,21 +210,18 @@ private class KMeansCluster
 		childs = new KMeansCluster[nc];
 		for (int c=0;c<nc;++c) {
 			int s = count[c];
-			feature[] child_points = new feature[s];
-			int[] child_indices = new int[s];
+			Feature[] child_points = new Feature[s];
 			int cnt_indices = 0;
 			for (int i=0;i<n;++i) {
 				if (belongs_to[i]==c) {
 					child_points[cnt_indices] = points[i];
-					child_indices[cnt_indices] = indices[i];
 					cnt_indices++;
 				}
 			}
-			childs[c] = new KMeansCluster(child_points,clustering);
+			childs[c] = new KMeansCluster(child_points);
 			childs[c].radius = radiuses[c];
 			childs[c].pivot = centers[c];
-			childs[c].indices = child_indices;
-			childs[c].computeClustering();
+			childs[c].computeClustering(branching);
 		}
 	}
 
@@ -245,7 +247,6 @@ private class KMeansCluster
 		}
 	
 	
-		float[][] vecs = clustering.vecs;
 		
 		if (childs.length==0) {
 			if (points.length==0) {
@@ -253,7 +254,7 @@ private class KMeansCluster
 			}
 			
 			for (int i=0;i<points.length;++i) {
-				result.addPoint(points[i], indices[i]);
+				result.addPoint(points[i].data, points[i].id);
 			}	
 		} 
 		else {
@@ -309,14 +310,13 @@ private class KMeansCluster
 		}
 	
 	
-		float[][] vecs = clustering.vecs;
 		if (childs.length==0) {
-			if (indices.length==0) {
+			if (points.length==0) {
 				throw new Exception("Reached empty cluster. This shouldn't happen.\n");
 			}
 			
-			for (int i=0;i<indices.length;++i) {
-				result.addPoint(vecs[indices[i]], indices[i]);
+			for (int i=0;i<points.length;++i) {
+				result.addPoint(points[i].data, points[i].id);
 			}	
 		} 
 		else {
@@ -376,11 +376,6 @@ private class KMeansCluster
 		return sum*sum/sum2;
 	}
 
-	void describe(T)(T ar)
-	{
-//		ar.describe(clustering);
-		ar.describe(points);
-	}
 }
 
 
@@ -391,7 +386,9 @@ class KMeansTree : NNIndex
 	static const NAME = "kmeans";
 
 	private int branching;
-	private KMeansCluster root;
+	private int numTrees_;
+	
+	private KMeansCluster root[];
 	private float[][] vecs;
 	private int flength;
 	private BranchHeap heap;	
@@ -405,6 +402,7 @@ class KMeansTree : NNIndex
 	public this(Features inputData, Params params)
 	{
 		this.branching = params.branching;
+		this.numTrees_ = params.numTrees;
 		this.vecs = inputData.vecs;
 		this.flength = inputData.veclen;
 		
@@ -419,20 +417,22 @@ class KMeansTree : NNIndex
 	
 	public int numTrees()
 	{
-		return 1;
+		return numTrees_;
 	}
 
 	public void buildIndex() 
 	{
-		int[] indices = new int[vecs.length];
-	
-		for (int i=0;i<indices.length;++i) {
-			indices[i] = i;
+		Feature[] points = new Feature[vecs.length];
+
+		for (int i=0;i<points.length;++i) {
+			points[i] = new Feature(i,vecs[i]);
 		}
 	
-		root = new KMeansCluster(vecs, this);
-		root.indices = indices;
-		root.computeClustering();
+	
+		this.root = new KMeansCluster[numTrees_];
+		
+		root[0] = new KMeansCluster(points);
+		root[0].computeClustering(branching);
 		
 		//writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
 	}
@@ -441,12 +441,12 @@ class KMeansTree : NNIndex
 	void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
 		if (maxCheck==-1) {
-			root.findExactNN(result, vec);
+			root[0].findExactNN(result, vec);
 		}
 		else {
 			heap.init();			
 			
-			root.findNN(result, vec, heap);
+			root[0].findNN(result, vec, heap);
 			
 			int checks = 0;			
 			BranchSt branch;
@@ -470,12 +470,12 @@ class KMeansTree : NNIndex
 	void getClusterPoints_Helper(KMeansCluster node, inout float[][] points, inout int size) 
 	{
 		if (node.childs.length == 0) {
-			while (size>=points.length-node.indices.length) {
+			while (size>=points.length-node.points.length) {
 				points.length = points.length*2;
 			}
 			
-			for (int i=0;i<node.indices.length;++i) {
-				points[size++] = vecs[node.indices[i]];
+			for (int i=0;i<node.points.length;++i) {
+				points[size++] = node.points[i].data;
 			}
 		}
 		else {
@@ -490,7 +490,7 @@ class KMeansTree : NNIndex
 	{
 		Queue!(KMeansCluster) q = new Queue!(KMeansCluster)(numClusters);
 		
-		q.push(root);
+		q.push(root[0]);
 
 		while(!q.full) {
 			KMeansCluster t;
@@ -537,7 +537,7 @@ class KMeansTree : NNIndex
 		ar.describe(branching);
 		ar.describe(flength);
 		ar.describe(vecs);
-		ar.describe(root);
+		//ar.describe(root);
 	}
 
 

@@ -2,6 +2,7 @@
 Project: aggnn
 */
 
+module util.progressbar;
 
 import std.stdio;
 

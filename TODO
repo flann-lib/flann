@@ -1,8 +1,9 @@
 
 - loading of datasets in table format  DONE
 
-- optimize search for exact serching (no heap)
+- optimize search for exact serching (no heap) DONE
 
+- build several randomized kmeans (with different branching factors - might help for the branching factors to be prime numbers)
 
 
 - mean shift clustering

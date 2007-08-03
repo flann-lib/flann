@@ -2,14 +2,43 @@
 Project: aggnn
 */
 
+module util.features;
+
 import std.stdio;
 import std.string;
 import std.c.string;
 import std.stream;
 import std.conv;
 
+import serialization.serializer;
 
 alias float[] feature;
+
+static this() {
+	Serializer.registerClass!(Feature)();
+}
+
+class Feature {
+	int id;
+	float[] data;
+	
+	this() {};
+	
+	this(int id, float[] data) {
+		this.id = id;
+		this.data = data;
+	}
+	
+	float opIndex(int index) { return data[index]; }
+	float opIndexAssign(int index, float value) { data[index] = value; return value; }
+	
+	void describe(T)(T ar)
+	{
+		ar.describe(id);
+		ar.describe(data);
+	}	
+};
+
 
 
 class Features {

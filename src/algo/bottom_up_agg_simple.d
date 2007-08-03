@@ -7,6 +7,7 @@ Module: agglomerativetree.d (class that constructs an agglomerative tree
 Author: Marius Muja (2007)
 
 *************************************************************************/
+module algo.bottom_up_agg_simple;
 
 import std.stdio;
 
