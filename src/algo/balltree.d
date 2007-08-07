@@ -53,34 +53,8 @@ class BallTree : NNIndex {
 	alias BallNodeSt* BallTreeNode;
 		
 	
-
-	struct BallBranchStruct {
-		BallTreeNode node;        		/* Tree node at which search resumes */
-		float mindistsq;     		/* Minimum distance to query. */
-		
-		int opCmp(BallBranchStruct rhs) 
-		{ 
-			if (mindistsq < rhs.mindistsq) {
-				return -1;
-			} if (mindistsq > rhs.mindistsq) {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-		
-		static BallBranchStruct opCall(BallTreeNode aNode, float dist) 
-		{
-			BallBranchStruct s;
-			s.node = aNode;
-			s.mindistsq = dist;
-			
-			return s;
-		}
-		
-	}; 
-
-
+	
+	alias BranchStruct!(BallTreeNode) BallBranchStruct;
 
 	int pcount; 		// number of nodes remaining to agglomerate (should be equal to kdtree.vcount)
 	int veclen;

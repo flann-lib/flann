@@ -23,40 +23,13 @@ void print_vec(float[] v)
 mixin AlgorithmRegistry!(KMeansTree);
 
 
-struct BranchStruct(T) {
-	T node;           /* Tree node at which search resumes */
-	float mindistsq;     /* Minimum distance to query for all nodes below. */
-	
-	int opCmp(BranchStruct!(T) rhs) 
-	{ 
-		if (mindistsq < rhs.mindistsq) {
-			return -1;
-		} if (mindistsq > rhs.mindistsq) {
-			return 1;
-		} else {
-			return 0;
-		}
-	}
-	
-	static BranchStruct!(T) opCall(T aNode, float dist) 
-	{
-		BranchSt s;
-		s.node = aNode;
-		s.mindistsq = dist;
-		
-		return s;
-	}
-	
-}; 
+
 
 alias BranchStruct!(KMeansCluster) BranchSt;
-
 alias Heap!(BranchSt) BranchHeap;
 
 static this() {
-
-Serializer.registerClass!(KMeansCluster)();
-
+  Serializer.registerClass!(KMeansCluster)();
 }
 
 private class KMeansCluster

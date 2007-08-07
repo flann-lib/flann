@@ -33,6 +33,37 @@ void swap(T) (ref T a, ref T b) {
 }
 
 
+struct BranchStruct(T) {
+	T node;           /* Tree node at which search resumes */
+	float mindistsq;     /* Minimum distance to query for all nodes below. */
+	
+	int opCmp(BranchStruct!(T) rhs) 
+	{ 
+		if (mindistsq < rhs.mindistsq) {
+			return -1;
+		} if (mindistsq > rhs.mindistsq) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	static BranchStruct!(T) opCall(T aNode, float dist) 
+	{
+		BranchStruct!(T) s;
+		s.node = aNode;
+		s.mindistsq = dist;
+		
+		return s;
+	}
+	
+}; 
+
+
+
+
+
+
 extern (C) {
 	double drand48();
 	double lrand48();

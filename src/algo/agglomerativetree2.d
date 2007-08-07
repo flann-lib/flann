@@ -55,40 +55,15 @@ class AgglomerativeExTree : NNIndex {
 	};
 	alias NodeSt* TreeNode;
 	
-	struct BranchStruct {
-		TreeNode node;        		/* Tree node at which search resumes */
-		float mindistsq;     		/* Minimum distance to query. */
-		
-		int opCmp(BranchStruct rhs) 
-		{ 
-		
-			if (mindistsq < rhs.mindistsq) {
-				return -1;
-			} if (mindistsq > rhs.mindistsq) {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-		
-		static BranchStruct opCall(TreeNode aNode, float dist) 
-		{
-			BranchStruct s;
-			s.node = aNode;
-			s.mindistsq = dist;
-			
-			return s;
-		}
-		
-	}; 
-
+	alias BranchStruct!(TreeNode) BranchSt;
+	
 	TreeNode[] nodes;  // vector of nodes to agglomerate
 	int pcount; 		// number of nodes remaining to agglomerate (should be equal to kdtree.vcount)
 	int veclen;
 	
 	TreeNode root;
 
-	Heap!(BranchStruct) heap;
+	Heap!(BranchSt) heap;
 
 	int pointCounter;
 	int indexSize;
@@ -96,7 +71,7 @@ class AgglomerativeExTree : NNIndex {
 	
 	private this()
 	{
-		heap = new Heap!(BranchStruct)(512);
+		heap = new Heap!(BranchSt)(512);
 	}
 	
 	public this(Features inputData, Params params)
@@ -125,7 +100,7 @@ class AgglomerativeExTree : NNIndex {
 	
 		}
 				
-		heap = new Heap!(BranchStruct)(inputData.count);
+		heap = new Heap!(BranchSt)(inputData.count);
 		
 		this.veclen = inputData.veclen;
 	}
@@ -327,10 +302,10 @@ class AgglomerativeExTree : NNIndex {
 		}
 		else {
 			heap.init();		
-			heap.insert(BranchStruct(root, 0));
+			heap.insert(BranchSt(root, 0));
 						
 			int checks = 0;		
-			BranchStruct branch;
+			BranchSt branch;
 			while (checks++<maxChecks && heap.popMin(branch)) {
 				findNN(resultSet, vec, branch.node);
 			}
@@ -405,7 +380,7 @@ class AgglomerativeExTree : NNIndex {
 			
 			float maxdist = (diff<0)?dist2:dist1;
 			
-			heap.insert(BranchStruct(otherNode, maxdist));
+			heap.insert(BranchSt(otherNode, maxdist));
 			
 			findNN(resultSet, vec, bestNode);
 		}

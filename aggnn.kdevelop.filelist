@@ -6,3 +6,4 @@ src/convert/convert.d
 src/main.d
 src/util
 src/util/progressbar.d
+src/search.d
