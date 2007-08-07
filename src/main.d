@@ -74,15 +74,8 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 		int nn_index = resultSet.getPointIndex(1);
 
 	
-/+		if (testData.mtype[i])
-			match++;+/
-		/* Note that closest vector will have distance of 0, as it is the same
-			vector.  Therefore, we use second neighbor, result[1].
-			*/
 		if (nn_index == testData.match[i]) {
 			correct++;
-/+			if (testData.mtype[i])
-				cormatch++;+/
 		}
 /+		else {
 			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
@@ -148,8 +141,8 @@ void main(char[][] args)
 	auto optChecks = new NumericOption!(int)("c", "checks", "checks", 32u, "NUM");
 	optChecks.helpMessage = "Stop searching after exploring NUM features.";
 	
-	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 4u, "NUM");
-	optNumTrees.helpMessage = "Number of trees to build (default: 4).";
+	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 1u, "NUM");
+	optNumTrees.helpMessage = "Number of trees to build (default: 1).";
 	
 	auto optBranching = new NumericOption!(uint)("b", "branching", "branching", 2u, "NUM");
 	optBranching.helpMessage = "Branching factor (where applicable, for example kmeans) (default: 2).";

@@ -2,11 +2,45 @@
 Project: aggnn
 */
 
+module util.features;
+
 import std.stdio;
 import std.string;
 import std.c.string;
 import std.stream;
 import std.conv;
+
+import serialization.serializer;
+
+alias float[] feature;
+
+static this() {
+	Serializer.registerClass!(Feature)();
+}
+
+class Feature {
+	int id;
+	float[] data;
+	int checkID;
+	
+	this() {
+	};
+	
+	this(int id, float[] data) {
+		this();
+		this.id = id;
+		this.data = data;
+	}
+	
+	float opIndex(int index) { return data[index]; }
+	float opIndexAssign(int index, float value) { data[index] = value; return value; }
+	
+	void describe(T)(T ar)
+	{
+		ar.describe(id);
+		ar.describe(data);
+	}	
+};
 
 
 
@@ -20,7 +54,7 @@ class Features {
 
 		int count;         /* Number of vectors. */
 		int veclen;         /* Length of each vector. */
-		float[][] vecs;      /* Float vecs. */
+		feature[] vecs;      /* Float vecs. */
 		int[] match;         /* Array of indices to correct nearest neighbor. */
 // 		int[] mtype;         /* Array of flags indicating if match is correct. */
 

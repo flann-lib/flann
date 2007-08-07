@@ -33,6 +33,8 @@ nn.c:
 
  *************************************************************************/
 
+module algo.kdtree;
+
 import std.c.stdlib;
 import std.stdio;
 import std.c.math;

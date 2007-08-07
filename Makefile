@@ -32,7 +32,7 @@ ifeq ($(PROFILER),gprof)
 endif
 	
 ifeq ($(CONFIGURATION),debug)
-	DFLAGS := ${DFLAGS} -g -frelease
+	DFLAGS := ${DFLAGS} -g -fdebug
 	CFLAGS = ${WARNS} -g
 else
 	DFLAGS := ${DFLAGS} -O3 -finline -frelease
@@ -67,18 +67,23 @@ OBJS = ${patsubst ${SRC_DIR}/%, ${OBJ_DIR}/%, ${OBJ}}
 
 DEPS = ${patsubst ${SRC_DIR}/%.o, ${DEPS_DIR}/%.dep, ${OBJ}}
 
+
 # ------------------------ Rules --------------------------------
 
-all: ${BUILD_DIR}/${TARGET}
+all: prepare ${BUILD_DIR}/${TARGET}
 #all:
 #	@echo $(OBJ)
+
+
+prepare:
+	@if [ -f build_file_list ] ; then rm build_file_list; fi
 
 clean:
 	rm -rf ${BUILD_DIR}/*
 
 rebuild: clean all
 
-.PHONY: clean all rebuild
+.PHONY: clean all rebuild prepare
 
 
 
@@ -121,6 +126,7 @@ ${OBJ_DIR}/%.o : ${SRC_DIR}/%.c ${DEPS_DIR}/%.dep Makefile
 #---------- compile d files
 ${OBJ_DIR}/%.o : ${SRC_DIR}/%.d Makefile
 	@if [ ! -d `dirname $@` ] ; then mkdir -p `dirname $@`; fi
+	@echo $< >> build_file_list
 	${DC} -c ${DFLAGS} -I${SRC_DIR} $< -o $@
 #---------------------- Link objects -------------------------------
 
@@ -135,4 +141,5 @@ ${OBJ_DIR}/%.o : ${SRC_DIR}/%.d Makefile
 ${BUILD_DIR}/${TARGET}: ${OBJS}
 	@if [ ! -d ${BUILD_DIR} ] ; then mkdir -p ${BUILD_DIR}; fi
 	${LINK} ${LINKFLAGS} ${OBJS} ${LIBS} -o $@ 
+	#@if [ -f build_file_list ] ; then rm build_file_list; fi
 	cp ${BUILD_DIR}/${TARGET} ${TARGET}

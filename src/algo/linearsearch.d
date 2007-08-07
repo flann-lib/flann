@@ -6,6 +6,7 @@ Module: balltree.d
 Author: Marius Muja (2007)
 
 *************************************************************************/
+module algo.linearsearch;
 
 import std.stdio;
 

@@ -113,7 +113,7 @@ Project: aggnn
  *
  */
 
-module optparse;
+module util.optparse;
 
 private
 {

@@ -14,6 +14,9 @@ Conversion to D: Marius Muja
    location of parents and children.  We ignore element 0 of Heap array.
  */
 
+
+module util.heap;
+
 template Heap(T) {
 
 class Heap {
