@@ -21,10 +21,13 @@ static this() {
 class Feature {
 	int id;
 	float[] data;
+	int checkID;
 	
-	this() {};
+	this() {
+	};
 	
 	this(int id, float[] data) {
+		this();
 		this.id = id;
 		this.data = data;
 	}

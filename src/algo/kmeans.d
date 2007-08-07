@@ -84,16 +84,13 @@ private class KMeansCluster
 	{
 	}
 
-	public this(Feature[] points)
-	{
-		this.points = points;
-	}
-
 	/** 
 	Method that computes the k-means clustering 
 	*/
-	void computeClustering(int branching)
+	void computeClustering(Feature[] points, int branching)
 	{
+		this.points = points;
+		
 		int n = points.length;
 		int nc = branching;
 		int flength = points[0].data.length;
@@ -218,10 +215,10 @@ private class KMeansCluster
 					cnt_indices++;
 				}
 			}
-			childs[c] = new KMeansCluster(child_points);
+			childs[c] = new KMeansCluster();
 			childs[c].radius = radiuses[c];
 			childs[c].pivot = centers[c];
-			childs[c].computeClustering(branching);
+			childs[c].computeClustering(child_points, branching);
 		}
 	}
 
@@ -229,7 +226,7 @@ private class KMeansCluster
 	Method that searches for the nearest-neighbot of a 
 	query point q
 	*/
-	public void findNN(ResultSet result,float[] vec, ref BranchHeap heap)
+	public void findNN(ResultSet result,float[] vec, ref BranchHeap heap, int checkID)
 	{
 		if (pivot!=null) {
 			float bsq = squaredDist(vec, pivot);
@@ -254,6 +251,12 @@ private class KMeansCluster
 			}
 			
 			for (int i=0;i<points.length;++i) {
+				
+				if (points[i].checkID == checkID) {
+					return;
+				}
+				points[i].checkID = checkID;
+				
 				result.addPoint(points[i].data, points[i].id);
 			}	
 		} 
@@ -268,7 +271,7 @@ private class KMeansCluster
 				}
 			}
 	
-			childs[ci].findNN(result,vec, heap);
+			childs[ci].findNN(result,vec, heap, checkID);
 		}		
 	}
 	
@@ -392,7 +395,7 @@ class KMeansTree : NNIndex
 	private float[][] vecs;
 	private int flength;
 	private BranchHeap heap;	
-
+	private int checkID = -1;
 
 	private this()
 	{
@@ -428,11 +431,12 @@ class KMeansTree : NNIndex
 			points[i] = new Feature(i,vecs[i]);
 		}
 	
-	
-		this.root = new KMeansCluster[numTrees_];
+		this.root = new KMeansCluster[numTrees];
 		
-		root[0] = new KMeansCluster(points);
-		root[0].computeClustering(branching);
+		for (int i=0;i<numTrees;++i) {
+			root[i] = new KMeansCluster();
+			root[i].computeClustering(points,branching);
+		}
 		
 		//writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
 	}
@@ -444,15 +448,18 @@ class KMeansTree : NNIndex
 			root[0].findExactNN(result, vec);
 		}
 		else {
+			checkID -= 1;
 			heap.init();			
 			
-			root[0].findNN(result, vec, heap);
+			for (int i=0;i<numTrees;++i) {
+				root[i].findNN(result, vec, heap, checkID);
+			}
 			
 			int checks = 0;			
 			BranchSt branch;
 			while (checks++<maxCheck && heap.popMin(branch)) {
 				KMeansCluster cluster = branch.node;			
-				cluster.findNN(result,vec, heap);
+				cluster.findNN(result,vec, heap, checkID);
 			}
 		}
 	}

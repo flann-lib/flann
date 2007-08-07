@@ -74,15 +74,8 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 		int nn_index = resultSet.getPointIndex(1);
 
 	
-/+		if (testData.mtype[i])
-			match++;+/
-		/* Note that closest vector will have distance of 0, as it is the same
-			vector.  Therefore, we use second neighbor, result[1].
-			*/
 		if (nn_index == testData.match[i]) {
 			correct++;
-/+			if (testData.mtype[i])
-				cormatch++;+/
 		}
 /+		else {
 			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
