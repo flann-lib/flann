@@ -32,6 +32,9 @@ abstract class NNIndex
 	*/
  	int numTrees();
  	
+ 	float[][] getClusterCenters(int number) {
+ 		throw new Exception("Not implemented");
+ 	}
  	
  	void save(string file)
 	{

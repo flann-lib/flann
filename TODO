@@ -3,7 +3,9 @@
 
 - optimize search for exact serching (no heap) DONE
 
-- build several randomized kmeans (with different branching factors - might help for the branching factors to be prime numbers)
+- build several randomized kmeans (with different branching factors - might help for the branching factors to be prime numbers) DONE
+
+- spedup kmeans using sampling
 
 
 - mean shift clustering

@@ -15,16 +15,7 @@ import util.features;
 import std.c.time;
 
 
-void print_vec(float[] v)
-{
-	for (int i=0;i<v.length;++i) {
-		printf("%.10f ",v[i]);
-	}
-}
-
-
 mixin AlgorithmRegistry!(KMeansTree);
-
 
 
 
@@ -42,6 +33,7 @@ private class KMeansCluster
 	
 		float[] pivot;
 		float radius;
+		float variance;
 		
 		KMeansCluster[] childs;
 	}
@@ -197,9 +189,15 @@ private class KMeansCluster
 		}
 	}
 
+
+
+
+
+
 	/**
-	Method that searches for the nearest-neighbot of a 
-	query point q
+	----------------------------------------------------------------------
+		Approximate nearest neighbor search
+	----------------------------------------------------------------------
 	*/
 	public void findNN(ResultSet result,float[] vec, ref BranchHeap heap, int checkID)
 	{
@@ -210,7 +208,6 @@ private class KMeansCluster
 			
 			float val = bsq-rsq-wsq;
 			float val2 = val*val-4*rsq*wsq;
-			
 			
 	//  		if (val>0) {
 			if (val>0 && val2>0) {
@@ -250,8 +247,7 @@ private class KMeansCluster
 		}		
 	}
 	
-	/** Method the computes the nearest cluster center to 
-	the query point q */
+	
 	private int getNearestCenter(float[] q, ref float[] distances)
 	{
 		int nc = childs.length;
@@ -269,7 +265,11 @@ private class KMeansCluster
 		return best_index;
 	}
 
-
+	/**
+	----------------------------------------------------------------------
+		Exact nearest neighbor search
+	----------------------------------------------------------------------
+	*/
 	public void findExactNN(ResultSet result,float[] vec)
 	{
 		if (pivot!=null) {
@@ -313,8 +313,6 @@ private class KMeansCluster
 	}
 
 
-	/** Method the computes the nearest cluster center to 
-	the query point q */
 	private void getCenterOrdering(float[] q, ref int[] sort_indices)
 	{
 		int nc = childs.length;
@@ -360,7 +358,6 @@ private class KMeansCluster
 
 class KMeansTree : NNIndex
 {
-
 	static const NAME = "kmeans";
 
 	private int branching;
@@ -397,6 +394,27 @@ class KMeansTree : NNIndex
 	{
 		return numTrees_;
 	}
+	
+	private static bool isPrime(int num)
+	{
+		if (num<2) {
+			return false;
+		}
+		else if (num==2) {
+			return true;
+		} else {
+			if (num%2==0) {
+				return false;
+			}
+			for (int i=3;i*i<=num;i+=2) {
+				if (num%i==0) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 
 	public void buildIndex() 
 	{
@@ -408,12 +426,42 @@ class KMeansTree : NNIndex
 	
 		this.root = new KMeansCluster[numTrees];
 		
-		for (int i=0;i<numTrees;++i) {
-			root[i] = new KMeansCluster();
-			root[i].computeClustering(points,branching);
+		int branchings[];
+				
+		// computing numTrees prime number branchings
+		{
+			int below = (numTrees-1)/2;
+			int crt_branching = branching-1;
+			int tries = 0;
+/+			while (crt_branching>=2 && tries<below) {
+				if (isPrime(crt_branching)) {
+					branchings ~= crt_branching;
+					tries++;
+				}
+				crt_branching--;
+			}+/
+			branchings ~= branching;
+			int above = numTrees-1-tries;
+			crt_branching = branching+1;
+			tries = 0;
+			while (tries<above) {
+				if (isPrime(crt_branching)) {
+					branchings ~= crt_branching;
+					tries++;
+				}
+				crt_branching++;
+			}
 		}
 		
-		//writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
+		writefln("Using the following branching factors: ",branchings);
+		
+		foreach (index,value; branchings) {
+			root[index] = new KMeansCluster();
+			root[index].computeClustering(points,value);
+		}
+		
+		
+		writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
 	}
 	
 
@@ -439,7 +487,7 @@ class KMeansTree : NNIndex
 		}
 	}
 	
-	
+		
 	float[][] getClusterPoints(KMeansCluster node)
 	{
 		float[][] points = new float[][10];
@@ -467,8 +515,16 @@ class KMeansTree : NNIndex
 		}
 	}
 	
+	float[][] getClusterCenters(int numClusters) {
+		writef("Computing");
+		
+
+		
+		
+		return null;
+	}
 	
-	public float meanClusterVariance(int numClusters)
+	public float meanClusterVariance2(int numClusters)
 	{
 		Queue!(KMeansCluster) q = new Queue!(KMeansCluster)(numClusters);
 		
@@ -511,6 +567,65 @@ class KMeansTree : NNIndex
 	+/
 		
 		return meanVariance;		
+	}
+
+	public float meanClusterVariance(int numClusters)
+	{
+		
+		KMeansCluster clusters[] = new KMeansCluster[10];
+		
+		int clusterCount = 1;
+		clusters[0] = root[0];
+		 
+		float meanVariance = root[0].variance*root[0].points.length;
+		 
+		while (clusterCount<numClusters) {
+			
+			float minVariance = float.max;
+			int splitIndex = -1;
+			
+			for (int i=0;i<clusterCount;++i) {
+			
+			
+				if (clusters[i].childs.length != 0) {
+			
+					float variance = meanVariance - clusters[i].variance*clusters[i].points.length;
+					 
+					 for (int j=0;j<clusters[i].childs.length;++i) {
+					 	variance -= clusters[i].childs[j].variance*clusters[i].childs[j].points.length;
+					
+						if (variance<minVariance) {
+							minVariance = variance;
+							splitIndex = i;
+						}
+					}			
+				}
+			}
+			
+			meanVariance = minVariance;
+			
+			
+			while (clusterCount+clusters[splitIndex].childs.length>=clusters.length) {
+				// increase vector if needed
+				clusters.length = clusters.length*2;
+			}
+			
+			
+			// split node
+			KMeansCluster toSplit = clusters[splitIndex];
+			clusters[splitIndex] = toSplit.childs[0];
+			
+			for (int i=1;i<toSplit.childs.length;++i) {
+				clusters[clusterCount++] = toSplit.childs[i];
+			}
+		}
+		
+// 		for (int i=0;i<numClusters;++i) {
+// 			writef("Cluster %d size: %d\n",i,clusters[i].size);
+// 		}
+		
+		
+		return meanVariance/root[0].points.length;	
 	}
 
 

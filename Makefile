@@ -32,7 +32,7 @@ ifeq ($(PROFILER),gprof)
 endif
 	
 ifeq ($(CONFIGURATION),debug)
-	DFLAGS := ${DFLAGS} -g -fdebug
+	DFLAGS := ${DFLAGS} -g -frelease
 	CFLAGS = ${WARNS} -g
 else
 	DFLAGS := ${DFLAGS} -O3 -finline -frelease
@@ -141,5 +141,5 @@ ${OBJ_DIR}/%.o : ${SRC_DIR}/%.d Makefile
 ${BUILD_DIR}/${TARGET}: ${OBJS}
 	@if [ ! -d ${BUILD_DIR} ] ; then mkdir -p ${BUILD_DIR}; fi
 	${LINK} ${LINKFLAGS} ${OBJS} ${LIBS} -o $@ 
-	#@if [ -f build_file_list ] ; then rm build_file_list; fi
+#	@if [ -f build_file_list ] ; then rm build_file_list; fi
 	cp ${BUILD_DIR}/${TARGET} ${TARGET}

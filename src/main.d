@@ -93,6 +93,24 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 }
 
 
+void writeToFile(float[][] centers, char[] centerFile) 
+{
+	FILE* fp = fopen(toStringz(centerFile),"w");
+	if (fp is null) {
+		throw new Exception("Cannot open output file: "~centerFile);
+	}
+	
+	for (int i=0;i<centers.length;++i) {
+		for (int j=0;j<centers[i].length;++j) {
+			if (j!=0) {
+				fprintf(fp," ");
+			}
+			fprintf(fp,"%f", centers[i][j]);
+		}
+		fprintf(fp,"\n");
+	}
+	fclose(fp);
+}
 
 
 
@@ -147,9 +165,18 @@ void main(char[][] args)
 	auto optBranching = new NumericOption!(uint)("b", "branching", "branching", 2u, "NUM");
 	optBranching.helpMessage = "Branching factor (where applicable, for example kmeans) (default: 2).";
 	
+	auto optClusterFile = new StringOption("f", "cluster_file", "cluster_file", null, "FILE");
+	optClusterFile.helpMessage = "Clusters save file.";
+	
+	auto optClusters = new NumericOption!(uint)("k", "clusters", "clusters", 100u, "NUM");
+	optClusters.helpMessage = "Number of clusters to save.";
+		
+	auto optNoTest = new FlagTrueOption(null, "skip-test", "skip_test");
+	optNoTest.helpMessage = "Skip test phase";
+	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
-	
+
 	
 	// Next, add these options to the parser
 	optParser.addOption(optAlgo);
@@ -163,6 +190,9 @@ void main(char[][] args)
 	optParser.addOption(optChecks);
 	optParser.addOption(optNumTrees);
 	optParser.addOption(optBranching);
+	optParser.addOption(optNoTest);
+	optParser.addOption(optClusterFile);
+	optParser.addOption(optClusters);
 	optParser.addOption(optHelp);
 
 	// Now we can finally parse our own command line
@@ -197,7 +227,12 @@ void main(char[][] args)
 	char[] loadFile = unbox!(char[])(optParser["load_file"]);
 	char[] algorithm = unbox!(char[])(optParser["algorithm"]);
 	uint nn = unbox!(uint)(optParser["nn"]);
-	int checks = unbox!(int)(optParser["checks"]);
+	int checks = unbox!(int)(optParser["checks"]);	
+	bool skipTest = unbox!(bool)(optParser["skip_test"]);
+	int clusters = unbox!(uint)(optParser["clusters"]);
+	char[] clusterFile = unbox!(char[])(optParser["cluster_file"]);
+
+	
 	Params params;
 	params.numTrees = unbox!(uint)(optParser["num_trees"]);
 	params.branching = unbox!(uint)(optParser["branching"]);
@@ -256,32 +291,47 @@ void main(char[][] args)
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, elapsed);
 	}
 	
-	Features testData;
-	if ((testFile is null) && (inputData !is null)) {
-		testData = inputData;
-	}
-	else if (testFile !is null) {
-		writef("Reading test data from %s... ",testFile);
+	
+	if (clusterFile !is null) {
+		writef("Writing %d cluster centers to file %s... ", clusters, clusterFile);
 		fflush(stdout);
-		testData = new Features();
-		testData.readFromFile(testFile);
+			
+		float[][] centers = index.getClusterCenters(clusters);
+		writeToFile(centers, clusterFile);
+		
 		writefln("done");
 	}
+	
+	if (!skipTest) {
+	
+		Features testData;
+		if ((testFile is null) && (inputData !is null)) {
+			testData = inputData;
+		}
+		else if (testFile !is null) {
+			writef("Reading test data from %s... ",testFile);
+			fflush(stdout);
+			testData = new Features();
+			testData.readFromFile(testFile);
+			writefln("done");
+		}
+			
+		if (testData is null) {
+			throw new Exception("No test data given.");
+		}
 		
-	if (testData is null) {
-		throw new Exception("No test data given.");
+		if (matchFile !is null) {
+			testData.readMatches(matchFile);
+		}
+		
+		
+		if (testData.match is null) {
+			throw new Exception("There are no correct matches to compare to, aborting test phase.");
+		}
+		
+		testNNIndex(index,testData, nn, checks);
+	
 	}
-	
-	if (matchFile !is null) {
-		testData.readMatches(matchFile);
-	}
-	
-	
-	if (testData.match is null) {
-		throw new Exception("There are no correct matches to compare to, aborting test phase.");
-	}
-	
-	testNNIndex(index,testData, nn, checks);
 	
 	if (saveFile !is null) {
 		writef("Saving index to file %s... ",saveFile);
