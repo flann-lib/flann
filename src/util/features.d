@@ -18,6 +18,7 @@ static this() {
 	Serializer.registerClass!(Feature)();
 }
 
+
 class Feature {
 	int id;
 	float[] data;
@@ -32,6 +33,7 @@ class Feature {
 		this.data = data;
 	}
 	
+		
 	float opIndex(int index) { return data[index]; }
 	float opIndexAssign(int index, float value) { data[index] = value; return value; }
 	

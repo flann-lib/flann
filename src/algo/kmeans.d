@@ -47,16 +47,21 @@ private class KMeansCluster
 		ar.describe(childs);
 	}
 	
+	
 	public this()
 	{
+	}
+	
+	public this(Feature[] points)
+	{
+		this.points = points;
 	}
 
 	/** 
 	Method that computes the k-means clustering 
 	*/
-	void computeClustering(Feature[] points, int branching)
+	void computeClustering( int branching)
 	{
-		this.points = points;
 		
 		int n = points.length;
 		int nc = branching;
@@ -82,7 +87,6 @@ private class KMeansCluster
 		// choose the initial cluster centers
 		float[][] centers = new float[][nc];
 		float[] radiuses = new float[nc];
-		radiuses[] = 0;
 		for (int i=0;i<nc;++i) {
 			centers[i] = points[cind[i]].data;
 		}
@@ -146,7 +150,8 @@ private class KMeansCluster
 				}
 			}
 			
-	
+			
+			radiuses[] = 0;
 			// reassign points to clusters
 			for (int i=0;i<n;++i) {
 				float sq_dist = squaredDist(points[i].data,centers[0]); 
@@ -176,19 +181,64 @@ private class KMeansCluster
 			int s = count[c];
 			Feature[] child_points = new Feature[s];
 			int cnt_indices = 0;
+			
+			float variance = 0;
 			for (int i=0;i<n;++i) {
 				if (belongs_to[i]==c) {
-					child_points[cnt_indices] = points[i];
-					cnt_indices++;
+					child_points[cnt_indices++] = points[i];
+					variance += squaredDist(points[i].data);;
 				}
 			}
-			childs[c] = new KMeansCluster();
+			variance /= s;
+			variance -= squaredDist(centers[c]);
+			
+			//writefln("-------------------------------------------");
+			
+			childs[c] = new KMeansCluster(child_points);
+			
+/+			childs[c].computeStatistics();			
+			assert (childs[c].radius == radiuses[c]);
+			assert (childs[c].pivot == centers[c]);
+			assert (childs[c].variance == variance);+/
 			childs[c].radius = radiuses[c];
 			childs[c].pivot = centers[c];
-			childs[c].computeClustering(child_points, branching);
+			childs[c].variance = variance;
+			childs[c].computeClustering(branching);
 		}
 	}
 
+
+	void computeStatistics() {
+	
+		float radius = 0;
+		float variance = 0;
+		float[] mean = points[0].data.dup;
+		variance = squaredDist(points[0].data);
+		for (int i=1;i<points.length;++i) {
+			for (int j=0;j<mean.length;++j) {
+				mean[j] += points[i].data[j];
+			}			
+			variance += squaredDist(points[i].data);
+		}
+		for (int j=0;j<mean.length;++j) {
+			mean[j] /= points.length;
+		}
+		variance /= points.length;
+		variance -= squaredDist(mean);
+		
+		float tmp = 0;
+		for (int i=0;i<points.length;++i) {
+			tmp = squaredDist(mean, points[i].data);
+			if (tmp>radius) {
+				radius = tmp;
+			}
+		}
+		
+		this.variance = variance;
+		this.radius = radius;
+		this.pivot = mean;
+		
+	}
 
 
 
@@ -415,7 +465,6 @@ class KMeansTree : NNIndex
 		return true;
 	}
 
-
 	public void buildIndex() 
 	{
 		Feature[] points = new Feature[vecs.length];
@@ -456,12 +505,15 @@ class KMeansTree : NNIndex
 		writefln("Using the following branching factors: ",branchings);
 		
 		foreach (index,value; branchings) {
-			root[index] = new KMeansCluster();
-			root[index].computeClustering(points,value);
+			root[index] = new KMeansCluster(points);
+			root[index].computeStatistics();
+			root[index].computeClustering(value);
 		}
 		
 		
-		writef("Mean cluster variance for %d top level clusters: %f\n",30,meanClusterVariance(30));		
+/+		float variance;
+		getMinVarianceClusters(root[0], 30, variance);
+		writef("Mean cluster variance for %d top level clusters: %f\n",30,variance);		+/
 	}
 	
 
@@ -515,13 +567,20 @@ class KMeansTree : NNIndex
 		}
 	}
 	
-	float[][] getClusterCenters(int numClusters) {
-		writef("Computing");
-		
+	float[][] getClusterCenters(int numClusters) 
+	{
+		float variance;
+		KMeansCluster[] clusters = getMinVarianceClusters(root[0], numClusters, variance);
 
+		float[][] centers = new float[][clusters.length];
 		
+		writef("Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
 		
-		return null;
+ 		foreach (index, cluster; clusters) {
+			centers[index] = cluster.pivot;
+		}
+		
+		return centers;
 	}
 	
 	public float meanClusterVariance2(int numClusters)
@@ -547,9 +606,11 @@ class KMeansTree : NNIndex
 		int clusterSize[] = new int[q.size];
 		
 		for (int i=0;i<q.size;++i) {
-			float[][] clusterPoints = getClusterPoints(q[i]);
-			variances[i] = computeVariance(clusterPoints);
-			clusterSize[i] = clusterPoints.length;
+//			float[][] clusterPoints = getClusterPoints(q[i]);
+// 			variances[i] = computeVariance(clusterPoints);
+			variances[i] = q[i].variance;
+// 			clusterSize[i] = clusterPoints.length;
+ 			clusterSize[i] = q[i].points.length;
 		}
 		
 		float meanVariance = 0;
@@ -569,15 +630,14 @@ class KMeansTree : NNIndex
 		return meanVariance;		
 	}
 
-	public float meanClusterVariance(int numClusters)
+	public KMeansCluster[] getMinVarianceClusters(KMeansCluster root, int numClusters, out float varianceValue)
 	{
-		
 		KMeansCluster clusters[] = new KMeansCluster[10];
 		
 		int clusterCount = 1;
-		clusters[0] = root[0];
+		clusters[0] = root;
 		 
-		float meanVariance = root[0].variance*root[0].points.length;
+		float meanVariance = root.variance*root.points.length;
 		 
 		while (clusterCount<numClusters) {
 			
@@ -585,19 +645,16 @@ class KMeansTree : NNIndex
 			int splitIndex = -1;
 			
 			for (int i=0;i<clusterCount;++i) {
-			
-			
 				if (clusters[i].childs.length != 0) {
 			
 					float variance = meanVariance - clusters[i].variance*clusters[i].points.length;
 					 
-					 for (int j=0;j<clusters[i].childs.length;++i) {
-					 	variance -= clusters[i].childs[j].variance*clusters[i].childs[j].points.length;
-					
-						if (variance<minVariance) {
-							minVariance = variance;
-							splitIndex = i;
-						}
+					 for (int j=0;j<clusters[i].childs.length;++j) {
+					 	variance += clusters[i].childs[j].variance*clusters[i].childs[j].points.length;
+					}
+					if (variance<minVariance) {
+						minVariance = variance;
+						splitIndex = i;
 					}			
 				}
 			}
@@ -620,12 +677,13 @@ class KMeansTree : NNIndex
 			}
 		}
 		
-// 		for (int i=0;i<numClusters;++i) {
-// 			writef("Cluster %d size: %d\n",i,clusters[i].size);
-// 		}
+/+ 		for (int i=0;i<clusterCount;++i) {
+ 			writef("Cluster %d size: %d\n",i,clusters[i].points.length);
+ 		}+/
 		
 		
-		return meanVariance/root[0].points.length;	
+		varianceValue = meanVariance/root.points.length;
+		return clusters[0..clusterCount];
 	}
 
 

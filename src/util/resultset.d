@@ -60,8 +60,8 @@ class ResultSet
 	}
 	
 	public bool full() 
-	{	return false;
-		//return count == points.length;
+	{	//return false;
+		return count == points.length;
 	}
 	
 	public bool addPoint(float[] point, int index) 

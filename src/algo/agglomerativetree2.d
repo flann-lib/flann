@@ -23,7 +23,7 @@ mixin AlgorithmRegistry!(AgglomerativeExTree);
 
 class AgglomerativeExTree : NNIndex {
 
-	static string NAME = "aggnnex";
+	static string NAME = "agglomerative";
 
 	// tree node data structure
 	struct NodeSt {
@@ -168,9 +168,8 @@ class AgglomerativeExTree : NNIndex {
 		assert(last==0);
 		root = chain[0];
 				
-		writef("Mean cluster variance for %d top level clusters: %f\n",10,meanClusterVariance(10));
-		writef("Root radius: %f\n",root.radius);
-		writef("Root variance: %f\n",root.variance);		
+/+		writef("Root radius: %f\n",root.radius);
+		writef("Root variance: %f\n",root.variance);		+/
 	}
 	
 	
@@ -465,7 +464,26 @@ class AgglomerativeExTree : NNIndex {
 		return meanVariance;		
 	}
 	
-	public float meanClusterVariance(int numClusters)
+	
+	float[][] getClusterCenters(int numClusters) 
+	{
+		float variance;
+		TreeNode[] clusters = getMinVarianceClusters(root, numClusters, variance);
+	
+		writef("Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
+		
+		float[][] centers = new float[][clusters.length];
+		
+ 		foreach (index, cluster; clusters) {
+			centers[index] = cluster.pivot;
+		}
+		
+		return centers;
+	}
+
+	
+	
+	public TreeNode[] getMinVarianceClusters(TreeNode root, int numClusters, out float varianceValue)
 	{
 		TreeNode clusters[] = new TreeNode[10];
 		
@@ -511,8 +529,9 @@ class AgglomerativeExTree : NNIndex {
 // 			writef("Cluster %d size: %d\n",i,clusters[i].size);
 // 		}
 		
+		varianceValue = meanVariance/root.size;
 		
-		return meanVariance/root.size;
+		return clusters[0..clusterCount];
 	}
 	
 	void describe(T)(T ar)

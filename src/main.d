@@ -132,8 +132,8 @@ void main(char[][] args)
 	// Create our option parser
 	auto optParser = new OptionParser();
 	
-	auto optAlgo = new StringOption("a", "algorithm", "algorithm", "kdtree", "ALGO");
-	optAlgo.helpMessage = "Use the ALGO nn search algorithm (default: kdtree)";
+	auto optAlgo = new StringOption("a", "algorithm", "algorithm", null, "ALGO");
+	optAlgo.helpMessage = "Use the ALGO nn search algorithm";
 	
 	auto optPrintAlgos = new FlagTrueOption("p", "print-algorithms", "print-algorithms");
 	optPrintAlgos.helpMessage = "Display available algorithms";
@@ -165,13 +165,13 @@ void main(char[][] args)
 	auto optBranching = new NumericOption!(uint)("b", "branching", "branching", 2u, "NUM");
 	optBranching.helpMessage = "Branching factor (where applicable, for example kmeans) (default: 2).";
 	
-	auto optClusterFile = new StringOption("f", "cluster_file", "cluster_file", null, "FILE");
+	auto optClusterFile = new StringOption("f", "cluster-file", "cluster_file", null, "FILE");
 	optClusterFile.helpMessage = "Clusters save file.";
 	
 	auto optClusters = new NumericOption!(uint)("k", "clusters", "clusters", 100u, "NUM");
 	optClusters.helpMessage = "Number of clusters to save.";
 		
-	auto optNoTest = new FlagTrueOption(null, "skip-test", "skip_test");
+	auto optNoTest = new FlagTrueOption("S", "skip-test", "skip_test");
 	optNoTest.helpMessage = "Skip test phase";
 	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
@@ -293,12 +293,12 @@ void main(char[][] args)
 	
 	
 	if (clusterFile !is null) {
-		writef("Writing %d cluster centers to file %s... ", clusters, clusterFile);
-		fflush(stdout);
-			
-		float[][] centers = index.getClusterCenters(clusters);
-		writeToFile(centers, clusterFile);
 		
+		float[][] centers = index.getClusterCenters(clusters);
+		
+		writef("Writing %d cluster centers to file %s... ", centers.length, clusterFile);
+		fflush(stdout);
+		writeToFile(centers, clusterFile);
 		writefln("done");
 	}
 	

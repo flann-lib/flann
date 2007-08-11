@@ -7,3 +7,4 @@ src/main.d
 src/util
 src/util/progressbar.d
 src/search.d
+src/util/logger.d

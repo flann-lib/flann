@@ -32,7 +32,8 @@ ifeq ($(PROFILER),gprof)
 endif
 	
 ifeq ($(CONFIGURATION),debug)
-	DFLAGS := ${DFLAGS} -g -frelease
+#	DFLAGS := ${DFLAGS} -g -frelease
+	DFLAGS := ${DFLAGS} -g -fdebug
 	CFLAGS = ${WARNS} -g
 else
 	DFLAGS := ${DFLAGS} -O3 -finline -frelease

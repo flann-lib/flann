@@ -168,8 +168,8 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		
 		root = nodes[0];
 
-		writef("Mean cluster variance for %d top level clusters: %f\n",4,meanClusterVariance(4));		
-		writef("Root radius: %f\n",root.radius);
+/+		writef("Mean cluster variance for %d top level clusters: %f\n",4,meanClusterVariance(4));		
+		writef("Root radius: %f\n",root.radius);+/
 	}
 	
 	
@@ -419,7 +419,25 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 	}
 
 
-	public float meanClusterVariance(int numClusters)
+float[][] getClusterCenters(int numClusters) 
+	{
+		float variance;
+		TreeNode[] clusters = getMinVarianceClusters(root, numClusters, variance);
+	
+		writef("Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
+		
+		float[][] centers = new float[][clusters.length];
+		
+ 		foreach (index, cluster; clusters) {
+			centers[index] = cluster.pivot;
+		}
+		
+		return centers;
+	}
+
+	
+	
+	public TreeNode[] getMinVarianceClusters(TreeNode root, int numClusters, out float varianceValue)
 	{
 		TreeNode clusters[] = new TreeNode[10];
 		
@@ -450,18 +468,25 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 			
 			meanVariance = minVariance;
 			
+			// increase vector if needed
 			if (clusterCount==clusters.length) {
 				clusters.length = clusters.length*2;
 			}
 			
+			// split node
 			TreeNode toSplit = clusters[splitIndex];
 			clusters[splitIndex] = toSplit.child1;
 			clusters[clusterCount++] = toSplit.child2;
 		}
 		
-		return meanVariance/root.size;
+// 		for (int i=0;i<numClusters;++i) {
+// 			writef("Cluster %d size: %d\n",i,clusters[i].size);
+// 		}
+		
+		varianceValue = meanVariance/root.size;
+		
+		return clusters[0..clusterCount];
 	}
-
 	void describe(T)(T ar)
 	{
 	}	
