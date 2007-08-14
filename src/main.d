@@ -4,19 +4,12 @@ Project: aggnn
 
   Demo software: Approximate Nearest-Neighbor Matching
   Converted from C
-Author: David Lowe (2006)
+Author: Marus Muja (2007)
 
-testnn.c:
-This file contains a sample program to read files of vectors and then
-perform tests of approximate nearest-neighbor matching.
-
-To run a test, use an input file such as sift10K.nn for standard input:
-% testnn <sift10K.nn
-
- *************************************************************************/
+*************************************************************************/
 
 
-import std.stdio;
+import std.c.stdio;
 import std.string;
 import std.boxer;
 import std.c.stdlib;
@@ -29,6 +22,7 @@ import util.utils;
 import util.resultset;
 import util.features;
 import util.progressbar;
+import util.logger;
 import algo.kdtree;
 import algo.agglomerativetree2;
 import algo.nnindex;
@@ -39,13 +33,45 @@ import algo.linearsearch;
 
 
 
+class Range 
+{
+	int begin;
+	int end;
+	int skip;
+	
+	this(int begin, int end, int skip) {
+		this.begin = begin;
+		this.end = end;
+		this.skip = skip;
+	}
+	
+	this(string range) {
+		int[] values = toIntVec(split(range,":"));
+		
+		begin = values[0];
+		if (values.length>1) {
+			end = values[1];
+			
+			if (values.length>2) {
+				skip = values[2];
+			}
+			else {
+				skip = 1;
+			}
+		}
+		else {
+			skip = 1;
+			end = begin + skip;
+		} 
+	}
+}
 
 
 
 
 void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 {
-	writefln("Searching... ");
+	Logger.log(Logger.INFO,"Searching... \n");
 	/* Create a table showing computation time and accuracy as a function
 	   of "checks", the number of neighbors that are checked.
 	   Note that we should check average of at least 2 nodes per random
@@ -63,7 +89,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 	ProgressBar progressBar = new ProgressBar(testData.count, 70);
 	progressBar.start();
 
- 	for (int i = 0; i < testData.count; i++) {
+	for (int i = 0; i < testData.count; i++) {
 //  	for (int i = 18; i < 19; i++) {
 		
 		progressBar.tick();
@@ -71,7 +97,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 		resultSet.init(testData.vecs[i]);
 
 		index.findNeighbors(resultSet,testData.vecs[i], checks);			
-		int nn_index = resultSet.getPointIndex(1);
+		int nn_index = resultSet.getPointIndex(0);
 
 	
 		if (nn_index == testData.match[i]) {
@@ -81,15 +107,19 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
 		}+/
 	}
-	
+
 	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
-	writef("  Nodes    %% correct    Time     Time/vector\n"
+	Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
 			" checked   neighbors   (seconds)      (ms)\n"
 			" -------   ---------   ---------  -----------\n");
-	writef("  %5d     %6.2f      %6.2f      %6.3f\n",
+	Logger.log(Logger.INFO,"  %5d     %6.2f      %6.2f      %6.3f\n",
 			checks, correct * 100.0 / cast(float) testData.count,
 			elapsed, 1000.0 * elapsed / testData.count);
 	
+	Logger.log(Logger.SIMPLE,"%d %f %f %f\n",
+			checks, correct * 100.0 / cast(float) testData.count,
+			elapsed, 1000.0 * elapsed / testData.count);
+
 }
 
 
@@ -115,18 +145,12 @@ void writeToFile(float[][] centers, char[] centerFile)
 
 
 
-
-
-
-
-
-
-
 /** 
 	Program entry point 
 */
 void main(char[][] args)
 {
+	Logger.enableLevel(Logger.ERROR);
 	 //	std.gc.disable();
 
 	// Create our option parser
@@ -156,7 +180,7 @@ void main(char[][] args)
 	auto optNN = new NumericOption!(uint)("n", "nn", "nn", 1u, "NN");
 	optNN.helpMessage = "Search should return NN nearest-neighbors";
 	
-	auto optChecks = new NumericOption!(int)("c", "checks", "checks", 32u, "NUM");
+	auto optChecks = new StringOption("c", "checks", "checks", "32", "RANGE(b:e:s)");
 	optChecks.helpMessage = "Stop searching after exploring NUM features.";
 	
 	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 1u, "NUM");
@@ -173,6 +197,9 @@ void main(char[][] args)
 		
 	auto optNoTest = new FlagTrueOption("S", "skip-test", "skip_test");
 	optNoTest.helpMessage = "Skip test phase";
+	
+	auto optVerbosity = new StringOption("v", "verbosity", "verbosity", "info", "VALUE");
+	optVerbosity.helpMessage = "Stop searching after exploring NUM features.";
 	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
@@ -193,6 +220,7 @@ void main(char[][] args)
 	optParser.addOption(optNoTest);
 	optParser.addOption(optClusterFile);
 	optParser.addOption(optClusters);
+	optParser.addOption(optVerbosity);
 	optParser.addOption(optHelp);
 
 	// Now we can finally parse our own command line
@@ -201,21 +229,21 @@ void main(char[][] args)
 	// Check to see if --help was supplied
 	if( unbox!(bool)(optParser["help"]) )
 	{
-			writefln("Usage: %s [OPTIONS] FILES", args[0]);
-			writefln("");
+			Logger.log(Logger.ERROR,"Usage: %s [OPTIONS] FILES\n", args[0]);
+			Logger.log(Logger.ERROR,"\n");
 			optParser.showHelp();
-			writefln("");
+			Logger.log(Logger.ERROR,"\n");
 			exit(0);
 	}
 	
 	
 	if( unbox!(bool)(optParser["print-algorithms"]) )
 	{
-		writefln("Available algorithms:");
+		Logger.log(Logger.ERROR,"Available algorithms:\n");
 		foreach (algo,val; indexRegistry) {
-			writefln("\t%s",algo);
+			Logger.log(Logger.ERROR,"\t%s\n",algo);
 		}
-		writefln();
+		Logger.log(Logger.ERROR,"\n");
 		exit(0);
 	}
 
@@ -227,54 +255,59 @@ void main(char[][] args)
 	char[] loadFile = unbox!(char[])(optParser["load_file"]);
 	char[] algorithm = unbox!(char[])(optParser["algorithm"]);
 	uint nn = unbox!(uint)(optParser["nn"]);
-	int checks = unbox!(int)(optParser["checks"]);	
+	Range checks = new Range(unbox!(string)(optParser["checks"]));
 	bool skipTest = unbox!(bool)(optParser["skip_test"]);
 	int clusters = unbox!(uint)(optParser["clusters"]);
 	char[] clusterFile = unbox!(char[])(optParser["cluster_file"]);
+	string verbosity = unbox!(string)(optParser["verbosity"]);
 
+	string[] logLevels = split(verbosity,",");
+	foreach (logLevel;logLevels) {
+		Logger.enableLevel(logLevel);
+	}
 	
 	Params params;
 	params.numTrees = unbox!(uint)(optParser["num_trees"]);
 	params.branching = unbox!(uint)(optParser["branching"]);
 
 	if (!(algorithm in indexRegistry)) {
-		writefln("Algorithm not supported.");
-		writefln("Available algorithms:");
+		Logger.log(Logger.ERROR,"Algorithm not supported.\n");
+		Logger.log(Logger.ERROR,"Available algorithms:\n");
 		foreach (algo,val; indexRegistry) {
-			writefln("\t%s",algo);
+			Logger.log(Logger.ERROR,"\t%s\n",algo);
 		}
-		writefln("Bailing out...");
+		Logger.log(Logger.ERROR,"Bailing out...\n");
 		exit(0);
 	}
-	writef("Algorithm: %s\n",algorithm);
+	Logger.log(Logger.INFO,"Algorithm: %s\n",algorithm);
 
 
 	Features inputData = null;
 
 	NNIndex index;
 	if (loadFile !is null) {
-		writef("Loading index from file %s... ",loadFile);
+		Logger.log(Logger.INFO,"Loading index from file %s... ",loadFile);
 		fflush(stdout);
 		index = loadIndexRegistry[algorithm](loadFile);
 /+		Serializer s = new Serializer(loadFile, FileMode.In);
 		AgglomerativeExTree index2;
 		s.describe(index2);
 		index = index2;+/
-		writefln("done");
+		Logger.log(Logger.INFO,"done\n");
 	}
 	else {
 	
 		if (inputFile=="-") { //read from stdin
-			writefln("Reading input data from stdin...");
+			Logger.log(Logger.INFO,"Reading input data from stdin...\n");
 			inputData = new Features();
 			inputData.readFromFile(null); 
 		}
 		else if (inputFile !is null) {
-			writef("Reading input data from %s... ",inputFile);
+			Logger.log(Logger.INFO,"Reading input data from %s... ",inputFile);
 			fflush(stdout);
 			inputData = new Features();
 			inputData.readFromFile(inputFile);
-			writefln("done");
+			Logger.log(Logger.INFO,"done\n");
 		}
 	
 		if (inputData is null) {
@@ -282,13 +315,14 @@ void main(char[][] args)
 		}
 		index = indexRegistry[algorithm](inputData, params);
 		
-		writefln("Building index... ");
+		Logger.log(Logger.INFO,"Building index... \n");
 		clock_t startTime = clock();
 		index.buildIndex();
 		float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
 		
-		writef("Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
+		Logger.log(Logger.INFO,"Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, elapsed);
+		Logger.log(Logger.SIMPLE,"%f\n",elapsed);
 	}
 	
 	
@@ -296,10 +330,10 @@ void main(char[][] args)
 		
 		float[][] centers = index.getClusterCenters(clusters);
 		
-		writef("Writing %d cluster centers to file %s... ", centers.length, clusterFile);
+		Logger.log(Logger.INFO,"Writing %d cluster centers to file %s... ", centers.length, clusterFile);
 		fflush(stdout);
 		writeToFile(centers, clusterFile);
-		writefln("done");
+		Logger.log(Logger.INFO,"done\n");
 	}
 	
 	if (!skipTest) {
@@ -309,11 +343,11 @@ void main(char[][] args)
 			testData = inputData;
 		}
 		else if (testFile !is null) {
-			writef("Reading test data from %s... ",testFile);
+			Logger.log(Logger.INFO,"Reading test data from %s... ",testFile);
 			fflush(stdout);
 			testData = new Features();
 			testData.readFromFile(testFile);
-			writefln("done");
+			Logger.log(Logger.INFO,"done\n");
 		}
 			
 		if (testData is null) {
@@ -324,20 +358,20 @@ void main(char[][] args)
 			testData.readMatches(matchFile);
 		}
 		
-		
 		if (testData.match is null) {
 			throw new Exception("There are no correct matches to compare to, aborting test phase.");
 		}
 		
-		testNNIndex(index,testData, nn, checks);
-	
+		for (int c=checks.begin;c<checks.end;c+=checks.skip) {
+			testNNIndex(index,testData, nn, c);
+		}
 	}
 	
 	if (saveFile !is null) {
-		writef("Saving index to file %s... ",saveFile);
+		Logger.log(Logger.INFO,"Saving index to file %s... ",saveFile);
 		fflush(stdout);
 		index.save(saveFile);
-		writefln("done");
+		Logger.log(Logger.INFO,"done\n");
 	}
 
 	

@@ -4,7 +4,7 @@ Project: aggnn
 
 module util.progressbar;
 
-import std.stdio;
+import util.logger;
 
 
 class ProgressBar
@@ -30,7 +30,7 @@ class ProgressBar
 		crtValue = 0;
 		crtWidth = 0;
 		
-		writef("[      ");
+		Logger.log(Logger.INFO,"[      ");
 	}
 	
 	void tick()
@@ -40,7 +40,7 @@ class ProgressBar
 		}
 		
 		if (crtValue==maxValue) {
-			writef("\x08\x08\x08\x08\x08\x08=====]\n");
+			Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=====]\n");
 			crtValue++;
 		}
 		else if (crtValue<maxValue) {
@@ -49,8 +49,7 @@ class ProgressBar
 				
 				int percent = (100*crtValue)/maxValue;
 			
-				writef("\x08\x08\x08\x08\x08\x08=(%2d%%)>",percent);
-				fflush(stdout);
+				Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=(%2d%%)>",percent);
 				crtWidth++;
 			}
 		}

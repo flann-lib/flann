@@ -1,31 +1,61 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <!DOCTYPE KDevPrjSession>
 <KDevPrjSession>
- <DocsAndViews NumberOfDocuments="8" >
-  <Doc0 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/optparse.d" >
-   <View0 Encoding="" Type="Source" />
+ <DocsAndViews NumberOfDocuments="18" >
+  <Doc0 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/progressbar.d" >
+   <View0 Encoding="" line="25" Type="Source" />
   </Doc0>
-  <Doc1 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/resultset.d" >
-   <View0 Encoding="" Type="Source" />
+  <Doc1 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/main.d" >
+   <View0 Encoding="" line="105" Type="Source" />
   </Doc1>
-  <Doc2 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/main.d" >
-   <View0 Encoding="" Type="Source" />
+  <Doc2 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/resultset.d" >
+   <View0 Encoding="" line="0" Type="Source" />
   </Doc2>
-  <Doc3 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/kdtree.d" >
-   <View0 Encoding="" Type="Source" />
+  <Doc3 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/utils.d" >
+   <View0 Encoding="" line="56" Type="Source" />
   </Doc3>
-  <Doc4 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/agglomerativetree2.d" >
-   <View0 Encoding="" Type="Source" />
+  <Doc4 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/vector.d" >
+   <View0 Encoding="" line="78" Type="Source" />
   </Doc4>
-  <Doc5 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/progressbar.d" >
-   <View0 Encoding="" Type="Source" />
+  <Doc5 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/kdtree.d" >
+   <View0 Encoding="" line="202" Type="Source" />
   </Doc5>
-  <Doc6 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/features.d" >
-   <View0 Encoding="" Type="Source" />
+  <Doc6 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/kmeans.d" >
+   <View0 Encoding="" line="497" Type="Source" />
   </Doc6>
-  <Doc7 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/kmeans.d" >
-   <View0 Encoding="" line="389" Type="Source" />
+  <Doc7 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/convert/convert.d" >
+   <View0 Encoding="" line="14" Type="Source" />
   </Doc7>
+  <Doc8 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/agglomerativetree2.d" >
+   <View0 Encoding="" line="472" Type="Source" />
+  </Doc8>
+  <Doc9 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/balltree.d" >
+   <View0 Encoding="" line="119" Type="Source" />
+  </Doc9>
+  <Doc10 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/bottom_up_agg_simple.d" >
+   <View0 Encoding="" line="425" Type="Source" />
+  </Doc10>
+  <Doc11 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/linearsearch.d" >
+   <View0 Encoding="" line="37" Type="Source" />
+  </Doc11>
+  <Doc12 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/algo/nnindex.d" >
+   <View0 Encoding="" line="6" Type="Source" />
+  </Doc12>
+  <Doc13 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/features.d" >
+   <View0 Encoding="" line="48" Type="Source" />
+  </Doc13>
+  <Doc14 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/random.d" >
+   <View0 Encoding="" line="9" Type="Source" />
+  </Doc14>
+  <Doc15 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/logger.d" >
+   <View0 Encoding="" line="38" Type="Source" />
+  </Doc15>
+  <Doc16 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/convert/compute_gt.d" >
+   <View0 Encoding="" line="10" Type="Source" />
+  </Doc16>
+  <Doc17 NumberOfViews="1" URL="file:///home/marius/ubc/projects/nn/aggnn_git/src/util/dist.d" >
+   <View0 Encoding="" line="0" Type="Source" />
+  </Doc17>
  </DocsAndViews>
  <pluginList>
   <kdevdebugger>

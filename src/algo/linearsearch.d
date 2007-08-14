@@ -8,10 +8,6 @@ Author: Marius Muja (2007)
 *************************************************************************/
 module algo.linearsearch;
 
-import std.stdio;
-
-import serialization.serializer;
-
 import util.utils;
 import util.resultset;
 import util.features;

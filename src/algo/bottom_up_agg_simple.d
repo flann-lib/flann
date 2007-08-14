@@ -9,12 +9,11 @@ Author: Marius Muja (2007)
 *************************************************************************/
 module algo.bottom_up_agg_simple;
 
-import std.stdio;
-
 import util.utils;
 import util.heap;
 import util.resultset;
 import util.features;
+import util.logger;
 import algo.nnindex;
 
 
@@ -211,7 +210,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 	
 	private void write(TreeNode node) 
 	{
-		writef("#%d ",node.orig_id);
+		Logger.log(Logger.INFO,"#%d ",node.orig_id);
 /+		writef("{");
 		for (int i=0;i<node.pivot.length;++i) {
 			if (i!=0) writef(",");
@@ -410,7 +409,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		
 		
 		for (int i=0;i<clusterSize.length;++i) {
-			writef("Cluster %d size: %d\n",i, clusterSize[i]);
+			Logger.log(Logger.INFO,"Cluster %d size: %d\n",i, clusterSize[i]);
 		}
 		
 		
@@ -424,7 +423,7 @@ float[][] getClusterCenters(int numClusters)
 		float variance;
 		TreeNode[] clusters = getMinVarianceClusters(root, numClusters, variance);
 	
-		writef("Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
+		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
 		
 		float[][] centers = new float[][clusters.length];
 		

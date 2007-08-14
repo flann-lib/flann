@@ -4,15 +4,15 @@ Project: aggnn
 
 module algo.kmeans;
 
-import std.stdio;
-
+import std.c.time;
 
 import algo.nnindex;
 import util.resultset;
 import util.heap;
 import util.utils;
 import util.features;
-import std.c.time;
+import util.logger;
+import util.random;
 
 
 mixin AlgorithmRegistry!(KMeansTree);
@@ -72,23 +72,16 @@ private class KMeansCluster
 			return;
 		}
 	
-		int cind[] = new int[nc];
+	
+		DistinctRandom r = new DistinctRandom();
 		
-		for (int i=0;i<nc;++i) {
-			cind[i] = i;
-		}
-		
-		for (int i=0;i<nc;++i) {
-			int rand = cast(int) (drand48() * nc);  
-			assert(rand >=0 && rand < nc);
-			swap(cind[i], cind[rand]);
-		}
+		r.init(n);
 		
 		// choose the initial cluster centers
 		float[][] centers = new float[][nc];
 		float[] radiuses = new float[nc];
 		for (int i=0;i<nc;++i) {
-			centers[i] = points[cind[i]].data;
+			centers[i] = points[r.nextRandom()].data;
 		}
 	
 		// assign points to clusters
@@ -502,7 +495,7 @@ class KMeansTree : NNIndex
 			}
 		}
 		
-		writefln("Using the following branching factors: ",branchings);
+		Logger.log(Logger.INFO,"Using the following branching factors: ",branchings,"\n");
 		
 		foreach (index,value; branchings) {
 			root[index] = new KMeansCluster(points);
@@ -574,7 +567,7 @@ class KMeansTree : NNIndex
 
 		float[][] centers = new float[][clusters.length];
 		
-		writef("Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
+		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
 		
  		foreach (index, cluster; clusters) {
 			centers[index] = cluster.pivot;

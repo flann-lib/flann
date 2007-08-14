@@ -2,8 +2,6 @@
 	Project: vector
 */
 
-import std.stdio;
-
 class vector(T) {
 	private T data_[];
 	private int size_;
@@ -77,6 +75,9 @@ class vector(T) {
 };
 
 unittest {
+
+	import std.stdio;
+	
 	writef("Begin unittest\n");
 	vector!(int) v = new vector!(int);
 

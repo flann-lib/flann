@@ -36,7 +36,6 @@ nn.c:
 module algo.kdtree;
 
 import std.c.stdlib;
-import std.stdio;
 import std.c.math;
 import std.c.string;
 
@@ -46,6 +45,7 @@ import util.utils;
 import util.heap;
 import util.features;
 import util.resultset;
+import util.logger;
 import algo.nnindex;
 
 
@@ -200,7 +200,7 @@ class KDTree : NNIndex{
 			DivideTree(& this.trees[i], 0, vcount - 1);
 		}
 		
-		writef("Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
+		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
 	}
 	
 	

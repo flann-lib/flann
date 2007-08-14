@@ -8,9 +8,10 @@ import std.stdio;
 import std.string;
 import std.c.string;
 import std.stream;
-import std.conv;
 
 import serialization.serializer;
+import util.logger;
+import util.utils;
 
 alias float[] feature;
 
@@ -115,17 +116,6 @@ class Features {
 	}
 	
 	
-	float[] toFloatVec(string[] strVec)
-	{
-		float[] vec = new float[strVec.length];
-		for (int i=0;i<strVec.length;++i) {
-			vec[i] = toFloat(strVec[i]);
-		}
-		
-		return vec;
-	}
-	
-	
 	private void readDATFile(string firstLine, FILE* fp) 
 	{
 		string[] tokens = firstLine.split();
@@ -156,7 +146,7 @@ class Features {
 				vecs[count++] = toFloatVec(tokens);
 			} else {
 				debug {
-					writefln("Wrong number of values on line %d... ignoring",(count+1));
+					Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(count+1));
 				}
 			}		
 			ret = fgets(&buffer[0],MAX_BUF,fp);

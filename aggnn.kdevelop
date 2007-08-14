@@ -19,7 +19,7 @@
       <mainprogram>/home/marius/ubc/projects/nn/aggnn_git/aggnn</mainprogram>
       <directoryradio>executable</directoryradio>
       <programargs>-a kdtree -i data/sift10K.nn -n 1 -c 128</programargs>
-      <globaldebugarguments>-i data/sift1K.data -a kmeans --skip-test -k 30 -f cluster.out  -b 4</globaldebugarguments>
+      <globaldebugarguments>-a kmeans -n 1 -c 16 -i data/sift1K.nn</globaldebugarguments>
       <globalcwd>/home/marius/ubc/projects/nn/aggnn_git</globalcwd>
       <useglobalprogram>false</useglobalprogram>
       <terminal>false</terminal>
@@ -40,7 +40,7 @@
       <makebin></makebin>
       <defaulttarget></defaulttarget>
       <makeoptions></makeoptions>
-      <selectedenvironment>debug</selectedenvironment>
+      <selectedenvironment>default</selectedenvironment>
       <environments>
         <default/>
         <debug>

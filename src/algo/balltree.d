@@ -8,13 +8,13 @@ Author: Marius Muja (2007)
 *************************************************************************/
 module algo.balltree;
 
-import std.stdio;
 import std.math;
 
 import util.utils;
 import util.heap;
 import util.resultset;
 import util.features;
+import util.logger;
 import algo.nnindex;
 
 import algo.agglomerativetree2;
@@ -101,7 +101,7 @@ class BallTree : NNIndex {
 	
 		aggTree.buildIndex();
 		
-		writef("Building the ball-tree using the agglomerative-tree\n");
+		Logger.log(Logger.INFO,"Building the ball-tree using the agglomerative-tree\n");
 		btRoot = new BallNodeSt();
 		
 		btRoot.variance = aggTree.root.variance;
@@ -117,7 +117,7 @@ class BallTree : NNIndex {
 		int countNodes = 0;
 		
 		countNodesBallTree(btRoot, countNodes);
-		writef("Nodes in ball-tree: %d\n",countNodes);
+		Logger.log(Logger.INFO,"Nodes in ball-tree: %d\n",countNodes);
 	}
 	
 	private void countNodesBallTree(BallTreeNode node, inout int count) 

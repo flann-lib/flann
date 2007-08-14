@@ -9,13 +9,13 @@ Author: Marius Muja (2007)
 module algo.agglomerativetree2;
 
 
-import std.stdio;
 import std.math;
 
 import util.utils;
 import util.heap;
 import util.resultset;
 import util.features;	
+import util.logger;	
 import algo.nnindex;
 
 
@@ -245,9 +245,9 @@ class AgglomerativeExTree : NNIndex {
 		nodes[pcount++] = bt_new;	
 		
 		
-		void write(TreeNode node) {
+/+		void write(TreeNode node) {
 			writef("%d",node.orig_id);
-		}
+		}+/
 		
 // 		writef("Agglomerate: ");
 // 		write(node1);
@@ -443,7 +443,7 @@ class AgglomerativeExTree : NNIndex {
 			float[][] clusterPoints = getClusterPoints(q[i]);
 			variances[i] = computeVariance(clusterPoints);
 			
-			writef("%f - %f\n",variances[i],q[i].variance);
+			Logger.log(Logger.INFO,"%f - %f\n",variances[i],q[i].variance);
 			
 			clusterSize[i] = clusterPoints.length;
 		}
@@ -458,7 +458,7 @@ class AgglomerativeExTree : NNIndex {
 		
 		
 		for (int i=0;i<clusterSize.length;++i) {
-			writef("Cluster %d size: %d\n",i, clusterSize[i]);
+			Logger.log(Logger.INFO,"Cluster %d size: %d\n",i, clusterSize[i]);
 		}
 		
 		return meanVariance;		
@@ -470,7 +470,7 @@ class AgglomerativeExTree : NNIndex {
 		float variance;
 		TreeNode[] clusters = getMinVarianceClusters(root, numClusters, variance);
 	
-		writef("Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
+		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
 		
 		float[][] centers = new float[][clusters.length];
 		
