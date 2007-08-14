@@ -46,7 +46,7 @@ class Range
 	}
 	
 	this(string range) {
-		int[] values = toIntVec(split(range,":"));
+		int[] values = toVec!(int)(split(range,":"));
 		
 		begin = values[0];
 		if (values.length>1) {
@@ -69,7 +69,7 @@ class Range
 
 
 
-void testNNIndex(NNIndex index, Features testData, int nn, int checks)
+void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skipMatches)
 {
 	Logger.log(Logger.INFO,"Searching... \n");
 	/* Create a table showing computation time and accuracy as a function
@@ -79,7 +79,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 	   Print statistics on success rate and time for value.
 	 */
 
-	ResultSet resultSet = new ResultSet(nn+1);
+	ResultSet resultSet = new ResultSet(nn+skipMatches);
 	
 	clock_t startTime = clock();
 	
@@ -97,7 +97,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks)
 		resultSet.init(testData.vecs[i]);
 
 		index.findNeighbors(resultSet,testData.vecs[i], checks);			
-		int nn_index = resultSet.getPointIndex(0);
+		int nn_index = resultSet.getPointIndex(0+skipMatches);
 
 	
 		if (nn_index == testData.match[i]) {
@@ -201,6 +201,9 @@ void main(char[][] args)
 	auto optVerbosity = new StringOption("v", "verbosity", "verbosity", "info", "VALUE");
 	optVerbosity.helpMessage = "Stop searching after exploring NUM features.";
 	
+	auto optSkipMatches = new NumericOption!(uint)("K", "skip-matches", "skip_matches", 0u, "NUM");
+	optSkipMatches.helpMessage = "Skip teh first NUM matches at test phase.";
+	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
 
@@ -221,6 +224,7 @@ void main(char[][] args)
 	optParser.addOption(optClusterFile);
 	optParser.addOption(optClusters);
 	optParser.addOption(optVerbosity);
+	optParser.addOption(optSkipMatches);
 	optParser.addOption(optHelp);
 
 	// Now we can finally parse our own command line
@@ -260,6 +264,7 @@ void main(char[][] args)
 	int clusters = unbox!(uint)(optParser["clusters"]);
 	char[] clusterFile = unbox!(char[])(optParser["cluster_file"]);
 	string verbosity = unbox!(string)(optParser["verbosity"]);
+	uint skipMatches = unbox!(uint)(optParser["skip_matches"]);
 
 	string[] logLevels = split(verbosity,",");
 	foreach (logLevel;logLevels) {
@@ -363,7 +368,7 @@ void main(char[][] args)
 		}
 		
 		for (int c=checks.begin;c<checks.end;c+=checks.skip) {
-			testNNIndex(index,testData, nn, c);
+			testNNIndex(index,testData, nn, c, skipMatches);
 		}
 	}
 	

@@ -28,7 +28,7 @@ public float DistSquared(float *v1, float *v2, int veclen)
 
 	/* Process 4 pixels with each loop for efficiency. */
 	while (v1 < finalgroup) {
-		diff0 = v1[0] - v2[0];
+		diff0 = v1[0] - v2[0];	
 		diff1 = v1[1] - v2[1];
 		diff2 = v1[2] - v2[2];
 		diff3 = v1[3] - v2[3];
@@ -69,30 +69,4 @@ public float DistSquared(float *v1, int veclen)
 		distsq += diff * diff;
 	}
 	return distsq;
-}
-
-
-public float computeVariance(float[][] points)
-{
-	if (points.length==0) {
-		return 0;
-	}
-	
-	float[] mu = points[0].dup;
-	
-	mu[] = 0;	
-	for (int j=0;j<mu.length;++j) {
-		for (int i=0;i<points.length;++i) {
-			mu[j] += points[i][j];
-		}
-		mu[j]/=points.length;
-	}
-	
-	float variance = 0;
-	for (int i=0;i<points.length;++i) {
-		variance += squaredDist(mu,points[i]);
-	}
-	variance/=points.length;
-
-	return variance;
 }

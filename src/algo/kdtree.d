@@ -600,7 +600,7 @@ class KDTree : NNIndex{
 	
 		/* Keep searching other branches from heap until finished. */
 		while ( this.heap.popMin(branch) 
-			&& (this.checkCount < maxCheck || !result.full )) {
+			&& (this.checkCount++ < maxCheck || !result.full )) {
 			SearchLevel(result, vec, branch.node,
 					branch.mindistsq, maxCheck);
 		}
@@ -627,7 +627,7 @@ class KDTree : NNIndex{
 		/* If this is a leaf node, then do check and return. */
 		if (node.child1 == null  &&  node.child2 == null) {
 		
-			this.checkCount += 1;
+		//	this.checkCount += 1;
 		
 			/* Do not check same node more than once when searching multiple trees.
 				Once a vector is checked, we set its location in this.vind to the
@@ -677,8 +677,6 @@ class KDTree : NNIndex{
 	
 		/* If this is a leaf node, then do check and return. */
 		if (node.child1 == null  &&  node.child2 == null) {
-		
-			this.checkCount += 1;
 		
 			/* Do not check same node more than once when searching multiple trees.
 				Once a vector is checked, we set its location in this.vind to the

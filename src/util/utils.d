@@ -14,6 +14,7 @@ public import util.dist;
 
 import std.c.stdlib;
 import std.conv;
+import std.string;
 import util.logger;
 
 template MAX(T) {
@@ -37,39 +38,20 @@ void swap(T) (ref T a, ref T b) {
 
 
 
-float convert(T)(string value) 
-{
-	return toFloat(value);
-}
+T convert(T : int)(string value) { return toInt(value); }
+T convert(T : float)(string value) { return toFloat(value); }
+T convert(T : double)(string value) { return toDouble(value); }
 
 
-int[] toIntVec(string[] strVec)
+T[] toVec(T)(string[] strVec)
 {
-	int[] vec = new int[strVec.length];
+	T[] vec = new T[strVec.length];
 	for (int i=0;i<strVec.length;++i) {
-		vec[i] = toInt(strVec[i]);
+		vec[i] = convert!(T)(strVec[i]);
 	}
 	
 	return vec;
 }
-
-
-
-float[] toFloatVec(string[] strVec)
-{
-	float[] vec = new float[strVec.length];
-	for (int i=0;i<strVec.length;++i) {
-		vec[i] = toFloat(strVec[i]);
-	}
-	
-	return vec;
-}
-	
-
-
-
-
-
 
 
 struct BranchStruct(T) {
@@ -390,3 +372,27 @@ unittest
 
 
 
+public float computeVariance(float[][] points)
+{
+	if (points.length==0) {
+		return 0;
+	}
+	
+	float[] mu = points[0].dup;
+	
+	mu[] = 0;	
+	for (int j=0;j<mu.length;++j) {
+		for (int i=0;i<points.length;++i) {
+			mu[j] += points[i][j];
+		}
+		mu[j]/=points.length;
+	}
+	
+	float variance = 0;
+	for (int i=0;i<points.length;++i) {
+		variance += squaredDist(mu,points[i]);
+	}
+	variance/=points.length;
+
+	return variance;
+}

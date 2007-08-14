@@ -126,7 +126,7 @@ class Features {
 		vecs = new float[][10]; // an initial size
 		
 		count = 0;
-		vecs[count++] = toFloatVec(tokens);
+		vecs[count++] = toVec!(float)(tokens);
 		
 		
 		const int MAX_BUF = 10000;
@@ -143,7 +143,7 @@ class Features {
 					vecs.length = vecs.length * 2;
 				}
 				
-				vecs[count++] = toFloatVec(tokens);
+				vecs[count++] = toVec!(float)(tokens);
 			} else {
 				debug {
 					Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(count+1));
