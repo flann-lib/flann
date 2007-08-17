@@ -202,7 +202,10 @@ void main(char[][] args)
 	optVerbosity.helpMessage = "Stop searching after exploring NUM features.";
 	
 	auto optSkipMatches = new NumericOption!(uint)("K", "skip-matches", "skip_matches", 0u, "NUM");
-	optSkipMatches.helpMessage = "Skip teh first NUM matches at test phase.";
+	optSkipMatches.helpMessage = "Skip the first NUM matches at test phase.";
+	
+	auto optRandom = new BoolOption("R", "random", "random");
+	optRandom.helpMessage = "Build random (kmeans-like) tree";
 	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
@@ -225,6 +228,7 @@ void main(char[][] args)
 	optParser.addOption(optClusters);
 	optParser.addOption(optVerbosity);
 	optParser.addOption(optSkipMatches);
+	optParser.addOption(optRandom);
 	optParser.addOption(optHelp);
 
 	// Now we can finally parse our own command line
@@ -274,6 +278,7 @@ void main(char[][] args)
 	Params params;
 	params.numTrees = unbox!(uint)(optParser["num_trees"]);
 	params.branching = unbox!(uint)(optParser["branching"]);
+	params.random = unbox!(bool)(optParser["random"]);
 
 	if (!(algorithm in indexRegistry)) {
 		Logger.log(Logger.ERROR,"Algorithm not supported.\n");

@@ -200,6 +200,140 @@ private class KMeansCluster
 		}
 	}
 
+	void computeRandomClustering(int branching)
+	{
+		
+		int n = points.length;
+		int nc = branching;
+		int flength = points[0].data.length;
+		
+		
+		if (n<nc) {
+			return;
+		}
+	
+	
+		DistinctRandom r = new DistinctRandom();
+		
+		r.init(n);
+		
+		// choose the initial cluster centers
+		float[][] centers = new float[][nc];
+		float[] radiuses = new float[nc];
+		for (int i=0;i<nc;++i) {
+			centers[i] = points[r.nextRandom()].data;
+		}
+	
+		int[] count = new int[nc];
+	
+		// assign points to clusters
+		int[] belongs_to = new int[n];
+		for (int i=0;i<n;++i) {
+			float sq_dist = squaredDist(points[i].data,centers[0]); 
+			belongs_to[i] = 0;
+			for (int j=1;j<nc;++j) {
+				float new_sq_dist = squaredDist(points[i].data,centers[j]);
+				if (sq_dist>new_sq_dist) {
+					belongs_to[i] = j;
+					sq_dist = new_sq_dist;
+				}
+			}
+			count[belongs_to[i]]++;
+		}
+		
+/+			
+	//	int iterations = 0;
+		while (!converged) {
+		
+//			writef("Iteration %d\n",iterations++);
+		
+			converged = true;
+			
+			for (int i=0;i<nc;++i) {
+				centers[i][] = 0.0;
+			}
+			count[] = 0;
+			
+			
+	
+			// compute the new clusters
+			for (int i=0;i<n;++i) {
+				for (int j=0;j<nc;++j) {
+					if (belongs_to[i]==j) {
+						for (int k=0;k<flength;++k) {
+							centers[j][k]+=points[i].data[k];
+						}
+						count[j]++;
+					}
+				}
+			}
+						
+			for (int j=0;j<nc;++j) {
+				for (int k=0;k<flength;++k) {
+					if (count[j]==0) {
+						throw new Exception("Degenerate cluster\n");
+					}
+					centers[j][k] /= count[j];
+				}
+			}
+			
+			
+			radiuses[] = 0;
+			// reassign points to clusters
+			for (int i=0;i<n;++i) {
+				float sq_dist = squaredDist(points[i].data,centers[0]); 
+				int new_centroid = 0;
+				for (int j=1;j<nc;++j) {
+					float new_sq_dist = squaredDist(points[i].data,centers[j]);
+					if (sq_dist>new_sq_dist) {
+						new_centroid = j;
+						sq_dist = new_sq_dist;
+					}
+				}
+				if (sq_dist>radiuses[new_centroid]) {
+					radiuses[new_centroid] = sq_dist;
+				}
+				if (new_centroid != belongs_to[i]) {
+					belongs_to[i] = new_centroid;
+					converged = false;
+				}
+			}
+		//	writef("done\n");
+		}
+	
+	+/
+		// compute kmeans clustering for each of the resulting clusters
+		childs = new KMeansCluster[nc];
+		for (int c=0;c<nc;++c) {
+			int s = count[c];
+			Feature[] child_points = new Feature[s];
+			int cnt_indices = 0;
+			
+			float variance = 0;
+			for (int i=0;i<n;++i) {
+				if (belongs_to[i]==c) {
+					child_points[cnt_indices++] = points[i];
+					variance += squaredDist(points[i].data);;
+				}
+			}
+			variance /= s;
+			variance -= squaredDist(centers[c]);
+			
+			//writefln("-------------------------------------------");
+			
+			childs[c] = new KMeansCluster(child_points);
+			
+/+			childs[c].computeStatistics();			
+			assert (childs[c].radius == radiuses[c]);
+			assert (childs[c].pivot == centers[c]);
+			assert (childs[c].variance == variance);+/
+			childs[c].radius = radiuses[c];
+			childs[c].pivot = centers[c];
+			childs[c].variance = variance;
+			childs[c].computeClustering(branching);
+		}
+	}
+
 
 	void computeStatistics() {
 	
@@ -405,6 +539,7 @@ class KMeansTree : NNIndex
 
 	private int branching;
 	private int numTrees_;
+	private bool randomTree;
 	
 	private KMeansCluster root[];
 	private float[][] vecs;
@@ -421,6 +556,8 @@ class KMeansTree : NNIndex
 	{
 		this.branching = params.branching;
 		this.numTrees_ = params.numTrees;
+		this.randomTree = params.random;
+		
 		this.vecs = inputData.vecs;
 		this.flength = inputData.veclen;
 		
@@ -500,7 +637,13 @@ class KMeansTree : NNIndex
 		foreach (index,value; branchings) {
 			root[index] = new KMeansCluster(points);
 			root[index].computeStatistics();
-			root[index].computeClustering(value);
+			
+			if (randomTree) {
+				root[index].computeRandomClustering(value);
+			}
+			else {
+				root[index].computeClustering(value);
+			}
 		}
 		
 		

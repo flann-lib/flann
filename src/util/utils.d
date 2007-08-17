@@ -96,6 +96,7 @@ extern (C) {
 struct Params {
  	int numTrees;
 	int branching;
+	bool random;
 }
 
 
