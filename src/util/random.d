@@ -12,6 +12,13 @@ class DistinctRandom
 	private int[] vals;
 	private int counter;
 	
+	
+	public this() {};
+	
+	public this(int n) {
+		init(n);
+	}
+	
 	public void init(int n) {
 		vals.length = n;
 		for(int i=0;i<n;++i) {
@@ -28,7 +35,11 @@ class DistinctRandom
 	}
 	
 	public int nextRandom() {
-		return vals[counter++];
+		if (counter==vals.length) {
+			return -1;
+		} else {
+			return vals[counter++];
+		}
 	}
 }
 

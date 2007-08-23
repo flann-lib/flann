@@ -207,6 +207,9 @@ void main(char[][] args)
 	auto optRandom = new BoolOption("R", "random", "random");
 	optRandom.helpMessage = "Build random (kmeans-like) tree";
 	
+	auto optCenters = new StringOption("C", "centers", "centers", "random", "VALUE");
+	optCenters.helpMessage = "Algorithms for choosing initial kmeans centers.";
+	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
 
@@ -229,6 +232,7 @@ void main(char[][] args)
 	optParser.addOption(optVerbosity);
 	optParser.addOption(optSkipMatches);
 	optParser.addOption(optRandom);
+	optParser.addOption(optCenters);
 	optParser.addOption(optHelp);
 
 	// Now we can finally parse our own command line
@@ -279,6 +283,7 @@ void main(char[][] args)
 	params.numTrees = unbox!(uint)(optParser["num_trees"]);
 	params.branching = unbox!(uint)(optParser["branching"]);
 	params.random = unbox!(bool)(optParser["random"]);
+	params.centersAlgorithm = unbox!(string)(optParser["centers"]);
 
 	if (!(algorithm in indexRegistry)) {
 		Logger.log(Logger.ERROR,"Algorithm not supported.\n");

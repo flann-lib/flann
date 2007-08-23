@@ -18,13 +18,15 @@ import util.random;
 mixin AlgorithmRegistry!(KMeansTree);
 
 
-
 alias BranchStruct!(KMeansCluster) BranchSt;
 alias Heap!(BranchSt) BranchHeap;
 
 static this() {
   Serializer.registerClass!(KMeansCluster)();
 }
+
+
+private string centersAlgorithm;
 
 private class KMeansCluster
 {
@@ -57,6 +59,76 @@ private class KMeansCluster
 		this.points = points;
 	}
 
+
+
+	float[][] chooseCentersRandom(int k, Feature[] points)
+	{
+		DistinctRandom r = new DistinctRandom(points.length);
+		
+		// choose the initial cluster centers
+		float[][] centers = new float[][k];
+		int index;
+		for (index=0;index<k;++index) {
+			bool duplicate = true;
+			while (duplicate) {
+				duplicate = false;
+				int rnd = r.nextRandom();
+				if (rnd==-1) {
+					return centers[0..index];
+				}
+				
+				centers[index] = points[rnd].data;
+				
+				for (int j=0;j<index;++j) {
+					if (squaredDist(centers[index],centers[j])<1e-5) {
+						duplicate = true;
+					}
+				}
+			}
+		}
+		
+		return centers[0..index];
+	}
+
+	float[][] chooseCentersGonzales(int k, Feature[] points)
+	{
+		int n = points.length;
+		
+		float[][] centers = new float[][k];
+		
+		int rand = cast(int) (drand48() * n);  
+		assert(rand >=0 && rand < n);
+		
+		centers[0] = points[rand].data;
+		
+		int index;
+		for (index=1; index<k; ++index) {
+			
+			int best_index = -1;
+			float best_val = 0;
+			for (int j=0;j<n;++j) {
+				float dist = squaredDist(centers[0],points[j].data);
+				for (int i=1;i<index;++i) {
+					float tmp_dist = squaredDist(centers[i],points[j].data);
+					if (tmp_dist<dist) {
+						dist = tmp_dist;
+					}
+				}
+				if (dist>best_val) {
+					best_val = dist;
+					best_index = j;
+				}
+			}
+			if (best_index!=-1) {
+				centers[index] = points[best_index].data;
+			} 
+			else {
+				break;
+			}
+		}
+		return centers[0..index];
+	}
+	
 	/** 
 	Method that computes the k-means clustering 
 	*/
@@ -66,27 +138,29 @@ private class KMeansCluster
 		int n = points.length;
 		int nc = branching;
 		int flength = points[0].data.length;
+			
+		float[][] centers;
+		if (centersAlgorithm=="gonzales") {
+			centers = chooseCentersGonzales(nc,points);
+		}
+		else if (centersAlgorithm=="random") {
+			centers = chooseCentersRandom(nc,points);		
+		}
+		else {
+			throw new Exception("Unknown algorithms for choosing initial centers.");
+		}
 		
-		
-		if (n<nc) {
+		if (centers.length<nc) {
 			return;
 		}
-	
-	
-		DistinctRandom r = new DistinctRandom();
 		
-		r.init(n);
-		
-		// choose the initial cluster centers
-		float[][] centers = new float[][nc];
 		float[] radiuses = new float[nc];
-		for (int i=0;i<nc;++i) {
-			centers[i] = points[r.nextRandom()].data;
-		}
-	
+		
+		
 		// assign points to clusters
 		int[] belongs_to = new int[n];
 		for (int i=0;i<n;++i) {
+
 			float sq_dist = squaredDist(points[i].data,centers[0]); 
 			belongs_to[i] = 0;
 			for (int j=1;j<nc;++j) {
@@ -97,7 +171,7 @@ private class KMeansCluster
 				}
 			}
 		}
-	
+		
 		bool converged = false;
 		//float[] centroids[] = new float[][nc];
 		
@@ -108,8 +182,10 @@ private class KMeansCluster
 		
 		int[] count = new int[nc];
 			
-	//	int iterations = 0;
+		int iterations = 0;
 		while (!converged) {
+		
+			iterations++;
 		
 //			writef("Iteration %d\n",iterations++);
 		
@@ -207,23 +283,23 @@ private class KMeansCluster
 		int nc = branching;
 		int flength = points[0].data.length;
 		
+	
+		float[][] centers;
+		if (centersAlgorithm=="gonzales") {
+			centers = chooseCentersGonzales(nc,points);
+		}
+		else if (centersAlgorithm=="random") {
+			centers = chooseCentersRandom(nc,points);		
+		}
+		else {
+			throw new Exception("Unknown algorithms for choosing initial centers.");
+		}
 		
-		if (n<nc) {
+		if (centers.length<nc) {
 			return;
 		}
-	
-	
-		DistinctRandom r = new DistinctRandom();
-		
-		r.init(n);
-		
-		// choose the initial cluster centers
-		float[][] centers = new float[][nc];
+
 		float[] radiuses = new float[nc];
-		for (int i=0;i<nc;++i) {
-			centers[i] = points[r.nextRandom()].data;
-		}
-	
 		int[] count = new int[nc];
 	
 		// assign points to clusters
@@ -416,7 +492,8 @@ private class KMeansCluster
 			
 			for (int i=0;i<nc;++i) {
 				if (i!=ci) {
-					heap.insert(BranchSt(childs[i],distances[i]));
+ 					heap.insert(BranchSt(childs[i],distances[i]));
+//					heap.insert(BranchSt(childs[i], getDistanceToBorder(childs[i].pivot,childs[ci].pivot,vec)));
 				}
 			}
 	
@@ -557,6 +634,8 @@ class KMeansTree : NNIndex
 		this.branching = params.branching;
 		this.numTrees_ = params.numTrees;
 		this.randomTree = params.random;
+		
+		centersAlgorithm = params.centersAlgorithm;
 		
 		this.vecs = inputData.vecs;
 		this.flength = inputData.veclen;

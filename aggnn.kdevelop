@@ -19,7 +19,7 @@
       <mainprogram>/home/marius/ubc/projects/nn/aggnn_git/aggnn</mainprogram>
       <directoryradio>executable</directoryradio>
       <programargs>-a kdtree -i data/sift10K.nn -n 1 -c 128</programargs>
-      <globaldebugarguments>./aggnn -a kmeans -i data/sift1K.nn -c 8 -n 1 -b 32 -K 1 -R yes</globaldebugarguments>
+      <globaldebugarguments>-a kmeans -i degenerate.list -k 4000 -S -f clusters.out -b 10</globaldebugarguments>
       <globalcwd>/home/marius/ubc/projects/nn/aggnn_git</globalcwd>
       <useglobalprogram>false</useglobalprogram>
       <terminal>false</terminal>
