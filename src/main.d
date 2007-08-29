@@ -1,6 +1,6 @@
 
 /************************************************************************
-Project: aggnn
+Project: nn
 
   Demo software: Approximate Nearest-Neighbor Matching
   Converted from C
@@ -21,7 +21,7 @@ import util.optparse;
 import util.utils;
 import util.resultset;
 import util.features;
-import util.progressbar;
+import console.progressbar;
 import util.logger;
 import algo.kdtree;
 import algo.agglomerativetree2;
@@ -30,6 +30,7 @@ import algo.kmeans;
 import algo.bottom_up_agg_simple;
 import algo.balltree;
 import algo.linearsearch;
+import convert.compute_gt;
 
 
 
@@ -86,27 +87,24 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skip
 	int correct, cormatch, match;
 	correct = cormatch = match = 0;
 
-	ProgressBar progressBar = new ProgressBar(testData.count, 70);
-	progressBar.start();
-
-	for (int i = 0; i < testData.count; i++) {
-//  	for (int i = 18; i < 19; i++) {
-		
-		progressBar.tick();
-		
-		resultSet.init(testData.vecs[i]);
-
-		index.findNeighbors(resultSet,testData.vecs[i], checks);			
-		int nn_index = resultSet.getPointIndex(0+skipMatches);
-
+	showProgressBar(testData.count, 70, (Ticker tick){
+		for (int i = 0; i < testData.count; i++) {
+			tick();
+			
+			resultSet.init(testData.vecs[i]);
 	
-		if (nn_index == testData.match[i]) {
-			correct++;
+			index.findNeighbors(resultSet,testData.vecs[i], checks);			
+			int nn_index = resultSet.getPointIndex(0+skipMatches);
+	
+		
+			if (nn_index == testData.match[i]) {
+				correct++;
+			}
+	/+		else {
+				writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
+			}+/
 		}
-/+		else {
-			writef("%d, got:  %d, expected: %d\n",i, nn_index, testData.match[i]);
-		}+/
-	}
+	});
 
 	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
 	Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
@@ -151,7 +149,7 @@ void writeToFile(float[][] centers, char[] centerFile)
 void main(char[][] args)
 {
 	Logger.enableLevel(Logger.ERROR);
-	 //	std.gc.disable();
+	 std.gc.disable();
 
 	// Create our option parser
 	auto optParser = new OptionParser();
@@ -210,6 +208,9 @@ void main(char[][] args)
 	auto optCenters = new StringOption("C", "centers", "centers", "random", "VALUE");
 	optCenters.helpMessage = "Algorithms for choosing initial kmeans centers.";
 	
+	auto optComputeGT = new FlagTrueOption("G", "compute-gt", "compute_gt");
+	optComputeGT.helpMessage = "Computer ground truth";
+	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
 
@@ -233,10 +234,18 @@ void main(char[][] args)
 	optParser.addOption(optSkipMatches);
 	optParser.addOption(optRandom);
 	optParser.addOption(optCenters);
+	optParser.addOption(optComputeGT);
 	optParser.addOption(optHelp);
 
 	// Now we can finally parse our own command line
 	optParser.parse(args[1..$]);
+
+	string verbosity = unbox!(string)(optParser["verbosity"]);
+	string[] logLevels = split(verbosity,",");
+	foreach (logLevel;logLevels) {
+		Logger.enableLevel(logLevel);
+	}
+
 
 	// Check to see if --help was supplied
 	if( unbox!(bool)(optParser["help"]) )
@@ -246,6 +255,15 @@ void main(char[][] args)
 			optParser.showHelp();
 			Logger.log(Logger.ERROR,"\n");
 			exit(0);
+	}
+	
+	
+	if (unbox!(bool)(optParser["compute_gt"]) ) {
+		if (optParser.positionalArgs.length != 3) {
+			throw new Exception("Compute ground truth options expects three file names");
+		}
+		compute_gt(optParser.positionalArgs[0],optParser.positionalArgs[1],optParser.positionalArgs[2]);
+		exit(0);
 	}
 	
 	
@@ -271,14 +289,8 @@ void main(char[][] args)
 	bool skipTest = unbox!(bool)(optParser["skip_test"]);
 	int clusters = unbox!(uint)(optParser["clusters"]);
 	char[] clusterFile = unbox!(char[])(optParser["cluster_file"]);
-	string verbosity = unbox!(string)(optParser["verbosity"]);
 	uint skipMatches = unbox!(uint)(optParser["skip_matches"]);
 
-	string[] logLevels = split(verbosity,",");
-	foreach (logLevel;logLevels) {
-		Logger.enableLevel(logLevel);
-	}
-	
 	Params params;
 	params.numTrees = unbox!(uint)(optParser["num_trees"]);
 	params.branching = unbox!(uint)(optParser["branching"]);
@@ -318,11 +330,10 @@ void main(char[][] args)
 			inputData.readFromFile(null); 
 		}
 		else if (inputFile !is null) {
-			Logger.log(Logger.INFO,"Reading input data from %s... ",inputFile);
-			fflush(stdout);
-			inputData = new Features();
-			inputData.readFromFile(inputFile);
-			Logger.log(Logger.INFO,"done\n");
+			showOperation( "Reading input data from %s".format(inputFile), {
+				inputData = new Features();
+				inputData.readFromFile(inputFile);
+			});
 		}
 	
 		if (inputData is null) {

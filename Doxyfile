@@ -3,7 +3,7 @@
 #---------------------------------------------------------------------------
 # Project related configuration options
 #---------------------------------------------------------------------------
-PROJECT_NAME           = fastnn_d
+PROJECT_NAME           = aggnn
 PROJECT_NUMBER         = $VERSION$
 OUTPUT_DIRECTORY       = 
 CREATE_SUBDIRS         = NO
@@ -25,7 +25,7 @@ ABBREVIATE_BRIEF       = "The $name class" \
 ALWAYS_DETAILED_SEC    = NO
 INLINE_INHERITED_MEMB  = NO
 FULL_PATH_NAMES        = YES
-STRIP_FROM_PATH        = /home/marius/ubc/projects/rlc/
+STRIP_FROM_PATH        = /home/marius/
 STRIP_FROM_INC_PATH    = 
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = NO
@@ -82,7 +82,7 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = /home/marius/ubc/projects/nn/fastnn_d
+INPUT                  = /home/marius/ubc/nn
 FILE_PATTERNS          = *.c \
                          *.cc \
                          *.cxx \
@@ -246,7 +246,7 @@ SKIP_FUNCTION_MACROS   = YES
 # Configuration::additions related to external references   
 #---------------------------------------------------------------------------
 TAGFILES               = 
-GENERATE_TAGFILE       = fastnn_d.tag
+GENERATE_TAGFILE       = aggnn.tag
 ALLEXTERNALS           = NO
 EXTERNAL_GROUPS        = YES
 PERL_PATH              = /usr/bin/perl

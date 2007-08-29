@@ -1,5 +1,5 @@
 /* 
-Project: aggnn
+Project: nn
 */
 
 module util.features;
@@ -12,6 +12,7 @@ import std.stream;
 import serialization.serializer;
 import util.logger;
 import util.utils;
+import util.random;
 
 alias float[] feature;
 
@@ -61,6 +62,14 @@ class Features {
 		int[] match;         /* Array of indices to correct nearest neighbor. */
 // 		int[] mtype;         /* Array of flags indicating if match is correct. */
 
+		public this() {}
+		
+		public this(int size) 
+		{
+			this.count = size;
+			vecs.length = size;
+			match.length = size;
+		}
 
 	/** 
 		Read an NN file containing vectors for nearest-neighbor matching.
@@ -116,9 +125,26 @@ class Features {
 	}
 	
 	
+	private char guessDelimiter(string line)
+	{
+		string numberChars = "01234567890.e+-";
+		int pos = 0;
+		while (numberChars.find(line[pos])==-1) {
+			pos++;
+		}
+		while (numberChars.find(line[pos])!=-1) {
+			pos++;
+		}
+		
+		return line[pos];
+	}
+	
 	private void readDATFile(string firstLine, FILE* fp) 
 	{
-		string[] tokens = firstLine.split();
+		string delimiter;
+		delimiter ~= guessDelimiter(firstLine);
+		string[] tokens = strip(firstLine).split(delimiter);
+		
 		veclen = tokens.length;
 		
 // 		writefln("veclen: %d",veclen);
@@ -136,7 +162,7 @@ class Features {
 		char *ret = fgets(&buffer[0],MAX_BUF,fp);
 		while (ret!=null) {
 			string line = buffer[0..strlen(&buffer[0])];
-			tokens = split(line);
+			tokens = strip(line).split(delimiter);
 			if (tokens.length==veclen) {
 				// increase vecs size if needed
 				if (vecs.length==count) {
@@ -227,5 +253,46 @@ class Features {
 		
 	}
 	
+	public void writeToFile(char[] file)
+	{
+		FILE* fp = fopen(toStringz(file),"w");
+		if (fp is null) {
+			throw new Exception("Cannot open input file: "~file);
+		}
+		
+		for (int i=0;i<count;++i) {
+			for (int j=0;j<vecs[i].length;++j) {
+				if (j!=0) {
+					fwritef(fp," ");
+				}
+				fwritef(fp,"%g",vecs[i][j]);
+			}
+			fwritef(fp,"\n");
+		}
+		
+		fclose(fp);
+	}
+	
+	
+	public Features extractSubset(int size, bool remove = true)
+	{
+		DistinctRandom rand = new DistinctRandom(size);
+		Features newSet = new Features(size);
+		
+		for (int i=0;i<size;++i) {
+			int r = rand.nextRandom();
+			newSet.vecs[i] = vecs[r];
+			if (remove) {
+				swap(vecs[count-i-1],vecs[r]);
+			}
+		}
+		
+		if (remove) {
+			count -= size;
+			vecs.length = count;
+		}
+		
+		return newSet;
+	}
 
 }

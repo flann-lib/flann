@@ -3,7 +3,7 @@
 
 ifndef TARGET	
 	#TARGET := $(shell basename `pwd`)
-	TARGET = aggnn
+	TARGET = nn
 endif
 # ------------------ Compilation options ------------------------
 
@@ -32,8 +32,8 @@ ifeq ($(PROFILER),gprof)
 endif
 	
 ifeq ($(CONFIGURATION),debug)
-	DFLAGS := ${DFLAGS} -g -frelease
-#	DFLAGS := ${DFLAGS} -g -fdebug
+#	DFLAGS := ${DFLAGS} -g -frelease
+	DFLAGS := ${DFLAGS} -g -fdebug
 	CFLAGS = ${WARNS} -g
 else
 	DFLAGS := ${DFLAGS} -O3 -finline -frelease

@@ -1,6 +1,6 @@
 
 /************************************************************************
-Project: aggnn
+Project: nn
 
 Module: kdtree.d (approximate nearest-neighbor matching)
 Author: David Lowe (2006)

@@ -1,5 +1,5 @@
 /************************************************************************
-Project: aggnn
+Project: nn
 Project: convert
 
 Module: util.d (utility routines for memory allocation, etc.

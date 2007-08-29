@@ -1,5 +1,5 @@
 /*
-Project: aggnn
+Project: nn
 
 Module: Priority Queue Implementation
 Author: David Lowe (2006)

@@ -1,6 +1,6 @@
 
 /************************************************************************
-Project: aggnn
+Project: nn
 
 Module: agglomerativetree.d (class that constructs an agglomerative tree
 			using the reciprocal-nearest-neighbor algorithm )

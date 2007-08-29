@@ -1,5 +1,5 @@
 /*
-Project: aggnn
+Project: nn
 */
 
 module algo.kmeans;
@@ -27,6 +27,8 @@ static this() {
 
 
 private string centersAlgorithm;
+
+
 
 private class KMeansCluster
 {
@@ -74,13 +76,13 @@ private class KMeansCluster
 				duplicate = false;
 				int rnd = r.nextRandom();
 				if (rnd==-1) {
-					return centers[0..index];
+					return centers[0..index-1];
 				}
 				
 				centers[index] = points[rnd].data;
 				
 				for (int j=0;j<index;++j) {
-					if (squaredDist(centers[index],centers[j])<1e-5) {
+					if (squaredDist(centers[index],centers[j])<1e-9) {
 						duplicate = true;
 					}
 				}
@@ -135,6 +137,10 @@ private class KMeansCluster
 	void computeClustering( int branching)
 	{
 		
+		static int a = 0;
+		
+	//	times++;
+		
 		int n = points.length;
 		int nc = branching;
 		int flength = points[0].data.length;
@@ -173,10 +179,8 @@ private class KMeansCluster
 		}
 		
 		bool converged = false;
-		//float[] centroids[] = new float[][nc];
 		
 		for (int i=0;i<nc;++i) {
-// 			centers[i] = new Feature();
 			centers[i] = new float[](flength);
 		}
 		
@@ -213,6 +217,7 @@ private class KMeansCluster
 			for (int j=0;j<nc;++j) {
 				for (int k=0;k<flength;++k) {
 					if (count[j]==0) {
+//						Logger.log(Logger.INFO,"run: %d",times);
 						throw new Exception("Degenerate cluster\n");
 					}
 					centers[j][k] /= count[j];

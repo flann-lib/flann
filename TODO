@@ -5,7 +5,7 @@
 
 - build several randomized kmeans (with different branching factors - might help for the branching factors to be prime numbers) DONE
 
-- spsedup kmeans using sampling
+- speedup kmeans using sampling
 
 
 - mean shift clustering

@@ -1,6 +1,6 @@
 
 /************************************************************************
-Project: aggnn
+Project: nn
 
 Module: balltree.d 
 Author: Marius Muja (2007)

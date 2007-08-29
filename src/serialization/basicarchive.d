@@ -1,5 +1,5 @@
 /*******
- Project: aggnn
+ Project: nn
 */
 
 module serialization.basicarchive;
