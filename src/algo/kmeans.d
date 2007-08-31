@@ -72,9 +72,10 @@ private class KMeansCluster
 		int index;
 		for (index=0;index<k;++index) {
 			bool duplicate = true;
+			int rnd;
 			while (duplicate) {
 				duplicate = false;
-				int rnd = r.nextRandom();
+				rnd = r.nextRandom();
 				if (rnd==-1) {
 					return centers[0..index-1];
 				}
@@ -136,11 +137,6 @@ private class KMeansCluster
 	*/
 	void computeClustering( int branching)
 	{
-		
-		static int a = 0;
-		
-	//	times++;
-		
 		int n = points.length;
 		int nc = branching;
 		int flength = points[0].data.length;
@@ -155,13 +151,13 @@ private class KMeansCluster
 		else {
 			throw new Exception("Unknown algorithms for choosing initial centers.");
 		}
-		
+
 		if (centers.length<nc) {
 			return;
 		}
 		
 		float[] radiuses = new float[nc];
-		
+		int[] count = new int[nc];		
 		
 		// assign points to clusters
 		int[] belongs_to = new int[n];
@@ -176,30 +172,40 @@ private class KMeansCluster
 					sq_dist = new_sq_dist;
 				}
 			}
+			count[belongs_to[i]]++;
 		}
-		
+
 		bool converged = false;
 		
 		for (int i=0;i<nc;++i) {
 			centers[i] = new float[](flength);
 		}
 		
-		int[] count = new int[nc];
-			
-		int iterations = 0;
 		while (!converged) {
-		
-			iterations++;
-		
-//			writef("Iteration %d\n",iterations++);
-		
+			
 			converged = true;
 			
 			for (int i=0;i<nc;++i) {
 				centers[i][] = 0.0;
+				
+				// if one cluster converges to an empty cluster,
+				// move an element into that cluster
+				if (count[i]==0) {
+					int j = (i+1)%nc;
+					while (count[j]<=1) {
+						j = (j+1)%nc;
+					}					
+					
+					for (int k=0;k<n;++k) {
+						if (belongs_to[k]==j) {
+							belongs_to[k] = i;
+							count[j]--;
+							count[i]++;
+							break;
+						}
+					}
+				}
 			}
-			count[] = 0;
-			
 			
 	
 			// compute the new clusters
@@ -209,17 +215,14 @@ private class KMeansCluster
 						for (int k=0;k<flength;++k) {
 							centers[j][k]+=points[i].data[k];
 						}
-						count[j]++;
+						break;	
 					}
 				}
 			}
+			
 						
 			for (int j=0;j<nc;++j) {
 				for (int k=0;k<flength;++k) {
-					if (count[j]==0) {
-//						Logger.log(Logger.INFO,"run: %d",times);
-						throw new Exception("Degenerate cluster\n");
-					}
 					centers[j][k] /= count[j];
 				}
 			}
@@ -241,7 +244,10 @@ private class KMeansCluster
 					radiuses[new_centroid] = sq_dist;
 				}
 				if (new_centroid != belongs_to[i]) {
+					count[belongs_to[i]]--;
+					count[new_centroid]++;
 					belongs_to[i] = new_centroid;
+					
 					converged = false;
 				}
 			}

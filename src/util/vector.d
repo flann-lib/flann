@@ -74,9 +74,9 @@ class vector(T) {
 	}
 };
 
-unittest {
+unittest 
+{
 
-	import std.stdio;
 	
 	writef("Begin unittest\n");
 	vector!(int) v = new vector!(int);

@@ -149,7 +149,7 @@ void writeToFile(float[][] centers, char[] centerFile)
 void main(char[][] args)
 {
 	Logger.enableLevel(Logger.ERROR);
-	 std.gc.disable();
+	std.gc.disable();
 
 	// Create our option parser
 	auto optParser = new OptionParser();
