@@ -8,6 +8,8 @@ import std.stdio;
 import std.string;
 import std.c.string;
 import std.stream;
+import std.ctype;
+import std.conv;
 
 import serialization.serializer;
 import util.logger;
@@ -52,7 +54,8 @@ class Features {
 
 		enum signature {
 			NN_FILE,
-			DAT_FILE
+			DAT_FILE,
+			BINARY_FILE	
 		} 
 
 
@@ -87,11 +90,11 @@ class Features {
 		known to be a correct match, while 1 means it is correct
 		D. A sequence of the veclen values for the vector elements.
 	*/	
-	private void readNNFile(string firstLine, FILE* fp) 
+	private void readNNFile(FILE* fp) 
 	{
 	
 		int vcount, veclen, vtype;
-		if (sscanf(&firstLine[0], "NN %d %d %d", &vcount, &veclen, &vtype) != 3) {
+		if (fscanf(fp, "NN %d %d %d ", &vcount, &veclen, &vtype) != 3) {
 			throw new Exception("Invalid NN file header.");
 		}
 	
@@ -139,11 +142,17 @@ class Features {
 		return line[pos];
 	}
 	
-	private void readDATFile(string firstLine, FILE* fp) 
+	private void readDATFile(FILE* fp) 
 	{
+		const int MAX_BUF = 10000;
+		char buffer[MAX_BUF];
+		
+		char *ret = fgets(&buffer[0],MAX_BUF,fp);
+		string line = buffer[0..strlen(&buffer[0])];
+		
 		string delimiter;
-		delimiter ~= guessDelimiter(firstLine);
-		string[] tokens = strip(firstLine).split(delimiter);
+		delimiter ~= guessDelimiter(line);
+		string[] tokens = strip(line).split(delimiter);
 		
 		veclen = tokens.length;
 		
@@ -153,15 +162,10 @@ class Features {
 		
 		count = 0;
 		vecs[count++] = toVec!(float)(tokens);
-		
-		
-		const int MAX_BUF = 10000;
-		
-		string buffer;
-		buffer.length = MAX_BUF;
-		char *ret = fgets(&buffer[0],MAX_BUF,fp);
+				
+		ret = fgets(&buffer[0],MAX_BUF,fp);
 		while (ret!=null) {
-			string line = buffer[0..strlen(&buffer[0])];
+			line = buffer[0..strlen(&buffer[0])];
 			tokens = strip(line).split(delimiter);
 			if (tokens.length==veclen) {
 				// increase vecs size if needed
@@ -215,10 +219,63 @@ class Features {
 		}
 	}
 	
-	private signature checkSignature(string header)
+	private void readBINARYFile(FILE* fp) 
 	{
-		if (header[0..2]=="NN") {
+		string header = readln(fp);
+		if (strip(header) != "BINARY") {
+			Logger.log(Logger.INFO,header);
+			throw new Exception("Invalid file type");
+		}
+		
+		string realFile = readln(fp);
+		int dim = toInt(strip(readln(fp)));
+		int elemSize = toInt(strip(readln(fp)));
+		
+		assert(elemSize==1); // for now assume 1 byte per element
+		
+		
+		FILE* bFile = fopen(toStringz(strip(realFile)),"r");
+		if (bFile is null) {
+			throw new Exception("Cannot open input file: "~realFile);
+		}
+		
+		ubyte buffer[] = new ubyte[dim];
+		
+		vecs = new float[][10]; // an initial size
+		count = 0;
+
+		while(fread(&buffer[0],dim,1,bFile)==1) {
+			if (vecs.length==count) {
+				vecs.length = vecs.length * 2;
+			}
+			vecs[count++] = toVec!(float,ubyte)(buffer);
+		}
+		
+		fclose(bFile);
+		
+		vecs = vecs[0..count];		
+		
+		
+		Logger.log(Logger.INFO,"Read %d elements",count);
+	}
+
+	
+	
+	private signature checkSignature(string file)
+	{
+		FILE* fp = fopen(toStringz(file),"r");
+		if (fp is null) {
+			throw new Exception("Cannot open input file: "~file);
+		}		
+		char buf[10];
+		fread(&buf[0],buf.length,char.sizeof,fp);
+		fclose(fp);
+
+		if (buf[0..2]=="NN") {
 			return signature.NN_FILE;
+		}
+		else if (buf[0..6]=="BINARY") {
+				return signature.BINARY_FILE;
 		}
 		else {
 			return signature.DAT_FILE;
@@ -227,28 +284,22 @@ class Features {
 	
 	public void readFromFile(char[] file)
 	{
-		FILE* fp;
-		if (file is null) {
-			fp = stdin;
-		}
-		else {
-			fp = fopen(toStringz(file),"r");
-			if (fp is null) {
-				throw new Exception("Cannot open input file: "~file);
-			}
+		signature sig = checkSignature(file);
+		
+		FILE* fp = fopen(toStringz(file),"r");
+		if (fp is null) {
+			throw new Exception("Cannot open input file: "~file);
 		}
 		
-		string line;
-		
-		readln(fp,line);
-		
-		signature sig = checkSignature(line);
 		
 		if (sig == signature.NN_FILE) {
-			readNNFile(line,fp);
+			readNNFile(fp);
 		}
 		else if (sig == signature.DAT_FILE) {
-			readDATFile(line,fp);
+			readDATFile(fp);
+		}
+		else if (sig == signature.BINARY_FILE) {
+			readBINARYFile(fp);
 		}
 		
 	}

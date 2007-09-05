@@ -875,7 +875,7 @@ class KMeansTree : NNIndex
 			
 					float variance = meanVariance - clusters[i].variance*clusters[i].points.length;
 					 
-					 for (int j=0;j<clusters[i].childs.length;++j) {
+					for (int j=0;j<clusters[i].childs.length;++j) {
 					 	variance += clusters[i].childs[j].variance*clusters[i].childs[j].points.length;
 					}
 					if (variance<minVariance) {
@@ -884,6 +884,8 @@ class KMeansTree : NNIndex
 					}			
 				}
 			}
+			
+			if (splitIndex==-1) break;
 			
 			meanVariance = minVariance;
 			

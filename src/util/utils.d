@@ -38,16 +38,17 @@ void swap(T) (ref T a, ref T b) {
 
 
 
-T convert(T : int)(string value) { return toInt(value); }
-T convert(T : float)(string value) { return toFloat(value); }
-T convert(T : double)(string value) { return toDouble(value); }
+T convert(T : int, U : string)(U value) { return toInt(value); }
+T convert(T : float, U : string)(U value) { return toFloat(value); }
+T convert(T : double, U : string)(U value) { return toDouble(value); }
 
+T convert(T : float, U : ubyte)(ubyte value) { return value; }
 
-T[] toVec(T)(string[] strVec)
+T[] toVec(T,U=string)(U[] strVec)
 {
 	T[] vec = new T[strVec.length];
 	for (int i=0;i<strVec.length;++i) {
-		vec[i] = convert!(T)(strVec[i]);
+		vec[i] = convert!(T,U)(strVec[i]);
 	}
 	
 	return vec;

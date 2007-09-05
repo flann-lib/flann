@@ -1,3 +1,7 @@
 *~
-aggnn
+nn
 *.save
+.*
+bin
+test
+tmp

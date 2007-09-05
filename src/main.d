@@ -15,6 +15,7 @@ import std.boxer;
 import std.c.stdlib;
 import std.c.math;
 import std.c.time;
+import std.conv;
 
 
 import util.optparse;
@@ -31,6 +32,7 @@ import algo.bottom_up_agg_simple;
 import algo.balltree;
 import algo.linearsearch;
 import convert.compute_gt;
+import util.dataset_generator;
 
 
 
@@ -211,6 +213,9 @@ void main(char[][] args)
 	auto optComputeGT = new FlagTrueOption("G", "compute-gt", "compute_gt");
 	optComputeGT.helpMessage = "Computer ground truth";
 	
+	auto optGenerateRandom = new FlagTrueOption("E", "generate-random", "generate_random");
+	optGenerateRandom.helpMessage = "Generate random dataset (options: output_file, feature count, feature length)";
+	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
 
@@ -235,6 +240,7 @@ void main(char[][] args)
 	optParser.addOption(optRandom);
 	optParser.addOption(optCenters);
 	optParser.addOption(optComputeGT);
+	optParser.addOption(optGenerateRandom);
 	optParser.addOption(optHelp);
 
 	// Now we can finally parse our own command line
@@ -260,12 +266,20 @@ void main(char[][] args)
 	
 	if (unbox!(bool)(optParser["compute_gt"]) ) {
 		if (optParser.positionalArgs.length != 3) {
-			throw new Exception("Compute ground truth options expects three file names");
+			throw new Exception("Compute ground truth option expects three file names");
 		}
 		compute_gt(optParser.positionalArgs[0],optParser.positionalArgs[1],optParser.positionalArgs[2]);
 		exit(0);
 	}
 	
+	if (unbox!(bool)(optParser["generate_random"]) ) {
+		if (optParser.positionalArgs.length != 3) {
+			throw new Exception("Generate random dataset option expects three arguments:output_file, feature count, feature length");
+		}
+		generateRandomDataset(optParser.positionalArgs[0],toInt(optParser.positionalArgs[1]),toInt(optParser.positionalArgs[2]));
+		exit(0);
+	}
+
 	
 	if( unbox!(bool)(optParser["print-algorithms"]) )
 	{
@@ -285,7 +299,7 @@ void main(char[][] args)
 	char[] loadFile = unbox!(char[])(optParser["load_file"]);
 	char[] algorithm = unbox!(char[])(optParser["algorithm"]);
 	uint nn = unbox!(uint)(optParser["nn"]);
-	Range checks = new Range(unbox!(string)(optParser["checks"]));
+	int[] checks = toVec!(int)(split(unbox!(string)(optParser["checks"]),","));
 	bool skipTest = unbox!(bool)(optParser["skip_test"]);
 	int clusters = unbox!(uint)(optParser["clusters"]);
 	char[] clusterFile = unbox!(char[])(optParser["cluster_file"]);
@@ -388,7 +402,7 @@ void main(char[][] args)
 			throw new Exception("There are no correct matches to compare to, aborting test phase.");
 		}
 		
-		for (int c=checks.begin;c<checks.end;c+=checks.skip) {
+		foreach (c;checks) {
 			testNNIndex(index,testData, nn, c, skipMatches);
 		}
 	}
