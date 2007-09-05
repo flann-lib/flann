@@ -180,7 +180,7 @@ void main(char[][] args)
 	auto optNN = new NumericOption!(uint)("n", "nn", "nn", 1u, "NN");
 	optNN.helpMessage = "Search should return NN nearest-neighbors";
 	
-	auto optChecks = new StringOption("c", "checks", "checks", "32", "RANGE(b:e:s)");
+	auto optChecks = new StringOption("c", "checks", "checks", "32", "NUM1,NUM2,...");
 	optChecks.helpMessage = "Stop searching after exploring NUM features.";
 	
 	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 1u, "NUM");
