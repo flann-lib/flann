@@ -18,6 +18,7 @@ import util.features;
 import util.logger;	
 import algo.nnindex;
 
+template Index(T) {
 
 mixin AlgorithmRegistry!(AgglomerativeExTree);
 
@@ -541,5 +542,7 @@ class AgglomerativeExTree : NNIndex {
 		ar.describe(root);
 		ar.describe(indexSize);
 	}
+
+}
 
 }

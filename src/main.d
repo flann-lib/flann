@@ -7,14 +7,13 @@ Project: nn
 Author: Marus Muja (2007)
 
 *************************************************************************/
-
+module main;
 
 import std.c.stdio;
 import std.string;
 import std.boxer;
 import std.c.stdlib;
 import std.c.math;
-import std.c.time;
 import std.conv;
 
 
@@ -33,44 +32,9 @@ import algo.balltree;
 import algo.linearsearch;
 import convert.compute_gt;
 import util.dataset_generator;
+import util.timer;
 
-
-
-class Range 
-{
-	int begin;
-	int end;
-	int skip;
-	
-	this(int begin, int end, int skip) {
-		this.begin = begin;
-		this.end = end;
-		this.skip = skip;
-	}
-	
-	this(string range) {
-		int[] values = toVec!(int)(split(range,":"));
-		
-		begin = values[0];
-		if (values.length>1) {
-			end = values[1];
-			
-			if (values.length>2) {
-				skip = values[2];
-			}
-			else {
-				skip = 1;
-			}
-		}
-		else {
-			skip = 1;
-			end = begin + skip;
-		} 
-	}
-}
-
-
-
+template Index(T) {
 
 void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skipMatches)
 {
@@ -84,7 +48,8 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skip
 
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
 	
-	clock_t startTime = clock();
+	auto timer = new StartStopTimer();
+	timer.start();
 	
 	int correct, cormatch, match;
 	correct = cormatch = match = 0;
@@ -108,7 +73,8 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skip
 		}
 	});
 
-	float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+	timer.stop();
+	float elapsed = timer.value;
 	Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
 			" checked   neighbors   (seconds)      (ms)\n"
 			" -------   ---------   ---------  -----------\n");
@@ -121,6 +87,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skip
 			elapsed, 1000.0 * elapsed / testData.count);
 
 }
+
 
 
 void writeToFile(float[][] centers, char[] centerFile) 
@@ -142,8 +109,105 @@ void writeToFile(float[][] centers, char[] centerFile)
 	fclose(fp);
 }
 
+}
+
+OptionParser parseArguments(char[][] args)
+{
+	// Create our option parser
+	auto optParser = new OptionParser();
+	
+	auto optAlgo = new StringOption("a", "algorithm", "algorithm", null, "ALGO");
+	optAlgo.helpMessage = "Use the ALGO nn search algorithm";
+	optParser.addOption(optAlgo);
+	
+	auto optPrintAlgos = new FlagTrueOption("p", "print-algorithms", "print-algorithms");
+	optPrintAlgos.helpMessage = "Display available algorithms";
+	optParser.addOption(optPrintAlgos);
+	
+	auto optInputFile = new StringOption("i", "input", "input_file", null, "FILE");
+	optInputFile.helpMessage = "Read input vectors from FILE";
+	optParser.addOption(optInputFile);
+	
+	auto optTestFile = new StringOption("t", "test", "test_file", null, "FILE");
+	optTestFile.helpMessage = "Read test vectors from FILE (if not given the input file is used)";
+	optParser.addOption(optTestFile);
+	
+	auto optMatchFile = new StringOption("m", "match", "match_file", null, "FILE");
+	optMatchFile.helpMessage = "The match file.";
+	optParser.addOption(optMatchFile);
+	
+	auto optSaveFile = new StringOption("s", "save", "save_file", null, "FILE");
+	optSaveFile.helpMessage = "Save the built index to this file.";
+	optParser.addOption(optSaveFile);
+	
+	auto optLoadFile = new StringOption("l", "load", "load_file", null, "FILE");
+	optLoadFile.helpMessage = "Load the index from this file. The type of index (algorithm) must be specified.";
+	optParser.addOption(optLoadFile);
+	
+	auto optNN = new NumericOption!(uint)("n", "nn", "nn", 1u, "NN");
+	optNN.helpMessage = "Search should return NN nearest-neighbors";
+	optParser.addOption(optNN);
+	
+	auto optChecks = new StringOption("c", "checks", "checks", "32", "NUM1,NUM2,...");
+	optChecks.helpMessage = "Stop searching after exploring NUM features.";
+	optParser.addOption(optChecks);
+	
+	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 1u, "NUM");
+	optNumTrees.helpMessage = "Number of trees to build (default: 1).";
+	optParser.addOption(optNumTrees);
+	
+	auto optBranching = new NumericOption!(uint)("b", "branching", "branching", 2u, "NUM");
+	optBranching.helpMessage = "Branching factor (where applicable, for example kmeans) (default: 2).";
+	optParser.addOption(optBranching);
+	
+	auto optClusterFile = new StringOption("f", "cluster-file", "cluster_file", null, "FILE");
+	optClusterFile.helpMessage = "Clusters save file.";
+	optParser.addOption(optClusterFile);
+	
+	auto optClusters = new NumericOption!(uint)("k", "clusters", "clusters", 100u, "NUM");
+	optClusters.helpMessage = "Number of clusters to save.";
+	optParser.addOption(optClusters);
+		
+	auto optNoTest = new FlagTrueOption("S", "skip-test", "skip_test");
+	optNoTest.helpMessage = "Skip test phase";
+	optParser.addOption(optNoTest);
+	
+	auto optVerbosity = new StringOption("v", "verbosity", "verbosity", "info", "VALUE");
+	optVerbosity.helpMessage = "Stop searching after exploring NUM features.";
+	optParser.addOption(optVerbosity);
+	
+	auto optSkipMatches = new NumericOption!(uint)("K", "skip-matches", "skip_matches", 0u, "NUM");
+	optSkipMatches.helpMessage = "Skip the first NUM matches at test phase.";
+	optParser.addOption(optSkipMatches);
+	
+	auto optRandom = new BoolOption("R", "random", "random");
+	optRandom.helpMessage = "Build random (kmeans-like) tree";
+	optParser.addOption(optRandom);
+	
+	auto optCenters = new StringOption("C", "centers", "centers", "random", "VALUE");
+	optCenters.helpMessage = "Algorithms for choosing initial kmeans centers.";
+	optParser.addOption(optCenters);
+	
+	auto optComputeGT = new FlagTrueOption("G", "compute-gt", "compute_gt");
+	optComputeGT.helpMessage = "Computer ground truth";
+	optParser.addOption(optComputeGT);
+	
+	auto optGenerateRandom = new FlagTrueOption("E", "generate-random", "generate_random");
+	optGenerateRandom.helpMessage = "Generate random dataset (options: output_file, feature count, feature length)";
+	optParser.addOption(optGenerateRandom);
+	
+	auto optHelp = new FlagTrueOption("h", "help", "help");
+	optHelp.helpMessage = "Show help message";
+	optParser.addOption(optHelp);
+
+	// Now we can finally parse our own command line
+	optParser.parse(args[1..$]);
+	
+	return optParser;
+}
 
 
+alias Index!(float) TheIndex;
 
 /** 
 	Program entry point 
@@ -153,98 +217,7 @@ void main(char[][] args)
 	Logger.enableLevel(Logger.ERROR);
 	std.gc.disable();
 
-	// Create our option parser
-	auto optParser = new OptionParser();
-	
-	auto optAlgo = new StringOption("a", "algorithm", "algorithm", null, "ALGO");
-	optAlgo.helpMessage = "Use the ALGO nn search algorithm";
-	
-	auto optPrintAlgos = new FlagTrueOption("p", "print-algorithms", "print-algorithms");
-	optPrintAlgos.helpMessage = "Display available algorithms";
-	
-	auto optInputFile = new StringOption("i", "input", "input_file", null, "FILE");
-	optInputFile.helpMessage = "Read input vectors from FILE";
-	
-	auto optTestFile = new StringOption("t", "test", "test_file", null, "FILE");
-	optTestFile.helpMessage = "Read test vectors from FILE (if not given the input file is used)";
-	
-	auto optMatchFile = new StringOption("m", "match", "match_file", null, "FILE");
-	optMatchFile.helpMessage = "The match file.";
-	
-	auto optSaveFile = new StringOption("s", "save", "save_file", null, "FILE");
-	optSaveFile.helpMessage = "Save the built index to this file.";
-	
-	auto optLoadFile = new StringOption("l", "load", "load_file", null, "FILE");
-	optLoadFile.helpMessage = "Load the index from this file. The type of index (algorithm) must be specified.";
-	
-	auto optNN = new NumericOption!(uint)("n", "nn", "nn", 1u, "NN");
-	optNN.helpMessage = "Search should return NN nearest-neighbors";
-	
-	auto optChecks = new StringOption("c", "checks", "checks", "32", "NUM1,NUM2,...");
-	optChecks.helpMessage = "Stop searching after exploring NUM features.";
-	
-	auto optNumTrees = new NumericOption!(uint)("r", "trees", "num_trees", 1u, "NUM");
-	optNumTrees.helpMessage = "Number of trees to build (default: 1).";
-	
-	auto optBranching = new NumericOption!(uint)("b", "branching", "branching", 2u, "NUM");
-	optBranching.helpMessage = "Branching factor (where applicable, for example kmeans) (default: 2).";
-	
-	auto optClusterFile = new StringOption("f", "cluster-file", "cluster_file", null, "FILE");
-	optClusterFile.helpMessage = "Clusters save file.";
-	
-	auto optClusters = new NumericOption!(uint)("k", "clusters", "clusters", 100u, "NUM");
-	optClusters.helpMessage = "Number of clusters to save.";
-		
-	auto optNoTest = new FlagTrueOption("S", "skip-test", "skip_test");
-	optNoTest.helpMessage = "Skip test phase";
-	
-	auto optVerbosity = new StringOption("v", "verbosity", "verbosity", "info", "VALUE");
-	optVerbosity.helpMessage = "Stop searching after exploring NUM features.";
-	
-	auto optSkipMatches = new NumericOption!(uint)("K", "skip-matches", "skip_matches", 0u, "NUM");
-	optSkipMatches.helpMessage = "Skip the first NUM matches at test phase.";
-	
-	auto optRandom = new BoolOption("R", "random", "random");
-	optRandom.helpMessage = "Build random (kmeans-like) tree";
-	
-	auto optCenters = new StringOption("C", "centers", "centers", "random", "VALUE");
-	optCenters.helpMessage = "Algorithms for choosing initial kmeans centers.";
-	
-	auto optComputeGT = new FlagTrueOption("G", "compute-gt", "compute_gt");
-	optComputeGT.helpMessage = "Computer ground truth";
-	
-	auto optGenerateRandom = new FlagTrueOption("E", "generate-random", "generate_random");
-	optGenerateRandom.helpMessage = "Generate random dataset (options: output_file, feature count, feature length)";
-	
-	auto optHelp = new FlagTrueOption("h", "help", "help");
-	optHelp.helpMessage = "Show help message";
-
-	
-	// Next, add these options to the parser
-	optParser.addOption(optAlgo);
-	optParser.addOption(optPrintAlgos);
-	optParser.addOption(optInputFile);
-	optParser.addOption(optTestFile);
-	optParser.addOption(optMatchFile);
-	optParser.addOption(optSaveFile);
-	optParser.addOption(optLoadFile);
-	optParser.addOption(optNN);
-	optParser.addOption(optChecks);
-	optParser.addOption(optNumTrees);
-	optParser.addOption(optBranching);
-	optParser.addOption(optNoTest);
-	optParser.addOption(optClusterFile);
-	optParser.addOption(optClusters);
-	optParser.addOption(optVerbosity);
-	optParser.addOption(optSkipMatches);
-	optParser.addOption(optRandom);
-	optParser.addOption(optCenters);
-	optParser.addOption(optComputeGT);
-	optParser.addOption(optGenerateRandom);
-	optParser.addOption(optHelp);
-
-	// Now we can finally parse our own command line
-	optParser.parse(args[1..$]);
+	auto optParser = parseArguments(args);
 
 	string verbosity = unbox!(string)(optParser["verbosity"]);
 	string[] logLevels = split(verbosity,",");
@@ -284,7 +257,7 @@ void main(char[][] args)
 	if( unbox!(bool)(optParser["print-algorithms"]) )
 	{
 		Logger.log(Logger.ERROR,"Available algorithms:\n");
-		foreach (algo,val; indexRegistry) {
+		foreach (algo,val; TheIndex.indexRegistry) {
 			Logger.log(Logger.ERROR,"\t%s\n",algo);
 		}
 		Logger.log(Logger.ERROR,"\n");
@@ -356,9 +329,11 @@ void main(char[][] args)
 		index = indexRegistry[algorithm](inputData, params);
 		
 		Logger.log(Logger.INFO,"Building index... \n");
-		clock_t startTime = clock();
+		auto timer = new StartStopTimer();
+		timer.start();
 		index.buildIndex();
-		float elapsed = (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+		timer.stop();
+		float elapsed = timer.value;
 		
 		Logger.log(Logger.INFO,"Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, elapsed);
@@ -415,8 +390,7 @@ void main(char[][] args)
 	}
 
 	
-	
-	return 0;
+		return 0;
 }
 
 

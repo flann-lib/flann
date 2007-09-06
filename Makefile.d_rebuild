@@ -1,0 +1,68 @@
+# ------------------ Compilation options ------------------------
+
+LIB_DIRS =
+
+LIBS = ${LIB_DIRS} 
+
+INCLUDES = -Iinclude
+
+# Flags for the C compiler:
+#   -Wall for strict gcc warnings (requires prototypes for all functions).
+#   -g to produce debug data for gdb
+#   -O for optimization
+
+WARNS = -W -Wall
+
+
+ifdef UNIT_TEST
+	DFLAGS := ${DFLAGS} -unittest -debug
+endif
+
+
+ifeq ($(PROFILER),gprof)
+	DFLAGS := $(DFLAGS) -pg
+	LINKFLAGS := $(LINKFLAGS) -pg
+endif
+	
+ifeq ($(CONFIGURATION),debug)
+#	DFLAGS := ${DFLAGS} -g -release
+	DFLAGS := ${DFLAGS} -g -debug
+else
+	DFLAGS := ${DFLAGS} -O -inline -release
+endif
+
+
+# --------------------- Dirs  ----------------------------
+
+SRC_DIR = src
+BUILD_DIR = $(HOME)/tmp/${TARGET}_build
+DEPS_DIR = ${BUILD_DIR}/deps
+OBJ_DIR = ${BUILD_DIR}/obj
+DOC_DIR = doc
+RES_DIR = res
+BIN_DIR = bin
+
+MAIN_FILE=${SRC_DIR}/main.d
+
+
+# ------------------------ Rules --------------------------------
+
+all: prepare compile
+#all:
+#	@echo $(OBJ)
+
+
+prepare:
+	@if [ -f build_file_list ] ; then rm build_file_list; fi
+
+clean:
+	rm -rf ${BUILD_DIR}/*
+
+rebuild: clean all
+
+.PHONY: clean all rebuild prepare compile
+
+compile:
+	 ${BIN_DIR}/rebuild -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -of${TARGET} ${DFLAGS}
+
+

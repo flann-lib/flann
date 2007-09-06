@@ -7,10 +7,11 @@ module util.resultset;
 import util.heap;
 import util.utils;
 
+template Index(T) {
 
 struct Point {
 
-	static Point opCall(float[] point, int index) 
+	static Point opCall(T[] point, int index) 
 	{
 		Point p;
 		p.point = point;
@@ -19,7 +20,7 @@ struct Point {
 		return p;
 	}
 
-	float[] point;
+	T[] point;
 	int index;
 	float dist;
 }
@@ -27,7 +28,7 @@ struct Point {
 class ResultSet 
 {
 	Point[] points;
-	float[] target;
+	T[] target;
 	
 	int count;
 	
@@ -36,13 +37,13 @@ class ResultSet
 		points = new Point[capacity];
 	}
 	
-	public this(float[] target, int capacity)
+	public this(T[] target, int capacity)
 	{
 		this(capacity);
 		init(target);
 	}
 	
-	public void init(float[] target) 
+	public void init(T[] target) 
 	{
 		this.target = target;
 		count = 0;
@@ -64,7 +65,7 @@ class ResultSet
 		return count == points.length;
 	}
 	
-	public bool addPoint(float[] point, int index) 
+	public bool addPoint(T[] point, int index) 
 	{
 		Point p = Point(point,index);
 	
@@ -92,9 +93,9 @@ class ResultSet
 	
 	public float worstDist()
 	{
-		return (count<points.length) ? float.max : points[count-1].dist;
+		return (count<points.length) ? T.max : points[count-1].dist;
 	}
 	
-	
+}
 
 }

@@ -107,6 +107,8 @@ struct Params {
 import algo.nnindex;
 import util.features;
 
+template Index(Type) { 
+
 alias NNIndex delegate(Features, Params) index_delegate;
 static index_delegate[string] indexRegistry;
 
@@ -138,7 +140,7 @@ template AlgorithmRegistry(T)
 }
 
 
-
+}
 
 
 /*----------------------- Error messages --------------------------------*/
@@ -374,8 +376,9 @@ unittest
 }
 
 
+template Index(T) {
 
-public float computeVariance(float[][] points)
+public float computeVariance(T[][] points)
 {
 	if (points.length==0) {
 		return 0;
@@ -398,4 +401,6 @@ public float computeVariance(float[][] points)
 	variance/=points.length;
 
 	return variance;
+}
+
 }

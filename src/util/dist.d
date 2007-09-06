@@ -2,6 +2,9 @@
 Project: nn
 */
 
+module util.dist;
+
+template Index(T : float) {
 
 public float squaredDist(float[] a, float[] b) 
 {
@@ -69,4 +72,6 @@ public float DistSquared(float *v1, int veclen)
 		distsq += diff * diff;
 	}
 	return distsq;
+}
+
 }

@@ -13,6 +13,7 @@ import util.resultset;
 import util.features;
 import algo.nnindex;
 
+template Index(T) {
 
 mixin AlgorithmRegistry!(LinearSearch);
 
@@ -65,5 +66,7 @@ class LinearSearch : NNIndex {
 		}
 	}
 	
+
+}
 
 }

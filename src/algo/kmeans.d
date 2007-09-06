@@ -14,6 +14,7 @@ import util.features;
 import util.logger;
 import util.random;
 
+template Index(T) {
 
 mixin AlgorithmRegistry!(KMeansTree);
 
@@ -923,5 +924,7 @@ class KMeansTree : NNIndex
 		//ar.describe(root);
 	}
 
+
+}
 
 }
