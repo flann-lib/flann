@@ -37,10 +37,6 @@ class Feature {
 		this.data = data;
 	}
 	
-		
-	float opIndex(int index) { return data[index]; }
-	float opIndexAssign(int index, float value) { data[index] = value; return value; }
-	
 	void describe(T)(T ar)
 	{
 		ar.describe(id);

@@ -14,7 +14,7 @@ import util.features;
 import util.logger;
 import util.random;
 
-template Index(T) {
+
 
 mixin AlgorithmRegistry!(KMeansTree);
 
@@ -113,7 +113,7 @@ private class KMeansCluster
 			for (int j=0;j<n;++j) {
 				float dist = squaredDist(centers[0],points[j].data);
 				for (int i=1;i<index;++i) {
-					float tmp_dist = squaredDist(centers[i],points[j].data);
+						float tmp_dist = squaredDist(centers[i],points[j].data);
 					if (tmp_dist<dist) {
 						dist = tmp_dist;
 					}
@@ -693,6 +693,7 @@ class KMeansTree : NNIndex
 		for (int i=0;i<points.length;++i) {
 			points[i] = new Feature(i,vecs[i]);
 		}
+		Logger.log(Logger.INFO,"Feature.size: ",points[0].sizeof,"\n");
 	
 		this.root = new KMeansCluster[numTrees];
 		
@@ -927,4 +928,3 @@ class KMeansTree : NNIndex
 
 }
 
-}

@@ -16,7 +16,6 @@ import util.features;
 import util.logger;
 import algo.nnindex;
 
-template Index(T) {
 
 mixin AlgorithmRegistry!(BottomUpSimpleAgglomerativeTree);
 
@@ -492,5 +491,4 @@ float[][] getClusterCenters(int numClusters)
 	}	
 
 
-}
 }

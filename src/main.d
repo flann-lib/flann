@@ -34,7 +34,6 @@ import convert.compute_gt;
 import util.dataset_generator;
 import util.timer;
 
-template Index(T) {
 
 void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skipMatches)
 {
@@ -109,7 +108,6 @@ void writeToFile(float[][] centers, char[] centerFile)
 	fclose(fp);
 }
 
-}
 
 OptionParser parseArguments(char[][] args)
 {
@@ -207,7 +205,6 @@ OptionParser parseArguments(char[][] args)
 }
 
 
-alias Index!(float) TheIndex;
 
 /** 
 	Program entry point 
@@ -257,7 +254,7 @@ void main(char[][] args)
 	if( unbox!(bool)(optParser["print-algorithms"]) )
 	{
 		Logger.log(Logger.ERROR,"Available algorithms:\n");
-		foreach (algo,val; TheIndex.indexRegistry) {
+		foreach (algo,val; indexRegistry) {
 			Logger.log(Logger.ERROR,"\t%s\n",algo);
 		}
 		Logger.log(Logger.ERROR,"\n");

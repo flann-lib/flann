@@ -9,7 +9,7 @@ import serialization.serializer;
 
 import util.resultset;
 
-template Index(T) {
+
 
 abstract class NNIndex 
 {
@@ -22,7 +22,7 @@ abstract class NNIndex
 	/**
 		Method that searches for NN
 	*/
-	void findNeighbors(ResultSet resultSet, T[] vec, int maxCheck);
+	void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck);
 	
 	/**
 		Number of features in this index.
@@ -34,7 +34,7 @@ abstract class NNIndex
 	*/
  	int numTrees();
  	
- 	T[][] getClusterCenters(int number) {
+ 	float[][] getClusterCenters(int number) {
  		throw new Exception("Not implemented");
  	}
  	
@@ -43,5 +43,4 @@ abstract class NNIndex
 		Serializer s = new Serializer(file, FileMode.Out);
 		s.describe(this);
 	}
-}
 }

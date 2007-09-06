@@ -49,7 +49,6 @@ import util.logger;
 import algo.nnindex;
 
 
-template Index(T) {
 
 mixin AlgorithmRegistry!(KDTree);
 
@@ -775,4 +774,3 @@ class KDTree : NNIndex{
 	
 }
 
-}

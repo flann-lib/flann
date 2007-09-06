@@ -19,7 +19,6 @@ import algo.nnindex;
 
 import algo.agglomerativetree2;
 
-template Index(T) {
 
 mixin AlgorithmRegistry!(BallTree);
 
@@ -299,4 +298,3 @@ class BallTree : NNIndex {
 	}	
 }
 
-}
