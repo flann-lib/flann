@@ -9,7 +9,7 @@ Author: Marus Muja (2007)
 *************************************************************************/
 
 
-import std.c.stdio;
+import std.stdio;
 import std.string;
 import std.boxer;
 import std.c.stdlib;
@@ -123,6 +123,44 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skip
 }
 
 
+void computeNearestNeighbors(string outputFile, NNIndex index, Features testData, int nn, int checks, uint skipMatches)
+{
+	FILE* fout = fopen(toStringz(outputFile), "w");
+	
+	if (fout==null) {
+		throw new Exception("Cannot open file: "~outputFile);
+	}
+
+	Logger.log(Logger.INFO,"Searching... \n");
+
+	ResultSet resultSet = new ResultSet(nn+skipMatches);
+	
+	clock_t startTime = clock();
+	
+	int correct, cormatch, match;
+	correct = cormatch = match = 0;
+
+	showProgressBar(testData.count, 70, (Ticker tick){
+		for (int i = 0; i < testData.count; i++) {
+			tick();
+			
+			resultSet.init(testData.vecs[i]);
+	
+			index.findNeighbors(resultSet,testData.vecs[i], checks);			
+			
+			for (int j=0;j<nn;++j) {
+				if (j!=0) {
+					fwritef(fout," ");
+				}
+				fwritef(fout,"%d",resultSet.getPointIndex(j+skipMatches));
+			}
+			fwritef(fout,"\n");
+		}
+	});
+
+	fclose(fout);
+}
+
 void writeToFile(float[][] centers, char[] centerFile) 
 {
 	FILE* fp = fopen(toStringz(centerFile),"w");
@@ -198,6 +236,9 @@ void main(char[][] args)
 	auto optNoTest = new FlagTrueOption("S", "skip-test", "skip_test");
 	optNoTest.helpMessage = "Skip test phase";
 	
+	auto optOutputFile = new StringOption("o", "output-file", "output_file", null, "FILE");
+	optOutputFile.helpMessage = "File to save the nearest neighbors to.";
+	
 	auto optVerbosity = new StringOption("v", "verbosity", "verbosity", "info", "VALUE");
 	optVerbosity.helpMessage = "Stop searching after exploring NUM features.";
 	
@@ -233,6 +274,7 @@ void main(char[][] args)
 	optParser.addOption(optNumTrees);
 	optParser.addOption(optBranching);
 	optParser.addOption(optNoTest);
+	optParser.addOption(optOutputFile);
 	optParser.addOption(optClusterFile);
 	optParser.addOption(optClusters);
 	optParser.addOption(optVerbosity);
@@ -304,6 +346,7 @@ void main(char[][] args)
 	int clusters = unbox!(uint)(optParser["clusters"]);
 	char[] clusterFile = unbox!(char[])(optParser["cluster_file"]);
 	uint skipMatches = unbox!(uint)(optParser["skip_matches"]);
+	char[] outputFile = unbox!(char[])(optParser["output_file"]);
 
 	Params params;
 	params.numTrees = unbox!(uint)(optParser["num_trees"]);
@@ -394,16 +437,21 @@ void main(char[][] args)
 			throw new Exception("No test data given.");
 		}
 		
-		if (matchFile !is null) {
-			testData.readMatches(matchFile);
-		}
 		
-		if (testData.match is null) {
-			throw new Exception("There are no correct matches to compare to, aborting test phase.");
-		}
-		
-		foreach (c;checks) {
-			testNNIndex(index,testData, nn, c, skipMatches);
+		if (outputFile !is null) {
+			computeNearestNeighbors(outputFile, index,testData, nn, checks[0], skipMatches);
+		} else {
+			if (matchFile !is null) {
+				testData.readMatches(matchFile);
+			}
+			
+			if (testData.match is null) {
+				throw new Exception("There are no correct matches to compare to, aborting test phase.");
+			}
+			
+			foreach (c;checks) {
+				testNNIndex(index,testData, nn, c, skipMatches);
+			}
 		}
 	}
 	
