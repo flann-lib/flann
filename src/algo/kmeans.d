@@ -255,18 +255,23 @@ private class KMeansCluster
 		}
 	
 	
+	
+	
+	
 		// compute kmeans clustering for each of the resulting clusters
 		childs = new KMeansCluster[nc];
+		int start = 0;
+		int end = start;
 		for (int c=0;c<nc;++c) {
 			int s = count[c];
-			Feature[] child_points = new Feature[s];
-			int cnt_indices = 0;
 			
 			float variance = 0;
 			for (int i=0;i<n;++i) {
 				if (belongs_to[i]==c) {
-					child_points[cnt_indices++] = points[i];
-					variance += squaredDist(points[i].data);;
+					swap(points[i],points[end]);
+					swap(belongs_to[i],belongs_to[end]);
+					variance += squaredDist(points[end].data);;
+					end++;
 				}
 			}
 			variance /= s;
@@ -274,7 +279,7 @@ private class KMeansCluster
 			
 			//writefln("-------------------------------------------");
 			
-			childs[c] = new KMeansCluster(child_points);
+			childs[c] = new KMeansCluster(points[start..end]);
 			
 /+			childs[c].computeStatistics();			
 			assert (childs[c].radius == radiuses[c]);
@@ -284,6 +289,7 @@ private class KMeansCluster
 			childs[c].pivot = centers[c];
 			childs[c].variance = variance;
 			childs[c].computeClustering(branching);
+			start=end;
 		}
 	}
 
