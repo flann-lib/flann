@@ -10,32 +10,49 @@ import util.dist;
 import console.progressbar;
 import util.logger;
 import util.features;
+import util.utils;
 
 
-int findNearest(float[][] vecs, float[] query) 
+private int findNearest(float[][] vecs, float[] query, int skip = 0) 
 {
-	int nn = 0;
-	float dist = squaredDist(vecs[nn], query);
-	for (int i=0;i<vecs.length;++i) {
+	int n = skip + 1;
+	int[] nn = new int[n];
+	float[] dists = new float[n];
+	dists[0] = squaredDist(vecs[0], query);
+	int dcnt = 1;
+	
+	for (int i=1;i<vecs.length;++i) {
 		float tmp = squaredDist(vecs[i], query);
-		if (tmp<dist) {
-			dist = tmp;
-			nn = i;
+		
+		if (dcnt<dists.length) {
+			nn[dcnt] = i;
+			dists[dcnt++] = tmp;
+		} 
+		else if (tmp < dists[dcnt-1]) {
+			dists[dcnt-1] = tmp;
+			nn[dcnt-1] = i;
+		} 
+		
+		int j = dcnt-1;
+		// bubble up
+		while (j>=1 && dists[j]<dists[j-1]) {
+			swap(dists[j],dists[j-1]);
+			swap(nn[j],nn[j-1]);
+			j--;
 		}
 	}
 	
-	//writefln("%f",dist);
 	
-	return nn;
+	return nn[skip];
 }
 
-int[] computeGroundTruth(Features inputData, Features testData) 
+private int[] computeGroundTruth(Features inputData, Features testData, int skip = 0) 
 {
 	int[] matches = new int[testData.count];
 
 	showProgressBar(testData.count, 70, (Ticker tick) {
 		for (int i=0;i<testData.count;++i) {
-			matches[i] = findNearest(inputData.vecs, testData.vecs[i]);
+			matches[i] = findNearest(inputData.vecs, testData.vecs[i], skip);
 			tick();
 		}
 	});
@@ -59,7 +76,7 @@ void writeMatches(string match_file, int[] matches)
 	fclose(f);
 }
 
-void compute_gt(string featuresFile, string testFile, string matchFile)
+void compute_gt(string featuresFile, string testFile, string matchFile, int skip = 0)
 {
 	Features inputData;
 	Features testData;
@@ -87,7 +104,7 @@ void compute_gt(string featuresFile, string testFile, string matchFile)
 
 	int matches[];
 	showOperation("Computing ground truth", {
-		matches = computeGroundTruth(inputData, testData);
+		matches = computeGroundTruth(inputData, testData, skip);
 	});
 
 	showOperation("Writing matches to "~matchFile, {

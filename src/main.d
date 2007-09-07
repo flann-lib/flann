@@ -310,7 +310,7 @@ void main(char[][] args)
 		if (optParser.positionalArgs.length != 3) {
 			throw new Exception("Compute ground truth option expects three file names");
 		}
-		compute_gt(optParser.positionalArgs[0],optParser.positionalArgs[1],optParser.positionalArgs[2]);
+		compute_gt(optParser.positionalArgs[0],optParser.positionalArgs[1],optParser.positionalArgs[2], unbox!(uint)(optParser["skip_matches"]));
 		exit(0);
 	}
 	
