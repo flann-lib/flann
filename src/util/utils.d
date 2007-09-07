@@ -13,6 +13,7 @@ module util.utils;
 public import util.dist;
 
 import std.c.stdlib;
+import std.c.stdio;
 import std.conv;
 import std.string;
 import util.logger;
@@ -36,6 +37,15 @@ void swap(T) (ref T a, ref T b) {
      b = t;
 }
 
+
+FILE* fOpen(string file, string mode, lazy string message)
+{
+	FILE *f = std.c.stdio.fopen(toStringz(file),toStringz(mode));
+	if (f is null) {
+		throw new Exception(message());
+	}
+	return f;
+}
 
 
 T convert(T : int, U : string)(U value) { return toInt(value); }
