@@ -46,271 +46,15 @@ private class KMeansCluster
 
 
 
-	void computeRandomClustering(int branching)
-	{
-		
-		int n = points.length;
-		int nc = branching;
-		int flength = points[0].data.length;
-		
-	
-		float[][] centers;
-		if (centersAlgorithm in centerAlgs) {
-			centers = centerAlgs[centersAlgorithm](nc,points);
-		}
-		else {
-			throw new Exception("Unknown algorithms for choosing initial centers.");
-		}
-		
-		if (centers.length<nc) {
-			return;
-		}
-
-		float[] radiuses = new float[nc];
-		int[] count = new int[nc];
-	
-		// assign points to clusters
-		int[] belongs_to = new int[n];
-		for (int i=0;i<n;++i) {
-			float sq_dist = squaredDist(points[i].data,centers[0]); 
-			belongs_to[i] = 0;
-			for (int j=1;j<nc;++j) {
-				float new_sq_dist = squaredDist(points[i].data,centers[j]);
-				if (sq_dist>new_sq_dist) {
-					belongs_to[i] = j;
-					sq_dist = new_sq_dist;
-				}
-			}
-			count[belongs_to[i]]++;
-		}
-
-		// compute kmeans clustering for each of the resulting clusters
-		childs = new KMeansCluster[nc];
-		for (int c=0;c<nc;++c) {
-			int s = count[c];
-			Feature[] child_points = new Feature[s];
-			int cnt_indices = 0;
-			
-			float variance = 0;
-			for (int i=0;i<n;++i) {
-				if (belongs_to[i]==c) {
-					child_points[cnt_indices++] = points[i];
-					variance += squaredDist(points[i].data);;
-				}
-			}
-			variance /= s;
-			variance -= squaredDist(centers[c]);
-			
-			//writefln("-------------------------------------------");
-			
-			childs[c] = new KMeansCluster(child_points);
-			
-/*			childs[c].computeStatistics();			
-			assert (childs[c].radius == radiuses[c]);
-			assert (childs[c].pivot == centers[c]);
-			assert (childs[c].variance == variance);*/
-			childs[c].radius = radiuses[c];
-			childs[c].pivot = centers[c];
-			childs[c].variance = variance;
-			childs[c].computeClustering(branching);
-		}
-	}
-
-
-	void computeStatistics() {
-	
-		float radius = 0;
-		float variance = 0;
-		float[] mean = points[0].data.dup;
-		variance = squaredDist(points[0].data);
-		for (int i=1;i<points.length;++i) {
-			for (int j=0;j<mean.length;++j) {
-				mean[j] += points[i].data[j];
-			}			
-			variance += squaredDist(points[i].data);
-		}
-		for (int j=0;j<mean.length;++j) {
-			mean[j] /= points.length;
-		}
-		variance /= points.length;
-		variance -= squaredDist(mean);
-		
-		float tmp = 0;
-		for (int i=0;i<points.length;++i) {
-			tmp = squaredDist(mean, points[i].data);
-			if (tmp>radius) {
-				radius = tmp;
-			}
-		}
-		
-		this.variance = variance;
-		this.radius = radius;
-		this.pivot = mean;
-		
-	}
 
 
 
 
 
-	/**
-	----------------------------------------------------------------------
-		Approximate nearest neighbor search
-	----------------------------------------------------------------------
-	*/
-	public void findNN(ResultSet result,float[] vec, ref BranchHeap heap, int checkID)
-	{
-		if (pivot!=null) {
-			float bsq = squaredDist(vec, pivot);
-			float rsq = radius;
-			float wsq = result.worstDist;
-			
-			float val = bsq-rsq-wsq;
-			float val2 = val*val-4*rsq*wsq;
-			
-	//  		if (val>0) {
-			if (val>0 && val2>0) {
-				return true;
-			}
-		}
-	
-	
-		
-		if (childs.length==0) {
-			if (points.length==0) {
-				throw new Exception("Reached empty cluster. This shouldn't happen.\n");
-			}
-			
-			for (int i=0;i<points.length;++i) {
-				
-				if (points[i].checkID == checkID) {
-					return;
-				}
-				points[i].checkID = checkID;
-				
-				result.addPoint(points[i].data, points[i].id);
-			}	
-		} 
-		else {
-			int nc = childs.length;
-			float distances[] = new float[nc];
-			int ci = getNearestCenter(vec, distances);
-			
-			for (int i=0;i<nc;++i) {
-				if (i!=ci) {
- 					heap.insert(BranchSt(childs[i],distances[i]));
-//					heap.insert(BranchSt(childs[i], getDistanceToBorder(childs[i].pivot,childs[ci].pivot,vec)));
-				}
-			}
-	
-			childs[ci].findNN(result,vec, heap, checkID);
-		}		
-	}
-	
-	
-	private int getNearestCenter(float[] q, ref float[] distances)
-	{
-		int nc = childs.length;
-	
-		int best_index = 0;
-		distances[best_index] = squaredDist(q,childs[best_index].pivot);
-		
-		for (int i=1;i<nc;++i) {
-			distances[i] = squaredDist(q,childs[i].pivot);
-			if (distances[i]<distances[best_index]) {
-				best_index = i;
-			}
-		}
-		
-		return best_index;
-	}
-
-	/**
-	----------------------------------------------------------------------
-		Exact nearest neighbor search
-	----------------------------------------------------------------------
-	*/
-	public void findExactNN(ResultSet result,float[] vec)
-	{
-		if (pivot!=null) {
-			float bsq = squaredDist(vec, pivot);
-			float rsq = radius;
-			float wsq = result.worstDist;
-			
-			float val = bsq-rsq-wsq;
-			float val2 = val*val-4*rsq*wsq;
-			
-			
-	//  		if (val>0) {
-			if (val>0 && val2>0) {
-				return true;
-			}
-		}
-	
-	
-		if (childs.length==0) {
-			if (points.length==0) {
-				throw new Exception("Reached empty cluster. This shouldn't happen.\n");
-			}
-			
-			for (int i=0;i<points.length;++i) {
-				result.addPoint(points[i].data, points[i].id);
-			}	
-		} 
-		else {
-			int nc = childs.length;
-			int[] sort_indices = new int[nc];	
-/*			for (int i=0; i<nc; ++i) {
-				sort_indices[i] = i;
-			}*/
-			getCenterOrdering(vec, sort_indices);
-
-			for (int i=0; i<nc; ++i) {
- 				childs[sort_indices[i]].findExactNN(result,vec);
-// 				childs[i].findExactNN(result,vec);
-			}
-		}		
-	}
-
-
-	private void getCenterOrdering(float[] q, ref int[] sort_indices)
-	{
-		int nc = childs.length;
-		float distances[] = new float[nc];
-		
-		for (int i=0;i<nc;++i) {
-			float dist = squaredDist(q,childs[i].pivot);
-			
-			int j=0;
-			while (distances[j]<dist && j<i) j++;
-			for (int k=i;k>j;--k) {
-				distances[k] = distances[k-1];
-				sort_indices[k] = sort_indices[k-1];
-			}
-			distances[j] = dist;
-			sort_indices[j] = i;
-		}		
-	}	
 
 
 
 	
-	/** Method that computes the distance from the query point q
-		from inside region with center c to the border between this 
-		region and the region with center p */
-	private float getDistanceToBorder(float[] p, float[] c, float[] q)
-	{		
-		float sum = 0;
-		float sum2 = 0;
-		
-		for (int i=0;i<p.length; ++i) {
-			float t = c[i]-p[i];
-			sum += t*(q[i]-(c[i]+p[i])/2);
-			sum2 += t*t;
-		}
-		
-		return sum*sum/sum2;
-	}
 
 }
 +/
@@ -471,8 +215,6 @@ class KMeansTree : NNIndex
 				root[index].computeClustering(value);
 			}+/
 		}
-		
-		writePoints("test.dat",root[0]);
 		
 		
 /+		float variance;
@@ -665,7 +407,7 @@ class KMeansTree : NNIndex
 	
 	
 	
-	float[][] chooseCentersRandom(int k, float[][] vecs, int[] indices)
+	private float[][] chooseCentersRandom(int k, float[][] vecs, int[] indices)
 	{
 		DistinctRandom r = new DistinctRandom(indices.length);
 		
@@ -695,7 +437,7 @@ class KMeansTree : NNIndex
 		return centers[0..index];
 	}
 
-	float[][] chooseCentersGonzales(int k, float[][] vecs, int[] indices)
+	private float[][] chooseCentersGonzales(int k, float[][] vecs, int[] indices)
 	{
 		int n = indices.length;
 		
@@ -738,7 +480,7 @@ class KMeansTree : NNIndex
 	void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
 		if (maxCheck==-1) {
-//			root[0].findExactNN(result, vec);
+			findExactNN(root[0], result, vec);
 		}
 		else {
 			checkID -= 1;
@@ -756,6 +498,7 @@ class KMeansTree : NNIndex
 			}
 		}
 	}
+	
 	
 	
 	/**
@@ -803,7 +546,7 @@ class KMeansTree : NNIndex
 			for (int i=0;i<nc;++i) {
 				if (i!=ci) {
  					heap.insert(BranchSt(node.childs[i],distances[i]));
-//					heap.insert(BranchSt(childs[i], getDistanceToBorder(childs[i].pivot,childs[ci].pivot,vec)));
+//					heap.insert(BranchSt(node.childs[i], getDistanceToBorder(node.childs[i].pivot,node.childs[ci].pivot,vec)));
 				}
 			}
 			
@@ -811,28 +554,6 @@ class KMeansTree : NNIndex
 		}		
 	}
 	
-	void writePoints(string file, KMeansNode node)
-	{
-		void writePointsHelper(FILE* f, KMeansNode node) 
-		{
-			if (node.childs.length==0) {
-				foreach (index;node.indices) {
-					fwritefln(f,index);
-				}
-			}
-			else {
-				foreach (c;node.childs) {
-					writePointsHelper(f,c);
-				}
-			}
-		}
-	
-		FILE *f = fOpen(file,"w", "Cannot open: "~file);
-		writePointsHelper(f,node);
-		fclose(f);
-		
-		
-	}
 	
 	
 	private int getNearestCenter(KMeansNode node, float[] q, ref float[] distances)
@@ -853,6 +574,93 @@ class KMeansTree : NNIndex
 	}
 	
 	
+	
+	/**
+	----------------------------------------------------------------------
+		Exact nearest neighbor search
+	----------------------------------------------------------------------
+	*/
+	public void findExactNN(KMeansNode node, ResultSet result, float[] vec)
+	{
+		// Ignore those clusters that are too far away
+		{
+			float bsq = squaredDist(vec, node.pivot);
+			float rsq = node.radius;
+			float wsq = result.worstDist;
+			
+			float val = bsq-rsq-wsq;
+			float val2 = val*val-4*rsq*wsq;
+			
+	//  		if (val>0) {
+			if (val>0 && val2>0) {
+				return;
+			}
+		}
+	
+	
+		if (node.childs.length==0) {
+			if (node.indices.length==0) {
+				throw new Exception("Reached empty cluster. This shouldn't happen.\n");
+			}
+			
+			for (int i=0;i<node.indices.length;++i) {
+				result.addPoint(vecs[node.indices[i]], node.indices[i]);
+			}	
+		} 
+		else {
+			int nc = node.childs.length;
+			int[] sort_indices = new int[nc];	
+/*			for (int i=0; i<nc; ++i) {
+				sort_indices[i] = i;
+			}*/
+			getCenterOrdering(node, vec, sort_indices);
+
+			for (int i=0; i<nc; ++i) {
+ 				findExactNN(node.childs[sort_indices[i]],result,vec);
+// 				childs[i].findExactNN(result,vec);
+			}
+		}		
+	}
+
+
+	private void getCenterOrdering(KMeansNode node, float[] q, ref int[] sort_indices)
+	{
+		int nc = node.childs.length;
+		float distances[] = new float[nc];
+		
+		for (int i=0;i<nc;++i) {
+			float dist = squaredDist(q,node.childs[i].pivot);
+			
+			int j=0;
+			while (distances[j]<dist && j<i) j++;
+			for (int k=i;k>j;--k) {
+				distances[k] = distances[k-1];
+				sort_indices[k] = sort_indices[k-1];
+			}
+			distances[j] = dist;
+			sort_indices[j] = i;
+		}		
+	}	
+	
+	/** Method that computes the distance from the query point q
+		from inside region with center c to the border between this 
+		region and the region with center p */
+	private float getDistanceToBorder(float[] p, float[] c, float[] q)
+	{		
+		float sum = 0;
+		float sum2 = 0;
+		
+		for (int i=0;i<p.length; ++i) {
+			float t = c[i]-p[i];
+			sum += t*(q[i]-(c[i]+p[i])/2);
+			sum2 += t*t;
+		}
+		
+		return sum*sum/sum2;
+	}
+	
+	
+		
 	
 	private float[][] getClusterPoints(KMeansNode node)
 	{
