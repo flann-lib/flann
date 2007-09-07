@@ -25,8 +25,8 @@ ifeq ($(PROFILER),gprof)
 endif
 	
 ifeq ($(CONFIGURATION),debug)
-#	DFLAGS := ${DFLAGS} -g -release
-	DFLAGS := ${DFLAGS} -g -debug
+	DFLAGS := ${DFLAGS} -g -release
+#	DFLAGS := ${DFLAGS} -g -debug
 else
 	DFLAGS := ${DFLAGS} -O -inline -release
 endif
