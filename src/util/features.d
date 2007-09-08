@@ -16,34 +16,6 @@ import util.logger;
 import util.utils;
 import util.random;
 
-alias float[] feature;
-
-static this() {
-	Serializer.registerClass!(Feature)();
-}
-
-
-class Feature {
-	int id;
-	float[] data;
-	int checkID;
-	
-	this() {
-	};
-	
-	this(int id, float[] data) {
-		this();
-		this.id = id;
-		this.data = data;
-	}
-	
-	void describe(T)(T ar)
-	{
-		ar.describe(id);
-		ar.describe(data);
-	}	
-};
-
 
 
 class Features {
@@ -57,7 +29,7 @@ class Features {
 
 		int count;         /* Number of vectors. */
 		int veclen;         /* Length of each vector. */
-		feature[] vecs;      /* Float vecs. */
+		float[][] vecs;      /* Float vecs. */
 		int[] match;         /* Array of indices to correct nearest neighbor. */
 // 		int[] mtype;         /* Array of flags indicating if match is correct. */
 
@@ -343,3 +315,5 @@ class Features {
 	}
 
 }
+
+

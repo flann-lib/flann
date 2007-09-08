@@ -24,42 +24,6 @@ mixin AlgorithmRegistry!(KMeansTree);
 private string centersAlgorithm;
 
 
-/+
-private class KMeansCluster
-{
-	private {
-		Feature[] points;
-	
-		float[] pivot;
-		float radius;
-		float variance;
-		
-		KMeansCluster[] childs;
-	}
-	
-	
-	public this(Feature[] points)
-	{
-		this.points = points;
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
-}
-+/
-
-
 class KMeansTree : NNIndex
 {
 	static const NAME = "kmeans";
@@ -215,11 +179,7 @@ class KMeansTree : NNIndex
 				root[index].computeClustering(value);
 			}+/
 		}
-		
-		
-/+		float variance;
-		getMinVarianceClusters(root[0], 30, variance);
-		writef("Mean cluster variance for %d top level clusters: %f\n",30,variance);		+/
+
 	}
 	
 	
@@ -264,7 +224,6 @@ class KMeansTree : NNIndex
 		
 		float[][] centers;
 		
-// 		centers = chooseCentersRandom(nc,vecs,indices);
 		if (centersAlgorithm in centerAlgs) {
 			centers = centerAlgs[centersAlgorithm](nc,vecs, indices);
 		}
@@ -277,7 +236,8 @@ class KMeansTree : NNIndex
 			return;
 		}
 		
-		float[] radiuses = new float[nc];
+		
+	 	float[] radiuses = new float[nc];		
 		int[] count = new int[nc];		
 		
 		// assign points to clusters
@@ -373,6 +333,7 @@ class KMeansTree : NNIndex
 				}
 			}
 		//	writef("done\n");
+			//writefln(radiuses);
 		}
 	
 	
