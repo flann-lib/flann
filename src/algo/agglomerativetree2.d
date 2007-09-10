@@ -543,3 +543,4 @@ class AgglomerativeExTree : NNIndex {
 	}
 
 }
+

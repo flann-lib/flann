@@ -95,6 +95,5 @@ class ResultSet
 		return (count<points.length) ? float.max : points[count-1].dist;
 	}
 	
-	
-
 }
+

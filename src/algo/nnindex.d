@@ -9,6 +9,8 @@ import serialization.serializer;
 
 import util.resultset;
 
+
+
 abstract class NNIndex 
 {
 	/**

@@ -2,6 +2,8 @@
 Project: nn
 */
 
+module util.dist;
+
 
 public float squaredDist(float[] a, float[] b) 
 {
@@ -70,3 +72,4 @@ public float DistSquared(float *v1, int veclen)
 	}
 	return distsq;
 }
+

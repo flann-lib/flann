@@ -2,6 +2,8 @@
 Project: nn
 */
 
+module convert.compute_gt;
+
 import std.stdio;
 import std.string;
 import std.c.string;

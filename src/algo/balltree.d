@@ -297,3 +297,4 @@ class BallTree : NNIndex {
 		ar.describe(btRoot);
 	}	
 }
+

@@ -12,6 +12,7 @@ module util.utils;
 
 public import util.dist;
 
+import std.c.stdio;
 import std.c.stdlib;
 import std.conv;
 import std.string;
@@ -36,6 +37,15 @@ void swap(T) (ref T a, ref T b) {
      b = t;
 }
 
+
+FILE* fOpen(string file, string mode, lazy string message)
+{
+	FILE *f = std.c.stdio.fopen(toStringz(file),toStringz(mode));
+	if (f is null) {
+		throw new Exception(message());
+	}
+	return f;
+}
 
 
 T convert(T : int, U : string)(U value) { return toInt(value); }
@@ -107,6 +117,8 @@ struct Params {
 import algo.nnindex;
 import util.features;
 
+
+
 alias NNIndex delegate(Features, Params) index_delegate;
 static index_delegate[string] indexRegistry;
 
@@ -152,105 +164,7 @@ void FatalError(char *msg)
 
 
 
-/*-------------------- Pooled storage allocator ---------------------------*/
 
-/* The following routines allow for the efficient allocation of storage in
-     small chunks from a specified pool.  Rather than allowing each structure
-     to be freed individually, an entire pool of storage is freed at once.
-   This method has two advantages over just using malloc() and free().  First,
-     it is far more efficient for allocating small objects, as there is
-     no overhead for remembering all the information needed to free each
-     object or consolidating fragmented memory.  Second, the decision about 
-     how long to keep an object is made at the time of allocation, and there
-     is no need to track down all the objects to free them.
-*/
-
-/* The memory allocated by this class is not handled by the garbage collector. Be 
-carefull not to store in this memory pointers to memory handled by the gc.
-*/
-
-class Pool {
-	
-	private {
-			
-		/* We maintain memory alignment to word boundaries by requiring that all
-			allocations be in multiples of the machine wordsize.  
-		*/
-		const int WORDSIZE=4;   /* Size of machine word in bytes.  Must be power of 2. */
-		
-		const int BLOCKSIZE=2048;	/* Minimum number of bytes requested at a time from
-						the system.  Must be multiple of WORDSIZE. */
-		
-		int remaining;  /* Number of bytes left in current block of storage. */
-		char *base;     /* Pointer to base of current block of storage. */
-		char *loc;      /* Current location in block to next allocate memory. */
-	}
-	
-	/* 
-		Default constructor. Initializes a new pool.
-	*/
-	public this()
-	{
-		remaining = 0;
-		base = null;
-	}
-	
-	/* Returns a pointer to a piece of new memory of the given size in bytes
-		allocated from the pool.
-	*/
-	
-	T* malloc(T)(int count = 1)
-	{
-		char* m, rloc;
-		int blocksize;
-		
-		int size = T.sizeof * count;
-	
-		/* Round size up to a multiple of wordsize.  The following expression
-			only works for WORDSIZE that is a power of 2, by masking last bits of
-			incremented size to zero.
-		*/
-		size = (size + WORDSIZE - 1) & ~(WORDSIZE - 1);
-	
-		/* Check whether a new block must be allocated.  Note that the first word
-			of a block is reserved for a pointer to the previous block.
-		*/
-		if (size > remaining) {
-			blocksize = (size + (void*).sizeof > BLOCKSIZE) ?
-						size + (void*).sizeof : BLOCKSIZE;
-			m = cast(char*) .malloc(blocksize);
-			if (! m) {
-				FatalError("Failed to allocate memory.");
-			}
-			
-			remaining = blocksize - (void*).sizeof;
-			/* Fill first word of new block with pointer to previous block. */
-			(cast(char **) m)[0] = base;
-			base = m;
-			loc = m + (void*).sizeof;
-		}
-		/* Allocate new storage. */
-		rloc = loc;
-		loc += size;
-		remaining -= size;
-		return cast(T*)rloc;
-	}
-	
-	
-	/* Free all storage that was previously allocated to this pool.
-	*/
-	public ~this()
-	{
-		char *prev;
-	
-		while (base != null) {
-			prev = *(cast(char **) base);  /* Get pointer to prev block. */
-			free(base);
-			base = prev;
-		}
-	}
-	
-}
 
 
 class Queue(T) 
@@ -375,6 +289,7 @@ unittest
 
 
 
+
 public float computeVariance(float[][] points)
 {
 	if (points.length==0) {
@@ -399,3 +314,4 @@ public float computeVariance(float[][] points)
 
 	return variance;
 }
+

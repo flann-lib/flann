@@ -2,6 +2,8 @@
 Project: nn
 */
 
+module util.dataset_generator;
+
 import std.stdio;
 import std.string;
 
