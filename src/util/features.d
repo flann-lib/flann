@@ -10,11 +10,13 @@ import std.c.string;
 import std.stream;
 import std.ctype;
 import std.conv;
+import std.file;
 
 import serialization.serializer;
 import util.logger;
 import util.utils;
 import util.random;
+import util.allocator;
 
 
 
@@ -30,6 +32,7 @@ class Features {
 		int count;         /* Number of vectors. */
 		int veclen;         /* Length of each vector. */
 		float[][] vecs;      /* Float vecs. */
+		ubyte[][] uvecs;
 		int[] match;         /* Array of indices to correct nearest neighbor. */
 // 		int[] mtype;         /* Array of flags indicating if match is correct. */
 
@@ -195,34 +198,34 @@ class Features {
 			throw new Exception("Invalid file type");
 		}
 		
-		string realFile = readln(fp);
+		string realFile = strip(readln(fp));
 		int dim = toInt(strip(readln(fp)));
 		int elemSize = toInt(strip(readln(fp)));
 		
 		assert(elemSize==1); // for now assume 1 byte per element
 		
+		ulong fileSize = getSize(realFile);
+		count = fileSize / (dim*elemSize);
 		
-		FILE* bFile = fopen(toStringz(strip(realFile)),"r");
+		Logger.log(Logger.INFO,"features: ",count);
+				
+		FILE* bFile = fopen(toStringz(realFile	),"r");
 		if (bFile is null) {
 			throw new Exception("Cannot open input file: "~realFile);
 		}
 		
-		ubyte buffer[] = new ubyte[dim];
-		
-		vecs = new float[][10]; // an initial size
-		count = 0;
-
-		while(fread(&buffer[0],dim,1,bFile)==1) {
-			if (vecs.length==count) {
-				vecs.length = vecs.length * 2;
+		uvecs = allocate_mat!(ubyte[][])(count,dim);
+	
+		for (int i=0;i<count;++i) {
+			fread(&uvecs[i][0],dim,1,bFile);
+			
+			if (i%100000==0) {
+				Logger.log(Logger.INFO,"read %d elements\n",i);
 			}
-			vecs[count++] = toVec!(float,ubyte)(buffer);
 		}
+
 		
 		fclose(bFile);
-		
-		vecs = vecs[0..count];		
-		
 		
 		Logger.log(Logger.INFO,"Read %d elements",count);
 	}

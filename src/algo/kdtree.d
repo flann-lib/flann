@@ -47,7 +47,7 @@ import util.features;
 import util.resultset;
 import util.logger;
 import algo.nnindex;
-
+import util.allocator;
 
 
 mixin AlgorithmRegistry!(KDTree);
@@ -67,10 +67,10 @@ class KDTree : NNIndex{
 	int veclen;         /* Length of each vector. */
 //	int vsize; 			/* Space allocated for vector storage (vecs) and index (vind) */
 	float[][] vecs;      /* Float vecs.  */
-	int *vind;          /* Array of indices to vecs.  When doing
+	int []vind;          /* Array of indices to vecs.  When doing
 						   lookup, this is used instead to mark checkID. */
 	
-	int* freeInd;		/* Array of indices to free locations in vecs */
+	int[] freeInd;		/* Array of indices to free locations in vecs */
 	int freeIndCount;	/* Count of elements in freeInd */
 	int freeIndSize;	/* The size of freeInd */
 	
@@ -78,10 +78,9 @@ class KDTree : NNIndex{
 //	int ncount;         /* Number of neighbors so far in result. */
 //	float *dsqs;        /* Squared distances to current results. */
 //	int dsqlen;         /* Length of space allocated for dsqs. */
-	TreeSt **trees;  /* Array of k-d trees used to find neighbors. */
+	Tree []trees;  /* Array of k-d trees used to find neighbors. */
 	Heap!(BranchSt) heap;
 	
-	Pool pool;          /* Memory pool that holds all data for this index. */
 
 
 	
@@ -163,13 +162,11 @@ class KDTree : NNIndex{
 	*/
 	public this(Features inputData, Params params)
 	{
-		//std.gc.disable();
-		pool = new Pool();    /* All data for the index goes into this pool. */
 		this.numTrees_ = params.numTrees;
 		this.vcount = inputData.count;
 		this.veclen = inputData.veclen;
 		this.vecs = inputData.vecs;
-		this.trees = pool.malloc!(Tree)(numTrees_);
+		this.trees = allocate!(Tree[])(numTrees_);//Pool.malloc!(Tree)(numTrees_);
 		this.heap = new Heap!(BranchSt)(vecs.length);
 		this.checkID = -1000;
 		
@@ -177,7 +174,7 @@ class KDTree : NNIndex{
 		this.freeIndCount = 0;
 	
 		/* Create a permutable array of indices to the input vectors. */
-		this.vind = pool.malloc!(int)(vcount);
+		this.vind = allocate!(int[])(vcount);//Pool.malloc!(int)(vcount);
 		for (int i = 0; i < vcount; i++) {
 			this.vind[i] = i;
 		}
@@ -208,7 +205,7 @@ class KDTree : NNIndex{
 	*/
 	public ~this()
 	{
-		delete this.pool;
+		//Pool.free();
 	}
 	
 	
@@ -231,7 +228,7 @@ class KDTree : NNIndex{
 	{
 		Tree node;
 	
-		node = this.pool.malloc!(TreeSt)();
+		node = allocate!(TreeSt)();   //Pool.malloc!(TreeSt)();
 //		node = cast(TreeSt*) .malloc(TreeSt.sizeof);
 //		node = new TreeSt();
 		
@@ -256,8 +253,8 @@ class KDTree : NNIndex{
 	{
 		static float[] mean, var;	
 		if (mean==null) {
-			mean = new float[this.veclen];
-			var = new float[this.veclen];
+			mean = allocate!(float[])(this.veclen);  //new float[this.veclen];
+			var = allocate!(float[])(this.veclen);	//new float[this.veclen];
 		}
 		// Simpler D-specific initialization
 		mean[] = 0.0;
@@ -428,8 +425,8 @@ class KDTree : NNIndex{
 		if (node.child1==null && node.child2==null) {
 			// insert element
 			
-			node.child1 = this.pool.malloc!(TreeSt)();
-			node.child2 = this.pool.malloc!(TreeSt)();
+			node.child1 = allocate!(TreeSt)();   //Pool.malloc!(TreeSt)();
+			node.child2 = allocate!(TreeSt)();   //Pool.malloc!(TreeSt)();
 			
 			node.child1.divfeat = ind;
 			node.child2.divfeat = node.divfeat;
@@ -468,10 +465,10 @@ class KDTree : NNIndex{
 		int old_size = this.freeIndSize;
 		int new_size = (old_size==0?8:old_size*2);
 		
-		int* old_freeInd = this.freeInd;
+		int[] old_freeInd = this.freeInd;
 		
 		//allocate new memory
-		this.freeInd = this.pool.malloc!(int)(new_size);
+		this.freeInd = allocate!(int[])(new_size);//Pool.malloc!(int)(new_size);
 		
 		// copy old vector values
 		for (int i=0;i<this.freeIndCount;++i) {
@@ -707,7 +704,10 @@ class KDTree : NNIndex{
 	
 	float[][] getClusterPoints(Tree node)
 	{
-		float[][] points = new float[][10];
+		static float[][] points;
+		if (points==null) {
+			points = allocate!(float[][])(vcount);
+		}
 		int size = 0;
 		getClusterPoints_Helper(node,points,size);
 		
@@ -747,8 +747,8 @@ class KDTree : NNIndex{
 			}
 		}
 			
-		float variances[] = new float[q.size];
-		int clusterSize[] = new int[q.size];
+		float variances[] = allocate!(float[])(q.size);//new float[q.size];
+		int clusterSize[] = allocate!(int[])(q.size);//new int[q.size];
 		
 		for (int i=0;i<q.size;++i) {
 			float[][] clusterPoints = getClusterPoints(q[i]);
