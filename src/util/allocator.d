@@ -3,6 +3,21 @@ module util.allocator;
 import std.c.stdlib;
 
 
+template class_allocator()
+{
+	new(size_t sz)
+	{
+		void* p = Pool.malloc(sz);
+		assert(p !is null);
+		//std.gc.addRange(p, p + sz);
+		return p;
+	}
+
+	delete(void* p)
+	{
+	}
+}
+
 
 public T* allocate(T)() {
 	T* mem = cast(T*) Pool.malloc(T.sizeof);
@@ -31,6 +46,9 @@ public T[][] allocate_mat(T : T[][])(int rows, int cols) {
 }
 
 
+public T allocate_once(T, A...)(A a) {
+	allocate!(T)(a);
+}
 
 
 
@@ -85,7 +103,7 @@ class Pool {
 		allocated from the pool.
 	*/
 	
-	private static void* malloc(int size)
+	public static void* malloc(int size)
 	{
 		char* m, rloc;
 		int blocksize;
