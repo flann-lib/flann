@@ -34,6 +34,9 @@ public T[] allocate(T : T[])(int count) {
 
 public T[][] allocate_mat(T : T[][])(int rows, int cols) {
 	void* mem = Pool.malloc(rows*(T[]).sizeof+rows*cols*T.sizeof);
+	if (mem is null) {
+		throw new Exception("Cannot allocate memory");
+	}
 	T[]* index = cast(T[]*) mem;
 	T* mat = cast(T*) (mem+rows*(T[]).sizeof);
 	

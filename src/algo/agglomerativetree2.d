@@ -17,9 +17,10 @@ import util.resultset;
 import util.features;	
 import util.logger;	
 import algo.nnindex;
+import util.registry;	
 
 
-mixin AlgorithmRegistry!(AgglomerativeExTree);
+mixin AlgorithmRegistry!(AgglomerativeExTree,float);
 
 class AgglomerativeExTree : NNIndex {
 
@@ -76,7 +77,7 @@ class AgglomerativeExTree : NNIndex {
 		heap = new Heap!(BranchSt)(512);
 	}
 	
-	public this(Features inputData, Params params)
+	public this(Features!(float) inputData, Params params)
 	{
 		pcount = inputData.count;
 		indexSize = pcount;

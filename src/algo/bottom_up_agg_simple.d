@@ -15,9 +15,10 @@ import util.resultset;
 import util.features;
 import util.logger;
 import algo.nnindex;
+import util.registry;	
 
 
-mixin AlgorithmRegistry!(BottomUpSimpleAgglomerativeTree);
+mixin AlgorithmRegistry!(BottomUpSimpleAgglomerativeTree,float);
 
 class BottomUpSimpleAgglomerativeTree : NNIndex {
 
@@ -82,7 +83,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 	{
 	}
 
-	public this(Features inputData, Params params)
+	public this(Features!(float) inputData, Params params)
 	{
 		int count = inputData.count;
 		

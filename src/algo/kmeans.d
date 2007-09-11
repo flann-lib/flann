@@ -15,17 +15,18 @@ import util.features;
 import util.logger;
 import util.random;
 import util.allocator;
+import util.registry;	
 
 
 
-mixin AlgorithmRegistry!(KMeansTree);
+//mixin AlgorithmRegistry!(KMeansTree,ubyte);
 
 
 
 private string centersAlgorithm;
 
 
-class KMeansTree : NNIndex
+class KMeansTree(T) : NNIndex
 {
 	mixin class_allocator;
 	
@@ -39,7 +40,7 @@ class KMeansTree : NNIndex
 	private int numTrees_;
 	private bool randomTree;
 	
-	private float[][] vecs;
+	private T[][] vecs;
 	private int flength;
 	private BranchHeap heap;	
 	private int checkID = -1;
@@ -62,7 +63,7 @@ class KMeansTree : NNIndex
 	private int[] indices;
 	
 	
-	alias float[][] delegate(int k, float[][] vecs, int[] indices) centersAlgDelegate;
+	alias T[][] delegate(int k, T[][] vecs, int[] indices) centersAlgDelegate;
 	centersAlgDelegate[string] centerAlgs;
 	
 
@@ -75,7 +76,7 @@ class KMeansTree : NNIndex
 		initCentersAlgorithms();
 	}
 	
-	public this(Features inputData, Params params)
+	public this(Features!(T) inputData, Params params)
 	{
 		this.branching = params.branching;
 		this.numTrees_ = params.numTrees;
@@ -191,9 +192,8 @@ class KMeansTree : NNIndex
 	
 		float radius = 0;
 		float variance = 0;
-		float[] mean = vecs[indices[0]].dup;
-		variance = squaredDist(vecs[indices[0]]);
-		for (int i=1;i<indices.length;++i) {
+		float[] mean = allocate!(float[])(vecs[0].length);
+		for (int i=0;i<indices.length;++i) {
 			for (int j=0;j<mean.length;++j) {
 				mean[j] += vecs[indices[i]][j];
 			}			
@@ -227,21 +227,22 @@ class KMeansTree : NNIndex
 		int nc = branching;
 		
 		node.size = indices.length;
-		
-		float[][] centers;
-		
+				
+		T[][] initial_centers;
 		if (centersAlgorithm in centerAlgs) {
-			centers = centerAlgs[centersAlgorithm](nc,vecs, indices);
+			initial_centers = centerAlgs[centersAlgorithm](nc,vecs, indices); 
 		}
 		else {
 			throw new Exception("Unknown algorithm for choosing initial centers.");
 		}
-
-		if (centers.length<nc) {
+		
+		if (initial_centers.length<nc) {
 			node.indices = indices;
 			return;
 		}
 		
+		float[][] centers = allocate_mat!(float[][])(nc,flength);		
+		mat_copy(centers,initial_centers);
 		
 	 	float[] radiuses = allocate!(float[])(nc);		
 		int[] count = allocate!(int[])(nc);		
@@ -262,15 +263,11 @@ class KMeansTree : NNIndex
 			count[belongs_to[i]]++;
 		}
 
+		
+		
 		bool converged = false;
-
-		centers = allocate_mat!(float[][])(nc,flength);
-/+		for (int i=0;i<nc;++i) {
-			centers[i] = new float[](flength);
-		}+/
 		
 		while (!converged) {
-			
 			converged = true;
 			
 			for (int i=0;i<nc;++i) {
@@ -344,9 +341,6 @@ class KMeansTree : NNIndex
 		}
 	
 	
-	
-	
-	
 		// compute kmeans clustering for each of the resulting clusters
 		node.childs = allocate!(KMeansNode[])(nc);
 		int start = 0;
@@ -378,11 +372,12 @@ class KMeansTree : NNIndex
 	
 	
 	
-	private float[][] chooseCentersRandom(int k, float[][] vecs, int[] indices)
+	private T[][] chooseCentersRandom(int k, T[][] vecs, int[] indices)
 	{
 		DistinctRandom r = new DistinctRandom(indices.length);
 		
-		float[][] centers = allocate!(float[][])(k);
+		static T[][] centers;
+		if (centers is null) centers = allocate!(T[][])(k);
 		int index;
 		for (index=0;index<k;++index) {
 			bool duplicate = true;
@@ -407,11 +402,12 @@ class KMeansTree : NNIndex
 		return centers[0..index];
 	}
 
-	private float[][] chooseCentersGonzales(int k, float[][] vecs, int[] indices)
+	private T[][] chooseCentersGonzales(int k, T[][] vecs, int[] indices)
 	{
 		int n = indices.length;
 		
-		float[][] centers = allocate!(float[][])(k);
+		static T[][] centers;
+		if (centers is null) centers = allocate!(T[][])(k);
 		
 		int rand = cast(int) (drand48() * n);  
 		assert(rand >=0 && rand < n);
@@ -635,9 +631,9 @@ class KMeansTree : NNIndex
 	
 		
 	
-	private float[][] getClusterPoints(KMeansNode node)
+	private T[][] getClusterPoints(KMeansNode node)
 	{
-		void getClusterPoints_Helper(KMeansNode node, inout float[][] points, inout int size) 
+		void getClusterPoints_Helper(KMeansNode node, inout T[][] points, inout int size) 
 		{
 			if (node.childs.length == 0) {			
 				for (int i=0;i<node.indices.length;++i) {
@@ -652,9 +648,9 @@ class KMeansTree : NNIndex
 		}
 	
 	
-		static float[][] points;
+		static T[][] points;
 		if (points==null) {
-			points = allocate!(float[][])(vecs.length);
+			points = allocate!(T[][])(vecs.length);
 		}
 		int size = 0;
 		getClusterPoints_Helper(node,points,size);
@@ -741,3 +737,4 @@ class KMeansTree : NNIndex
 
 }
 
+mixin AlgorithmRegistry!(KMeansTree!(float),float);

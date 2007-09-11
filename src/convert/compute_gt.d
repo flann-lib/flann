@@ -48,7 +48,7 @@ private int findNearest(float[][] vecs, float[] query, int skip = 0)
 	return nn[skip];
 }
 
-private int[] computeGroundTruth(Features inputData, Features testData, int skip = 0) 
+private int[] computeGroundTruth(Features!(float) inputData, Features!(float) testData, int skip = 0) 
 {
 	int[] matches = new int[testData.count];
 
@@ -80,17 +80,17 @@ void writeMatches(string match_file, int[] matches)
 
 void compute_gt(string featuresFile, string testFile, string matchFile, int skip = 0)
 {
-	Features inputData;
-	Features testData;
+	Features!(float) inputData;
+	Features!(float) testData;
 	
 	showOperation("Reading input data from "~featuresFile, {
-		inputData = new Features();
+		inputData = new Features!(float)();
 		inputData.readFromFile(featuresFile);
 	});
 	
 	if (std.file.exists(testFile) && std.file.isfile(testFile)) {
 		showOperation("Reading test data from "~testFile, {
-			testData = new Features();
+			testData = new Features!(float)();
 			testData.readFromFile(testFile);
 		});
 	} 

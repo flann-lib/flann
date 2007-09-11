@@ -17,10 +17,11 @@ import util.logger;
 import util.utils;
 import util.random;
 import util.allocator;
+import console.progressbar;
 
 
 
-class Features {
+class Features(T = float) {
 
 		enum signature {
 			NN_FILE,
@@ -31,9 +32,8 @@ class Features {
 
 		int count;         /* Number of vectors. */
 		int veclen;         /* Length of each vector. */
-		float[][] vecs;      /* Float vecs. */
-		ubyte[][] uvecs;
-		int[] match;         /* Array of indices to correct nearest neighbor. */
+		T[][] vecs;      /* Float vecs. */
+ 		int[] match;         /* Array of indices to correct nearest neighbor. */
 // 		int[] mtype;         /* Array of flags indicating if match is correct. */
 
 		public this() {}
@@ -44,6 +44,26 @@ class Features {
 			vecs.length = size;
 			match.length = size;
 		}
+
+
+
+	int readValue(U) (FILE* f, inout U value) {
+		throw new Exception("readValue not implemented for type: "~U.stringof);
+	}
+	
+	int readValue(U : float) (FILE* f, inout U value) {
+		return fscanf(f,"%f ",&value);
+	}
+	
+	int readValue(U : int) (FILE* f, inout U value) {		
+		return fscanf(f,"%d ",&value);
+	}
+	
+	int readValue(U : ubyte) (FILE* f, inout U value) {
+		return fscanf(f,"%hhu ",&value);
+	}
+
+
 
 	/** 
 		Read an NN file containing vectors for nearest-neighbor matching.
@@ -71,7 +91,7 @@ class Features {
 	
 		this.count = vcount;
 		this.veclen = veclen;
-		this.vecs = new float[][](count,veclen);
+		this.vecs = allocate_mat!(T[][])(count,veclen);
 		this.match = new int[count];
 // 		this.mtype = new int[count];
 		
@@ -86,10 +106,10 @@ class Features {
 			this.match[i] = mat;
 // 			this.mtype[i] = mtype;
 	
-			float val;
+			T val;
 			/* Read an input vector. */
 			for (int j = 0; j < veclen; j++) {
-				if (fscanf(fp, "%f ", &val) != 1) {
+				if (readValue!(T)(fp,val) != 1) {
 					throw new Exception("Invalid vector value.");
 				}
 				this.vecs[i][j] = val;
@@ -129,10 +149,10 @@ class Features {
 		
 // 		writefln("veclen: %d",veclen);
 		
-		vecs = new float[][10]; // an initial size
+		vecs = new T[][10]; // an initial size
 		
 		count = 0;
-		vecs[count++] = toVec!(float)(tokens);
+		vecs[count++] = toVec!(T)(tokens);
 				
 		ret = fgets(&buffer[0],MAX_BUF,fp);
 		while (ret!=null) {
@@ -144,7 +164,7 @@ class Features {
 					vecs.length = vecs.length * 2;
 				}
 				
-				vecs[count++] = toVec!(float)(tokens);
+				vecs[count++] = toVec!(T)(tokens);
 			} else {
 				debug {
 					Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(count+1));
@@ -189,7 +209,7 @@ class Features {
 			fprintf(stderr,"\n");
 		}
 	}
-	
+		
 	private void readBINARYFile(FILE* fp) 
 	{
 		string header = readln(fp);
@@ -207,22 +227,26 @@ class Features {
 		ulong fileSize = getSize(realFile);
 		count = fileSize / (dim*elemSize);
 		
-		Logger.log(Logger.INFO,"features: ",count);
+		Logger.log(Logger.INFO,"\nReading %d features: ",count);
 				
 		FILE* bFile = fopen(toStringz(realFile	),"r");
 		if (bFile is null) {
 			throw new Exception("Cannot open input file: "~realFile);
 		}
 		
-		uvecs = allocate_mat!(ubyte[][])(count,dim);
+		vecs = allocate_mat!(T[][])(count,dim);
+		
+		ubyte[] buffer = allocate!(ubyte[])(dim);
 	
-		for (int i=0;i<count;++i) {
-			fread(&uvecs[i][0],dim,1,bFile);
-			
-			if (i%100000==0) {
-				Logger.log(Logger.INFO,"read %d elements\n",i);
+		showProgressBar(count/10, 70, (Ticker tick){
+			for (int i=0;i<count;++i) {
+				fread(&buffer[0],dim,1,bFile);
+				
+				array_copy(buffer,vecs[i]);
+				
+				if (i%10==0) tick();
 			}
-		}
+		});
 
 		
 		fclose(bFile);

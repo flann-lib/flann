@@ -12,9 +12,10 @@ import util.utils;
 import util.resultset;
 import util.features;
 import algo.nnindex;
+import util.registry;	
 
 
-mixin AlgorithmRegistry!(LinearSearch);
+mixin AlgorithmRegistry!(LinearSearch,float);
 
 class LinearSearch : NNIndex {
 
@@ -25,14 +26,14 @@ class LinearSearch : NNIndex {
 
 	static string NAME = "linear";
 	
-	Features dataset;
+	Features!(float) dataset;
 
 	private this() 
 	{
 	}
 
 	
-	public this(Features inputData, Params params)
+	public this(Features!(float) inputData, Params params)
 	{
 		dataset = inputData;
 		

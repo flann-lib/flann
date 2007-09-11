@@ -5,25 +5,26 @@ Project: nn
 module util.dist;
 
 
-public float squaredDist(float[] a, float[] b) 
+
+public float squaredDist(T,U)(T[] a, U[] b) 
 {
-	return DistSquared(&a[0], &b[0],a.length);
+	return DistSquared!(T,U)(&a[0], &b[0],a.length);
 }
 
-public float squaredDist(float[] a) 
+public float squaredDist(T)(T[] a) 
 {
-	return DistSquared(&a[0], a.length);
+	return DistSquared!(T)(&a[0], a.length);
 }
 
 /* Return the squared distance between two vectors. 
 	This is highly optimized, with loop unrolling, as it is one
 	of the most expensive inner loops of recognition.
 */
-public float DistSquared(float *v1, float *v2, int veclen)
+public float DistSquared(T,U)(T *v1, U *v2, int veclen)
 {
 	float diff, distsq = 0.0;
 	float diff0, diff1, diff2, diff3;
-	float *final_, finalgroup;
+	T* final_, finalgroup;
 
 	final_ = v1 + veclen;
 	finalgroup = final_ - 3;
@@ -47,11 +48,12 @@ public float DistSquared(float *v1, float *v2, int veclen)
 }
 
 
-public float DistSquared(float *v1, int veclen)
+
+public float DistSquared(T)(T *v1, int veclen)
 {
 	float diff, distsq = 0.0;
 	float diff0, diff1, diff2, diff3;
-	float *final_, finalgroup;
+	T* final_, finalgroup;
 
 	final_ = v1 + veclen;
 	finalgroup = final_ - 3;

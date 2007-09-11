@@ -33,9 +33,10 @@ import algo.linearsearch;
 import convert.compute_gt;
 import util.dataset_generator;
 import util.timer;
+import util.registry;	
 
 
-void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skipMatches)
+void testNNIndex(NNIndex index, Features!(float) testData, int nn, int checks, uint skipMatches)
 {
 	Logger.log(Logger.INFO,"Searching... \n");
 	/* Create a table showing computation time and accuracy as a function
@@ -88,7 +89,7 @@ void testNNIndex(NNIndex index, Features testData, int nn, int checks, uint skip
 }
 
 
-void computeNearestNeighbors(string outputFile, NNIndex index, Features testData, int nn, int checks, uint skipMatches)
+void computeNearestNeighbors(string outputFile, NNIndex index, Features!(float) testData, int nn, int checks, uint skipMatches)
 {
 	FILE* fout = fopen(toStringz(outputFile), "w");
 	
@@ -234,6 +235,10 @@ OptionParser parseArguments(char[][] args)
 	optGenerateRandom.helpMessage = "Generate random dataset (options: output_file, feature count, feature length)";
 	optParser.addOption(optGenerateRandom);
 	
+	auto optByte = new FlagTrueOption("B", "byte", "byte");
+	optByte.helpMessage = "Use byte storage for feature elements";
+	optParser.addOption(optByte);
+	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
 	optParser.addOption(optHelp);
@@ -315,6 +320,7 @@ void main(char[][] args)
 	char[] clusterFile = unbox!(char[])(optParser["cluster_file"]);
 	uint skipMatches = unbox!(uint)(optParser["skip_matches"]);
 	char[] outputFile = unbox!(char[])(optParser["output_file"]);
+	bool byte_features = unbox!(bool)(optParser["byte"]);
 
 	Params params;
 	params.numTrees = unbox!(uint)(optParser["num_trees"]);
@@ -334,7 +340,8 @@ void main(char[][] args)
 	Logger.log(Logger.INFO,"Algorithm: %s\n",algorithm);
 
 
-	Features inputData = null;
+	Features!(float) inputData = null;
+	Features!(ubyte) inputDataByte = null;
 
 	NNIndex index;
 	if (loadFile !is null) {
@@ -351,20 +358,31 @@ void main(char[][] args)
 	
 		if (inputFile=="-") { //read from stdin
 			Logger.log(Logger.INFO,"Reading input data from stdin...\n");
-			inputData = new Features();
+			inputData = new Features!(float)();
 			inputData.readFromFile(null); 
 		}
 		else if (inputFile !is null) {
 			showOperation( "Reading input data from %s".format(inputFile), {
-				inputData = new Features();
-				inputData.readFromFile(inputFile);
+				if (!byte_features) {
+					inputData = new Features!(float)();
+					inputData.readFromFile(inputFile);
+				}
+				else {
+					inputDataByte = new Features!(ubyte)();
+					inputDataByte.readFromFile(inputFile);
+				}
 			});
 		}
 	
-		if (inputData is null) {
+		if (inputData is null && inputDataByte is null) {
 			throw new Exception("No input data given.");
 		}
-		index = indexRegistry[algorithm](inputData, params);
+		
+		if (! byte_features) {
+			index = indexRegistry[algorithm](inputData, params);
+		} else {
+			index = new KMeansTree!(ubyte)(inputDataByte,params);
+		}
 		
 		Logger.log(Logger.INFO,"Building index... \n");
 		auto timer = new StartStopTimer();
@@ -391,14 +409,14 @@ void main(char[][] args)
 	
 	if (!skipTest) {
 	
-		Features testData;
+		Features!(float) testData;
 		if ((testFile is null) && (inputData !is null)) {
 			testData = inputData;
 		}
 		else if (testFile !is null) {
 			Logger.log(Logger.INFO,"Reading test data from %s... ",testFile);
 			fflush(stdout);
-			testData = new Features();
+			testData = new Features!(float)();
 			testData.readFromFile(testFile);
 			Logger.log(Logger.INFO,"done\n");
 		}

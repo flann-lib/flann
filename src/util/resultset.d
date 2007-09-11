@@ -10,16 +10,16 @@ import util.utils;
 
 struct Point {
 
-	static Point opCall(float[] point, int index) 
+	static Point opCall(int index) 
 	{
 		Point p;
-		p.point = point;
+//		p.point = point;
 		p.index = index;
 		
 		return p;
 	}
 
-	float[] point;
+	//float[] point;
 	int index;
 	float dist;
 }
@@ -64,9 +64,9 @@ class ResultSet
 		return count == points.length;
 	}
 	
-	public bool addPoint(float[] point, int index) 
+	public bool addPoint(T)(T[] point, int index) 
 	{
-		Point p = Point(point,index);
+		Point p = Point(index);
 	
 		p.dist = target.squaredDist(point);
 		

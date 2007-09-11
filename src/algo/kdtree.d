@@ -48,9 +48,10 @@ import util.resultset;
 import util.logger;
 import algo.nnindex;
 import util.allocator;
+import util.registry;
 
 
-mixin AlgorithmRegistry!(KDTree);
+mixin AlgorithmRegistry!(KDTree,float);
 
 /* Contains the k-d trees and other information for indexing a set of points
    for nearest-neighbor matching.
@@ -160,7 +161,7 @@ class KDTree : NNIndex{
 	veclen: the length of each vector.
 	numTrees_: the number of randomized trees to build.
 	*/
-	public this(Features inputData, Params params)
+	public this(Features!(float) inputData, Params params)
 	{
 		this.numTrees_ = params.numTrees;
 		this.vcount = inputData.count;

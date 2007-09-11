@@ -48,9 +48,30 @@ FILE* fOpen(string file, string mode, lazy string message)
 }
 
 
+void array_copy(U,V)(U[] src, V[] dst)
+{
+	foreach(index,value;src) {
+		dst[index] = cast(V) value;
+	}
+} 
+
+void mat_copy(U,V)(U[][] dst, V[][] src)
+{
+	foreach(row_index,row;src) {
+		foreach(index,value;row) {
+			dst[row_index][index] = cast(V) value;
+		}
+	}
+} 
+
+
+
+
 T convert(T : int, U : string)(U value) { return toInt(value); }
 T convert(T : float, U : string)(U value) { return toFloat(value); }
 T convert(T : double, U : string)(U value) { return toDouble(value); }
+
+T convert(T : ubyte, U : string)(U value) { return toUbyte(value); }
 
 T convert(T : float, U : ubyte)(ubyte value) { return value; }
 
@@ -109,44 +130,6 @@ struct Params {
 	int branching;
 	bool random;
 	string centersAlgorithm;
-}
-
-
-/*---------------- index registry--------------------*/
-
-import algo.nnindex;
-import util.features;
-
-
-
-alias NNIndex delegate(Features, Params) index_delegate;
-static index_delegate[string] indexRegistry;
-
-alias NNIndex delegate(string) load_index_delegate;
-static load_index_delegate[string] loadIndexRegistry;
-
-
-/*------------------- module constructor template--------------------*/
-
-template AlgorithmRegistry(T)
-{
-	
-	import serialization.serializer;
-	import std.stream;
-	
-	static this() 
-	{
-		indexRegistry[T.NAME] = delegate(Features inputData, Params params) {return cast(NNIndex) new T(inputData, params);};
-		
-		Serializer.registerClassConstructor!(T)({return new T();});
-		
-		loadIndexRegistry[T.NAME] = delegate(string file) 
-			{ Serializer s = new Serializer(file, FileMode.In);
-				T index;
-				s.describe(index);
-				return cast(NNIndex)index;
-				};
-	}
 }
 
 

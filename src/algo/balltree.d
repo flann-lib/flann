@@ -16,11 +16,11 @@ import util.resultset;
 import util.features;
 import util.logger;
 import algo.nnindex;
-
 import algo.agglomerativetree2;
+import util.registry;	
 
 
-mixin AlgorithmRegistry!(BallTree);
+mixin AlgorithmRegistry!(BallTree,float);
 
 class BallTree : NNIndex {
 
@@ -72,7 +72,7 @@ class BallTree : NNIndex {
 		btHeap = new Heap!(BallBranchStruct)(512);
 	}
 	
-	public this(Features inputData, Params params)
+	public this(Features!(float) inputData, Params params)
 	{
 		this();
 		aggTree = new AgglomerativeExTree(inputData,params);
