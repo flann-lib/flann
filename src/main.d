@@ -208,6 +208,7 @@ OptionParser parseArguments(char[][] args)
 	
 	auto optOutputFile = new StringOption("o", "output-file", "output_file", null, "FILE");
 	optOutputFile.helpMessage = "File to save the nearest neighbors to.";
+	optParser.addOption(optOutputFile);
 	
 	auto optVerbosity = new StringOption("v", "verbosity", "verbosity", "info", "VALUE");
 	optVerbosity.helpMessage = "Stop searching after exploring NUM features.";
