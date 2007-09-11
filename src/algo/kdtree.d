@@ -704,6 +704,17 @@ class KDTree : NNIndex{
 	
 	float[][] getClusterPoints(Tree node)
 	{
+		void getClusterPoints_Helper(Tree node, inout float[][] points, inout int size) 
+		{
+			if (node.child1 == null && node.child2 == null) {
+				points[size++] = this.vecs[node.divfeat];
+			}
+			else {
+				getClusterPoints_Helper(node.child1,points,size);
+				getClusterPoints_Helper(node.child2,points,size);
+			}
+		}
+			
 		static float[][] points;
 		if (points==null) {
 			points = allocate!(float[][])(vcount);
@@ -714,19 +725,6 @@ class KDTree : NNIndex{
 		return points[0..size];
 	}
 	
-	void getClusterPoints_Helper(Tree node, inout float[][] points, inout int size) 
-	{
-		if (node.child1 == null && node.child2 == null) {
-			if (size==points.length) {
-				points.length = points.length*2;
-			}
-			points[size++] = this.vecs[node.divfeat];
-		}
-		else {
-			getClusterPoints_Helper(node.child1,points,size);
-			getClusterPoints_Helper(node.child2,points,size);
-		}
-	}
 	
 	
 	public float meanClusterVariance(int numClusters)

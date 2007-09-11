@@ -251,7 +251,7 @@ OptionParser parseArguments(char[][] args)
 void main(char[][] args)
 {
 	Logger.enableLevel(Logger.ERROR);
-	//std.gc.disable();
+	std.gc.disable();
 
 	auto optParser = parseArguments(args);
 
