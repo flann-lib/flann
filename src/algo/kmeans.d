@@ -50,6 +50,7 @@ class KMeansTree : NNIndex
 		float[] pivot;
 		float radius;
 		float variance;
+		int size;
 		
 		KMeansNode[] childs;
 		int[] indices;
@@ -224,6 +225,8 @@ class KMeansTree : NNIndex
 	{
 		int n = indices.length;
 		int nc = branching;
+		
+		node.size = indices.length;
 		
 		float[][] centers;
 		
@@ -574,8 +577,7 @@ class KMeansTree : NNIndex
 		} 
 		else {
 			int nc = node.childs.length;
-			static int[] sort_indices;
-			if (sort_indices is null) sort_indices = allocate!(int[])(nc);	
+			int[] sort_indices = allocate!(int[])(nc);	
 			
 			getCenterOrdering(node, vec, sort_indices);
 
@@ -590,8 +592,11 @@ class KMeansTree : NNIndex
 	private void getCenterOrdering(KMeansNode node, float[] q, ref int[] sort_indices)
 	{
 		int nc = node.childs.length;
+		
 		static float[] distances;
-		if (distances is null) distances = allocate!(float[])(nc);
+		if (distances is null) {
+			distances = allocate!(float[])(nc);		
+		}
 		
 		for (int i=0;i<nc;++i) {
 			float dist = squaredDist(q,node.childs[i].pivot);
@@ -674,16 +679,13 @@ class KMeansTree : NNIndex
 	
 	private KMeansNode[] getMinVarianceClusters(KMeansNode root, int numClusters, out float varianceValue)
 	{
-	
 		static KMeansNode[] clusters;
-		if (clusters==null) {
-			clusters = allocate!(KMeansNode[])(vecs.length);
-		}
+		if (clusters==null) clusters = allocate!(KMeansNode[])(vecs.length);
 		
 		int clusterCount = 1;
 		clusters[0] = root;
 		 
-		float meanVariance = root.variance*root.indices.length;
+		float meanVariance = root.variance*root.size;
 		 
 		while (clusterCount<numClusters) {
 			
@@ -693,10 +695,10 @@ class KMeansTree : NNIndex
 			for (int i=0;i<clusterCount;++i) {
 				if (clusters[i].childs.length != 0) {
 			
-					float variance = meanVariance - clusters[i].variance*clusters[i].indices.length;
+					float variance = meanVariance - clusters[i].variance*clusters[i].size;
 					 
 					for (int j=0;j<clusters[i].childs.length;++j) {
-					 	variance += clusters[i].childs[j].variance*clusters[i].childs[j].indices.length;
+					 	variance += clusters[i].childs[j].variance*clusters[i].childs[j].size;
 					}
 					if (variance<minVariance) {
 						minVariance = variance;
@@ -709,13 +711,6 @@ class KMeansTree : NNIndex
 			
 			meanVariance = minVariance;
 			
-			
-// 			while (clusterCount+clusters[splitIndex].childs.length>=clusters.length) {
-// 				// increase vector if needed
-// 				clusters.length = clusters.length*2;
-// 			}
-// 			
-			
 			// split node
 			KMeansNode toSplit = clusters[splitIndex];
 			clusters[splitIndex] = toSplit.childs[0];
@@ -725,12 +720,7 @@ class KMeansTree : NNIndex
 			}
 		}
 		
-/* 		for (int i=0;i<clusterCount;++i) {
- 			writef("Cluster %d size: %d\n",i,clusters[i].points.length);
- 		}*/
-		
-		
-		varianceValue = meanVariance/root.indices.length;
+		varianceValue = meanVariance/root.size;
 		return clusters[0..clusterCount];
 	}
 
