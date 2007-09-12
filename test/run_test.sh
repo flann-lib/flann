@@ -2,46 +2,44 @@
 
 
 PROG=nn
-
+DATE=`date +%Y%m%d%H%M%S`
 
 function run_test()
 {
 	echo $@
-	time $@ > $OUTPUT_FILE
+	time $@ > ${OUTPUT_FILE}
 }
 
 for DATASET in $@;
 do
-
-#	DATASET=$1
-
-	INPUT=$DATASET/features.dat
-	TEST=$DATASET/test.dat
-	MATCH=$DATASET/match.dat
-	OUTPUT_DIR=$DATASET/results-`date +%Y%m%d%H%M%S`/
+	INPUT=${DATASET}/features.dat
+	TEST=${DATASET}/test.dat
+	MATCH=${DATASET}/match.dat
+	OUTPUT_DIR=${DATASET}/results-${DATE}/
 	NN=1
-	CHECKS=2,4,8,16,32,64,128,256,512,1024
-
 
 	if [ ! -d ${OUTPUT_DIR} ] ;
 	then
 		mkdir ${OUTPUT_DIR}
 	fi
 
+
+	CHECKS=2,4,8,16,32,64,128,256,512,1024
 	ALGO=kmeans
-	for br in 2 4 8 16 32 64 128 256; 
+	for BR in 2 4 8 16 32 64 128 256; 
 	do
-		OUTPUT_FILE=$OUTPUT_DIR/${ALGO}_$br.dat
-		run_test $PROG -a $ALGO -n $NN -c $CHECKS -i $INPUT -t $TEST -m $MATCH -b $br -v simple
+		OUTPUT_FILE=${OUTPUT_DIR}/${ALGO}_${BR}.dat
+		run_test ${PROG} -a ${ALGO} -n ${NN} -c ${CHECKS} -i ${INPUT} -t ${TEST} -m ${MATCH} -b ${BR} -v simple
 	done
 
 
 
+	CHECKS=2,4,8,16,32,64,128,256,512,1024,2048,4096,8192
 	ALGO=kdtree
-	for tr in 1 4 10 16 32; 
+	for TR in 1 4 10 16 32; 
 	do
-		OUTPUT_FILE=$OUTPUT_DIR/${ALGO}_$tr.dat
-		run_test $PROG -a $ALGO -n $NN -c $CHECKS -i $INPUT -t $TEST -m $MATCH -r $tr -v simple
+		OUTPUT_FILE=${OUTPUT_DIR}/${ALGO}_${TR}.dat
+		run_test ${PROG} -a ${ALGO} -n ${NN} -c ${CHECKS} -i ${INPUT} -t ${TEST} -m ${MATCH} -r ${TR} -v simple
 	done
 
 done

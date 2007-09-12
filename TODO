@@ -5,12 +5,16 @@
 
 - build several randomized kmeans (with different branching factors - might help for the branching factors to be prime numbers) DONE
 
-- speedup kmeans using sampling
+- improve build system DONE
 
+
+
+- profiling and optimization (GPU?, BLAS?)
+
+- speedup kmeans using sampling
 
 - mean shift clustering
 
-- improve build system
 - port to tango library
 
 
