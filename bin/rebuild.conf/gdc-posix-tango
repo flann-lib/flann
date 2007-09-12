@@ -1,0 +1,77 @@
+profile=tango
+
+compiler=gdc
+
+exeext=
+objext=o
+
+
+noversion=DigitalMars
+version=GNU
+testversion=linux
+testversion=darwin
+version=Unix
+version=Posix
+noversion=Windows
+noversion=Win32
+noversion=Win64
+testversion=X86
+testversion=PPC
+testversion=X86_64
+testversion=D_InlineAsm
+testversion=D_InlineAsm_X86
+testversion=D_InlineAsm_PPC
+testversion=D_InlineAsm_X86_64
+testversion=LittleEndian
+testversion=BigEndian
+version=Tango
+
+
+[compile]
+cmd=gdmd -version=Posix -version=Tango -c $i
+
+flag=$i
+incdir=-I$i
+libdir=-L-L$i
+circular=-fall-sources
+optimize=-O
+version=-version=$i
+
+
+[link]
+cmd=gdmd $i -of$o
+nodarwinflag=-q,-rdynamic
+
+libdir=-L-L$i
+lib=-L-l$i
+flag=-L$i
+
+
+[liblink]
+safe=yes
+cmd=ar rc $o $i
+
+libdir=
+lib=
+flag=
+
+
+[postliblink]
+cmd=ranlib $i
+
+
+[shliblink]
+shlibs=yes
+cmd=gdmd -q,-shared -q,-nodefaultlibs $i -of$o
+
+libdir=-L-L$i
+lib=-L-l$i
+flag=-L$i
+
+[dyliblink]
+dylibs=yes
+cmd=gdmd -q,-shared -q,-nodefaultlibs $i $l/dymoduleinit.d -of$o
+
+libdir=-L-L$i
+lib=-L-l$i
+flag=-L$i
