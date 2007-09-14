@@ -48,12 +48,14 @@ FILE* fOpen(string file, string mode, lazy string message)
 }
 
 
-void array_copy(U,V)(U[] src, V[] dst)
+void array_copy(U,V)(U[] dst, V[] src)
 {
 	foreach(index,value;src) {
-		dst[index] = cast(V) value;
+		dst[index] = convert!(U,V)(value);
 	}
 } 
+
+
 
 void mat_copy(U,V)(U[][] dst, V[][] src)
 {
@@ -66,7 +68,7 @@ void mat_copy(U,V)(U[][] dst, V[][] src)
 
 
 
-
+T convert(T,U) (U value) { return cast(T) value; }
 T convert(T : int, U : string)(U value) { return toInt(value); }
 T convert(T : float, U : string)(U value) { return toFloat(value); }
 T convert(T : double, U : string)(U value) { return toDouble(value); }

@@ -1,6 +1,7 @@
 module util.allocator;
 
 import std.c.stdlib;
+import std.stdio;
 
 
 template class_allocator()
@@ -33,6 +34,7 @@ public T[] allocate(T : T[])(int count) {
 }
 
 public T[][] allocate_mat(T : T[][])(int rows, int cols) {
+	if (rows & 1) rows++; // for 16 byte allignment
 	void* mem = Pool.malloc(rows*(T[]).sizeof+rows*cols*T.sizeof);
 	if (mem is null) {
 		throw new Exception("Cannot allocate memory");
@@ -82,14 +84,14 @@ class Pool {
 		/* We maintain memory alignment to word boundaries by requiring that all
 			allocations be in multiples of the machine wordsize.  
 		*/
-		const int WORDSIZE=4;   /* Size of machine word in bytes.  Must be power of 2. */
+		const int WORDSIZE=16;   /* Size of machine word in bytes.  Must be power of 2. */
 		
 		const int BLOCKSIZE=2048;	/* Minimum number of bytes requested at a time from
 						the system.  Must be multiple of WORDSIZE. */
 		
 		int remaining;  /* Number of bytes left in current block of storage. */
-		char *base;     /* Pointer to base of current block of storage. */
-		char *loc;      /* Current location in block to next allocate memory. */
+		void *base;     /* Pointer to base of current block of storage. */
+		void *loc;      /* Current location in block to next allocate memory. */
 	}
 	
 	private this() {};
@@ -108,7 +110,6 @@ class Pool {
 	
 	public static void* malloc(int size)
 	{
-		char* m, rloc;
 		int blocksize;
 		
 		//int size = T.sizeof * count;
@@ -117,29 +118,36 @@ class Pool {
 			only works for WORDSIZE that is a power of 2, by masking last bits of
 			incremented size to zero.
 		*/
-		size = (size + WORDSIZE - 1) & ~(WORDSIZE - 1);
+		size = (size + (WORDSIZE - 1)) & ~(WORDSIZE - 1);
 	
 		/* Check whether a new block must be allocated.  Note that the first word
 			of a block is reserved for a pointer to the previous block.
 		*/
 		if (size > remaining) {
-			blocksize = (size + (void*).sizeof > BLOCKSIZE) ?
-						size + (void*).sizeof : BLOCKSIZE;
-			m = cast(char*) .malloc(blocksize);
+		/* Allocate new storage. */
+			blocksize = (size + (void*).sizeof + (WORDSIZE-1) > BLOCKSIZE) ?
+						size + (void*).sizeof + (WORDSIZE-1) : BLOCKSIZE;
+			void* m = std.c.stdlib.malloc(blocksize);
 			if (! m) {
 				throw new Exception("Failed to allocate memory.");
 			}
 			
-			remaining = blocksize - (void*).sizeof;
 			/* Fill first word of new block with pointer to previous block. */
-			(cast(char **) m)[0] = base;
+			(cast(void **) m)[0] = base;
 			base = m;
-			loc = m + (void*).sizeof;
+
+			//int shift = 0;
+			int shift = (WORDSIZE - ( (cast(int)(m) +(void*).sizeof) & (WORDSIZE-1))) & (WORDSIZE-1);
+			
+			remaining = blocksize - (void*).sizeof - shift;
+			loc = m + (void*).sizeof + shift;
+			
+			
 		}
-		/* Allocate new storage. */
-		rloc = loc;
+		void* rloc = loc;
 		loc += size;
 		remaining -= size;
+		
 		return rloc;
 	}
 	
@@ -152,7 +160,7 @@ class Pool {
 	
 		while (base != null) {
 			prev = *(cast(char **) base);  /* Get pointer to prev block. */
-			.free(base);
+			std.c.stdlib.free(base);
 			base = prev;
 		}
 	}

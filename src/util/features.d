@@ -133,12 +133,31 @@ class Features(T = float) {
 		return line[pos];
 	}
 	
+	private int getLinesNo(FILE* fp)
+	{
+		const int MAX_BUF = 1024;
+		char buffer[MAX_BUF];
+		
+		int count = 0;
+		while (fgets(&buffer[0],MAX_BUF,fp)) {
+			if (buffer[strlen(buffer.ptr)-1]=='\n') {
+				count++;
+			}
+		}
+		
+		return count;
+	}
+	
+	
 	private void readDATFile(FILE* fp) 
 	{
 		const int MAX_BUF = 10000;
 		char buffer[MAX_BUF];
 		
-		char *ret = fgets(&buffer[0],MAX_BUF,fp);
+		int lines = getLinesNo(fp);
+		rewind(fp);
+		
+		fgets(&buffer[0],MAX_BUF,fp);
 		string line = buffer[0..strlen(&buffer[0])];
 		
 		string delimiter;
@@ -147,36 +166,24 @@ class Features(T = float) {
 		
 		veclen = tokens.length;
 		
-// 		writefln("veclen: %d",veclen);
-		
-		vecs = new T[][10]; // an initial size
+		vecs = allocate_mat!(T[][])(lines,veclen);
 		
 		count = 0;
-		vecs[count++] = toVec!(T)(tokens);
+		array_copy(vecs[count++], tokens);
 				
-		ret = fgets(&buffer[0],MAX_BUF,fp);
-		while (ret!=null) {
+		while (fgets(&buffer[0],MAX_BUF,fp)!=null) {
 			line = buffer[0..strlen(&buffer[0])];
 			tokens = strip(line).split(delimiter);
 			if (tokens.length==veclen) {
-				// increase vecs size if needed
-				if (vecs.length==count) {
-					vecs.length = vecs.length * 2;
-				}
-				
-				vecs[count++] = toVec!(T)(tokens);
+				array_copy(vecs[count++],tokens);
 			} else {
 				debug {
 					Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(count+1));
 				}
 			}		
-			ret = fgets(&buffer[0],MAX_BUF,fp);
 		}
 		
 		vecs = vecs[0..count];
-// 		writefln("read %d vectors",count);
-
-		//dumpDatabase();
 	}
 	
 	

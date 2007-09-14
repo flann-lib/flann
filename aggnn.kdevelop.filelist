@@ -14,7 +14,6 @@ src/algo/unused/agglomerativetree.d
 src/algo/unused/bottom_up_agg.d
 src/convert
 src/convert/compute_gt.d
-src/convert/convert.d
 src/main.d
 src/search.d
 src/serialization

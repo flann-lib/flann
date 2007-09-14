@@ -1,17 +1,9 @@
 # ------------------ Compilation options ------------------------
 
-LIB_DIRS =
-
-LIBS = ${LIB_DIRS} 
-
-INCLUDES = -Iinclude
-
-# Flags for the C compiler:
-#   -Wall for strict gcc warnings (requires prototypes for all functions).
-#   -g to produce debug data for gdb
-#   -O for optimization
 
 WARNS = -W -Wall
+INCLUDES = -Iinclude
+#LIBS = -llblas
 
 
 ifdef UNIT_TEST
@@ -20,15 +12,14 @@ endif
 
 
 ifeq ($(PROFILER),gprof)
-	DFLAGS := $(DFLAGS) -pg
-	LINKFLAGS := $(LINKFLAGS) -pg
+	DFLAGS := ${{DFLAGS} -q,-pg -K-q,-pg
 endif
 	
 ifeq ($(CONFIGURATION),debug)
-	DFLAGS := ${DFLAGS} -g -release
+	DFLAGS := ${DFLAGS} -g -release -C-q,-msse2
 #	DFLAGS := ${DFLAGS} -g -debug
 else
-	DFLAGS := ${DFLAGS} -O -inline -release
+	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-march=k8 -K-q,-march=k8
 endif
 
 
@@ -52,7 +43,7 @@ all: prepare compile
 #	@echo $(OBJ)
 
 
-prepare:
+nprepare:
 	@if [ -f build_file_list ] ; then rm build_file_list; fi
 
 clean:
@@ -63,6 +54,6 @@ rebuild: clean all
 .PHONY: clean all rebuild prepare compile
 
 compile:
-	 ${BIN_DIR}/rebuild -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -of${TARGET} ${DFLAGS}
+	 ${BIN_DIR}/rebuild -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} ${LIBS} -of${TARGET} ${DFLAGS} 
 
 
