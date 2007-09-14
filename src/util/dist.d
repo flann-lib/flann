@@ -54,7 +54,7 @@ public float DistSquared(T,U)(T *v1, U *v2, int veclen)
 }
 
 
-	
+/+	
 /**
  * Computes the squared L2 distance between two uc vectors using SSE2
 instructions.
@@ -143,7 +143,7 @@ const size_t D)+/
     }
 
   return sum_sqr;
-}
+}+/
 
 
 

@@ -13,13 +13,19 @@ import console.progressbar;
 import util.logger;
 import util.features;
 import util.utils;
+import util.allocator;
 
 
-private int findNearest(float[][] vecs, float[] query, int skip = 0) 
+private int findNearest(T)(T[][] vecs, T[] query, int skip = 0) 
 {
 	int n = skip + 1;
-	int[] nn = new int[n];
-	float[] dists = new float[n];
+	static int[] nn;
+	if (nn is null) {
+		nn = allocate!(int[])(n);
+	}
+	
+	static float[] dists; 
+	if (dists is null) dists = allocate!(float[])(n);
 	dists[0] = squaredDist(vecs[0], query);
 	int dcnt = 1;
 	
@@ -48,9 +54,9 @@ private int findNearest(float[][] vecs, float[] query, int skip = 0)
 	return nn[skip];
 }
 
-private int[] computeGroundTruth(Features!(float) inputData, Features!(float) testData, int skip = 0) 
+private int[] computeGroundTruth(T)(Features!(T) inputData, Features!(T) testData, int skip = 0) 
 {
-	int[] matches = new int[testData.count];
+	int[] matches = allocate!(int[])(testData.count);
 
 	showProgressBar(testData.count, 70, (Ticker tick) {
 		for (int i=0;i<testData.count;++i) {
@@ -78,19 +84,20 @@ void writeMatches(string match_file, int[] matches)
 	fclose(f);
 }
 
-void compute_gt(string featuresFile, string testFile, string matchFile, int skip = 0)
+void compute_gt(T)(string featuresFile, string testFile, string matchFile, int skip = 0)
 {
-	Features!(float) inputData;
-	Features!(float) testData;
+	Features!(T) inputData;
+	Features!(T) testData;
 	
 	showOperation("Reading input data from "~featuresFile, {
-		inputData = new Features!(float)();
+		inputData = new Features!(T)();
 		inputData.readFromFile(featuresFile);
 	});
 	
+	
 	if (std.file.exists(testFile) && std.file.isfile(testFile)) {
 		showOperation("Reading test data from "~testFile, {
-			testData = new Features!(float)();
+			testData = new Features!(T)();
 			testData.readFromFile(testFile);
 		});
 	} 

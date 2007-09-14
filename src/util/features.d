@@ -29,6 +29,7 @@ class Features(T = float) {
 			BINARY_FILE	
 		} 
 
+		private signature sig;
 
 		int count;         /* Number of vectors. */
 		int veclen;         /* Length of each vector. */
@@ -41,8 +42,8 @@ class Features(T = float) {
 		public this(int size) 
 		{
 			this.count = size;
-			vecs.length = size;
-			match.length = size;
+			vecs = allocate!(T[][])(size);
+			match = allocate!(int[])(size);
 		}
 
 
@@ -63,6 +64,22 @@ class Features(T = float) {
 		return fscanf(f,"%hhu ",&value);
 	}
 
+
+	int writeValue(U) (FILE* f, U value) {
+		throw new Exception("readValue not implemented for type: "~U.stringof);
+	}
+	
+	int writeValue(U : float) (FILE* f, U value) {
+		return fprintf(f,"%f",value);
+	}
+	
+	int writeValue(U : int) (FILE* f, U value) {		
+		return fprintf(f,"%d",value);
+	}
+	
+	int writeValue(U : ubyte) (FILE* f, U value) {
+		return fprintf(f,"%hhu",value);
+	}
 
 
 	/** 
@@ -226,13 +243,13 @@ class Features(T = float) {
 		}
 		
 		string realFile = strip(readln(fp));
-		int dim = toInt(strip(readln(fp)));
+		veclen = toInt(strip(readln(fp)));
 		int elemSize = toInt(strip(readln(fp)));
 		
-		assert(elemSize==1); // for now assume 1 byte per element
+		assert(elemSize==T.sizeof);
 		
 		ulong fileSize = getSize(realFile);
-		count = fileSize / (dim*elemSize);
+		count = fileSize / (veclen*elemSize);
 		
 		Logger.log(Logger.INFO,"\nReading %d features: ",count);
 				
@@ -241,19 +258,19 @@ class Features(T = float) {
 			throw new Exception("Cannot open input file: "~realFile);
 		}
 		
-		vecs = allocate_mat!(T[][])(count,dim);
+		vecs = allocate_mat!(T[][])(count,veclen);
 		
-		ubyte[] buffer = allocate!(ubyte[])(dim);
+		ubyte[] buffer = allocate!(ubyte[])(veclen*T.sizeof);
 	
-		showProgressBar(count/10, 70, (Ticker tick){
+//		showProgressBar(count/10, 70, (Ticker tick){
 			for (int i=0;i<count;++i) {
-				fread(&buffer[0],dim,1,bFile);
+				fread(&buffer[0],veclen,T.sizeof,bFile);
 				
-				array_copy(buffer,vecs[i]);
+				array_copy(vecs[i],buffer);
 				
-				if (i%10==0) tick();
+		//		if (i%10==0) tick();
 			}
-		});
+	//	});
 
 		
 		fclose(bFile);
@@ -286,7 +303,7 @@ class Features(T = float) {
 	
 	public void readFromFile(char[] file)
 	{
-		signature sig = checkSignature(file);
+		sig = checkSignature(file);
 		
 		FILE* fp = fopen(toStringz(file),"r");
 		if (fp is null) {
@@ -306,7 +323,30 @@ class Features(T = float) {
 		
 	}
 	
-	public void writeToFile(char[] file)
+	
+	private void writeToFile_BINARY(char[] file)
+	{
+		FILE* fp = fOpen(file,"w","Cannot open input file: "~file);
+		
+		char[] bin_file = file ~ ".bin";
+		
+		fwritef(fp,"BINARY\n");
+		fwritef(fp,bin_file,"\n");
+		fwritef(fp,"%d\n",veclen);
+		fwritef(fp,"%d\n",T.sizeof);
+		
+		fclose(fp);
+		
+		fp = fOpen(bin_file,"w","Cannot open input file: "~file);
+		
+		for (int i=0;i<count;++i) {
+			fwrite(vecs[i].ptr, veclen, T.sizeof, fp);
+		}
+		
+		fclose(fp);
+	}
+	
+	private void writeToFile_DAT(char[] file)
 	{
 		FILE* fp = fopen(toStringz(file),"w");
 		if (fp is null) {
@@ -316,21 +356,31 @@ class Features(T = float) {
 		for (int i=0;i<count;++i) {
 			for (int j=0;j<vecs[i].length;++j) {
 				if (j!=0) {
-					fwritef(fp," ");
+					fprintf(fp," ");
 				}
-				fwritef(fp,"%g",vecs[i][j]);
+				writeValue!(T)(fp,vecs[i][j]);
 			}
-			fwritef(fp,"\n");
+			fprintf(fp,"\n");
 		}
 		
 		fclose(fp);
 	}
 	
-	
-	public Features extractSubset(int size, bool remove = true)
+	public void writeToFile(char[] file)
 	{
-		DistinctRandom rand = new DistinctRandom(size);
-		Features newSet = new Features(size);
+		if (sig == signature.BINARY_FILE) {
+			writeToFile_BINARY(file);
+		}
+		else {
+			writeToFile_DAT(file);
+		}
+	}
+	
+	
+	public Features!(T) extractSubset(int size, bool remove = true)
+	{
+		DistinctRandom rand = new DistinctRandom(count);
+		Features!(T) newSet = new Features!(T)(size);
 		
 		for (int i=0;i<size;++i) {
 			int r = rand.nextRandom();
