@@ -10,7 +10,14 @@ function run_test()
 	time $@ > ${OUTPUT_FILE}
 }
 
-for DATASET in $@;
+DATASETS=$@
+
+if [ -z ${DATASETS} ];
+then
+	DATASETS=`cat datasets`
+fi
+
+for DATASET in ${DATASETS};
 do
 	INPUT=${DATASET}/features.dat
 	TEST=${DATASET}/test.dat
@@ -26,7 +33,7 @@ do
 
 	CHECKS=2,4,8,16,32,64,128,256,512,1024
 	ALGO=kmeans
-	for BR in 2 4 8 16 32 64 128 256; 
+	for BR in 2 8 16 32 64 128 256 512 1024; 
 	do
 		OUTPUT_FILE=${OUTPUT_DIR}/${ALGO}_${BR}.dat
 		run_test ${PROG} -a ${ALGO} -n ${NN} -c ${CHECKS} -i ${INPUT} -t ${TEST} -m ${MATCH} -b ${BR} -v simple

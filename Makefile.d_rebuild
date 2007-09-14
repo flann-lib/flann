@@ -10,6 +10,7 @@ ifdef UNIT_TEST
 	DFLAGS := ${DFLAGS} -unittest -debug
 endif
 
+include Makefile.platform
 
 ifeq ($(PROFILER),gprof)
 	DFLAGS := ${{DFLAGS} -q,-pg -K-q,-pg
@@ -19,7 +20,7 @@ ifeq ($(CONFIGURATION),debug)
 	DFLAGS := ${DFLAGS} -g -release -C-q,-msse2
 #	DFLAGS := ${DFLAGS} -g -debug
 else
-	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-march=k8 -K-q,-march=k8
+	DFLAGS := ${DFLAGS} -O -inline -release 
 endif
 
 
@@ -43,7 +44,7 @@ all: prepare compile
 #	@echo $(OBJ)
 
 
-nprepare:
+prepare:
 	@if [ -f build_file_list ] ; then rm build_file_list; fi
 
 clean:
