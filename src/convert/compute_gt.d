@@ -33,7 +33,7 @@ private int findNearest(T)(T[][] vecs, T[] query, int skip = 0)
 		float tmp = squaredDist(vecs[i], query);
 		
 		if (dcnt<dists.length) {
-			nn[dcnt] = i;
+			nn[dcnt] = i;	
 			dists[dcnt++] = tmp;
 		} 
 		else if (tmp < dists[dcnt-1]) {

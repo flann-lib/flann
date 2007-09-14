@@ -54,7 +54,6 @@ public float DistSquared(T,U)(T *v1, U *v2, int veclen)
 }
 
 
-/+	
 /**
  * Computes the squared L2 distance between two uc vectors using SSE2
 instructions.
@@ -65,7 +64,7 @@ instructions.
  *  b - None
  *  D - Must be multiple of 32 and less than 216!
  */
-public float DistSquared(T : ubyte,U : ubyte )(T *a, U *b, int veclen)
+public float DistSquaredSSE2(T : ubyte,U : ubyte )(T *a, U *b, int veclen)
 /+uint32_t
 jp_dist_ucua_32_sse2(const unsigned char* a, const unsigned char* b,
 const size_t D)+/
@@ -95,9 +94,9 @@ const size_t D)+/
       movdqa 	XMM2, XMM0 ;
     	movdqu 	XMM1, [ECX] ;     // 1 = b[0:16]
 
-    	movdqu 	XMM3, 16[EBX] ;    // 3 = 5 = a[16:32]
+    	movdqu 	XMM3, [EBX+16] ;    // 3 = 5 = a[16:32]
     	movdqa 	XMM5, XMM3 ;
-    	movdqu 	XMM4, 16[ECX] ;
+    	movdqu 	XMM4, [ECX+16] ;
 
     	psubusb 	XMM0, XMM1 ;    // 0 = max(a-b,[0])[0:16]
     	psubusb 	XMM1, XMM2 ;   // 1 = max(b-a,[0])[0:16]
@@ -143,7 +142,7 @@ const size_t D)+/
     }
 
   return sum_sqr;
-}+/
+}
 
 
 

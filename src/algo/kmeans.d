@@ -226,7 +226,9 @@ class KMeansTree(T) : NNIndex
 		int n = indices.length;
 		int nc = branching;
 		
-		node.size = indices.length;
+		node.size = indices.length;		
+		
+		Logger.log(Logger.INFO,"\nStarting clustering, size: %d\n",node.size);		
 				
 		T[][] initial_centers;
 		if (centersAlgorithm in centerAlgs) {
@@ -267,8 +269,12 @@ class KMeansTree(T) : NNIndex
 		
 		bool converged = false;
 		
+		int iteration = 0;
+		
 		while (!converged) {
 			converged = true;
+			Logger.log(Logger.INFO,"\rIteration %d",iteration++);		
+
 			
 			for (int i=0;i<nc;++i) {
 				centers[i][] = 0.0;
