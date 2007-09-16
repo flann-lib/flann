@@ -6,12 +6,14 @@ module util.timer;
 
 import std.c.time;
 import util.logger;
-
+version (Unix) {
+	import std.c.unix.unix;
+}
 
 class StartStopTimer
 {
 	private:
-	clock_t startTime;
+	long startTime;
 
 	public float value;
 	
@@ -20,11 +22,26 @@ class StartStopTimer
 	}
 	
 	public void start() {
-		startTime = clock();
+		version(Unix) {
+			timeval t;
+			gettimeofday(&t, null);
+			startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
+		}
+		else {
+			startTime = clock();
+		}
 	}
 	
 	public void stop() {
-		value += (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+		version (Unix) {
+			timeval t;
+			gettimeofday(&t, null);
+			long temp = t.tv_sec * 1000 + t.tv_usec / 1000;
+			value += (cast(float)temp - startTime) / 1000;
+		}
+		else {
+			value += (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+		}
 	}
 	
 	public void reset() {

@@ -19,12 +19,14 @@ import util.registry;
 
 
 
-//mixin AlgorithmRegistry!(KMeansTree,ubyte);
 
 
 
 private string centersAlgorithm;
 
+static this() {
+
+}
 
 class KMeansTree(T) : NNIndex
 {
@@ -228,7 +230,7 @@ class KMeansTree(T) : NNIndex
 		
 		node.size = indices.length;		
 		
-		Logger.log(Logger.INFO,"\nStarting clustering, size: %d\n",node.size);		
+		//Logger.log(Logger.INFO,"\nStarting clustering, size: %d\n",node.size);		
 				
 		T[][] initial_centers;
 		if (centersAlgorithm in centerAlgs) {
@@ -269,11 +271,11 @@ class KMeansTree(T) : NNIndex
 		
 		bool converged = false;
 		
-		int iteration = 0;
+		//int iteration = 0;
 		
 		while (!converged) {
 			converged = true;
-			Logger.log(Logger.INFO,"\rIteration %d",iteration++);		
+			//Logger.log(Logger.INFO,"\rIteration %d",iteration++);		
 
 			
 			for (int i=0;i<nc;++i) {
@@ -744,3 +746,4 @@ class KMeansTree(T) : NNIndex
 }
 
 mixin AlgorithmRegistry!(KMeansTree!(float),float);
+//mixin AlgorithmRegistry!(KMeansTree!(ubyte),ubyte);
