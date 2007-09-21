@@ -20,7 +20,7 @@ ifeq ($(CONFIGURATION),debug)
 	DFLAGS := ${DFLAGS} -g -release -C-q,-msse2
 #	DFLAGS := ${DFLAGS} -g -debug
 else
-	DFLAGS := ${DFLAGS} -O -inline -release 
+	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
 endif
 
 
