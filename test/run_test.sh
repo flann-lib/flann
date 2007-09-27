@@ -2,7 +2,8 @@
 
 
 PROG=nn
-DATE=`date +%Y%m%d%H%M%S`
+TEST_NAME=$1
+shift
 
 function run_test()
 {
@@ -12,7 +13,7 @@ function run_test()
 
 DATASETS=$@
 
-if [ -z ${DATASETS} ];
+if [ -z "${DATASETS}" ];
 then
 	DATASETS=`cat datasets`
 fi
@@ -22,7 +23,7 @@ do
 	INPUT=${DATASET}/features.dat
 	TEST=${DATASET}/test.dat
 	MATCH=${DATASET}/match.dat
-	OUTPUT_DIR=${DATASET}/results-${DATE}/
+	OUTPUT_DIR=${DATASET}/results-${TEST_NAME}/
 	NN=1
 
 	if [ ! -d ${OUTPUT_DIR} ] ;
@@ -36,7 +37,7 @@ do
 	for BR in 2 8 16 32 64 128 256 512 1024; 
 	do
 		OUTPUT_FILE=${OUTPUT_DIR}/${ALGO}_${BR}.dat
-		run_test ${PROG} -a ${ALGO} -n ${NN} -c ${CHECKS} -i ${INPUT} -t ${TEST} -m ${MATCH} -b ${BR} -v simple
+		run_test ${PROG} -a ${ALGO} -n ${NN} -c ${CHECKS} -i ${INPUT} -t ${TEST} -m ${MATCH} -b ${BR} -M 1 -v simple
 	done
 
 

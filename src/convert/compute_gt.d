@@ -103,7 +103,7 @@ void compute_gt(T)(string featuresFile, string testFile, string matchFile, int s
 	} 
 	else {
 		showOperation("Sampling test data from input data and writing to "~testFile, {
-			testData = inputData.extractSubset(1000);
+			testData = inputData.sampleDataset(1000);
 			testData.writeToFile(testFile);
 		});
 		showOperation("Writing input data to "~("new_"~featuresFile), {

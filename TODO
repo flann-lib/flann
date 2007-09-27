@@ -8,15 +8,13 @@
 - improve build system DONE
 
 
+
 - when testing run until getting some precision (95% ?) (could also have a maximum number of steps)
 
-- check to see why the strange behaviour for the disk dataset
+- automatically tuned parameters
 
 
-
-
-
-- profiling and optimization (GPU?, BLAS?)
+- profiling and optimization (GPU?, BLAS?, BLADE?)
 - checkout NVIDIA CUDA library for GPU optimized computations
 
 - speedup kmeans using sampling

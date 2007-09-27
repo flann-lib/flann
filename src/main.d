@@ -34,6 +34,8 @@ import convert.compute_gt;
 import util.dataset_generator;
 import util.timer;
 import util.registry;	
+import util.profiler;	
+
 
 
 void testNNIndex(NNIndex index, Features!(float) testData, int nn, int checks, uint skipMatches)
@@ -239,6 +241,10 @@ OptionParser parseArguments(char[][] args)
 	optByte.helpMessage = "Use byte storage for feature elements";
 	optParser.addOption(optByte);
 	
+	auto optMaxIter = new NumericOption!(uint)("M", "max-iter", "max-iter", uint.max, "NUM");
+	optMaxIter.helpMessage = "Max iterations for kmeans (default: iterate until convergence).";
+	optParser.addOption(optMaxIter);
+	
 	auto optHelp = new FlagTrueOption("h", "help", "help");
 	optHelp.helpMessage = "Show help message";
 	optParser.addOption(optHelp);
@@ -332,6 +338,7 @@ void main(char[][] args)
 	params.branching = unbox!(uint)(optParser["branching"]);
 	params.random = unbox!(bool)(optParser["random"]);
 	params.centersAlgorithm = unbox!(string)(optParser["centers"]);
+	params.max_iter = unbox!(uint)(optParser["max-iter"]);
 
 	if (!(algorithm in indexRegistry)) {
 		Logger.log(Logger.ERROR,"Algorithm not supported.\n");
@@ -455,8 +462,9 @@ void main(char[][] args)
 		Logger.log(Logger.INFO,"done\n");
 	}
 
+	Logger.log(Logger.INFO,"Profiling timer: %g\n",getProfilerTime());
 	
-		return 0;
+	return 0;
 }
 
 

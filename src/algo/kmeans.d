@@ -16,17 +16,8 @@ import util.logger;
 import util.random;
 import util.allocator;
 import util.registry;	
+import util.timer;
 
-
-
-
-
-
-private string centersAlgorithm;
-
-static this() {
-
-}
 
 class KMeansTree(T) : NNIndex
 {
@@ -40,8 +31,11 @@ class KMeansTree(T) : NNIndex
 
 	private int branching;
 	private int numTrees_;
-	private bool randomTree;
+	private uint max_iter;
+	private string centersAlgorithm;
 	
+	private StartStopTimer timer;
+
 	private T[][] vecs;
 	private int flength;
 	private BranchHeap heap;	
@@ -76,13 +70,15 @@ class KMeansTree(T) : NNIndex
 		heap = new BranchHeap(512);
 		
 		initCentersAlgorithms();
+		
+		timer = new StartStopTimer();
 	}
 	
 	public this(Features!(T) inputData, Params params)
 	{
 		this.branching = params.branching;
 		this.numTrees_ = params.numTrees;
-		this.randomTree = params.random;
+		this.max_iter = params.max_iter;
 		
 		centersAlgorithm = params.centersAlgorithm;
 		
@@ -93,6 +89,7 @@ class KMeansTree(T) : NNIndex
 		
 		initCentersAlgorithms();
 
+		timer = new StartStopTimer();
 	}
 
 	private void initCentersAlgorithms()
@@ -166,6 +163,7 @@ class KMeansTree(T) : NNIndex
 
 	public void buildIndex() 
 	{	
+	
 		int branchings[] = getBranchingFactors();
 		Logger.log(Logger.INFO,"Using the following branching factors: ",branchings,"\n");
 		
@@ -179,14 +177,27 @@ class KMeansTree(T) : NNIndex
 			root[index] = allocate!(KMeansNodeSt)();
 			computeNodeStatistics(root[index], indices);
 			computeClustering(root[index], indices, branchingValue);
-/+			if (randomTree) {
-				root[index].computeRandomClustering(value);
+		}		
+//		Logger.log(Logger.INFO, "Time spend in allocating points: %.2f\n",timer.value);
+	}
+	
+	
+	private void writeIndex(string file) {
+		FILE* f = fOpen(file,"w","Cannot open " ~ file);
+		
+		void writeIndex_helper(KMeansNode node) {
+			if (node.childs.length==0) {
+				node.indices.sort;
+				foreach(v;node.indices) fwritefln(f,v);
+				fwritefln(f);
 			}
 			else {
-				root[index].computeClustering(value);
-			}+/
+				foreach(v;node.childs) writeIndex_helper(v);
+			}
 		}
-
+		
+		writeIndex_helper(root[0]);
+		fclose(f);	
 	}
 	
 	
@@ -228,9 +239,9 @@ class KMeansTree(T) : NNIndex
 		int n = indices.length;
 		int nc = branching;
 		
-		node.size = indices.length;		
+		node.size = indices.length;
 		
-		//Logger.log(Logger.INFO,"\nStarting clustering, size: %d\n",node.size);		
+//		Logger.log(Logger.INFO,"\rStarting clustering, size: %d                 ",node.size);		
 				
 		T[][] initial_centers;
 		if (centersAlgorithm in centerAlgs) {
@@ -240,19 +251,24 @@ class KMeansTree(T) : NNIndex
 			throw new Exception("Unknown algorithm for choosing initial centers.");
 		}
 		
+		
 		if (initial_centers.length<nc) {
-			node.indices = indices;
+			node.indices = indices.sort;
 			return;
 		}
 		
-		float[][] centers = allocate_mat!(float[][])(nc,flength);		
+//		float[][] centers = allocate_mat!(float[][])(nc,flength);		
+		float[][] centers = new float[][](nc,flength);		
 		mat_copy(centers,initial_centers);
 		
-	 	float[] radiuses = allocate!(float[])(nc);		
-		int[] count = allocate!(int[])(nc);		
+// 	 	float[] radiuses = allocate!(float[])(nc);		
+	 	float[] radiuses = new float[nc];		
+//		int[] count = allocate!(int[])(nc);		
+		int[] count = new int[nc];
 		
 		// assign points to clusters
-		int[] belongs_to = allocate!(int[])(n);
+//		int[] belongs_to = allocate!(int[])(n);
+		int[] belongs_to = new int[n];
 		for (int i=0;i<n;++i) {
 
 			float sq_dist = squaredDist(vecs[indices[i]],centers[0]); 
@@ -271,52 +287,30 @@ class KMeansTree(T) : NNIndex
 		
 		bool converged = false;
 		
-		//int iteration = 0;
+		int iteration = 0;
 		
-		while (!converged) {
+		while (!converged && iteration<max_iter) {
 			converged = true;
-			//Logger.log(Logger.INFO,"\rIteration %d",iteration++);		
+			iteration++;
+//			Logger.log(Logger.INFO,"\rIteration %d",iteration);		
 
 			
 			for (int i=0;i<nc;++i) {
-				centers[i][] = 0.0;
-				
-				// if one cluster converges to an empty cluster,
-				// move an element into that cluster
-				if (count[i]==0) {
-					int j = (i+1)%nc;
-					while (count[j]<=1) {
-						j = (j+1)%nc;
-					}					
-					
-					for (int k=0;k<n;++k) {
-						if (belongs_to[k]==j) {
-							belongs_to[k] = i;
-							count[j]--;
-							count[i]++;
-							break;
-						}
-					}
-				}
+				centers[i][] = 0.0;				
 			}
 			
-	
+		
 			// compute the new clusters
-			for (int i=0;i<n;++i) {
-				for (int j=0;j<nc;++j) {
-					if (belongs_to[i]==j) {
-						for (int k=0;k<flength;++k) {
-							centers[j][k]+=vecs[indices[i]][k];
-						}
-						break;	
-					}
-				}
+			foreach (i,index; indices) {
+ 				addTo(centers[belongs_to[i]],vecs[index]);
+/+				auto vecs_i = vecs[index]; 
+				foreach (k, inout value; centers[belongs_to[i]]) 
+				 	value += vecs_i[k];+/
 			}
-			
 						
-			for (int j=0;j<nc;++j) {
-				for (int k=0;k<flength;++k) {
-					centers[j][k] /= count[j];
+			foreach (j,center;centers) {
+				foreach(inout value;center) {
+					value /= count[j];
 				}
 			}
 			
@@ -344,8 +338,28 @@ class KMeansTree(T) : NNIndex
 					converged = false;
 				}
 			}
-		//	writef("done\n");
-			//writefln(radiuses);
+			
+			for (int i=0;i<nc;++i) {
+				// if one cluster converges to an empty cluster,
+				// move an element into that cluster
+				if (count[i]==0) {
+					int j = (i+1)%nc;
+					while (count[j]<=1) {
+						j = (j+1)%nc;
+					}					
+					
+					for (int k=0;k<n;++k) {
+						if (belongs_to[k]==j) {
+							belongs_to[k] = i;
+							count[j]--;
+							count[i]++;
+							break;
+						}
+					}
+					converged = false;
+				}
+			}
+
 		}
 	
 	
@@ -359,9 +373,9 @@ class KMeansTree(T) : NNIndex
 			float variance = 0;
 			for (int i=0;i<n;++i) {
 				if (belongs_to[i]==c) {					
+					variance += squaredDist(vecs[indices[i]]);
 					swap(indices[i],indices[end]);
 					swap(belongs_to[i],belongs_to[end]);
-					variance += squaredDist(vecs[indices[end]]);
 					end++;
 				}
 			}
@@ -376,6 +390,10 @@ class KMeansTree(T) : NNIndex
 			start=end;
 		}
 		
+		delete radiuses;
+		delete count;
+		delete belongs_to;
+		delete centers;
 	}
 	
 	
@@ -473,8 +491,6 @@ class KMeansTree(T) : NNIndex
 		}
 	}
 	
-	
-	
 	/**
 	----------------------------------------------------------------------
 		Approximate nearest neighbor search
@@ -508,7 +524,6 @@ class KMeansTree(T) : NNIndex
 // 					return;
 // 				}
 // 				points[i].checkID = checkID;
-				
 				result.addPoint(vecs[node.indices[i]], node.indices[i]);
 			}	
 		} 
@@ -693,7 +708,7 @@ class KMeansTree(T) : NNIndex
 		clusters[0] = root;
 		 
 		float meanVariance = root.variance*root.size;
-		 
+		
 		while (clusterCount<numClusters) {
 			
 			float minVariance = float.max;
@@ -741,6 +756,32 @@ class KMeansTree(T) : NNIndex
 		//ar.describe(root);
 	}
 
+
+	public static Params autotuneParameters(T)(Features!(T) inputDataset)
+	{
+		Params p;
+		
+		int branchingFactors = [ 32, 64, 128, 256 ];
+		
+		Features!(T) sampledDataset = inputDataset.sampleDataset(inputDataset.size/10);
+		
+		p.branching = params.branching;
+		p.numTrees_ = 1;
+		p.max_iter = uint.max;
+		
+		centersAlgorithm = params.centersAlgorithm;
+		
+		foreach (branchingFactor;branchingFactors) {
+			p.branching = branchingFactor;
+			KMeansTree kmeans = new KMeansTree(sampledDataset,p);
+			
+	
+					
+		}
+		
+		
+		
+	}
 
 
 }

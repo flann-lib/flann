@@ -131,6 +131,7 @@ struct Params {
  	int numTrees;
 	int branching;
 	bool random;
+	int max_iter;
 	string centersAlgorithm;
 }
 
