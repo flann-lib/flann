@@ -17,8 +17,10 @@ Conversion to D: Marius Muja
 
 module util.heap;
 
-
 import util.allocator;
+import util.profiler;
+
+import std.stdio;
 
 template Heap(T) {
 
@@ -61,7 +63,7 @@ class Heap {
 			heap.length = heap.length * 2;
 			//return;
 		}
-	
+			
 		int loc = ++(count);   /* Remember 1-based indexing. */
 	
 		/* Keep moving parents down until a place is found for this node. */

@@ -34,6 +34,8 @@ import convert.compute_gt;
 import util.dataset_generator;
 import util.timer;
 import util.registry;	
+import util.profiler;	
+
 
 
 void testNNIndex(NNIndex index, Features!(float) testData, int nn, int checks, uint skipMatches)
@@ -460,8 +462,9 @@ void main(char[][] args)
 		Logger.log(Logger.INFO,"done\n");
 	}
 
+	Logger.log(Logger.INFO,"Profiling timer: %g\n",getProfilerTime());
 	
-		return 0;
+	return 0;
 }
 
 

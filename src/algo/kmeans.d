@@ -18,13 +18,6 @@ import util.allocator;
 import util.registry;	
 import util.timer;
 
-private string centersAlgorithm;
-private StartStopTimer timer;
-
-static this() {
-	timer = new StartStopTimer();
-
-}
 
 class KMeansTree(T) : NNIndex
 {
@@ -38,9 +31,11 @@ class KMeansTree(T) : NNIndex
 
 	private int branching;
 	private int numTrees_;
-	private bool randomTree;
 	private uint max_iter;
+	private string centersAlgorithm;
 	
+	private StartStopTimer timer;
+
 	private T[][] vecs;
 	private int flength;
 	private BranchHeap heap;	
@@ -75,13 +70,14 @@ class KMeansTree(T) : NNIndex
 		heap = new BranchHeap(512);
 		
 		initCentersAlgorithms();
+		
+		timer = new StartStopTimer();
 	}
 	
 	public this(Features!(T) inputData, Params params)
 	{
 		this.branching = params.branching;
 		this.numTrees_ = params.numTrees;
-		this.randomTree = params.random;
 		this.max_iter = params.max_iter;
 		
 		centersAlgorithm = params.centersAlgorithm;
@@ -93,6 +89,7 @@ class KMeansTree(T) : NNIndex
 		
 		initCentersAlgorithms();
 
+		timer = new StartStopTimer();
 	}
 
 	private void initCentersAlgorithms()
@@ -180,14 +177,7 @@ class KMeansTree(T) : NNIndex
 			root[index] = allocate!(KMeansNodeSt)();
 			computeNodeStatistics(root[index], indices);
 			computeClustering(root[index], indices, branchingValue);
-/+			if (randomTree) {
-				root[index].computeRandomClustering(value);
-			}
-			else {
-				root[index].computeClustering(value);
-			}+/	
-		}
-		
+		}		
 //		Logger.log(Logger.INFO, "Time spend in allocating points: %.2f\n",timer.value);
 	}
 	
@@ -251,7 +241,7 @@ class KMeansTree(T) : NNIndex
 		
 		node.size = indices.length;
 		
-		//Logger.log(Logger.INFO,"\nStarting clustering, size: %d\n",node.size);		
+//		Logger.log(Logger.INFO,"\rStarting clustering, size: %d                 ",node.size);		
 				
 		T[][] initial_centers;
 		if (centersAlgorithm in centerAlgs) {
@@ -302,29 +292,11 @@ class KMeansTree(T) : NNIndex
 		while (!converged && iteration<max_iter) {
 			converged = true;
 			iteration++;
-			Logger.log(Logger.INFO,"\rIteration %d",iteration++);		
+//			Logger.log(Logger.INFO,"\rIteration %d",iteration);		
 
 			
 			for (int i=0;i<nc;++i) {
-				centers[i][] = 0.0;
-				
-				// if one cluster converges to an empty cluster,
-				// move an element into that cluster
-				if (count[i]==0) {
-					int j = (i+1)%nc;
-					while (count[j]<=1) {
-						j = (j+1)%nc;
-					}					
-					
-					for (int k=0;k<n;++k) {
-						if (belongs_to[k]==j) {
-							belongs_to[k] = i;
-							count[j]--;
-							count[i]++;
-							break;
-						}
-					}
-				}
+				centers[i][] = 0.0;				
 			}
 			
 		
@@ -366,6 +338,28 @@ class KMeansTree(T) : NNIndex
 					converged = false;
 				}
 			}
+			
+			for (int i=0;i<nc;++i) {
+				// if one cluster converges to an empty cluster,
+				// move an element into that cluster
+				if (count[i]==0) {
+					int j = (i+1)%nc;
+					while (count[j]<=1) {
+						j = (j+1)%nc;
+					}					
+					
+					for (int k=0;k<n;++k) {
+						if (belongs_to[k]==j) {
+							belongs_to[k] = i;
+							count[j]--;
+							count[i]++;
+							break;
+						}
+					}
+					converged = false;
+				}
+			}
+
 		}
 	
 	
@@ -762,6 +756,32 @@ class KMeansTree(T) : NNIndex
 		//ar.describe(root);
 	}
 
+
+	public static Params autotuneParameters(T)(Features!(T) inputDataset)
+	{
+		Params p;
+		
+		int branchingFactors = [ 32, 64, 128, 256 ];
+		
+		Features!(T) sampledDataset = inputDataset.sampleDataset(inputDataset.size/10);
+		
+		p.branching = params.branching;
+		p.numTrees_ = 1;
+		p.max_iter = uint.max;
+		
+		centersAlgorithm = params.centersAlgorithm;
+		
+		foreach (branchingFactor;branchingFactors) {
+			p.branching = branchingFactor;
+			KMeansTree kmeans = new KMeansTree(sampledDataset,p);
+			
+	
+					
+		}
+		
+		
+		
+	}
 
 
 }

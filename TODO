@@ -8,8 +8,9 @@
 - improve build system DONE
 
 
+- automatically tuned parameters
 
-- profiling and optimization (GPU?, BLAS?)
+- profiling and optimization (GPU?, BLAS?, BLADE?)
 - checkout NVIDIA CUDA library for GPU optimized computations
 
 - speedup kmeans using sampling

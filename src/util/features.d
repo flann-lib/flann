@@ -391,7 +391,7 @@ class Features(T = float) {
 	}
 	
 	
-	public Features!(T) extractSubset(int size, bool remove = true)
+	public Features!(T) sampleDataset(int size, bool remove = true)
 	{
 		DistinctRandom rand = new DistinctRandom(count);
 		Features!(T) newSet = new Features!(T)(size);
