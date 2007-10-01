@@ -12,17 +12,13 @@ src/algo/nnindex.d
 src/algo/unused
 src/algo/unused/agglomerativetree.d
 src/algo/unused/bottom_up_agg.d
-src/convert
-src/convert/compute_gt.d
 src/main.d
-src/search.d
 src/serialization
 src/serialization/basicarchive.d
 src/serialization/classregister.d
 src/serialization/serializer.d
 src/util
 src/util/dist.d
-src/util/features.d
 src/util/heap.d
 src/util/logger.d
 src/util/optparse.d
