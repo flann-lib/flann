@@ -13,7 +13,7 @@ import std.math;
 import util.utils;
 import util.heap;
 import util.resultset;
-import util.features;
+import dataset.features;
 import util.logger;
 import algo.nnindex;
 import algo.agglomerativetree2;

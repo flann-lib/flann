@@ -2,7 +2,7 @@ module util.registry;
 
 
 import algo.nnindex;
-import util.features;
+import dataset.features;
 import util.utils;
 
 

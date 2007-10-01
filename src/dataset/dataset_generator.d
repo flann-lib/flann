@@ -8,16 +8,13 @@ import std.stdio;
 import std.string;
 
 import util.utils;
+import util.random;
 import console.progressbar;
 import util.logger;
 
-void generateRandomDataset(string file, int count, int length)
+void generateRandomDataset(string file, uint count, uint length)
 {
-	FILE* fout = fopen(toStringz(file),"w");
-	
-	if (fout==null) {
-		throw new Exception("Cannot open file: "~file);
-	}
+	FILE* fout = fOpen(file,"w","Cannot open file: "~file);
 	
 	Logger.log(Logger.INFO,"Generating random dataset with %d features of %d dimension(s).\n",count,length);	
 	

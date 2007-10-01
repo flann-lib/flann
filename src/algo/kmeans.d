@@ -6,12 +6,13 @@ module algo.kmeans;
 
 import std.c.time;
 import std.stdio;
+import std.boxer;
 
 import algo.nnindex;
 import util.resultset;
 import util.heap;
 import util.utils;
-import util.features;
+import dataset.features;
 import util.logger;
 import util.random;
 import util.allocator;
@@ -63,8 +64,6 @@ class KMeansTree(T) : NNIndex
 	centersAlgDelegate[string] centerAlgs;
 	
 
-	
-
 	private this()
 	{
 		heap = new BranchHeap(512);
@@ -76,11 +75,10 @@ class KMeansTree(T) : NNIndex
 	
 	public this(Features!(T) inputData, Params params)
 	{
-		this.branching = params.branching;
-		this.numTrees_ = params.numTrees;
-		this.max_iter = params.max_iter;
-		
-		centersAlgorithm = params.centersAlgorithm;
+		this.branching = unbox!(uint)(params["branching"]);
+		this.numTrees_ = unbox!(uint)(params["trees"]);
+		this.max_iter = unbox!(uint)(params["max-iterations"]);
+		centersAlgorithm = unbox!(string)(params["centers-algorithm"]);
 		
 		this.vecs = inputData.vecs;
 		this.flength = inputData.veclen;
@@ -91,6 +89,7 @@ class KMeansTree(T) : NNIndex
 
 		timer = new StartStopTimer();
 	}
+	
 
 	private void initCentersAlgorithms()
 	{
@@ -755,34 +754,6 @@ class KMeansTree(T) : NNIndex
 		ar.describe(vecs);
 		//ar.describe(root);
 	}
-
-
-	public static Params autotuneParameters(T)(Features!(T) inputDataset)
-	{
-		Params p;
-		
-		int branchingFactors = [ 32, 64, 128, 256 ];
-		
-		Features!(T) sampledDataset = inputDataset.sampleDataset(inputDataset.size/10);
-		
-		p.branching = params.branching;
-		p.numTrees_ = 1;
-		p.max_iter = uint.max;
-		
-		centersAlgorithm = params.centersAlgorithm;
-		
-		foreach (branchingFactor;branchingFactors) {
-			p.branching = branchingFactor;
-			KMeansTree kmeans = new KMeansTree(sampledDataset,p);
-			
-	
-					
-		}
-		
-		
-		
-	}
-
 
 }
 

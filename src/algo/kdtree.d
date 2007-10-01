@@ -38,12 +38,14 @@ module algo.kdtree;
 import std.c.stdlib;
 import std.c.math;
 import std.c.string;
+import std.boxer;
 
 import std.gc;
 
 import util.utils;
+import util.random;
 import util.heap;
-import util.features;
+import dataset.features;
 import util.resultset;
 import util.logger;
 import algo.nnindex;
@@ -163,7 +165,7 @@ class KDTree : NNIndex{
 	*/
 	public this(Features!(float) inputData, Params params)
 	{
-		this.numTrees_ = params.numTrees;
+		this.numTrees_ = unbox!(uint)(params["trees"]);
 		this.vcount = inputData.count;
 		this.veclen = inputData.veclen;
 		this.vecs = inputData.vecs;

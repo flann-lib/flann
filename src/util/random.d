@@ -7,6 +7,14 @@ module util.random;
 
 import util.utils;
 
+
+
+extern (C) {
+	double drand48();
+	double lrand48();
+}
+
+
 class DistinctRandom
 {
 	private int[] vals;
