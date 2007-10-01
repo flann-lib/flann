@@ -16,6 +16,8 @@ import std.c.stdio;
 import std.c.stdlib;
 import std.conv;
 import std.string;
+import std.boxer;
+
 import util.logger;
 
 template MAX(T) {
@@ -69,19 +71,18 @@ void mat_copy(U,V)(U[][] dst, V[][] src)
 
 
 T convert(T,U) (U value) { return cast(T) value; }
+T convert(T : uint, U : string)(U value) { return toUint(value); }
 T convert(T : int, U : string)(U value) { return toInt(value); }
 T convert(T : float, U : string)(U value) { return toFloat(value); }
 T convert(T : double, U : string)(U value) { return toDouble(value); }
-
 T convert(T : ubyte, U : string)(U value) { return toUbyte(value); }
-
 T convert(T : float, U : ubyte)(ubyte value) { return value; }
 
-T[] toVec(T,U=string)(U[] strVec)
+T[] convert(T : T[],U : U[])(U[] srcVec)
 {
-	T[] vec = new T[strVec.length];
-	for (int i=0;i<strVec.length;++i) {
-		vec[i] = convert!(T,U)(strVec[i]);
+	T[] vec = new T[srcVec.length];
+	foreach (i,value; srcVec) {
+		vec[i] = convert!(T,U)(value);
 	}
 	
 	return vec;
@@ -119,22 +120,27 @@ struct BranchStruct(T) {
 
 
 
-extern (C) {
-	double drand48();
-	double lrand48();
-}
-
 
 /*---------------parameters----------------------*/
 
+typedef Box[string] Params;
+
+void copyParams(T,U)(ref T a,U b,string[] params)
+{
+	foreach(param;params) {
+		a[param] = b[param];
+	}
+}
+
+
+/+
 struct Params {
  	int numTrees;
 	int branching;
-	bool random;
 	int max_iter;
 	string centersAlgorithm;
 }
-
++/
 
 
 

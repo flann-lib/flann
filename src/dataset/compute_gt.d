@@ -11,7 +11,7 @@ import std.conv;
 import util.dist;
 import console.progressbar;
 import util.logger;
-import util.features;
+import dataset.features;
 import util.utils;
 import util.allocator;
 

@@ -44,7 +44,7 @@ do
 
 	CHECKS=2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768
 	ALGO=kdtree
-	for TR in 1 4 10 16 32; 
+	for TR in 1 4 8 16 32 64; 
 	do
 		OUTPUT_FILE=${OUTPUT_DIR}/${ALGO}_${TR}.dat
 		run_test ${PROG} -a ${ALGO} -n ${NN} -c ${CHECKS} -i ${INPUT} -t ${TEST} -m ${MATCH} -r ${TR} -v simple

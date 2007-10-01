@@ -35,6 +35,26 @@ void addTo(T,U)(T[] a, U[] b) {
 
 
 
+void writeToFile(float[][] centers, char[] centerFile) 
+{
+	FILE* fp = fopen(toStringz(centerFile),"w");
+	if (fp is null) {
+		throw new Exception("Cannot open output file: "~centerFile);
+	}
+	
+	for (int i=0;i<centers.length;++i) {
+		for (int j=0;j<centers[i].length;++j) {
+			if (j!=0) {
+				fprintf(fp," ");
+			}
+			fprintf(fp,"%f", centers[i][j]);
+		}
+		fprintf(fp,"\n");
+	}
+	fclose(fp);
+}
+
+
 class Features(T = float) {
 
 		enum signature {
@@ -220,16 +240,13 @@ class Features(T = float) {
 	
 	public void readMatches(string file)
 	{
-		FILE* fp = fopen(toStringz(file),"r");
-		if (fp is null) {
-			throw new Exception("Cannot open input file: "~file);
-		}
+		FILE* fp = fOpen(file,"r","Cannot open input file: "~file);
 		
 		match.length = count;
-	
 		int index, m;
 		for (int i=0;i<count;++i) {
 			if (fscanf(fp, "%d %d", &index, &m)!=2) {
+				writefln(i);
 				throw new Exception("Invalid match file");
 			}
 			match[index] = m;

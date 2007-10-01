@@ -30,3 +30,5 @@ src/util/unused/gpdebuger.d
 src/util/utils.d
 src/util/vector.d
 src/util/registry.d
+src/commands
+src/commands/GenerateRandomCommand.d

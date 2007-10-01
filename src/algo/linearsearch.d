@@ -10,7 +10,7 @@ module algo.linearsearch;
 
 import util.utils;
 import util.resultset;
-import util.features;
+import dataset.features;
 import algo.nnindex;
 import util.registry;	
 

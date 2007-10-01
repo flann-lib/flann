@@ -10,9 +10,10 @@ Author: Marius Muja (2007)
 module algo.bottom_up_agg_simple;
 
 import util.utils;
+import util.random;
 import util.heap;
 import util.resultset;
-import util.features;
+import dataset.features;
 import util.logger;
 import algo.nnindex;
 import util.registry;	

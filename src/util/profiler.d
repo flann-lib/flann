@@ -24,14 +24,18 @@ void stopProfiler()
 	timer.stop();
 }
 
-void profile( void delegate() action)
-{
-	timer.start;
-	action();
-	timer.stop;
-}
-
 float getProfilerTime()
 {
 	return timer.value;
 }
+
+
+float profile( void delegate() action)
+{
+	StartStopTimer t = new StartStopTimer();
+	t.start;
+	action();
+	t.stop;
+	return t.value;
+}
+
