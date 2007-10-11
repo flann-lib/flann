@@ -2,7 +2,7 @@
 Project: nn
 */
 
-module convert.compute_gt;
+module dataset.compute_gt;
 
 import std.stdio;
 import std.string;
@@ -16,7 +16,7 @@ import util.utils;
 import util.allocator;
 
 
-private int findNearest(T)(T[][] vecs, T[] query, int skip = 0) 
+private int findNearest(T,U)(T[][] vecs, U[] query, int skip = 0) 
 {
 	int n = skip + 1;
 	static int[] nn;
@@ -54,7 +54,7 @@ private int findNearest(T)(T[][] vecs, T[] query, int skip = 0)
 	return nn[skip];
 }
 
-private int[] computeGroundTruth(T)(Features!(T) inputData, Features!(T) testData, int skip = 0) 
+public int[] computeGroundTruth(T,U)(Features!(T) inputData, Features!(U) testData, int skip = 0) 
 {
 	int[] matches = allocate!(int[])(testData.count);
 
@@ -103,7 +103,7 @@ void compute_gt(T)(string featuresFile, string testFile, string matchFile, int s
 	} 
 	else {
 		showOperation("Sampling test data from input data and writing to "~testFile, {
-			testData = inputData.sampleDataset(1000);
+			testData = inputData.sample(1000);
 			testData.writeToFile(testFile);
 		});
 		showOperation("Writing input data to "~("new_"~featuresFile), {

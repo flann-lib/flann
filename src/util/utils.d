@@ -50,6 +50,16 @@ FILE* fOpen(string file, string mode, lazy string message)
 }
 
 
+void withOpenFile(string file, string mode, void delegate(FILE*) action) 
+{
+	FILE* f = fOpen(file,mode,"Cannot open file: "~file);
+	action(f);
+	fclose(f);
+}
+
+
+
+
 void array_copy(U,V)(U[] dst, V[] src)
 {
 	foreach(index,value;src) {
@@ -57,13 +67,11 @@ void array_copy(U,V)(U[] dst, V[] src)
 	}
 } 
 
-
-
 void mat_copy(U,V)(U[][] dst, V[][] src)
 {
 	foreach(row_index,row;src) {
 		foreach(index,value;row) {
-			dst[row_index][index] = cast(V) value;
+			dst[row_index][index] = convert!(U,V)(value);
 		}
 	}
 } 
@@ -80,14 +88,17 @@ T convert(T : float, U : ubyte)(ubyte value) { return value; }
 
 T[] convert(T : T[],U : U[])(U[] srcVec)
 {
-	T[] vec = new T[srcVec.length];
-	foreach (i,value; srcVec) {
-		vec[i] = convert!(T,U)(value);
+	static if ( is ( T == U) )
+		return srcVec;
+	else {
+		T[] vec = new T[srcVec.length];
+		foreach (i,value; srcVec) {
+			vec[i] = convert!(T,U)(value);
+		}
+		
+		return vec;
 	}
-	
-	return vec;
 }
-
 
 struct BranchStruct(T) {
 	T node;           /* Tree node at which search resumes */
@@ -133,28 +144,43 @@ void copyParams(T,U)(ref T a,U b,string[] params)
 }
 
 
-/+
-struct Params {
- 	int numTrees;
-	int branching;
-	int max_iter;
-	string centersAlgorithm;
-}
-+/
 
 
 
 
-/*----------------------- Error messages --------------------------------*/
- 
-/* Print message and quit. */
-void FatalError(char *msg)
+
+class Range 
 {
-    Logger.log(Logger.ERROR, "FATAL ERROR: %s\n",msg);
-    exit(1);
+	int begin;
+	int end;
+	int skip;
+	
+	this(int begin, int end, int skip) {
+		this.begin = begin;
+		this.end = end;
+		this.skip = skip;
+	}
+	
+	this(string range) {
+		int[] values = convert!(int[],string[])(split(range,":"));
+		
+		begin = values[0];
+		if (values.length>1) {
+			end = values[1];
+			
+			if (values.length>2) {
+				skip = values[2];
+			}
+			else {
+				skip = 1;
+			}
+		}
+		else {
+			skip = 1;
+			end = begin + skip;
+		} 
+	}
 }
-
-
 
 
 

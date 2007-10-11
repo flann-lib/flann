@@ -35,8 +35,6 @@ class KMeansTree(T) : NNIndex
 	private uint max_iter;
 	private string centersAlgorithm;
 	
-	private StartStopTimer timer;
-
 	private T[][] vecs;
 	private int flength;
 	private BranchHeap heap;	
@@ -69,8 +67,6 @@ class KMeansTree(T) : NNIndex
 		heap = new BranchHeap(512);
 		
 		initCentersAlgorithms();
-		
-		timer = new StartStopTimer();
 	}
 	
 	public this(Features!(T) inputData, Params params)
@@ -86,8 +82,6 @@ class KMeansTree(T) : NNIndex
 		heap = new BranchHeap(inputData.count);
 		
 		initCentersAlgorithms();
-
-		timer = new StartStopTimer();
 	}
 	
 
@@ -257,7 +251,7 @@ class KMeansTree(T) : NNIndex
 		}
 		
 //		float[][] centers = allocate_mat!(float[][])(nc,flength);		
-		float[][] centers = new float[][](nc,flength);		
+		float[][] centers = new float[][](nc,flength);
 		mat_copy(centers,initial_centers);
 		
 // 	 	float[] radiuses = allocate!(float[])(nc);		
@@ -402,7 +396,7 @@ class KMeansTree(T) : NNIndex
 		DistinctRandom r = new DistinctRandom(indices.length);
 		
 		static T[][] centers;
-		if (centers is null) centers = allocate!(T[][])(k);
+		if (centers is null || centers.length!=k) centers = allocate!(T[][])(k);
 		int index;
 		for (index=0;index<k;++index) {
 			bool duplicate = true;
@@ -483,7 +477,7 @@ class KMeansTree(T) : NNIndex
 			
 			int checks = 0;			
 			BranchSt branch;
-			while (checks++<maxCheck && heap.popMin(branch)) {
+			while (++checks<maxCheck && heap.popMin(branch)) {
 				KMeansNode node = branch.node;			
 				findNN(node, result, vec);
 			}
@@ -529,7 +523,7 @@ class KMeansTree(T) : NNIndex
 		else {
 			int nc = node.childs.length;
 			static float distances[];
-			if (distances is null) distances = allocate!(float[])(nc);
+			if (distances is null || distances.length!=nc) distances = allocate!(float[])(nc);
 			int ci = getNearestCenter(node, vec, distances);
 			
 			for (int i=0;i<nc;++i) {
@@ -758,4 +752,4 @@ class KMeansTree(T) : NNIndex
 }
 
 mixin AlgorithmRegistry!(KMeansTree!(float),float);
-//mixin AlgorithmRegistry!(KMeansTree!(ubyte),ubyte);
+mixin AlgorithmRegistry!(KMeansTree!(ubyte),ubyte);

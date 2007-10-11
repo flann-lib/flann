@@ -2,7 +2,7 @@
 Project: nn
 */
 
-module util.features;
+module dataset.features;
 
 import std.stdio;
 import std.string;
@@ -18,6 +18,7 @@ import util.utils;
 import util.random;
 import util.allocator;
 import console.progressbar;
+import dataset.compute_gt;
 
 
 
@@ -35,19 +36,19 @@ void addTo(T,U)(T[] a, U[] b) {
 
 
 
-void writeToFile(float[][] centers, char[] centerFile) 
+void writeToFile(float[][] vecs, char[] file) 
 {
-	FILE* fp = fopen(toStringz(centerFile),"w");
+	FILE* fp = fopen(toStringz(file),"w");
 	if (fp is null) {
-		throw new Exception("Cannot open output file: "~centerFile);
+		throw new Exception("Cannot open output file: "~file);
 	}
 	
-	for (int i=0;i<centers.length;++i) {
-		for (int j=0;j<centers[i].length;++j) {
+	for (int i=0;i<vecs.length;++i) {
+		for (int j=0;j<vecs[i].length;++j) {
 			if (j!=0) {
 				fprintf(fp," ");
 			}
-			fprintf(fp,"%f", centers[i][j]);
+			fprintf(fp,"%f", vecs[i][j]);
 		}
 		fprintf(fp,"\n");
 	}
@@ -104,7 +105,7 @@ class Features(T = float) {
 	}
 	
 	int writeValue(U : float) (FILE* f, U value) {
-		return fprintf(f,"%f",value);
+		return fprintf(f,"%g",value);
 	}
 	
 	int writeValue(U : int) (FILE* f, U value) {		
@@ -277,34 +278,31 @@ class Features(T = float) {
 		veclen = toInt(strip(readln(fp)));
 		int elemSize = toInt(strip(readln(fp)));
 		
-		assert(elemSize==T.sizeof);
+		if (elemSize!=T.sizeof) {
+			Logger.log(Logger.INFO, "Data elements size not equal to used type size. Performing conversion.\n	");
+		}
 		
 		ulong fileSize = getSize(realFile);
 		count = fileSize / (veclen*elemSize);
 		
 		Logger.log(Logger.INFO,"\nReading %d features: ",count);
 				
-		FILE* bFile = fopen(toStringz(realFile	),"r");
-		if (bFile is null) {
-			throw new Exception("Cannot open input file: "~realFile);
-		}
-		
-		vecs = allocate_mat!(T[][])(count,veclen);
-		
-		ubyte[] buffer = allocate!(ubyte[])(veclen*T.sizeof);
-	
-//		showProgressBar(count/10, 70, (Ticker tick){
-			for (int i=0;i<count;++i) {
-				fread(&buffer[0],veclen,T.sizeof,bFile);
 				
-				array_copy(vecs[i],buffer);
-				
-		//		if (i%10==0) tick();
-			}
-	//	});
-
+		withOpenFile(realFile,"r", (FILE* bFile) {
 		
-		fclose(bFile);
+			vecs = allocate_mat!(T[][])(count,veclen);
+			ubyte[] buffer = allocate!(ubyte[])(veclen*elemSize);
+		
+			showProgressBar(100, 70, (Ticker tick){
+				int t = count/100;
+				for (int i=0;i<count;++i) {
+					fread(&buffer[0],veclen,elemSize,bFile);
+					array_copy(vecs[i],buffer);
+					
+					if (i%t==0) tick();
+				}
+			});
+		});
 		
 		Logger.log(Logger.INFO,"Read %d elements",count);
 	}
@@ -408,10 +406,12 @@ class Features(T = float) {
 	}
 	
 	
-	public Features!(T) sampleDataset(int size, bool remove = true)
+	public Features!(T) sample(int size, bool remove = true)
 	{
 		DistinctRandom rand = new DistinctRandom(count);
-		Features!(T) newSet = new Features!(T)(size);
+		Features!(T) newSet = new Features!(T)(size);		
+		newSet.veclen = veclen;
+		newSet.sig = sig;
 		
 		for (int i=0;i<size;++i) {
 			int r = rand.nextRandom();
@@ -427,6 +427,11 @@ class Features(T = float) {
 		}
 		
 		return newSet;
+	}
+	
+	public void computeGT(U)(Features!(U) dataset)
+	{
+		match = computeGroundTruth(dataset,this);
 	}
 
 }

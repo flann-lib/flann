@@ -11,6 +11,7 @@ module main;
 
 import std.stdio;
 
+import util.random;
 import util.logger;
 import commands.all;
 
@@ -21,6 +22,7 @@ import commands.all;
 void main(char[][] args)
 {
 	Logger.enableLevel(Logger.ERROR);
+	// don't use garbage collector... manage memory manually
 	std.gc.disable();
 	
 	if (args.length==1) {
