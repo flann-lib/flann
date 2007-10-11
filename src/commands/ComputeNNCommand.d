@@ -43,10 +43,11 @@ class ComputeNNCommand : IndexCommand
 		super.execute();
 		
 		Features!(float) testData;
-		if ((testFile == "") && (inputData !is null)) {
+/+		if ((testFile == "") && (inputData !is null)) {
 			testData = inputData;
 		}
-		else if (testFile != "") {
+		else +/
+		if (testFile != "") {
 			showOperation("Reading test data from %s... ".format(testFile),{
 				testData = new Features!(float)();
 				testData.readFromFile(testFile);

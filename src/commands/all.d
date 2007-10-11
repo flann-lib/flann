@@ -8,3 +8,5 @@ public import commands.GenerateRandomCommand;
 public import commands.RunTestCommand;
 public import commands.ComputeClustersCommand;
 public import commands.ComputeNNCommand;
+public import commands.AutotuneRunTestCommand;
+public import commands.SampleCommand;

@@ -7,11 +7,18 @@ module util.random;
 
 import util.utils;
 
+import std.c.time;
 
 
 extern (C) {
 	double drand48();
 	double lrand48();
+	double srand48(long);
+}
+
+
+static this() {
+	srand48(time(null));
 }
 
 

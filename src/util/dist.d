@@ -4,6 +4,8 @@ Project: nn
 
 module util.dist;
 
+import std.stdio;
+
 import util.allocator;
 	// import util.allocator;
 	// 
@@ -28,6 +30,7 @@ public float squaredDist(T)(T[] a)
 */
 public float DistSquared(T,U)(T *v1, U *v2, int veclen)
 {
+
 	float diff, distsq = 0.0;
 	float diff0, diff1, diff2, diff3;
 	T* final_, finalgroup;

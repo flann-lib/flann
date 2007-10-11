@@ -49,9 +49,14 @@ abstract class GenericCommand
 	void*[string] params;
 	string[] positionalArgs;
 	
+	bool help;
+
+	
 	this(string name) {
 		this.name = name;
 		optParser = new OptionParser();
+		
+		register(help,"h","help",null,"Display help message");
 	}
 	
 	void register(T,U)(ref T param, string shortName, string longName, U defaultValue, string description)
@@ -87,7 +92,12 @@ abstract class GenericCommand
 				params[o.longName][0..pData.length] = pData;
 			}
 		}
-		execute();		
+		
+		if (help) {
+			showHelp();
+		} else {
+			execute();
+		}
 	}
 	
 	void showHelp()

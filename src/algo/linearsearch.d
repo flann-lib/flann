@@ -15,9 +15,7 @@ import algo.nnindex;
 import util.registry;	
 
 
-mixin AlgorithmRegistry!(LinearSearch,float);
-
-class LinearSearch : NNIndex {
+class LinearSearch(T): NNIndex {
 
 	void describe(T)(T ar)
 	{
@@ -26,14 +24,14 @@ class LinearSearch : NNIndex {
 
 	static string NAME = "linear";
 	
-	Features!(float) dataset;
+	Features!(T) dataset;
 
 	private this() 
 	{
 	}
 
 	
-	public this(Features!(float) inputData, Params params)
+	public this(Features!(T) inputData, Params params)
 	{
 		dataset = inputData;
 		
@@ -69,3 +67,5 @@ class LinearSearch : NNIndex {
 
 }
 
+mixin AlgorithmRegistry!(LinearSearch!(float),float);
+mixin AlgorithmRegistry!(LinearSearch!(ubyte),ubyte);
