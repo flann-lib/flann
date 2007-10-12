@@ -10,3 +10,4 @@ public import commands.ComputeClustersCommand;
 public import commands.ComputeNNCommand;
 public import commands.AutotuneRunTestCommand;
 public import commands.SampleCommand;
+public import commands.TestBranching;

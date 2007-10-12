@@ -30,7 +30,7 @@ class KMeansTree(T) : NNIndex
 	alias Heap!(BranchSt) BranchHeap;
 
 
-	private int branching;
+	public int branching;
 	private int numTrees_;
 	private uint max_iter;
 	private string centersAlgorithm;

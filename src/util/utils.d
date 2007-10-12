@@ -100,6 +100,11 @@ T[] convert(T : T[],U : U[])(U[] srcVec)
 	}
 }
 
+
+/* This record represents a branch point when finding neighbors in
+	the tree.  It contains a record of the minimum distance to the query
+	point, as well as the node at which the search resumes.
+*/
 struct BranchStruct(T) {
 	T node;           /* Tree node at which search resumes */
 	float mindistsq;     /* Minimum distance to query for all nodes below. */
@@ -308,13 +313,13 @@ unittest
 
 
 
-public float computeVariance(float[][] points)
+public float computeVariance(T)(T[][] points)
 {
 	if (points.length==0) {
 		return 0;
 	}
 	
-	float[] mu = points[0].dup;
+	float[] mu = convert!(float[],T[])(points[0]);
 	
 	mu[] = 0;	
 	for (int j=0;j<mu.length;++j) {

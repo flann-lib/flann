@@ -1,6 +1,7 @@
-module commands.RunTestCommand;
+module commands.TestBranching;
 
 import std.string;
+import std.boxer;
 
 import commands.GenericCommand;
 import commands.IndexCommand;
@@ -16,21 +17,20 @@ import console.progressbar;
 
 
 static this() {
-	register_command(new RunTestCommand(RunTestCommand.NAME));
+	register_command(new TestBranching(TestBranching.NAME));
 }
 
-class RunTestCommand : IndexCommand
+class TestBranching : GenericCommand
 {
-	public static string NAME = "run_test";
+	public static string NAME = "test_branching";
 	
 	string testFile;
 	string matchFile;
 	uint nn;
+	uint trees;
 	double precision;
 	uint skipMatches;
 	string inputFile;
-	string algorithm;
-	uint trees;
 	string branching;
 	bool byteFeatures;
 	string centersAlgorithm;
@@ -41,12 +41,11 @@ class RunTestCommand : IndexCommand
 	{
 		super(name);
 		register(inputFile,"i","input-file", "","Name of file with input dataset.");
-		register(algorithm,"a","algorithm", "","The algorithm to use when constructing the index (kdtree, kmeans...).");
+		register(branching,"b","branching", "2:512:2","Branching factor range in the form: start:end:skip.");
 		register(trees,"r","trees", 1,"Number of parallel trees to use (where available, for example kdtree).");
-		register(branching,"b","branching", 2,"Branching factor (where applicable, for example kmeans) (default: 2).");
 		register(byteFeatures,"B","byte-features", null ,"Use byte-sized feature elements.");
 		register(centersAlgorithm,"C","centers-algorithm", "random","Algorithm to choose cluster centers for kmeans (default: random).");
-		register(maxIter,"M","max-iterations", uint.max,"Max iterations to perform for kmeans (default: until convergence).");		register(testFile,"t","test-file", "","Name of file with test dataset.");
+		register(maxIter,"M","max-iterations", uint.max,"Max iterations to perform for kmeans (default: until convergence).");	register(testFile,"t","test-file", "","Name of file with test dataset.");
 		register(matchFile,"m","match-file", "","File containing ground-truth matches.");
 		register(nn,"n","nn", 1,"Number of nearest neighbors to search for.");
 		register(precision,"P","precision", -1,"The desired precision.");
@@ -59,58 +58,18 @@ class RunTestCommand : IndexCommand
 	
 	private void executeWithType(T)() 
 	{
-		if (!(algorithm in indexRegistry!(T))) {
-			Logger.log(Logger.ERROR,"Algorithm not supported.\n");
-			Logger.log(Logger.ERROR,"Available algorithms:\n");
-			foreach (algo,val; indexRegistry!(T)) {
-				Logger.log(Logger.ERROR,"\t%s\n",algo);
-			}
-			throw new Exception("Bailing out...\n");
-		}
-		
+		Features!(T) inputData = null;
 		if (inputFile != "") {
 			showOperation( "Reading input data from %s".format(inputFile), {
-				inputData!(T) = new Features!(T)();
-				inputData!(T).readFromFile(inputFile);
+				inputData = new Features!(T)();
+				inputData.readFromFile(inputFile);
 			});
 		}
 	
-		if (inputData!(T) is null) {
+		if (inputData is null) {
 			throw new Exception("No input data given.");
 		}
 		
-		Logger.log(Logger.INFO,"Algorithm: %s\n",algorithm);
-		
-		Params params;
-		copyParams(params,optParser,["trees","branching", "centers-algorithm","max-iterations"]);
-		
-		index = indexRegistry!(T)[algorithm](inputData!(T), params);
-		
-		
-		
-		
-		Logger.log(Logger.INFO,"Building index... \n");
-		float indexTime = profile({
-			index.buildIndex();
-		});
-		
-		Logger.log(Logger.INFO,"Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
-			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
-		Logger.log(Logger.SIMPLE,"%f\n",indexTime);
-
-// 		if (saveFile !is null) {
-// 			Logger.log(Logger.INFO,"Saving index to file %s... ",saveFile);
-// 			fflush(stdout);
-// 			index.save(saveFile);
-// 			Logger.log(Logger.INFO,"done\n");
-// 		}
-	}	
-	
-	
-	
-	void execute() 
-	{
-		super.execute();
 		
 		Features!(float) testData;
 /+		if ((testFile == "") && (inputData !is null)) {
@@ -135,9 +94,48 @@ class RunTestCommand : IndexCommand
 			throw new Exception("There are no correct matches to compare to, aborting test phase.");
 		}
 
+		
+		Params params;
+		copyParams(params,optParser,["trees", "centers-algorithm","max-iterations"]);
+		
+		params["branching"] = box(2);
+		
+		
+		auto index = new KMeansTree!(T)(inputData, params);
+		
+		
+		Range range = new Range(branching);
+		
 		assert(precision>=0 && precision<=100);
-		testNNIndexExactPrecision(index,testData, nn, precision, skipMatches);
+		
+		for(int br = range.begin;br<range.end;br+=range.skip) {
+			index.branching = br;
+		
+			Logger.log(Logger.INFO,"Building index... \n");
+			float indexTime = profile({
+				index.buildIndex();
+			});
+			
+			Logger.log(Logger.INFO,"Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
+				index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
+			Logger.log(Logger.SIMPLE,"%f\n",indexTime);
+		
+			testNNIndexExactPrecision(index,testData, nn, precision, skipMatches);
+		}
+		
 
+
+	}	
+	
+	
+	
+	void execute() 
+	{
+		if (byteFeatures) {
+			executeWithType!(ubyte)();
+		} else {
+			executeWithType!(float)();
+		}		
 	}
 	
 

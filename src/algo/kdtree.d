@@ -53,13 +53,12 @@ import util.allocator;
 import util.registry;
 
 
-mixin AlgorithmRegistry!(KDTree,float);
 
 /* Contains the k-d trees and other information for indexing a set of points
    for nearest-neighbor matching.
  */
 
-class KDTree : NNIndex{
+class KDTree(T) : NNIndex{
 
 	static const NAME = "kdtree";
 
@@ -69,19 +68,17 @@ class KDTree : NNIndex{
 	int vcount;         /* Number of vectors stored in this index. */
 	int veclen;         /* Length of each vector. */
 //	int vsize; 			/* Space allocated for vector storage (vecs) and index (vind) */
-	float[][] vecs;      /* Float vecs.  */
+	T[][] vecs;      /* Float vecs.  */
 	int []vind;          /* Array of indices to vecs.  When doing
 						   lookup, this is used instead to mark checkID. */
 	
-	int[] freeInd;		/* Array of indices to free locations in vecs */
-	int freeIndCount;	/* Count of elements in freeInd */
-	int freeIndSize;	/* The size of freeInd */
 	
 	int checkID;        /* A unique ID for each lookup. */
-//	int ncount;         /* Number of neighbors so far in result. */
-//	float *dsqs;        /* Squared distances to current results. */
-//	int dsqlen;         /* Length of space allocated for dsqs. */
 	Tree []trees;  /* Array of k-d trees used to find neighbors. */
+	
+	alias BranchStruct!(Tree) BranchSt;
+	alias BranchSt* Branch;
+
 	Heap!(BranchSt) heap;
 	
 
@@ -117,36 +114,8 @@ class KDTree : NNIndex{
 	};
 	alias TreeSt* Tree;
 	
-	/* This record represents a branch point when finding neighbors in
-		the tree.  It contains a record of the minimum distance to the query
-		point, as well as the node at which the search resumes.
-	*/
-	struct BranchSt {
-		Tree node;           /* Tree node at which search resumes */
-		float mindistsq;     /* Minimum distance to query for all nodes below. */
-		
-		int opCmp(BranchSt rhs) 
-		{ 
-			if (mindistsq < rhs.mindistsq) {
-				return -1;
-			} if (mindistsq > rhs.mindistsq) {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-		
-		static BranchSt opCall(Tree aNode, float dist) 
-		{
-			BranchSt s;
-			s.node = aNode;
-			s.mindistsq = dist;
-			
-			return s;
-		}
-		
-	}; 
-	alias BranchSt* Branch;
+
+	
 	
 	
 	private this()
@@ -158,26 +127,20 @@ class KDTree : NNIndex{
 	
 	/* Build and return the k-d tree index used to find nearest neighbors to
 		a set of vectors. 
-	vecs: array of pointers to the vectors to be indexed.
-	vcount: number of vectors in vecs.
-	veclen: the length of each vector.
-	numTrees_: the number of randomized trees to build.
 	*/
-	public this(Features!(float) inputData, Params params)
+	public this(Features!(T) inputData, Params params)
 	{
 		this.numTrees_ = unbox!(uint)(params["trees"]);
 		this.vcount = inputData.count;
 		this.veclen = inputData.veclen;
 		this.vecs = inputData.vecs;
-		this.trees = allocate!(Tree[])(numTrees_);//Pool.malloc!(Tree)(numTrees_);
+		this.trees = allocate!(Tree[])(numTrees_);
 		this.heap = new Heap!(BranchSt)(vecs.length);
 		this.checkID = -1000;
 		
-		this.freeIndSize = 0;
-		this.freeIndCount = 0;
 	
 		/* Create a permutable array of indices to the input vectors. */
-		this.vind = allocate!(int[])(vcount);//Pool.malloc!(int)(vcount);
+		this.vind = allocate!(int[])(vcount);
 		for (int i = 0; i < vcount; i++) {
 			this.vind[i] = i;
 		}
@@ -188,11 +151,9 @@ class KDTree : NNIndex{
 	{
 		/* Construct the randomized trees. */
 		for (int i = 0; i < numTrees_; i++) {
-	
 			/* Randomize the order of vectors to allow for unbiased sampling. */
 			for (int j = 0; j < vcount; j++) {
 				int rand = cast(int) (drand48() * vcount);  
-				//rand = random(vcount)%vcount;  
 				assert(rand >=0 && rand < vcount);
 				swap(this.vind[j], this.vind[rand]);
 			}
@@ -202,15 +163,6 @@ class KDTree : NNIndex{
 		
 		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
 	}
-	
-	
-	/* Free all memory used to create this this.
-	*/
-	public ~this()
-	{
-		//Pool.free();
-	}
-	
 	
 	public int size() 
 	{
@@ -231,9 +183,7 @@ class KDTree : NNIndex{
 	{
 		Tree node;
 	
-		node = allocate!(TreeSt)();   //Pool.malloc!(TreeSt)();
-//		node = cast(TreeSt*) .malloc(TreeSt.sizeof);
-//		node = new TreeSt();
+		node = allocate!(TreeSt)();
 		
 		*pTree = node;
 	
@@ -259,14 +209,9 @@ class KDTree : NNIndex{
 			mean = allocate!(float[])(this.veclen);  //new float[this.veclen];
 			var = allocate!(float[])(this.veclen);	//new float[this.veclen];
 		}
-		// Simpler D-specific initialization
+		
 		mean[] = 0.0;
 		var[] = 0.0;
-		/*
-		for (i = 0; i < this.veclen; i++) {
-			mean[i] = 0.0;
-			var[i] = 0.0;
-		}*/
 		
 		/* Compute mean values.  Only the first SampleMean values need to be
 			sampled to get a good estimate.
@@ -361,193 +306,6 @@ class KDTree : NNIndex{
 	
 		DivideTree(& node.child1, first, i - 1);
 		DivideTree(& node.child2, i, last);
-	}
-	
-	
-	
-	/*----------------------- Insert and remove operations ------------------------*/
-	
-	/* Allocates more space in case the InsertElement method needs it
-	 */
-	private void IncreaseVecStorage()
-	{
-//		int old_size = this.vsize;
-		int new_size = vecs.length*2;
-		
-		vecs.length = new_size;
-		/+
-		int* old_vind = this.vind;
-		float** old_vecs = this.vecs;
-		
-		//allocate new memory
-		this.vind = this.pool.malloc!(int)(new_size);
-		this.vecs = this.pool.malloc!(float*)(new_size);
-		
-		// copy old vector values
-		for (int i=0;i<this.vcount;++i) {
-			this.vind[i] = old_vind[i];
-			this.vecs[i] = old_vecs[i];
-		}
-		
-		this.vsize = new_size;
-		+/
-	}
-	
-	
-	/* Inserts a new element into the kd-tree 
-	*/
-	public int InsertElement(float[] vec)
-	{
-		int ind = -1;
-		
-		//  Check first for "holes" in the array of vectors
-		if (this.freeIndCount>0) {
-			ind = this.freeInd[--this.freeIndCount];
-			this.vcount++;
-		} else {
-			if (this.vcount==this.vecs.length) {
-				IncreaseVecStorage();
-			}
-			ind = this.vcount++;
-		}
-		// add the new vector to the array
-		this.vecs[ind] = vec;
-		this.vind[ind] = ind;
-		
-		// update all the trees
-		for (int t = 0; t < this.numTrees_; ++t ) {
-			InsertIntoTree(this.trees[t],ind);
-		}
-		
-		return ind;
-	}
-	
-	private void InsertIntoTree(Tree node, int ind)
-	{
-		float[] vec = this.vecs[ind];
-		if (node.child1==null && node.child2==null) {
-			// insert element
-			
-			node.child1 = allocate!(TreeSt)();   //Pool.malloc!(TreeSt)();
-			node.child2 = allocate!(TreeSt)();   //Pool.malloc!(TreeSt)();
-			
-			node.child1.divfeat = ind;
-			node.child2.divfeat = node.divfeat;
-			
-			// find dimension with greatest variance
-			float var = -1;
-			int feat = -1;
-			for (int i=0; i<this.veclen; ++i ) {
-				float tmp = ABS(vec[i]-this.vecs[node.divfeat][i]);
-				if (tmp>var) {
-					var = tmp;
-					feat = i;
-				}
-			}
-			
-			if (vec[feat] > this.vecs[node.divfeat][feat]) {
-				swap(node.child1, node.child2);
-			}
-			
-			node.divval = (vec[feat] + this.vecs[node.divfeat][feat])/2;		
-			node.divfeat = feat;
-		} 
-		else {
-			
-			if (vec[node.divfeat]< node.divval) {
-				InsertIntoTree(node.child1, ind);
-			} else {
-				InsertIntoTree(node.child2, ind);
-			}
-		}
-	}
-	
-	
-	private void IncreaseFreeInd() 
-	{
-		int old_size = this.freeIndSize;
-		int new_size = (old_size==0?8:old_size*2);
-		
-		int[] old_freeInd = this.freeInd;
-		
-		//allocate new memory
-		this.freeInd = allocate!(int[])(new_size);//Pool.malloc!(int)(new_size);
-		
-		// copy old vector values
-		for (int i=0;i<this.freeIndCount;++i) {
-			this.freeInd[i] = old_freeInd[i];
-		}
-		
-		this.freeIndSize = new_size;
-	}
-	
-	/* Removes an element from the kd-trees
-	*/
-	public bool RemoveElement(int ind) 
-	{
-		if (this.freeIndCount==this.freeIndSize) {
-			IncreaseFreeInd();
-		}
-		// mark vector space as free
-		this.freeInd[this.freeIndCount++] = ind;
-		
-		
-		bool removed = true;
-	
-		// update all the trees
-		for (int t = 0; t < this.numTrees_; ++t ) {
-			Tree node = this.trees[t];
-			
-			if (node.child1==null && node.child2==null && node.divfeat==ind) {
-				this.trees[t] = null;
-			}
-			else {
-					if (!RemoveFromTree(node,null,ind)) {
-						removed = false;
-					}
-			}
-		}
-		
-		this.vcount--;
-		
-		return removed;
-	}
-	
-	
-	
-	private bool RemoveFromTree(Tree node,Tree parent, int ind)
-	{
-		float[] vec = this.vecs[ind];
-		
-		if (node.child1==null && node.child2==null && node.divfeat==ind) {
-			// remove element
-			Tree otherChild;
-			if (parent.child1==node) {
-				otherChild = parent.child2;
-			}
-			else {
-				otherChild = parent.child1;
-			}
-			
-			// remove node from tree
-			parent.divfeat = otherChild.divfeat;
-			parent.divval = otherChild.divval;
-			parent.child1 = otherChild.child1;
-			parent.child2 = otherChild.child2;
-			
-			return true;
-		}
-		else if (node.child1!=null && node.child2!=null) {
-			if (vec[node.divfeat]<node.divval) {
-				return RemoveFromTree(node.child1,node,ind);
-			} else {
-				return RemoveFromTree(node.child2,node,ind);
-			}
-		}
-		else {
-			return false;
-		}
-		
 	}
 	
 	
@@ -705,9 +463,9 @@ class KDTree : NNIndex{
 	
 	
 	
-	float[][] getClusterPoints(Tree node)
+	T[][] getClusterPoints(Tree node)
 	{
-		void getClusterPoints_Helper(Tree node, inout float[][] points, inout int size) 
+		void getClusterPoints_Helper(Tree node, inout T[][] points, inout int size) 
 		{
 			if (node.child1 == null && node.child2 == null) {
 				points[size++] = this.vecs[node.divfeat];
@@ -718,9 +476,9 @@ class KDTree : NNIndex{
 			}
 		}
 			
-		static float[][] points;
+		static T[][] points;
 		if (points==null) {
-			points = allocate!(float[][])(vcount);
+			points = allocate!(T[][])(vcount);
 		}
 		int size = 0;
 		getClusterPoints_Helper(node,points,size);
@@ -748,11 +506,11 @@ class KDTree : NNIndex{
 			}
 		}
 			
-		float variances[] = allocate!(float[])(q.size);//new float[q.size];
-		int clusterSize[] = allocate!(int[])(q.size);//new int[q.size];
+		float variances[] = allocate!(float[])(q.size);
+		int clusterSize[] = allocate!(int[])(q.size);
 		
 		for (int i=0;i<q.size;++i) {
-			float[][] clusterPoints = getClusterPoints(q[i]);
+			T[][] clusterPoints = getClusterPoints(q[i]);
 			variances[i] = computeVariance(clusterPoints);
 			clusterSize[i] = clusterPoints.length;
 		}
@@ -775,3 +533,5 @@ class KDTree : NNIndex{
 	
 }
 
+mixin AlgorithmRegistry!(KDTree!(float),float);
+mixin AlgorithmRegistry!(KDTree!(ubyte),ubyte);
