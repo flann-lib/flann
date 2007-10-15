@@ -6,7 +6,7 @@ module algo.kmeans;
 
 import std.c.time;
 import std.stdio;
-import std.boxer;
+
 
 import algo.nnindex;
 import util.resultset;

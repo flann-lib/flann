@@ -16,7 +16,6 @@ import std.c.stdio;
 import std.c.stdlib;
 import std.conv;
 import std.string;
-import std.boxer;
 
 import util.logger;
 import util.variant;
@@ -140,7 +139,7 @@ struct BranchStruct(T) {
 
 /*---------------parameters----------------------*/
 
-class Params 
+struct Params 
 {
 	Variant[string] data;
 	

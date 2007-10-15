@@ -38,8 +38,6 @@ module algo.kdtree;
 import std.c.stdlib;
 import std.c.math;
 import std.c.string;
-import std.boxer;
-
 import std.gc;
 
 import util.utils;

@@ -2,7 +2,6 @@ module commands.AutotuneRunTestCommand;
 
 import std.string;
 import std.c.stdlib;
-import std.boxer;
 
 import commands.GenericCommand;
 import util.logger;

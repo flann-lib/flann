@@ -1,6 +1,5 @@
 module nn.autotune;
 
-import std.boxer;
 import std.stdio;
 
 import dataset.features;
@@ -74,13 +73,13 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 	
 	int bestBranching;
 	int bestChecks;
-	p["max-iterations"] = box(1u);
-	p["centers-algorithm"] = box("random");
-	p["trees"] = box(1);
+	p["max-iterations"] = 1u;
+	p["centers-algorithm"] = "random";
+	p["trees"] = 1;
 	float cost = float.max;
 	int checks;
 	foreach (branchingFactor;branchingFactors) {
-		p["branching"] = box(branchingFactor);
+		p["branching"] = branchingFactor;
 		KMeansTree!(T) kmeans = new KMeansTree!(T)(sampledDataset,p);
 		
 		float buildTime = profile({kmeans.buildIndex();});
@@ -102,9 +101,9 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 	
 	
 	
-	p["checks"] = box(checks);
-	p["algorithm"] = box("kmeans");
-	p["branching"] = box(bestBranching);
+	p["checks"] = checks;
+	p["algorithm"] = "kmeans";
+	p["branching"] = bestBranching;
 
 
 	

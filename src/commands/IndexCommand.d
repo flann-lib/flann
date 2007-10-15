@@ -105,7 +105,7 @@ class IndexCommand : GenericCommand
 		
 		Logger.log(Logger.INFO,"Algorithm: %s\n",algorithm);
 		
-		Params params;
+		Params params;		
 		copyParams(params,optParser,["trees","branching", "centers-algorithm","max-iterations"]);
 		
 		index = indexRegistry!(T)[algorithm](inputData!(T), params);

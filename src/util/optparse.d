@@ -117,10 +117,11 @@ module util.optparse;
 
 private
 {
-    import std.boxer;
     import std.conv;
     import std.stdio;
     import std.string;
+	
+	import util.variant;
 }
 
 /**
@@ -131,7 +132,7 @@ class OptionParser
     private
     {
         Option[] _options;
-        Box[char[]] _values;
+        Variant[char[]] _values;
         char[][] _positionalArgs;
     }
     
@@ -373,7 +374,7 @@ class OptionParser
     /**
      * Returns the boxed value stored under the given key.
      */
-    Box opIndex(char[] key)
+    Variant opIndex(char[] key)
     in
     {
         assert(key !is null);
@@ -386,7 +387,7 @@ class OptionParser
     /**
      * Changes the boxed value stored under the given key.
      */
-    void opIndexAssign(Box value, char[] key)
+    void opIndexAssign(T)(T value, char[] key)
     in
     {
         assert(key !is null);
@@ -537,7 +538,7 @@ abstract class Option
         char[] _valueName;
         bool _takesArgument;
         char[] _argumentName;
-        Box _defaultValue;
+        Variant _defaultValue;
     }
 
     /**
@@ -546,7 +547,7 @@ abstract class Option
     char[] helpMessage = "";
 
     this(char[] shortName, char[] longName, char[] valueName,
-            Box defaultValue, char[] argumentName=null)
+            Variant defaultValue, char[] argumentName=null)
     {
         _shortName = shortName;
         _longName = longName;
@@ -564,7 +565,7 @@ abstract class Option
      * Only used by, and must be overridden for options which do not
      * take arguments.
      */
-    Box flag()
+    Variant flag()
     {
         assert(0);
     }
@@ -575,7 +576,7 @@ abstract class Option
      * Only used by, and must be overridden for options which
      * take arguments.
      */
-    Box parse(char[] argument)
+    Variant parse(char[] argument)
     {
         assert(0);
     }
@@ -602,7 +603,7 @@ abstract class Option
     char[] valueName() { return _valueName; }       /// Key under which this option's value will be stored.
     bool takesArgument() { return _takesArgument; } /// Does this option require an argument?
     char[] argumentName() { return _argumentName; } /// Name of the argument taken
-    Box defaultValue() { return _defaultValue; }    /// Default value if this option is not encountered
+    Variant defaultValue() { return _defaultValue; }    /// Default value if this option is not encountered
 }
 
 /**
@@ -613,12 +614,12 @@ class FlagTrueOption : Option
 {
     this(char[] shortName, char[] longName, char[] valueName)
     {
-        super(shortName, longName, valueName, box(false));
+        super(shortName, longName, valueName, Variant(false));
     }
 
-    Box flag()
+    Variant flag()
     {
-        return box(true);
+        return Variant(true);
     }
 }
 
@@ -627,8 +628,8 @@ unittest
     auto opt = new FlagTrueOption("s", "long", "value");
     assert(opt !is null);
     assert(!opt.takesArgument);
-    assert(false == unbox!(bool)(opt.defaultValue));
-    assert(true == unbox!(bool)(opt.flag()));
+    assert(false == opt.defaultValue.get!(bool));
+    assert(true == opt.flag().get!(bool));
 }
 
 /**
@@ -642,10 +643,10 @@ class BoolOption : Option
             bool defaultValue=false, char[] argumentName="VALUE")
     {
         super(shortName, longName, valueName,
-                box(defaultValue), argumentName);
+                Variant(defaultValue), argumentName);
     }
 
-    Box parse(char[] argument)
+    Variant parse(char[] argument)
     {
         switch(tolower(argument))
         {
@@ -653,13 +654,13 @@ class BoolOption : Option
             case "on":
             case "yes":
             case "true":
-                return box(true);
+                return Variant(true);
 
             case "0":
             case "off":
             case "no":
             case "false":
-                return box(false);
+                return Variant(false);
 
             version(OptParseSilly)
             {
@@ -670,7 +671,7 @@ class BoolOption : Option
                 case "hellyeah":
                 case "makeitso":
                 case "ohyeah":
-                    return box(true);
+                    return true;
 
                 case "nuhuh":
                 case "getlost":
@@ -679,7 +680,7 @@ class BoolOption : Option
                 case "noway":
                 case "belaythatorder":
                 case "dontdoit":
-                    return box(false);
+                    return false;
             }
 
             default:
@@ -752,14 +753,14 @@ class NumericOption(T) : Option
             T defaultValue=T.init, char[] argumentName="VALUE")
     {
         super(shortName, longName, valueName,
-                box(defaultValue), argumentName);
+                Variant(defaultValue), argumentName);
     }
 
-    Box parse(char[] argument)
+    Variant parse(char[] argument)
     {
         try
         {
-            return box(toNumericType!(T).conv(argument));
+            return Variant(toNumericType!(T).conv(argument));
         }
         catch( ConvError e )
         {
@@ -778,7 +779,7 @@ private template TestNumericOption(T)
     {
         void TestParse(Option opt, T value)
         {
-            assert(unbox!(T)(opt.parse(toString(value))) == value);
+            assert(opt.parse(toString(value)).get!(T) == value);
         }
     }
     
@@ -789,7 +790,7 @@ private template TestNumericOption(T)
         
         assert(opt !is null);
         assert(opt.takesArgument);
-        assert(ub(opt.defaultValue) == T.init);
+        assert(opt.defaultValue.get!(T) == T.init);
         
         TestParse!(T)(opt,T.init);
         TestParse!(T)(opt,T.min);
@@ -827,24 +828,23 @@ class StringOption : Option
             char[] defaultValue="", char[] argumentName="VALUE")
     {
         super(shortName, longName, valueName,
-                box(defaultValue), argumentName);
+                Variant(defaultValue), argumentName);
     }
 
-    Box parse(char[] argument)
+    Variant parse(char[] argument)
     {
-        return box(argument);
+        return Variant(argument);
     }
 }
 
 unittest
 {
     auto opt = new StringOption("s", "long", "value", "foo");
-    alias unbox!(char[]) ub;
 
     assert(opt !is null);
     assert(opt.takesArgument);
-    assert(ub(opt.defaultValue) == "foo");
-    assert(ub(opt.parse("bar")) == "bar");
+    assert(opt.defaultValue.get!(char[]) == "foo");
+    assert(opt.parse("bar").get!(char[]) == "bar");
 }
 
 // Because the default ctor sucks ass

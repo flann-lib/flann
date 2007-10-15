@@ -1,10 +1,10 @@
 module commands.GenericCommand;
 
 public import std.stdio;
-import std.boxer;
 
 import util.optparse;
 import util.utils;
+import util.variant;
 
 private GenericCommand[string] commands;
 
@@ -86,7 +86,7 @@ abstract class GenericCommand
 		optParser.parse(args);
 		positionalArgs = optParser.positionalArgs;
 		foreach(o;optParser.options) {
-			Box b = optParser[o.longName];
+			Variant b = optParser[o.longName];
 			void[] pData = b.data;
 			if (o.longName in params) {
 				params[o.longName][0..pData.length] = pData;
