@@ -7,7 +7,7 @@ import dataset.features;
 import util.resultset;
 import util.logger;
 import util.utils;
-import console.progressbar;
+import output.console;
 
 void computeNearestNeighbors(string outputFile, NNIndex index, Features!(float) testData, int nn, int checks, uint skipMatches)
 {

@@ -17,6 +17,7 @@ static {
 	const LogLevel ERROR = cast(LogLevel)"error";
 	
 	const LogLevel SIMPLE = cast(LogLevel)"simple";
+	const LogLevel REPORT = cast(LogLevel)"report";
 
 	
 	private typedef string LogLevel;

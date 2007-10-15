@@ -5,7 +5,7 @@ import std.string;
 import commands.GenericCommand;
 import util.logger;
 import dataset.features;
-import console.progressbar;
+import output.console;
 
 
 static this() {

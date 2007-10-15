@@ -14,7 +14,7 @@ import nn.testing;
 import dataset.features;
 import algo.nnindex;
 import algo.kmeans;
-import console.progressbar;
+import output.console;
 
 
 static this() {
@@ -108,7 +108,7 @@ class AutotuneRunTestCommand : GenericCommand
 
 		Params params = estimateOptimalParams!(T)(inputData!(T), testData, precision, indexFactor);
 		
-		string algorithm = unbox!(string)(params["algorithm"]);
+		string algorithm = params["algorithm"].get!(string);
 		
 /+		if (!byteFeatures) {
 			index = indexRegistry[algorithm](inputData, params);
@@ -125,7 +125,7 @@ class AutotuneRunTestCommand : GenericCommand
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
 		Logger.log(Logger.SIMPLE,"%f\n",indexTime);
 
-		uint checks = unbox!(uint)(params["checks"]);
+		uint checks = params["checks"].get!(int);
 		testNNIndex(index,testData, nn, checks, skipMatches);
 	}
 	

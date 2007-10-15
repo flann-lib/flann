@@ -9,7 +9,7 @@ import std.string;
 import std.c.string;
 import std.conv;
 import util.dist;
-import console.progressbar;
+import output.console;
 import util.logger;
 import dataset.features;
 import util.utils;

@@ -12,7 +12,7 @@ import nn.testing;
 import dataset.features;
 import algo.nnindex;
 import algo.kmeans;
-import console.progressbar;
+import output.console;
 
 
 static this() {

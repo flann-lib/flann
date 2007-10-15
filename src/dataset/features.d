@@ -17,7 +17,7 @@ import util.logger;
 import util.utils;
 import util.random;
 import util.allocator;
-import console.progressbar;
+import output.console;
 import dataset.compute_gt;
 
 
@@ -302,9 +302,7 @@ class Features(T = float) {
 					if (i%t==0) tick();
 				}
 			});
-		});
-		
-		Logger.log(Logger.INFO,"Read %d elements",count);
+		});		
 	}
 
 	

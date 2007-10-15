@@ -9,7 +9,7 @@ import util.utils;
 import nn.compute_nn;
 import dataset.features;
 import algo.nnindex;
-import console.progressbar;
+import output.console;
 
 
 static this() {

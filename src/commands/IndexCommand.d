@@ -10,7 +10,7 @@ import util.utils;
 import util.profiler;
 import dataset.features;
 import algo.all;
-import console.progressbar;
+import output.console;
 
 
 static this() {

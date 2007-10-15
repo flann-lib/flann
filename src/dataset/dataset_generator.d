@@ -9,7 +9,7 @@ import std.string;
 
 import util.utils;
 import util.random;
-import console.progressbar;
+import output.console;
 import util.logger;
 
 void generateRandomDataset(string file, uint count, uint length)

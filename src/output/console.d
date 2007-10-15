@@ -2,7 +2,7 @@
 Project: nn
 */
 
-module console.progressbar;
+module output.console;
 
 import util.logger;
 

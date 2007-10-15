@@ -67,11 +67,9 @@ class KDTree(T) : NNIndex{
 	float searchDistSq; /* Distance cutoff for searching (not used yet). */
 	int vcount;         /* Number of vectors stored in this index. */
 	int veclen;         /* Length of each vector. */
-//	int vsize; 			/* Space allocated for vector storage (vecs) and index (vind) */
 	T[][] vecs;      /* Float vecs.  */
 	int []vind;          /* Array of indices to vecs.  When doing
 						   lookup, this is used instead to mark checkID. */
-	
 	
 	int checkID;        /* A unique ID for each lookup. */
 	Tree []trees;  /* Array of k-d trees used to find neighbors. */
@@ -130,19 +128,19 @@ class KDTree(T) : NNIndex{
 	*/
 	public this(Features!(T) inputData, Params params)
 	{
-		this.numTrees_ = unbox!(uint)(params["trees"]);
-		this.vcount = inputData.count;
-		this.veclen = inputData.veclen;
-		this.vecs = inputData.vecs;
-		this.trees = allocate!(Tree[])(numTrees_);
-		this.heap = new Heap!(BranchSt)(vecs.length);
-		this.checkID = -1000;
+		numTrees_ = params["trees"].get!(uint);
+		vcount = inputData.count;
+		veclen = inputData.veclen;
+		vecs = inputData.vecs;
+		trees = allocate!(Tree[])(numTrees_);
+		heap = new Heap!(BranchSt)(vecs.length);
+		checkID = -1000;
 		
 	
 		/* Create a permutable array of indices to the input vectors. */
-		this.vind = allocate!(int[])(vcount);
+		vind = allocate!(int[])(vcount);
 		for (int i = 0; i < vcount; i++) {
-			this.vind[i] = i;
+			vind[i] = i;
 		}
 	}
 	
@@ -155,13 +153,13 @@ class KDTree(T) : NNIndex{
 			for (int j = 0; j < vcount; j++) {
 				int rand = cast(int) (drand48() * vcount);  
 				assert(rand >=0 && rand < vcount);
-				swap(this.vind[j], this.vind[rand]);
+				swap(vind[j], vind[rand]);
 			}
-			this.trees[i] = null;
-			DivideTree(& this.trees[i], 0, vcount - 1);
+			trees[i] = null;
+			DivideTree(& trees[i], 0, vcount - 1);
 		}
 		
-		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
+		//Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
 	}
 	
 	public int size() 
@@ -184,13 +182,12 @@ class KDTree(T) : NNIndex{
 		Tree node;
 	
 		node = allocate!(TreeSt)();
-		
 		*pTree = node;
 	
 		/* If only one exemplar remains, then make this a leaf node. */
 		if (first == last) {
 			node.child1 = node.child2 = null;    /* Mark as leaf node. */
-			node.divfeat = this.vind[first];    /* Store index of this vec. */
+			node.divfeat = vind[first];    /* Store index of this vec. */
 		} else {
 			ChooseDivision(node, first, last);
 			Subdivide(node, first, last);
@@ -204,10 +201,10 @@ class KDTree(T) : NNIndex{
 	*/
 	private void ChooseDivision(Tree node, int first, int last)
 	{
-		static float[] mean, var;	
+		static float[] mean, var;
 		if (mean==null) {
-			mean = allocate!(float[])(this.veclen);  //new float[this.veclen];
-			var = allocate!(float[])(this.veclen);	//new float[this.veclen];
+			mean = allocate!(float[])(veclen);
+			var = allocate!(float[])(veclen);
 		}
 		
 		mean[] = 0.0;
@@ -218,20 +215,20 @@ class KDTree(T) : NNIndex{
 		*/
 		int end = MIN(first + SampleMean, last);
 		int ind, count = 0;
-		for (int j = first; j <= end; j++) {
+		for (int j = first; j <= end; ++j) {
 			count++;
-			ind = this.vind[j];
-			for (int i = 0; i < this.veclen; i++)
-				mean[i] += this.vecs[ind][i];
+			ind = vind[j];
+			for (int i = 0; i < veclen; ++i)
+				mean[i] += vecs[ind][i];
 		}
-		for (int i = 0; i < this.veclen; i++)
+		for (int i = 0; i < veclen; ++i)
 			mean[i] /= count;
 	
 		/* Compute variances (no need to divide by count). */
-		for (int j = first; j <= end; j++) {
-			ind = this.vind[j];
-			for (int i = 0; i < this.veclen; i++) {
-				float val = this.vecs[ind][i];
+		for (int j = first; j <= end; ++j) {
+			ind = vind[j];
+			for (int i = 0; i < veclen; ++i) {
+				float val = vecs[ind][i];
 				float dist = val - mean[i];
 				var[i] += dist * dist;
 			}
@@ -285,13 +282,13 @@ class KDTree(T) : NNIndex{
 		i = first;
 		j = last;
 		while (i <= j) {
-			ind = this.vind[i];
-			val = this.vecs[ind][node.divfeat];
+			ind = vind[i];
+			val = vecs[ind][node.divfeat];
 			if (val < node.divval) {
 				i++;
 			} else {
 				/* Move to end of list by swapping vind i and j. */
-				swap(this.vind[i], this.vind[j]);
+				swap(vind[i], vind[j]);
 				j--;
 			}
 		}
@@ -329,13 +326,13 @@ class KDTree(T) : NNIndex{
 		int i;
 		BranchSt branch;
 	
-		this.checkID -= 1;  /* Set a different unique ID for each search. */
+		checkID -= 1;  /* Set a different unique ID for each search. */
 	
 		leafs = 0;
 	
 		/* Search once through each tree down to root. */
-		for (i = 0; i < this.numTrees_; i++) {
-			SearchLevelExact(result, vec, this.trees[i], 0.0);
+		for (i = 0; i < numTrees_; i++) {
+			SearchLevelExact(result, vec, trees[i], 0.0);
 		}
 		assert(result.full);
 	}
@@ -346,19 +343,18 @@ class KDTree(T) : NNIndex{
 		int i;
 		BranchSt branch;
 	
-//		this.ncount = 0;
-		this.checkCount = 0;
-		this.heap.init();
-		this.checkID -= 1;  /* Set a different unique ID for each search. */
+		checkCount = 0;
+		heap.init();
+		checkID -= 1;  /* Set a different unique ID for each search. */
 	
 		/* Search once through each tree down to root. */
-		for (i = 0; i < this.numTrees_; i++) {
-			SearchLevel(result, vec, this.trees[i], 0.0, maxCheck);
+		for (i = 0; i < numTrees_; i++) {
+			SearchLevel(result, vec, trees[i], 0.0, maxCheck);
 		}
 	
 		/* Keep searching other branches from heap until finished. */
-		while ( this.heap.popMin(branch) 
-			&& (this.checkCount++ < maxCheck || !result.full )) {
+		while ( heap.popMin(branch) 
+			&& (checkCount++ < maxCheck || !result.full )) {
 			SearchLevel(result, vec, branch.node,
 					branch.mindistsq, maxCheck);
 		}
@@ -385,15 +381,16 @@ class KDTree(T) : NNIndex{
 		/* If this is a leaf node, then do check and return. */
 		if (node.child1 == null  &&  node.child2 == null) {
 		
-		//	this.checkCount += 1;
+		//	checkCount += 1;
 		
 			/* Do not check same node more than once when searching multiple trees.
-				Once a vector is checked, we set its location in this.vind to the
-				current this.checkID.
+				Once a vector is checked, we set its location in vind to the
+				current checkID.
 			*/
-			if (this.vind[node.divfeat] == this.checkID)
+			if (vind[node.divfeat] == checkID) {
 				return;
-			this.vind[node.divfeat] = this.checkID;
+			}
+			vind[node.divfeat] = checkID;
 		
 			result.addPoint(vecs[node.divfeat],node.divfeat);
 			//CheckNeighbor(result, node.divfeat, vec);
@@ -413,8 +410,8 @@ class KDTree(T) : NNIndex{
 			adding more branches to heap after halfway point, as cost of
 			adding exceeds their value.
 		*/
-		if (2 * this.checkCount < maxCheck  ||  !result.full) {
-			this.heap.insert( BranchSt(otherChild, mindistsq + diff * diff) );
+		if (2 * checkCount < maxCheck  ||  !result.full) {
+			heap.insert( BranchSt(otherChild, mindistsq + diff * diff) );
 		}
 	
 		/* Call recursively to search next level down. */
@@ -437,12 +434,12 @@ class KDTree(T) : NNIndex{
 		if (node.child1 == null  &&  node.child2 == null) {
 		
 			/* Do not check same node more than once when searching multiple trees.
-				Once a vector is checked, we set its location in this.vind to the
-				current this.checkID.
+				Once a vector is checked, we set its location in vind to the
+				current checkID.
 			*/
-			if (this.vind[node.divfeat] == this.checkID)
+			if (vind[node.divfeat] == checkID)
 				return;
-			this.vind[node.divfeat] = this.checkID;
+			vind[node.divfeat] = checkID;
 		
 			result.addPoint(vecs[node.divfeat],node.divfeat);
 			//CheckNeighbor(result, node.divfeat, vec);
@@ -468,7 +465,7 @@ class KDTree(T) : NNIndex{
 		void getClusterPoints_Helper(Tree node, inout T[][] points, inout int size) 
 		{
 			if (node.child1 == null && node.child2 == null) {
-				points[size++] = this.vecs[node.divfeat];
+				points[size++] = vecs[node.divfeat];
 			}
 			else {
 				getClusterPoints_Helper(node.child1,points,size);
@@ -492,7 +489,7 @@ class KDTree(T) : NNIndex{
 	{
 		Queue!(Tree) q = new Queue!(Tree)(numClusters);
 		
-		q.push(this.trees[0]);
+		q.push(trees[0]);
 
 		while(!q.full) {
 			Tree t;

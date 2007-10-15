@@ -19,6 +19,7 @@ import std.string;
 import std.boxer;
 
 import util.logger;
+import util.variant;
 
 template MAX(T) {
 	T MAX(T x, T y) { return x > y ? x : y; }
@@ -139,11 +140,29 @@ struct BranchStruct(T) {
 
 /*---------------parameters----------------------*/
 
-typedef Box[string] Params;
+class Params 
+{
+	Variant[string] data;
+	
+	Variant opIndex(string index) 
+	{
+		return data[index];
+	}
+	
+	void opIndexAssign(T)(T value, string index)
+	{
+		Variant v;
+		v = value;
+		data[index] = value;
+	}
+}
+
+
 
 void copyParams(T,U)(ref T a,U b,string[] params)
 {
 	foreach(param;params) {
+		
 		a[param] = b[param];
 	}
 }

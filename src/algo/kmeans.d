@@ -71,10 +71,10 @@ class KMeansTree(T) : NNIndex
 	
 	public this(Features!(T) inputData, Params params)
 	{
-		this.branching = unbox!(uint)(params["branching"]);
-		this.numTrees_ = unbox!(uint)(params["trees"]);
-		this.max_iter = unbox!(uint)(params["max-iterations"]);
-		centersAlgorithm = unbox!(string)(params["centers-algorithm"]);
+		this.branching = params["branching"].get!(uint);
+		this.numTrees_ = params["trees"].get!(uint);
+		this.max_iter = params["max-iterations"].get!(uint);
+		centersAlgorithm = params["centers-algorithm"].get!(string);
 		
 		this.vecs = inputData.vecs;
 		this.flength = inputData.veclen;
@@ -477,10 +477,11 @@ class KMeansTree(T) : NNIndex
 			
 			int checks = 0;			
 			BranchSt branch;
-			while (++checks<maxCheck && heap.popMin(branch)) {
+			while ((++checks<maxCheck || !result.full) && heap.popMin(branch)) {
 				KMeansNode node = branch.node;			
 				findNN(node, result, vec);
 			}
+			assert(result.full);
 		}
 	}
 	
