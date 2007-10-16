@@ -3,16 +3,17 @@ module commands.SampleCommand;
 import std.string;
 
 import commands.GenericCommand;
+import commands.DefaultCommand;
 import util.logger;
 import dataset.features;
 import output.console;
 
 
 static this() {
-	register_command(new SampleCommand(SampleCommand.NAME));
+ 	register_command!(SampleCommand);
 }
 
-class SampleCommand : GenericCommand
+class SampleCommand : DefaultCommand
 {
 	public static string NAME = "sample";
 	string file;

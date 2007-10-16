@@ -10,10 +10,7 @@ import util.timer;
 import util.logger;
 import util.profiler;
 import output.console;
-import output.ConsoleReporter;
-
-
-
+import output.report;
 
 
 void testNNIndex(NNIndex index, Features!(float) testData, int nn, int checks, uint skipMatches)
@@ -123,7 +120,6 @@ void testNNIndexPrecision(NNIndex index, Features!(float) testData, int nn, floa
 
 void testNNIndexExactPrecision(NNIndex index, Features!(float) testData, int nn, float precision, uint skipMatches)
 {
-	auto reporter = new ConsoleReporter();
 
 	Logger.log(Logger.INFO,"Searching... \n");
 
@@ -179,7 +175,7 @@ void testNNIndexExactPrecision(NNIndex index, Features!(float) testData, int nn,
 	
 	int cx = estimate(precision);
 	float realPrecision = search(cx,time);
-	while (abs(realPrecision-precision)>0.05) {
+	while (abs(realPrecision-precision)>0.1) {
 		if (realPrecision!=p[1]) {
 			p[0] = p[1];
 			c[0] = c[1];
@@ -199,10 +195,10 @@ void testNNIndexExactPrecision(NNIndex index, Features!(float) testData, int nn,
 	}
 	
 	
-	reporter["checks"] = cx;
-	reporter["match"] = realPrecision;
-	reporter["search_time"] = cast(double)time;
-	reporter.flush();
+	reportedValues["checks"] = cx;
+	reportedValues["match"] = cast(double)realPrecision;
+	reportedValues["search_time"] = cast(double)time;
+	flush_reporters();
 
 
 	Logger.log(Logger.SIMPLE,"  %5d     %6.2f      %6.2f      %6.3f\n",

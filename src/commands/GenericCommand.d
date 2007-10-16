@@ -6,12 +6,15 @@ import util.optparse;
 import util.utils;
 import util.variant;
 
-private GenericCommand[string] commands;
+private {
+alias GenericCommand function() CommandMaker;
+CommandMaker[string] commands;
+}
 
 public:
-void register_command(GenericCommand command)
+void register_command(alias Command)()
 {
-	commands[command.name] = command;
+	commands[Command.NAME] = function() {static GenericCommand c; if (c is null ) c =  new Command(Command.NAME); return c;};
 }
 
 void execute_command(string commandName, string[] args)
@@ -19,7 +22,7 @@ void execute_command(string commandName, string[] args)
 	if (!(commandName in commands)) {
 		throw new Exception("Unknown command: "~commandName);
 	}
-	commands[commandName].executeCommand(args);
+	commands[commandName]().executeCommand(args);
 }
 
 string[] get_commands()
@@ -29,7 +32,7 @@ string[] get_commands()
 
 GenericCommand get_command(string commandName)
 {
-	return *(commandName in commands);
+	return (*(commandName in commands))();
 }
 
 bool is_command(string name)
@@ -48,15 +51,10 @@ abstract class GenericCommand
 	OptionParser optParser;
 	void*[string] params;
 	string[] positionalArgs;
-	
-	bool help;
-
-	
+		
 	this(string name) {
 		this.name = name;
 		optParser = new OptionParser();
-		
-		register(help,"h","help",null,"Display help message");
 	}
 	
 	void register(T,U)(ref T param, string shortName, string longName, U defaultValue, string description)
@@ -93,11 +91,7 @@ abstract class GenericCommand
 			}
 		}
 		
-		if (help) {
-			showHelp();
-		} else {
-			execute();
-		}
+		executeDefault();
 	}
 	
 	void showHelp()
@@ -112,5 +106,5 @@ abstract class GenericCommand
 	}
 	
 	
-	public void execute();
+	protected void executeDefault();
 }

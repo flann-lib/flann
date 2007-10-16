@@ -3,13 +3,14 @@ module commands.HelpCommand;
 import std.string;
 
 import commands.GenericCommand;
+import commands.DefaultCommand;
 import util.logger;
 
 static this() {
-	register_command(new HelpCommand(HelpCommand.NAME));
+ 	register_command!(HelpCommand);
 }
 
-class HelpCommand : GenericCommand
+class HelpCommand : DefaultCommand
 {
 	public static string NAME = "help";
 	
@@ -54,19 +55,13 @@ class HelpCommand : GenericCommand
 	{
 		string[] commands = get_commands();
 		foreach (command;commands) {
-			if (command != "default_command") {
-				writefln("\t",command);
-			}
+			writefln("\t",command);
 		}
 	}
 
 	private void showProgramHelp(string programName)
 	{
-		writefln("Usage: %s [global_options] [command command_options]", programName);
-		writefln();
-		
-		writefln("Global options:");
-		get_command("default_command").optParser.showHelp();
+		writefln("Usage: %s [command command_options]", programName);
 		writefln();
 		
 		writefln("Commands:");

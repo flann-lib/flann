@@ -13,7 +13,7 @@ import output.console;
 
 
 static this() {
-	register_command(new ComputeNNCommand(ComputeNNCommand.NAME));
+ 	register_command!(ComputeNNCommand);
 }
 
 class ComputeNNCommand : IndexCommand

@@ -16,7 +16,7 @@ import output.console;
 
 
 static this() {
-	register_command(new ComputeClustersCommand(ComputeClustersCommand.NAME));
+ 	register_command!(ComputeClustersCommand);
 }
 
 class ComputeClustersCommand : IndexCommand

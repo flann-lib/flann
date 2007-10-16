@@ -473,7 +473,7 @@ struct Variant
         return type.compare(data.ptr, rhs.data.ptr);
     }
 
-    public void[] data()
+    public	 void[] data()
     {
         if( type.tsize <= value.data.length )
             return cast(void[])(value.data);
@@ -490,7 +490,7 @@ struct Variant
     else
         alias toStringImpl toString;
 
-    private char[] toStringImpl()
+    public char[] toStringImpl()
     {
         // Special case: void type
         if( type is typeid(void) )
@@ -509,7 +509,7 @@ struct Variant
         else if( type is typeid(dchar[]) )
         {
             return .toUTF8(get!(dchar[]));
-        }
+        }	
         else if (type is typeid(float))
         {
         	return .toString(value._float);

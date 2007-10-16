@@ -31,16 +31,15 @@ void main(char[][] args)
 	}
 	
 	int index = 1;
-	while (index<args.length && !is_command(args[index]) ) index++;
-	execute_command("default_command",args[1..index]);
-	if (index<args.length) {
+	if ( index<args.length || !is_command(args[index]) ) {
 		if (args[index]=="help" && index+1==args.length) {
 			execute_command("help",args[0..1]);
 		}
 		else {
 			execute_command(args[index],args[index+1..$]);
 		}
-	} else {
+	} 
+	else {
 		execute_command("help",args[0..1]);
 	}
 	

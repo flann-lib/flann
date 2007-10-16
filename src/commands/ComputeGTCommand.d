@@ -1,14 +1,15 @@
 module commands.ComputeGTCommand;
 
 import commands.GenericCommand;
+import commands.DefaultCommand;
 import dataset.compute_gt;
 import util.logger;
 
 static this() {
-	register_command(new ComputeGTCommand(ComputeGTCommand.NAME));
+ 	register_command!(ComputeGTCommand);
 }
 
-class ComputeGTCommand : GenericCommand
+class ComputeGTCommand : DefaultCommand
 {
 	public static string NAME = "compute_gt";
 	string inputFile;

@@ -4,7 +4,7 @@ import std.string;
 import std.boxer;
 
 import commands.GenericCommand;
-import commands.IndexCommand;
+import commands.DefaultCommand;
 import util.logger;
 import util.registry;
 import util.utils;
@@ -17,10 +17,10 @@ import output.console;
 
 
 static this() {
-	register_command(new TestBranching(TestBranching.NAME));
+ 	register_command!(TestBranching);
 }
 
-class TestBranching : GenericCommand
+class TestBranching : DefaultCommand
 {
 	public static string NAME = "test_branching";
 	
@@ -85,6 +85,7 @@ class TestBranching : GenericCommand
 		if (testData is null) {
 			throw new Exception("No test data given.");
 		}
+		
 		
 		if (matchFile != "") {
 			testData.readMatches(matchFile);

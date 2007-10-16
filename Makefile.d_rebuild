@@ -3,17 +3,21 @@
 
 WARNS = -W -Wall
 INCLUDES = -Iinclude
-#LIBS = -llblas
+LIBS = -llsqlite3
 
 
-ifdef UNIT_TEST
-	DFLAGS := ${DFLAGS} -unittest -debug
-endif
+
 
 include Makefile.platform
 
+ifdef UNIT_TEST
+	DFLAGS := ${DFLAGS} -unittest -debug 
+endif
+
+DFLAGS := ${DFLAGS} -version=Phobos
+
 ifeq ($(PROFILER),gprof)
-	DFLAGS := ${{DFLAGS} -q,-pg -K-q,-pg
+	DFLAGS := ${DFLAGS} -q,-pg -K-q,-pg
 endif
 	
 ifeq ($(CONFIGURATION),debug)
@@ -27,6 +31,7 @@ endif
 # --------------------- Dirs  ----------------------------
 
 SRC_DIR = src
+LIBS_DIR = libs
 BUILD_DIR = $(HOME)/tmp/${TARGET}_build
 DEPS_DIR = ${BUILD_DIR}/deps
 OBJ_DIR = ${BUILD_DIR}/obj
@@ -39,13 +44,7 @@ MAIN_FILE=${SRC_DIR}/main.d
 
 # ------------------------ Rules --------------------------------
 
-all: prepare compile
-#all:
-#	@echo $(OBJ)
-
-
-prepare:
-	@if [ -f build_file_list ] ; then rm build_file_list; fi
+all: compile
 
 clean:
 	rm -rf ${BUILD_DIR}/*
@@ -55,6 +54,6 @@ rebuild: clean all
 .PHONY: clean all rebuild prepare compile
 
 compile:
-	 ${BIN_DIR}/rebuild -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} ${LIBS} -of${TARGET} ${DFLAGS} 
+	 ${BIN_DIR}/rebuild -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${TARGET} ${DFLAGS} ${LIBS}
 
 

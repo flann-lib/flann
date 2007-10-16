@@ -13,10 +13,11 @@ import dataset.features;
 import algo.nnindex;
 import algo.kmeans;
 import output.console;
+import output.report;
 
 
 static this() {
-	register_command(new RunTestCommand(RunTestCommand.NAME));
+ 	register_command!(RunTestCommand);
 }
 
 class RunTestCommand : IndexCommand
@@ -72,6 +73,8 @@ class RunTestCommand : IndexCommand
 		if (testData.match is null) {
 			throw new Exception("There are no correct matches to compare to, aborting test phase.");
 		}
+		
+		reportedValues["test_count"] = testData.count;
 
 		if (precision>0) {
 			assert(precision<=100);

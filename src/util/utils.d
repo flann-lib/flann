@@ -152,8 +152,63 @@ struct Params
 	{
 		Variant v;
 		v = value;
-		data[index] = value;
+		data[index] = v;
 	}
+	
+	int opApply(int delegate(ref Variant) dg)
+    {   
+    	int result = 0;
+
+		foreach (elem;data)
+		{
+			result = dg(elem);
+			if (result) break;
+		}
+		return result;
+    }
+}
+
+
+
+struct OrderedParams
+{
+	Params values;
+	private string[] order;
+	
+	Variant opIndex(string index) 
+	{
+		return values[index];
+	}
+	
+	void opIndexAssign(T)(T value, string name) 
+	{
+		order ~= name;
+		values[name] = value;
+	}
+
+	int opApply(int delegate(ref Variant) dg)
+    {   
+    	int result = 0;
+
+		for (int index;index<order.length;++index)
+		{
+			result = dg(values[order[index]]);
+			if (result) break;
+		}
+		return result;
+    }
+	
+	int opApply(int delegate(ref string, ref Variant) dg)
+    {   
+    	int result = 0;
+
+		for (int index;index<order.length;++index)
+		{
+			result = dg(order[index],values[order[index]]);
+			if (result) break;
+		}
+		return result;
+    }
 }
 
 

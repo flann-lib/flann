@@ -4,6 +4,7 @@ import std.string;
 import std.c.stdlib;
 
 import commands.GenericCommand;
+import commands.DefaultCommand;
 import util.logger;
 import util.registry;
 import util.utils;
@@ -11,13 +12,11 @@ import util.profiler;
 import dataset.features;
 import algo.all;
 import output.console;
+import output.report;
 
 
-static this() {
-//	register_command(new IndexCommand(IndexCommand.NAME));
-}
 
-class IndexCommand : GenericCommand
+class IndexCommand : DefaultCommand
 {
 	public static string NAME = "create_index";
 	
@@ -98,6 +97,10 @@ class IndexCommand : GenericCommand
 				inputData!(T).readFromFile(inputFile);
 			});
 		}
+		
+		reportedValues["dataset"] = inputFile;
+		reportedValues["input_count"] = inputData!(T).count;
+		reportedValues["input_size"] = inputData!(T).veclen;
 	
 		if (inputData!(T) is null) {
 			throw new Exception("No input data given.");
@@ -108,12 +111,19 @@ class IndexCommand : GenericCommand
 		Params params;		
 		copyParams(params,optParser,["trees","branching", "centers-algorithm","max-iterations"]);
 		
+		reportedValues["trees"] = params["trees"];
+		reportedValues["branching"] = params["branching"];
+		reportedValues["max_iterations"] = params["max-iterations"];
+		reportedValues["algorithm"] = algorithm;
+		
 		index = indexRegistry!(T)[algorithm](inputData!(T), params);
 		
 		Logger.log(Logger.INFO,"Building index... \n");
 		float indexTime = profile({
 			index.buildIndex();
 		});
+		
+		reportedValues["cluster_time"] = indexTime;
 		
 		Logger.log(Logger.INFO,"Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);

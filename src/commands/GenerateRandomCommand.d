@@ -1,16 +1,17 @@
 module commands.GenerateRandomCommand;
 
 import commands.GenericCommand;
+import commands.DefaultCommand;
 
 import util.logger;
 import dataset.dataset_generator;
 
 
 static this() {
-	register_command(new GenerateRandomCommand(GenerateRandomCommand.NAME));
+  	register_command!(GenerateRandomCommand);
 }
 
-class GenerateRandomCommand : GenericCommand
+class GenerateRandomCommand : DefaultCommand
 {
 	public static string NAME = "generate_random";
 	string file;

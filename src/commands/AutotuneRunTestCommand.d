@@ -4,6 +4,7 @@ import std.string;
 import std.c.stdlib;
 
 import commands.GenericCommand;
+import commands.DefaultCommand;
 import util.logger;
 import util.registry;
 import util.utils;
@@ -17,10 +18,10 @@ import output.console;
 
 
 static this() {
-	register_command(new AutotuneRunTestCommand(AutotuneRunTestCommand.NAME));
+ 	register_command!(AutotuneRunTestCommand);
 }
 
-class AutotuneRunTestCommand : GenericCommand
+class AutotuneRunTestCommand : DefaultCommand
 {
 	public static string NAME = "autotune_run_test";
 	

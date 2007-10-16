@@ -4,27 +4,43 @@ import std.string;
 
 import commands.GenericCommand;
 import util.logger;
+import output.report;
 
-static this() {
-	register_command(new DefaultCommand(DefaultCommand.NAME));
-}
 
-class DefaultCommand : GenericCommand
+abstract class DefaultCommand : GenericCommand
 {
-	public static string NAME = "default_command";
 	string verbosity;
+	string reporters;
+	bool help;
 	
 	this(string name) {
 		super(name);
 		register(verbosity,"v","verbosity","info","The program verbosity.(info,error...)");
+		register(reporters,"e","reporters","","Comma-delimited list of reporters to use.");
+		register(help,"h","help",null,"Display help message");
 	}
 	
-	void execute()
+	void executeDefault()
 	{
+		if (help) {
+			showHelp();
+			return;
+		} 
+		
 		string[] logLevels = split(verbosity,",");
 		foreach (logLevel;logLevels) {
 			Logger.enableLevel(strip(logLevel));
 		}
+		
+		string[] reporterList = split(reporters,",");
+		foreach (reporter;reporterList) {
+			activate_reporter(reporter);
+		}
+		
+		execute();
 	}
+	
+	
+	public void execute();
 
 }
