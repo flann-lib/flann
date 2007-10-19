@@ -19,7 +19,7 @@ class SqliteRepoter : ResultReporter
 	public void flush(OrderedParams values) 
 	{
 		auto db = new SqliteDatabase();
-	    db.connect(output);
+	   db.connect(output);
 
 		string fields = "";
 		string vals = "";			

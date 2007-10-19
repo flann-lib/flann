@@ -223,6 +223,10 @@
       <includePaths>.;</includePaths>
       <parseMissingHeadersExperimental>false</parseMissingHeadersExperimental>
       <resolveIncludePathsUsingMakeExperimental>false</resolveIncludePathsUsingMakeExperimental>
+      <includeGlobalFunctions>true</includeGlobalFunctions>
+      <includeTypes>true</includeTypes>
+      <includeEnums>true</includeEnums>
+      <includeTypedefs>false</includeTypedefs>
     </codecompletion>
     <creategettersetter>
       <prefixGet/>

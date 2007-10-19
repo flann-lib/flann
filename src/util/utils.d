@@ -145,6 +145,9 @@ struct Params
 	
 	Variant opIndex(string index) 
 	{
+		if (!(index in data)) {
+			throw new Exception("Cannot find param index:"~index);
+		}
 		return data[index];
 	}
 	
@@ -166,6 +169,11 @@ struct Params
 		}
 		return result;
     }
+    
+//     string toString() 
+//     {
+//     	return .toString(data);
+//     }
 }
 
 

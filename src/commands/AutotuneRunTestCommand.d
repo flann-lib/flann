@@ -108,13 +108,8 @@ class AutotuneRunTestCommand : DefaultCommand
 
 		Params params = estimateOptimalParams!(T)(inputData!(T), testData, precision, indexFactor);
 		
-		string algorithm = params["algorithm"].get!(string);
-		
-/+		if (!byteFeatures) {
-			index = indexRegistry[algorithm](inputData, params);
-		} else {
-			index = new KMeansTree!(ubyte)(inputDataByte,params);
-		}+/
+ 		string algorithm = params["algorithm"].get!(string);
+		index = indexRegistry!(T)[algorithm](inputData!(T), params);
 		
 		Logger.log(Logger.INFO,"Building index... \n");
 		float indexTime = profile( {
