@@ -139,6 +139,8 @@ class IndexCommand : DefaultCommand
 	
 	void execute() 
 	{
+		reportedValues["byte_features"] = byteFeatures?1:0;
+		
 		if (byteFeatures) {
 			executeWithType!(ubyte)();
 		} else {
