@@ -122,53 +122,57 @@ void testNNIndexExactPrecision(NNIndex index, Features!(float) testData, int nn,
 {
 
 	Logger.log(Logger.INFO,"Searching... \n");
-
-	ResultSet resultSet = new ResultSet(nn+skipMatches);
-
  	Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
  			" checked   neighbors   (seconds)      (ms)\n"
  			" -------   ---------   ---------  -----------\n");
-	
+
+	ResultSet resultSet = new ResultSet(nn+skipMatches);
+
 	float search(int checks, out float time) {
 		int correct = 0;
 		time = profile( {
-		for (int i = 0; i < testData.count; i++) {
-			resultSet.init(testData.vecs[i]);
-			index.findNeighbors(resultSet,testData.vecs[i], checks);			
-			int nn_index = resultSet.getPointIndex(0+skipMatches);
-			
-			if (nn_index == testData.match[i]) {
-				correct++;
+			for (int i = 0; i < testData.count; i++) {
+				resultSet.init(testData.vecs[i]);
+				index.findNeighbors(resultSet,testData.vecs[i], checks);			
+				int nn_index = resultSet.getPointIndex(0+skipMatches);
+				
+				if (nn_index == testData.match[i]) {
+					correct++;
+				}
 			}
-		}
 		});
 		
-		float performance = 100*cast(float)correct/testData.count;
+		float precision = 100*cast(float)correct/testData.count;
 		
 		Logger.log(Logger.INFO,"  %5d     %6.2f      %6.2f      %6.3f\n",
-				checks, performance,
+				checks, precision,
 				time, 1000.0 * time / testData.count);
-		
-		
-		return performance;
+				
+		return precision;
 	}
+
+
+
+
+	
 
 	int[2] c;
 	float[2] p;	
 	float time;
 	
 	c[0] = 1;
-	c[1] = 2;
+	c[1] = 3;
 	
 	p[0] = search(c[0],time);
 	p[1] = search(c[1],time);
 	
 	
 	int estimate(float px) {
-		real a = pow(p[1]/p[0],1.0/(c[1]-c[0]));
-		real b = pow(a,c[1])/p[1];
+		real a = pow(c[1]/c[0],1.0/(p[0]-p[1]));
+		real b = pow(a,100-p[1])/c[1];
 		
-		real cx = log(b*px)/log(a);
+		real cx = pow(a,100-px)/b;
+		writefln("a=",a," b=",b);
 		
 		return cast(int) cx;
 	}
@@ -176,19 +180,19 @@ void testNNIndexExactPrecision(NNIndex index, Features!(float) testData, int nn,
 	int cx = estimate(precision);
 	float realPrecision = search(cx,time);
 	while (abs(realPrecision-precision)>0.15) {
-		if (realPrecision!=p[1]) {
+/+		if (realPrecision!=p[1]) {
 			p[0] = p[1];
 			c[0] = c[1];
-		}
+		}+/
 		c[1] = cx;
 		p[1] = realPrecision;
 		int new_cx = estimate(precision);
-		if (cx==new_cx) {
+/+		if (cx==new_cx) {
 			new_cx += precision>realPrecision?1:-1;
 		}
 		if (new_cx==c[0]) {
 			break;	
-		}
+		}+/
 		
 		cx=new_cx;
 		realPrecision = search(cx,time);
