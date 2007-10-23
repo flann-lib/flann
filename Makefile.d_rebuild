@@ -3,7 +3,7 @@
 
 WARNS = -W -Wall
 INCLUDES = -Iinclude
-LIBS = -llsqlite3
+LIBS = -llsqlite3 -lldl
 
 
 

@@ -19,17 +19,22 @@ class SqliteRepoter : ResultReporter
 	public void flush(OrderedParams values) 
 	{
 		auto db = new SqliteDatabase();
-	   db.connect(output);
+		db.connect(output);
 
 		string fields = "";
 		string vals = "";			
 		foreach (name,value; values) {
 			fields ~= (name~",");
-			vals ~= ("'"~value.toString()~"',");
+			if (value.isA!(string)) {
+				vals ~= ("'"~value.toString()~"',");
+			}
+			else {
+				vals ~= (value.toString()~",");
+			}
 		}
 		
 		string query = "INSERT INTO results("~fields[0..$-1]~") VALUES ("~vals[0..$-1]~")";
-//  		writefln(query);
+  		writefln(query);
 		db.execute(query);
 		
 		db.close();
