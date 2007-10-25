@@ -121,14 +121,9 @@ class TestBranching : DefaultCommand
 				index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
 			Logger.log(Logger.SIMPLE,"%f\n",indexTime);
 		
-			testNNIndexExactPrecision(index,testData, nn, precision, skipMatches);
+			testNNIndexExactPrecision!(true,true)(index,testData, nn, precision, skipMatches);
 		}
-		
-
-
 	}	
-	
-	
 	
 	void execute() 
 	{
@@ -138,7 +133,4 @@ class TestBranching : DefaultCommand
 			executeWithType!(float)();
 		}		
 	}
-	
-
-	
 }

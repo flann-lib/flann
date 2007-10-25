@@ -50,6 +50,7 @@ abstract class GenericCommand
 	
 	OptionParser optParser;
 	void*[string] params;
+	int[string] sizes;
 	string[] positionalArgs;
 		
 	this(string name) {
@@ -66,14 +67,16 @@ abstract class GenericCommand
 		else static if ( is(T == bool) )
 			static if ( is (U == bool) )
 				opt = new BoolOption(shortName, longName, longName, defaultValue, argName);
-			else
+			else {
 				opt = new FlagTrueOption(shortName, longName, longName);
+			}
 		else static if ( is(T : real) )
 			opt = new NumericOption!(T)(shortName, longName, longName,defaultValue, argName);
 		else static assert(0);
 		opt.helpMessage = description;
 		optParser.addOption(opt);
 		params[longName] = &param;
+		sizes[longName] = param.sizeof;
 	}	
 	
 	private void executeCommand(string[] args) 
@@ -87,7 +90,7 @@ abstract class GenericCommand
 			Variant b = optParser[o.longName];
 			void[] pData = b.data;
 			if (o.longName in params) {
-				params[o.longName][0..pData.length] = pData;
+				params[o.longName][0..sizes[o.longName]] = pData;
 			}
 		}
 		

@@ -23,10 +23,10 @@ src/util/heap.d
 src/util/logger.d
 src/util/optparse.d
 src/util/random.d
+src/util/registry.d
 src/util/resultset.d
 src/util/unused
 src/util/unused/debuger.d
 src/util/unused/gpdebuger.d
 src/util/utils.d
 src/util/vector.d
-src/util/registry.d

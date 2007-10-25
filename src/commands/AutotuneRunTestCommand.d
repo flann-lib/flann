@@ -121,7 +121,7 @@ class AutotuneRunTestCommand : DefaultCommand
 		Logger.log(Logger.SIMPLE,"%f\n",indexTime);
 
 		uint checks = params["checks"].get!(int);
-		testNNIndex(index,testData, nn, checks, skipMatches);
+		testNNIndex!(true)(index,testData, nn, checks, skipMatches);
 	}
 	
 	void execute() 

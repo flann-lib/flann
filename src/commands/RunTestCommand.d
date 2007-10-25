@@ -31,6 +31,7 @@ class RunTestCommand : IndexCommand
 	int[] checks;
 	double precision;
 	uint skipMatches;
+	bool altEstimator = false;
 
 	this(string name) 
 	{
@@ -40,6 +41,7 @@ class RunTestCommand : IndexCommand
 		register(nn,"n","nn", 1,"Number of nearest neighbors to search for.");
 		register(checkList,"c","checks", "32","Number of times to restart search (in best-bin-first manner).");
 		register(precision,"P","precision", -1,"The desired precision.");
+		register(altEstimator,"A","alternative-estimator", null,"Use alternative precision estimator.");
 		register(skipMatches,"K","skip-matches", 0u,"Skip the first NUM matches at test phase.");
  			
  		description = super.description~" Test the index against the test dataset (ground truth given in the match file).";
@@ -76,13 +78,20 @@ class RunTestCommand : IndexCommand
 		
 		reportedValues["test_count"] = testData.count;
 
+		writefln("AltEstimator: ",altEstimator);
 		if (precision>0) {
 			assert(precision<=100);
-			testNNIndexExactPrecision(index,testData, nn, precision, skipMatches);
+ 			if (altEstimator) {
+ 				testNNIndexPrecision!(true,true)(index,testData, nn, precision, skipMatches);
+ 			}
+ 			else {
+	 			testNNIndexExactPrecision!(true,true)(index,testData, nn, precision, skipMatches);
+ 			}
+ 			
 		}
 		else {
 			foreach (c;checks) {
-				testNNIndex(index,testData, nn, c, skipMatches);
+				testNNIndex!(true)(index,testData, nn, c, skipMatches);
 			}
 		}
 

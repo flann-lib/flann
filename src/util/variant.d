@@ -473,7 +473,7 @@ struct Variant
         return type.compare(data.ptr, rhs.data.ptr);
     }
 
-    public	 void[] data()
+    public void[] data()
     {
         if( type.tsize <= value.data.length )
             return cast(void[])(value.data);

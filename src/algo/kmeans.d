@@ -501,7 +501,7 @@ class KMeansTree(T) : NNIndex
 			float val = bsq-rsq-wsq;
 			float val2 = val*val-4*rsq*wsq;
 			
-	//  		if (val>0) {
+	 		//if (val>0) {
 			if (val>0 && val2>0) {
 				return;
 			}

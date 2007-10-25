@@ -157,7 +157,6 @@ struct Params
 		v = value;
 		data[index] = v;
 	}
-	
 	int opApply(int delegate(ref Variant) dg)
     {   
     	int result = 0;
@@ -170,12 +169,30 @@ struct Params
 		return result;
     }
     
+   	int opApply(int delegate(ref string, ref Variant) dg)
+    {   
+    	int result = 0;
+
+		foreach (key,elem;data)
+		{
+			result = dg(key,elem);
+			if (result) break;
+		}
+		return result;
+    }
+
 //     string toString() 
 //     {
 //     	return .toString(data);
 //     }
 }
 
+void copy(ref Params a,Params b)
+{
+	foreach(k,v;b) {
+		a[k] = v;
+	}
+}
 
 
 struct OrderedParams

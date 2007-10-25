@@ -1,6 +1,7 @@
 module nn.autotune;
 
 import std.stdio;
+import std.math;
 
 import dataset.features;
 import util.utils;
@@ -81,9 +82,6 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 	}
 
 	
-	
-	
-	
 	// subsample datasets
 	Features!(T) sampledDataset = inputDataset.sample(inputDataset.count/scaleFactor, false);
 	Features!(float) sampledTestDataset = testDataset.sample(testDataset.count/scaleFactor,false);	
@@ -121,12 +119,15 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 // 				Logger.log(Logger.INFO,params);
 				
 				if (cost<kmeansCost) {
-					kmeansParams = params;
+					copy(kmeansParams,params);
 					kmeansCost = cost;
+					
 				}
+			Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");	
 			}
 		}
 // 		Logger.log(Logger.INFO,"Best KMeans params: ",kmeansParams,"\n");
+//		Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");
 	}
 	
 	Params kdtreeParams;
@@ -151,13 +152,12 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 // 				Logger.log(Logger.INFO,params);
 			
 			if (cost<kdtreeCost) {
-				kdtreeParams = params;
+				copy(kdtreeParams,params);
 				kdtreeCost = cost;
 			}
 		}
 // 		Logger.log(Logger.INFO,"Best kdtree params: ",kdtreeParams,"\n");
 	}
-
 
 	if (kmeansCost<kdtreeCost) {
 		return kmeansParams;
