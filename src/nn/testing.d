@@ -23,7 +23,7 @@ float search(int checks, out float time)
 	for (int i = 0; i < testData.count; i++) {
 		resultSet.init(testData.vecs[i]);
 		index.findNeighbors(resultSet,testData.vecs[i], checks);			
-		int nn_index = resultSet.getPointIndex(0+skipMatches);
+		int nn_index = resultSet.getPointIndex(skipMatches);
 		
 		if (nn_index == testData.match[i]) {
 			correct++;
@@ -48,7 +48,7 @@ float search(int checks, out float time)
 
 
 
-void testNNIndex(bool withOutput)(NNIndex index, Features!(float) testData, int nn, int checks, uint skipMatches)
+float testNNIndex(bool withOutput)(NNIndex index, Features!(float) testData, int checks, int nn = 1, uint skipMatches = 0)
 {
 	
 	static if (withOutput)
@@ -73,10 +73,12 @@ void testNNIndex(bool withOutput)(NNIndex index, Features!(float) testData, int 
 				time, 1000.0 * time / testData.count);
 	}
 
+	return time;
 }
 
 
-void testNNIndexPrecision(bool withOutput, bool withReporting)(NNIndex index, Features!(float) testData, int nn, float precision, uint skipMatches)
+float testNNIndexPrecision(bool withOutput, bool withReporting)
+						(NNIndex index, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
 {	
 	static if (withOutput) {
 		Logger.log(Logger.INFO,"Searching... \n");
@@ -84,9 +86,11 @@ void testNNIndexPrecision(bool withOutput, bool withReporting)(NNIndex index, Fe
 				" checked   neighbors   (seconds)      (ms)\n"
 				" -------   ---------   ---------  -----------\n");
 	}
+	
+	
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
 	
-	mixin search!(true);
+	mixin search!(withOutput);
 
 	int c2 = 1;
 	float p2;
@@ -108,7 +112,7 @@ void testNNIndexPrecision(bool withOutput, bool withReporting)(NNIndex index, Fe
 	int cx;
 	float realPrecision;
 	if (abs(p2-precision)>SEARCH_EPS) {
-		writefln("Start linear estimation");
+		static if (withOutput) writefln("Start linear estimation");
 		// after we got to values in the vecibity of the desired precision
 		// use linear approximation get a better estimation
 			
@@ -124,21 +128,39 @@ void testNNIndexPrecision(bool withOutput, bool withReporting)(NNIndex index, Fe
 				cx += precision>realPrecision?1:-1;
 			}
 			if (cx==c1) {
-				writefln("Got as close as I can");
+				static if (withOutput) writefln("Got as close as I can");
 				break;
 			}
 			realPrecision = search(cx,time);
 		}
 		
 	} else {
-		writefln("No need for linear estimation");
+		static if (withOutput) writefln("No need for linear estimation");
 		cx = c2;
 		realPrecision = p2;
 	}
+	
+	static if (withReporting) {
+		reportedValues["checks"] = cx;
+		reportedValues["match"] = cast(double)realPrecision;
+		reportedValues["search_time"] = cast(double)time;
+		flush_reporters();
+	}
+	
+	static if (withOutput) {
+		Logger.log(Logger.SIMPLE,"  %5d     %6.2f      %6.2f      %6.3f\n",
+					cx, realPrecision,
+					time, 1000.0 * time / testData.count);
+	}
+		
+	checks = cx;
+	return time;
 }
 
-float testNNIndexExactPrecision(bool withOutput, bool withReporting)(NNIndex index, Features!(float) testData, int nn, 
-												float precision, uint skipMatches)
+
+
+float testNNIndexPrecisionAlt(bool withOutput, bool withReporting)
+						(NNIndex index, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
 {
 	static if (withOutput) {
 		Logger.log(Logger.INFO,"Searching... \n");
@@ -149,7 +171,7 @@ float testNNIndexExactPrecision(bool withOutput, bool withReporting)(NNIndex ind
 
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
 	
-	mixin search!(true);
+	mixin search!(withOutput);
 
 	int estimate(int[] checks, float[] precision, int count, float desiredPrecision) {
 		
@@ -285,6 +307,7 @@ float testNNIndexExactPrecision(bool withOutput, bool withReporting)(NNIndex ind
 					time, 1000.0 * time / testData.count);
 	}
 
+	checks = cx;
 	return time;
 }
 

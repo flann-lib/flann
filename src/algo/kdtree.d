@@ -199,12 +199,15 @@ class KDTree(T) : NNIndex{
 	*/
 	private void ChooseDivision(Tree node, int first, int last)
 	{
-		static float[] mean, var;
+		mixin(allocate_static("float[veclen] mean;"));
+		mixin(allocate_static("float[veclen] var;"));
+		
+/+		static float[] mean, var;
 		if (mean==null) {
 			mean = allocate!(float[])(veclen);
 			var = allocate!(float[])(veclen);
 		}
-		
+		+/
 		mean[] = 0.0;
 		var[] = 0.0;
 		
@@ -470,7 +473,7 @@ class KDTree(T) : NNIndex{
 				getClusterPoints_Helper(node.child2,points,size);
 			}
 		}
-			
+		
 		static T[][] points;
 		if (points==null) {
 			points = allocate!(T[][])(vcount);

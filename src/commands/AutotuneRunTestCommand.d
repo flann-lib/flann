@@ -105,23 +105,23 @@ class AutotuneRunTestCommand : DefaultCommand
 		if (testData.match is null) {
 			throw new Exception("There are no correct matches to compare to, aborting test phase.");
 		}
-
-		Params params = estimateOptimalParams!(T)(inputData!(T), testData, precision, indexFactor);
 		
- 		string algorithm = params["algorithm"].get!(string);
-		index = indexRegistry!(T)[algorithm](inputData!(T), params);
+		Params buildParams = estimateBuildIndexParams!(T)(inputData!(T), precision, nn, indexFactor);
+		
+ 		string algorithm = buildParams["algorithm"].get!(string);
+		index = indexRegistry!(T)[algorithm](inputData!(T), buildParams);
 		
 		Logger.log(Logger.INFO,"Building index... \n");
 		float indexTime = profile( {
 			index.buildIndex();
 		});
-		
 		Logger.log(Logger.INFO,"Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
 		Logger.log(Logger.SIMPLE,"%f\n",indexTime);
+		
+		uint checks = estimateSearchParams!(T)(index, inputData!(T), precision, nn);
 
-		uint checks = params["checks"].get!(int);
-		testNNIndex!(true)(index,testData, nn, checks, skipMatches);
+		testNNIndex!(true)(index,testData, checks, nn, skipMatches);
 	}
 	
 	void execute() 

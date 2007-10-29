@@ -89,7 +89,6 @@ class IndexCommand : DefaultCommand
 // 		index = index2;+/
 // 		Logger.log(Logger.INFO,"done\n");
 // 		}
-
 		
 		if (inputFile != "") {
 			showOperation( "Reading input data from %s".format(inputFile), {
@@ -140,7 +139,7 @@ class IndexCommand : DefaultCommand
 	void execute() 
 	{
 		reportedValues["byte_features"] = byteFeatures?1:0;
-		
+
 		if (byteFeatures) {
 			executeWithType!(ubyte)();
 		} else {

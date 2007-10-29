@@ -56,7 +56,36 @@ public T allocate_once(T, A...)(A a) {
 }
 
 
+string allocate_static(string declaration)
+{
+	int pos;
+	for (pos = 0; pos<declaration.length;++pos) {
+		if (declaration[pos]=='[') break;
+	}
+	string type = declaration[0..pos];
+	int pos2;
+	pos++;
+	for (pos2 = pos; pos2<declaration.length;++pos2) {
+		if (declaration[pos2]==']') break;
+	}
+	string size = declaration[pos..pos2];
+	
+	for (pos = pos2+1; pos<declaration.length;++pos) {
+		if (declaration[pos]==' ') continue;
+		break;
+	}
+	for (pos2 = pos; pos2<declaration.length;++pos2) {
+		if (declaration[pos2]==';') break;
+	}
+	
+	string vec = declaration[pos..pos2];
 
+	return 	
+	"static "~type~"[] "~vec~";
+	if ("~vec~" is null || "~vec~".length!="~size~") {
+		"~vec~" = allocate!("~type~"[])("~size~");
+	}";
+}
 
 
 

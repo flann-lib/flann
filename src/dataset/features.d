@@ -64,7 +64,7 @@ class Features(T = float) {
 			BINARY_FILE	
 		} 
 
-		private signature sig;
+		signature sig;
 
 		int count;         /* Number of vectors. */
 		int veclen;         /* Length of each vector. */
@@ -74,6 +74,7 @@ class Features(T = float) {
 
 		public this() {}
 		
+		
 		public this(int size) 
 		{
 			this.count = size;
@@ -81,7 +82,15 @@ class Features(T = float) {
 			match = allocate!(int[])(size);
 		}
 
-
+		public void init(U)(Features!(U) dataset) 
+		{
+			this.count = dataset.count;
+			this.veclen = dataset.veclen;
+			vecs = allocate_mat!(T[][])(count,veclen);
+			foreach (index,vec;dataset.vecs) {
+				array_copy(vecs[index],vec);
+			}			
+		}
 
 	int readValue(U) (FILE* f, inout U value) {
 		throw new Exception("readValue not implemented for type: "~U.stringof);
@@ -201,40 +210,59 @@ class Features(T = float) {
 	}
 	
 	
+	private string readLine(FILE* fp, char[] buffer)
+	{
+		const int INIT_SIZE = 1024;
+		
+		if (buffer.length==0) {
+			buffer.length = INIT_SIZE;
+		}
+		
+		char* ret = fgets(buffer.ptr,buffer.length,fp);
+		if (ret==null) {
+			return null;
+		}
+		int len = strlen(buffer.ptr);
+		while (buffer[len-1]!='\n') {
+			buffer.length = buffer.length + INIT_SIZE;
+			ret = fgets(buffer.ptr+len,buffer.length-len,fp);
+			if (ret==null) {
+				return null;
+			}
+			len = strlen(buffer.ptr);
+		}
+		return buffer[0..len-1];		
+	}
+	
+	
 	private void readDATFile(FILE* fp) 
 	{
-		const int MAX_BUF = 10000;
-		char buffer[MAX_BUF];
+		static string buffer;
 		
 		int lines = getLinesNo(fp);
 		rewind(fp);
 		
-		fgets(&buffer[0],MAX_BUF,fp);
-		string line = buffer[0..strlen(&buffer[0])];
-		
+		string line = readLine(fp,buffer);
 		string delimiter;
 		delimiter ~= guessDelimiter(line);
+		
 		string[] tokens = strip(line).split(delimiter);
-		
 		veclen = tokens.length;
-		
-		vecs = allocate_mat!(T[][])(lines,veclen);
-		
+		vecs = allocate_mat!(T[][])(lines,veclen);		
 		count = 0;
-		array_copy(vecs[count++], tokens);
-				
-		while (fgets(&buffer[0],MAX_BUF,fp)!=null) {
-			line = buffer[0..strlen(&buffer[0])];
-			tokens = strip(line).split(delimiter);
+		while (line.length!=0) {
 			if (tokens.length==veclen) {
 				array_copy(vecs[count++],tokens);
 			} else {
 				debug {
 					Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(count+1));
 				}
-			}		
+			}
+			line = readLine(fp,buffer);
+			tokens = strip(line).split(delimiter);
 		}
 		
+		Logger.log(Logger.INFO,"Read %d features.",count);
 		vecs = vecs[0..count];
 	}
 	
@@ -427,9 +455,9 @@ class Features(T = float) {
 		return newSet;
 	}
 	
-	public void computeGT(U)(Features!(U) dataset)
+	public void computeGT(U)(Features!(U) dataset, int skip = 0)
 	{
-		match = computeGroundTruth(dataset,this);
+		match = computeGroundTruth(dataset,this, skip);
 	}
 
 }

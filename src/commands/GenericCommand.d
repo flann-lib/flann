@@ -90,10 +90,10 @@ abstract class GenericCommand
 			Variant b = optParser[o.longName];
 			void[] pData = b.data;
 			if (o.longName in params) {
-				params[o.longName][0..sizes[o.longName]] = pData;
+				params[o.longName][0..sizes[o.longName]] = pData[0..sizes[o.longName]];
 			}
 		}
-		
+
 		executeDefault();
 	}
 	

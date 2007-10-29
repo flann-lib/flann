@@ -121,7 +121,8 @@ class TestBranching : DefaultCommand
 				index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
 			Logger.log(Logger.SIMPLE,"%f\n",indexTime);
 		
-			testNNIndexExactPrecision!(true,true)(index,testData, nn, precision, skipMatches);
+			int checks;
+			testNNIndexPrecisionAlt!(true,true)(index,testData, precision, checks, nn, skipMatches);
 		}
 	}	
 	

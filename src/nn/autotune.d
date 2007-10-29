@@ -10,6 +10,7 @@ import algo.all;
 import util.resultset;
 import util.logger;
 import util.utils;
+import nn.testing;
 
 struct OptimalParams 
 {
@@ -20,7 +21,7 @@ struct OptimalParams
 	int checks;
 }
 
-
+/+
 float testNN(NNIndex index, Features!(float) testData, float desiredPrecision, out int checks)
 {
 	const int skipMatches = 0;
@@ -58,12 +59,11 @@ float testNN(NNIndex index, Features!(float) testData, float desiredPrecision, o
 	// optional: interpolate checks number
 	
 	return searchTime;
-}
+}+/
 
 
-Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) testDataset, float desiredPrecision, float indexFactor, int scaleFactor = 10)
+Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, int nn, float indexFactor, int scaleFactor = 10)
 {
-	
 	float[] doSearch(int times, float delegate() action)
 	{
 		float[] searchTimes = new float[times];
@@ -84,12 +84,17 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 	
 	// subsample datasets
 	Features!(T) sampledDataset = inputDataset.sample(inputDataset.count/scaleFactor, false);
-	Features!(float) sampledTestDataset = testDataset.sample(testDataset.count/scaleFactor,false);	
-	sampledTestDataset.computeGT(sampledDataset);
+	Features!(float) testDataset = new Features!(float)();
+	testDataset.init(sampledDataset.sample(sampledDataset.count/scaleFactor,true));
+ 	testDataset.computeGT(sampledDataset);
 	
+	writefln("Sampled dataset size: ",sampledDataset.count);
+	writefln("Test dataset size: ",testDataset.count);
 	
 	Logger.log(Logger.INFO,"Autotuning parameters...\n");
 	
+	
+	const int REPEAT = 2;
 		
 	int checks;
 		
@@ -97,7 +102,7 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 	float kmeansCost = float.max;
 	// search best kmeans params
 	{
-		uint[] testIterations = [ 1, 2, 3, 4, 5, 6, 7];
+		uint[] testIterations = [ 1, 3, 5, 7];
 		uint[] branchingFactors = [ 32, 64, 128, 256 ];
 		
 		Params params;
@@ -111,12 +116,13 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 				
 				KMeansTree!(T) kmeans = new KMeansTree!(T)(sampledDataset,params);
 				
-				float buildTime = profile({kmeans.buildIndex();});
-				float searchTime = mean( doSearch( 5,{ return testNN(kmeans, sampledTestDataset, desiredPrecision, checks);} ) );
+				float buildTime = profile({kmeans.buildIndex();});	
+				float searchTime = mean( doSearch( REPEAT, { 
+							return testNNIndexPrecision!(false,false)(kmeans, testDataset, desiredPrecision, checks, nn);
+							} ) );
 				float cost = buildTime*indexFactor+searchTime;
 				
 				writefln("buildTime: %g, searchTime: %g, cost: %g",buildTime, searchTime, cost);			
-// 				Logger.log(Logger.INFO,params);
 				
 				if (cost<kmeansCost) {
 					copy(kmeansParams,params);
@@ -129,7 +135,7 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 // 		Logger.log(Logger.INFO,"Best KMeans params: ",kmeansParams,"\n");
 //		Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");
 	}
-	
+		
 	Params kdtreeParams;
 	float kdtreeCost = float.max;
 	// search best kdtree params
@@ -145,7 +151,9 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 			KDTree!(T) kdtree = new KDTree!(T)(sampledDataset,params);
 			
 			float buildTime = profile({kdtree.buildIndex();});
-			float searchTime = mean( doSearch( 5,{ return testNN(kdtree, sampledTestDataset, desiredPrecision, checks);} ) );
+				float searchTime = mean( doSearch( REPEAT, { 
+							return testNNIndexPrecision!(false,false)(kdtree, testDataset, desiredPrecision, checks, nn);
+							} ) );
 			float cost = buildTime*indexFactor+searchTime;
 			
 				writefln("buildTime: %g, searchTime: %g, cost: %g",buildTime, searchTime, cost);			
@@ -164,5 +172,22 @@ Params estimateOptimalParams(T)(Features!(T) inputDataset, Features!(float) test
 	} else {
 		return kdtreeParams;
 	}
+}
 
+
+int estimateSearchParams(T)(NNIndex index, Features!(T) inputDataset, float desiredPrecision, int nn)
+{
+	const int SAMPLE_COUNT = 500;
+	Features!(float) testDataset = new Features!(float)();
+	testDataset.init(inputDataset.sample(SAMPLE_COUNT,false));
+	writefln("computing ground truth");
+	testDataset.computeGT(inputDataset,1);
+	
+	int checks;
+	writefln("Estimating number of checks");
+	testNNIndexPrecision!(true,false)(index, testDataset, desiredPrecision, checks, nn, 1);
+	
+	writefln("required number of checks: ", checks);
+	
+	return checks;
 }

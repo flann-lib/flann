@@ -62,23 +62,43 @@ void withOpenFile(string file, string mode, void delegate(FILE*) action)
 
 void array_copy(U,V)(U[] dst, V[] src)
 {
-	foreach(index,value;src) {
-		dst[index] = convert!(U,V)(value);
+	static if ( is ( T == U) ) {
+		dst[] = src[0..$];
+	}
+	else {
+		foreach(index,value;src) {
+			dst[index] = convert!(U,V)(value);
+		}
 	}
 } 
 
 void mat_copy(U,V)(U[][] dst, V[][] src)
 {
-	foreach(row_index,row;src) {
-		foreach(index,value;row) {
-			dst[row_index][index] = convert!(U,V)(value);
+	static if ( is ( T == U) ) {
+		foreach(row_index,row;src) {
+			dst[row_index][] = row[0..$];
+		}
+	}
+	else {
+		foreach(row_index,row;src) {
+			foreach(index,value;row) {
+				dst[row_index][index] = convert!(U,V)(value);
+			}
 		}
 	}
 } 
 
 
 
-T convert(T,U) (U value) { return cast(T) value; }
+T convert(T,U) (U value) 
+{ 
+	static if ( is ( T == U) ) 
+		return value;
+	else {
+		return cast(T) value; 
+	}
+}
+
 T convert(T : uint, U : string)(U value) { return toUint(value); }
 T convert(T : int, U : string)(U value) { return toInt(value); }
 T convert(T : float, U : string)(U value) { return toFloat(value); }
@@ -99,7 +119,6 @@ T[] convert(T : T[],U : U[])(U[] srcVec)
 		return vec;
 	}
 }
-
 
 /* This record represents a branch point when finding neighbors in
 	the tree.  It contains a record of the minimum distance to the query

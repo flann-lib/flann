@@ -19,13 +19,9 @@ import util.allocator;
 private int findNearest(T,U)(T[][] vecs, U[] query, int skip = 0) 
 {
 	int n = skip + 1;
-	static int[] nn;
-	if (nn is null) {
-		nn = allocate!(int[])(n);
-	}
+	mixin(allocate_static("int[n] nn;"));
+	mixin(allocate_static("float[n] dists;"));
 	
-	static float[] dists; 
-	if (dists is null) dists = allocate!(float[])(n);
 	dists[0] = squaredDist(vecs[0], query);
 	int dcnt = 1;
 	

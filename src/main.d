@@ -1,9 +1,6 @@
 
 /************************************************************************
 Project: nn
-
-  Demo software: Approximate Nearest-Neighbor Matching
-  Converted from C
 Author: Marus Muja (2007)
 
 *************************************************************************/

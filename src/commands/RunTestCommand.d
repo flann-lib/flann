@@ -81,17 +81,18 @@ class RunTestCommand : IndexCommand
 		writefln("AltEstimator: ",altEstimator);
 		if (precision>0) {
 			assert(precision<=100);
+			int checks;
  			if (altEstimator) {
- 				testNNIndexPrecision!(true,true)(index,testData, nn, precision, skipMatches);
+ 				testNNIndexPrecisionAlt!(true,true)(index,testData, precision, checks, nn, skipMatches);
  			}
  			else {
-	 			testNNIndexExactPrecision!(true,true)(index,testData, nn, precision, skipMatches);
+	 			testNNIndexPrecision!(true,true)(index,testData, precision, checks, nn, skipMatches);
  			}
  			
 		}
 		else {
 			foreach (c;checks) {
-				testNNIndex!(true)(index,testData, nn, c, skipMatches);
+				testNNIndex!(true)(index,testData, c, nn, skipMatches);
 			}
 		}
 
