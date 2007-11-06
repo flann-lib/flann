@@ -30,3 +30,5 @@ src/util/unused/debuger.d
 src/util/unused/gpdebuger.d
 src/util/utils.d
 src/util/vector.d
+test
+test/test.d

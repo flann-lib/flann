@@ -10,15 +10,18 @@ Conversion to D: Marius Muja
 
 module util.utils;
 
+
+import std.stdio;
+import std.c.stdlib;
+import std.string;
+import std2.conv;
+
+import util.variant;
+import util.logger;
+
 public import util.dist;
 
-import std.c.stdio;
-import std.c.stdlib;
-import std.conv;
-import std.string;
 
-import util.logger;
-import util.variant;
 
 template MAX(T) {
 	T MAX(T x, T y) { return x > y ? x : y; }
@@ -90,26 +93,20 @@ void mat_copy(U,V)(U[][] dst, V[][] src)
 
 
 
+
+
+
+
+
 T convert(T,U) (U value) 
 { 
-	static if ( is ( T == U) ) 
-		return value;
-	else {
-		return cast(T) value; 
-	}
+	return to!(T)(value);
 }
-
-T convert(T : uint, U : string)(U value) { return toUint(value); }
-T convert(T : int, U : string)(U value) { return toInt(value); }
-T convert(T : float, U : string)(U value) { return toFloat(value); }
-T convert(T : double, U : string)(U value) { return toDouble(value); }
-T convert(T : ubyte, U : string)(U value) { return toUbyte(value); }
-T convert(T : float, U : ubyte)(ubyte value) { return value; }
 
 T[] convert(T : T[],U : U[])(U[] srcVec)
 {
 	static if ( is ( T == U) )
-		return srcVec;
+		return srcVec.dup;
 	else {
 		T[] vec = new T[srcVec.length];
 		foreach (i,value; srcVec) {
@@ -119,6 +116,9 @@ T[] convert(T : T[],U : U[])(U[] srcVec)
 		return vec;
 	}
 }
+
+
+
 
 /* This record represents a branch point when finding neighbors in
 	the tree.  It contains a record of the minimum distance to the query
@@ -200,10 +200,10 @@ struct Params
 		return result;
     }
 
-//     string toString() 
-//     {
-//     	return .toString(data);
-//     }
+	string toString()
+	{
+		return format(data);
+	}
 }
 
 void copy(ref Params a,Params b)
@@ -260,13 +260,34 @@ struct OrderedParams
 void copyParams(T,U)(ref T a,U b,string[] params)
 {
 	foreach(param;params) {
-		
 		a[param] = b[param];
 	}
 }
 
+void saveParams(string file, Params params) {
+	
+	withOpenFile(file,"w",(FILE* f) {
+		foreach(name,value;params) {
+			fwritefln(f,name," = ",value);
+		}
+	});
+}
 
 
+void loadParams(string file, ref Params params) {
+	
+	withOpenFile(file,"r",(FILE* f) {
+		string line;
+		line = readln(f);
+		while (line) {
+			int pos = line.find("=");
+			string name = line[0..pos];
+			string value = line[pos+1..$];
+			params[strip(name)] = strip(value);
+			line = readln(f);
+		}
+	});
+}
 
 
 

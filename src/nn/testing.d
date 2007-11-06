@@ -48,7 +48,7 @@ float search(int checks, out float time)
 
 
 
-float testNNIndex(bool withOutput)(NNIndex index, Features!(float) testData, int checks, int nn = 1, uint skipMatches = 0)
+float testNNIndex(bool withOutput, bool withReporting)(NNIndex index, Features!(float) testData, int checks, int nn = 1, uint skipMatches = 0)
 {
 	
 	static if (withOutput)
@@ -61,6 +61,8 @@ float testNNIndex(bool withOutput)(NNIndex index, Features!(float) testData, int
 	float time;
 	float precision = search(checks,time);
 
+
+
 	static if (withOutput) {
 		Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
 				" checked   neighbors   (seconds)      (ms)\n"
@@ -71,6 +73,13 @@ float testNNIndex(bool withOutput)(NNIndex index, Features!(float) testData, int
 		Logger.log(Logger.SIMPLE,"%d %f %f %f\n",
 				checks, precision,
 				time, 1000.0 * time / testData.count);
+	}
+	
+	static if (withReporting) {
+		reportedValues["checks"] = checks;
+		reportedValues["match"] = cast(double)precision;
+		reportedValues["search_time"] = cast(double)time;
+		flush_reporters();
 	}
 
 	return time;
@@ -86,7 +95,6 @@ float testNNIndexPrecision(bool withOutput, bool withReporting)
 				" checked   neighbors   (seconds)      (ms)\n"
 				" -------   ---------   ---------  -----------\n");
 	}
-	
 	
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
 	

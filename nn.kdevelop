@@ -10,8 +10,8 @@
     <projectname>aggnn</projectname>
     <projectdirectory>.</projectdirectory>
     <absoluteprojectpath>false</absoluteprojectpath>
-    <description></description>
-    <defaultencoding></defaultencoding>
+    <description/>
+    <defaultencoding/>
     <versioncontrol/>
   </general>
   <kdevcustomproject>
@@ -30,17 +30,17 @@
     </run>
     <build>
       <buildtool>make</buildtool>
-      <builddir></builddir>
+      <builddir/>
     </build>
     <make>
       <abortonerror>false</abortonerror>
       <numberofjobs>1</numberofjobs>
       <prio>0</prio>
       <dontact>false</dontact>
-      <makebin></makebin>
-      <defaulttarget></defaulttarget>
-      <makeoptions></makeoptions>
-      <selectedenvironment>debug</selectedenvironment>
+      <makebin/>
+      <defaulttarget/>
+      <makeoptions/>
+      <selectedenvironment>default</selectedenvironment>
       <environments>
         <default/>
         <debug>
@@ -102,12 +102,87 @@
       <path>libs/pyd/st/stackcontext.d</path>
       <path>libs/pyd/st/stackthread.d</path>
       <path>libs/pyd/st/tls.d</path>
+      <path>other</path>
+      <path>other/ann</path>
+      <path>other/ann/ann_1.1.1</path>
+      <path>other/ann/ann_1.1.1/MS_Win32</path>
+      <path>other/ann/ann_1.1.1/MS_Win32/Makefile</path>
+      <path>other/ann/ann_1.1.1/Makefile</path>
+      <path>other/ann/ann_1.1.1/ann2fig</path>
+      <path>other/ann/ann_1.1.1/ann2fig/Makefile</path>
+      <path>other/ann/ann_1.1.1/ann2fig/ann2fig.cpp</path>
+      <path>other/ann/ann_1.1.1/include</path>
+      <path>other/ann/ann_1.1.1/include/ANN</path>
+      <path>other/ann/ann_1.1.1/include/ANN/ANN.h</path>
+      <path>other/ann/ann_1.1.1/include/ANN/ANNperf.h</path>
+      <path>other/ann/ann_1.1.1/include/ANN/ANNx.h</path>
+      <path>other/ann/ann_1.1.1/sample</path>
+      <path>other/ann/ann_1.1.1/sample/Makefile</path>
+      <path>other/ann/ann_1.1.1/sample/ann_sample.cpp</path>
+      <path>other/ann/ann_1.1.1/src</path>
+      <path>other/ann/ann_1.1.1/src/ANN.cpp</path>
+      <path>other/ann/ann_1.1.1/src/Makefile</path>
+      <path>other/ann/ann_1.1.1/src/bd_fix_rad_search.cpp</path>
+      <path>other/ann/ann_1.1.1/src/bd_pr_search.cpp</path>
+      <path>other/ann/ann_1.1.1/src/bd_search.cpp</path>
+      <path>other/ann/ann_1.1.1/src/bd_tree.cpp</path>
+      <path>other/ann/ann_1.1.1/src/bd_tree.h</path>
+      <path>other/ann/ann_1.1.1/src/brute.cpp</path>
+      <path>other/ann/ann_1.1.1/src/kd_dump.cpp</path>
+      <path>other/ann/ann_1.1.1/src/kd_fix_rad_search.cpp</path>
+      <path>other/ann/ann_1.1.1/src/kd_fix_rad_search.h</path>
+      <path>other/ann/ann_1.1.1/src/kd_pr_search.cpp</path>
+      <path>other/ann/ann_1.1.1/src/kd_pr_search.h</path>
+      <path>other/ann/ann_1.1.1/src/kd_search.cpp</path>
+      <path>other/ann/ann_1.1.1/src/kd_search.h</path>
+      <path>other/ann/ann_1.1.1/src/kd_split.cpp</path>
+      <path>other/ann/ann_1.1.1/src/kd_split.h</path>
+      <path>other/ann/ann_1.1.1/src/kd_tree.cpp</path>
+      <path>other/ann/ann_1.1.1/src/kd_tree.h</path>
+      <path>other/ann/ann_1.1.1/src/kd_util.cpp</path>
+      <path>other/ann/ann_1.1.1/src/kd_util.h</path>
+      <path>other/ann/ann_1.1.1/src/perf.cpp</path>
+      <path>other/ann/ann_1.1.1/src/pr_queue.h</path>
+      <path>other/ann/ann_1.1.1/src/pr_queue_k.h</path>
+      <path>other/ann/ann_1.1.1/test</path>
+      <path>other/ann/ann_1.1.1/test/Makefile</path>
+      <path>other/ann/ann_1.1.1/test/ann_test.cpp</path>
+      <path>other/ann/ann_1.1.1/test/rand.cpp</path>
+      <path>other/ann/ann_1.1.1/test/rand.h</path>
+      <path>other/lsh</path>
+      <path>other/lsh/E2LSH-0.1</path>
+      <path>other/lsh/E2LSH-0.1/Makefile</path>
+      <path>other/lsh/E2LSH-0.1/sources</path>
+      <path>other/lsh/E2LSH-0.1/sources/BasicDefinitions.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/BucketHashing.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/BucketHashing.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/Geometry.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/Geometry.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/GlobalVars.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/GlobalVars.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/LSHMain.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/LocalitySensitiveHashing.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/LocalitySensitiveHashing.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/NearNeighbors.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/NearNeighbors.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/Random.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/Random.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/SelfTuning.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/SelfTuning.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/Util.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/Util.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/compareOutputs.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/exactNNs.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/genDS.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/genPlantedDS.cpp</path>
+      <path>other/lsh/E2LSH-0.1/sources/headers.h</path>
+      <path>other/lsh/E2LSH-0.1/sources/testFloat.cpp</path>
     </blacklist>
     <other>
       <prio>0</prio>
-      <otherbin></otherbin>
-      <defaulttarget></defaulttarget>
-      <otheroptions></otheroptions>
+      <otherbin/>
+      <defaulttarget/>
+      <otheroptions/>
       <selectedenvironment>debug</selectedenvironment>
       <environments>
         <debug/>
@@ -118,11 +193,11 @@
   </kdevcustomproject>
   <kdevdebugger>
     <general>
-      <dbgshell></dbgshell>
-      <gdbpath></gdbpath>
-      <configGdbScript></configGdbScript>
-      <runShellScript></runShellScript>
-      <runGdbScript></runGdbScript>
+      <dbgshell/>
+      <gdbpath/>
+      <configGdbScript/>
+      <runShellScript/>
+      <runGdbScript/>
       <breakonloadinglibs>true</breakonloadinglibs>
       <separatetty>false</separatetty>
       <floatingtoolbar>false</floatingtoolbar>
@@ -226,7 +301,7 @@
       <resolveIncludePathsUsingMakeExperimental>false</resolveIncludePathsUsingMakeExperimental>
     </codecompletion>
     <creategettersetter>
-      <prefixGet></prefixGet>
+      <prefixGet/>
       <prefixSet>set</prefixSet>
       <prefixVariable>m_,_</prefixVariable>
       <parameterName>theValue</parameterName>

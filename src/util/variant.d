@@ -6,6 +6,9 @@
  */
 module variant;
 
+import std2.conv;
+import std.stdio;
+
 version( Tango )
 {
     pragma(msg, `
@@ -50,6 +53,7 @@ else
     import std.string : toString;
     import std.utf : encode, toUTF8;
 }
+
 
 private template maxT(uint a, uint b)
 {
@@ -324,18 +328,19 @@ struct Variant
         return ( cast(bool)(typeid(T) is type)
                 || canImplicitCastTo!(T)(type) );
     }
-
+    
+    
     storageT!(S) get(S)()
     {
         alias storageT!(S) T;
-
-        if( type !is typeid(T)
-                // Let D do runtime check itself
-                && !isObject!(T)
-                // Allow implicit upcasts
-                && !canImplicitCastTo!(T)(type)
-          )
-            throw new VariantTypeMismatchException(type,typeid(T));
+            	
+//         if( type !is typeid(T)
+//                 // Let D do runtime check itself
+//                 && !isObject!(T)
+//                 // Allow implicit upcasts
+//                 //&& !canImplicitCastTo!(T)(type)
+//           )
+//             throw new VariantTypeMismatchException(type,typeid(T));
 
         static if( isAtomicType!(T) )
         {
@@ -345,26 +350,30 @@ struct Variant
             }
             else
             {
-                if( type is tibool ) return cast(T)this.value._bool;
-                else if( type is tichar ) return cast(T)this.value._char;
-                else if( type is tiwchar ) return cast(T)this.value._wchar;
-                else if( type is tidchar ) return cast(T)this.value._dchar;
-                else if( type is tibyte ) return cast(T)this.value._byte;
-                else if( type is tishort ) return cast(T)this.value._short;
-                else if( type is tiint ) return cast(T)this.value._int;
-                else if( type is tilong ) return cast(T)this.value._long;
-                else if( type is tiubyte ) return cast(T)this.value._ubyte;
-                else if( type is tiushort ) return cast(T)this.value._ushort;
-                else if( type is tiuint ) return cast(T)this.value._uint;
-                else if( type is tiulong ) return cast(T)this.value._ulong;
-                else if( type is tifloat ) return cast(T)this.value._float;
-                else if( type is tidouble ) return cast(T)this.value._double;
-                else if( type is tireal ) return cast(T)this.value._real;
+                if( type is tibool ) return to!(T)(this.value._bool);
+                else if( type is tichar ) return to!(T)(this.value._char);
+                else if( type is tiwchar ) return to!(T)(this.value._wchar);
+                else if( type is tidchar ) return to!(T)(this.value._dchar);
+                else if( type is tibyte ) return to!(T)(this.value._byte);
+                else if( type is tishort ) return to!(T)(this.value._short);
+                else if( type is tiint ) return to!(T)(this.value._int);
+                else if( type is tilong ) return to!(T)(this.value._long);
+                else if( type is tiubyte ) return to!(T)(this.value._ubyte);
+                else if( type is tiushort ) return to!(T)(this.value._ushort);
+                else if( type is tiuint ) return to!(T)(this.value._uint);
+                else if( type is tiulong ) return to!(T)(this.value._ulong);
+                else if( type is tifloat ) return to!(T)(this.value._float);
+                else if( type is tidouble ) return to!(T)(this.value._double);
+                else if( type is tireal ) return to!(T)(this.value._real);
                 else if( type is tiifloat ) return cast(T)this.value._ifloat;
                 else if( type is tiidouble ) return cast(T)this.value._idouble;
                 else if( type is tiireal ) return cast(T)this.value._ireal;
-                else
+                else if( type is typeid(char[])) return to!(T)(get!(char[]));
+                else if( type is typeid(wchar[])) return to!(T)(get!(wchar[]));
+                else if( type is typeid(dchar[])) return to!(T)(get!(dchar[]));
+                else {
                     throw new VariantTypeMismatchException(type,typeid(T));
+                }
             }
         }
         else static if( isArray!(T) )

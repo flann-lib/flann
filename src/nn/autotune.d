@@ -62,7 +62,7 @@ float testNN(NNIndex index, Features!(float) testData, float desiredPrecision, o
 }+/
 
 
-Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, int nn, float indexFactor, int scaleFactor = 10)
+Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, float indexFactor, float samplePercentage)
 {
 	float[] doSearch(int times, float delegate() action)
 	{
@@ -83,9 +83,12 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 
 	
 	// subsample datasets
-	Features!(T) sampledDataset = inputDataset.sample(inputDataset.count/scaleFactor, false);
+	int sampleSize = lround(samplePercentage*inputDataset.count/100);
+	Features!(T) sampledDataset = inputDataset.sample(sampleSize, false);
+	
+	int testSampleSize = MIN(sampleSize/10, 1000);
 	Features!(float) testDataset = new Features!(float)();
-	testDataset.init(sampledDataset.sample(sampledDataset.count/scaleFactor,true));
+	testDataset.init(sampledDataset.sample(testSampleSize,true));
  	testDataset.computeGT(sampledDataset);
 	
 	writefln("Sampled dataset size: ",sampledDataset.count);
@@ -97,6 +100,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 	const int REPEAT = 2;
 		
 	int checks;
+	const int nn = 1;
 		
 	Params kmeansParams;
 	float kmeansCost = float.max;
@@ -118,7 +122,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 				
 				float buildTime = profile({kmeans.buildIndex();});	
 				float searchTime = mean( doSearch( REPEAT, { 
-							return testNNIndexPrecision!(false,false)(kmeans, testDataset, desiredPrecision, checks, nn);
+							return testNNIndexPrecision!(true,false)(kmeans, testDataset, desiredPrecision, checks, nn);
 							} ) );
 				float cost = buildTime*indexFactor+searchTime;
 				
@@ -152,7 +156,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 			
 			float buildTime = profile({kdtree.buildIndex();});
 				float searchTime = mean( doSearch( REPEAT, { 
-							return testNNIndexPrecision!(false,false)(kdtree, testDataset, desiredPrecision, checks, nn);
+							return testNNIndexPrecision!(true,false)(kdtree, testDataset, desiredPrecision, checks, nn);
 							} ) );
 			float cost = buildTime*indexFactor+searchTime;
 			
@@ -164,7 +168,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 				kdtreeCost = cost;
 			}
 		}
-// 		Logger.log(Logger.INFO,"Best kdtree params: ",kdtreeParams,"\n");
+//  		Logger.log(Logger.INFO,"Best kdtree params: ",kdtreeParams,"\n");
 	}
 
 	if (kmeansCost<kdtreeCost) {
@@ -175,8 +179,9 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 }
 
 
-int estimateSearchParams(T)(NNIndex index, Features!(T) inputDataset, float desiredPrecision, int nn)
+int estimateSearchParams(T)(NNIndex index, Features!(T) inputDataset, float desiredPrecision)
 {
+	const int nn = 1;
 	const int SAMPLE_COUNT = 500;
 	Features!(float) testDataset = new Features!(float)();
 	testDataset.init(inputDataset.sample(SAMPLE_COUNT,false));

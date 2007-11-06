@@ -97,6 +97,16 @@ abstract class GenericCommand
 		executeDefault();
 	}
 	
+	protected bool isParamPresent(string name) 
+	{
+		foreach(o;optParser.options) {
+			if (o.longName == name) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	void showHelp()
 	{
 		writefln("Command: %s [options]",name);

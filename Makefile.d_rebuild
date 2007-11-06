@@ -3,9 +3,9 @@
 
 WARNS = -W -Wall
 INCLUDES = -Iinclude
-LIBS = -llsqlite3 -lldl
+LIBS = 
 
-
+HAS_SQLITE = 1
 
 
 include Makefile.platform
@@ -24,7 +24,13 @@ ifeq ($(CONFIGURATION),debug)
 #	DFLAGS := ${DFLAGS} -g -release -C-q,-msse2
 	DFLAGS := ${DFLAGS} -g -debug -C-q,-msse2
 else
-	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
+#	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
+	DFLAGS := ${DFLAGS} -O -inline -release
+endif
+
+ifeq ($(HAS_SQLITE),1)
+	DFLAGS := ${DFLAGS} -version=hasSqlite
+	LIBS := -llsqlite3 -lldl
 endif
 
 

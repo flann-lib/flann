@@ -32,6 +32,7 @@ class RunTestCommand : IndexCommand
 	double precision;
 	uint skipMatches;
 	bool altEstimator = false;
+	
 
 	this(string name) 
 	{
@@ -50,6 +51,10 @@ class RunTestCommand : IndexCommand
 	void execute() 
 	{
 		super.execute();
+		
+/+		if (params["checks"]!=null) {
+			checkList = params["checks"].get!(string);
+		}+/
 		
 		checks = convert!(typeof(checks),string[])(split(checkList,","));
 
@@ -92,7 +97,7 @@ class RunTestCommand : IndexCommand
 		}
 		else {
 			foreach (c;checks) {
-				testNNIndex!(true)(index,testData, c, nn, skipMatches);
+				testNNIndex!(true,true)(index,testData, c, nn, skipMatches);
 			}
 		}
 

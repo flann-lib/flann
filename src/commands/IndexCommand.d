@@ -21,13 +21,14 @@ class IndexCommand : DefaultCommand
 	public static string NAME = "create_index";
 	
 	string inputFile;
+	string paramsFile;
 	string algorithm;
-	bool printAlgorithms;
 	uint trees;
 	uint branching;
 	bool byteFeatures;
 	string centersAlgorithm;
-	uint maxIter;
+	int maxIter;
+	bool useParamsFile;
 	
 	protected {
 		NNIndex index;
@@ -43,13 +44,14 @@ class IndexCommand : DefaultCommand
 	{
 		super(name);
 		register(inputFile,"i","input-file", "","Name of file with input dataset.");
+		register(paramsFile,"p","params-file", "","File containing 'optimum' input dataset parameters.");
 		register(algorithm,"a","algorithm", "","The algorithm to use when constructing the index (kdtree, kmeans...).");
-		register(printAlgorithms,"p","print-algorithms", null,"Display the available algorithms.");
 		register(trees,"r","trees", 1,"Number of parallel trees to use (where available, for example kdtree).");
 		register(branching,"b","branching", 2,"Branching factor (where applicable, for example kmeans) (default: 2).");
 		register(byteFeatures,"B","byte-features", null ,"Use byte-sized feature elements.");
 		register(centersAlgorithm,"C","centers-algorithm", "random","Algorithm to choose cluster centers for kmeans (default: random).");
-		register(maxIter,"M","max-iterations", uint.max,"Max iterations to perform for kmeans (default: until convergence).");		
+		register(maxIter,"M","max-iterations", int.max,"Max iterations to perform for kmeans (default: until convergence).");		
+		register(useParamsFile,"U","use-params-file", null,"Use the file with autotuned params.");		
  		
  		description = "Index the input dataset.";
 	}
@@ -57,27 +59,6 @@ class IndexCommand : DefaultCommand
 	
 	private void executeWithType(T)() 
 	{
-		if (printAlgorithms) {
-			Logger.log(Logger.INFO,"Available algorithms:\n");
-			foreach (algo,val; indexRegistry!(T)) {
-				Logger.log(Logger.INFO,"\t%s\n",algo);
-			}
-			Logger.log(Logger.INFO,"\n");
-			
-			exit(0);
-		}
-		
-		if (!(algorithm in indexRegistry!(T))) {
-			Logger.log(Logger.ERROR,"Algorithm not supported.\n");
-			Logger.log(Logger.ERROR,"Available algorithms:\n");
-			foreach (algo,val; indexRegistry!(T)) {
-				Logger.log(Logger.ERROR,"\t%s\n",algo);
-			}
-			
-			throw new Exception("Bailing out...\n");
-			
-		}
-		
 		
 // 		if (loadFile !is null) {
 // 		Logger.log(Logger.INFO,"Loading index from file %s... ",loadFile);
@@ -105,18 +86,51 @@ class IndexCommand : DefaultCommand
 			throw new Exception("No input data given.");
 		}
 		
-		Logger.log(Logger.INFO,"Algorithm: %s\n",algorithm);
+		Params params;
 		
-		Params params;		
-		copyParams(params,optParser,["trees","branching", "centers-algorithm","max-iterations"]);
+		if (maxIter==-1) {
+			maxIter = int.max;
+		}
+				
+		if (useParamsFile) {
+			if (paramsFile == "") {
+				paramsFile = inputFile~".params";
+				Logger.log(Logger.INFO, "No params file given, trying ",paramsFile,"\n");
+			}
+			
+			try {
+				loadParams(paramsFile,params);
+			}
+			catch(Exception e) {
+				Logger.log(Logger.INFO,"Cannot read params from file",paramsFile,"\n");
+			}
+		} else {
+			params["trees"] = trees;
+			params["branching"] = branching;
+			params["centers-algorithm"] = centersAlgorithm;
+			params["max-iterations"] = maxIter;
+			params["algorithm"] = algorithm;
+		}
 		
 		reportedValues["trees"] = params["trees"];
 		reportedValues["branching"] = params["branching"];
 		reportedValues["max_iterations"] = params["max-iterations"];
-		reportedValues["algorithm"] = algorithm;
+		reportedValues["algorithm"] = params["algorithm"];
 		
+		string algorithm = params["algorithm"].get!(string);
+		
+		if (!(algorithm in indexRegistry!(T))) {
+			Logger.log(Logger.ERROR,"Algorithm not supported.\n");
+			Logger.log(Logger.ERROR,"Available algorithms:\n");
+			foreach (algo,val; indexRegistry!(T)) {
+				Logger.log(Logger.ERROR,"\t%s\n",algo);
+			}			
+			throw new Exception("Bailing out...\n");
+		}
+
+		Logger.log(Logger.INFO,"Algorithm: %s\n",algorithm);
 		index = indexRegistry!(T)[algorithm](inputData!(T), params);
-		
+
 		Logger.log(Logger.INFO,"Building index... \n");
 		float indexTime = profile({
 			index.buildIndex();
