@@ -38,9 +38,9 @@ class AutotuneParams : DefaultCommand
 		super(name);
 		register(inputFile,"i","input-file", "","Name of file with input dataset.");
 		register(paramsFile,"p","params-file", "","Name of file where to save the params.");
-		register(precision,"P","precision", -1,"The desired search precision.");
+		register(precision,"P","precision", 95,"The desired search precision (default: 95%).");
 		register(indexFactor,"f","index-factor", 0,"Index build time penalty factor (relative to search time).");
-		register(samplePercentage,"s","sample-percentage", 0,"Percentage of the inpute dataset to use for parameter tunning.");
+		register(samplePercentage,"s","sample-percentage", 10,"Percentage of the inpute dataset to use for parameter tunning default: 10%).");
 		
 		register(byteFeatures,"B","byte-features", 2,"Use byte-sized feature elements.");
  			

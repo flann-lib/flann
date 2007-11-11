@@ -56,6 +56,159 @@ void writeToFile(float[][] vecs, char[] file)
 }
 
 
+int readValue(U) (FILE* f, inout U value) {
+	throw new Exception("readValue not implemented for type: "~U.stringof);
+}
+
+int readValue(U : float) (FILE* f, inout U value) {
+	return fscanf(f,"%f ",&value);
+}
+
+int readValue(U : int) (FILE* f, inout U value) {		
+	return fscanf(f,"%d ",&value);
+}
+
+int readValue(U : ubyte) (FILE* f, inout U value) {
+	return fscanf(f,"%hhu ",&value);
+}
+
+
+int writeValue(U) (FILE* f, U value) {
+	throw new Exception("readValue not implemented for type: "~U.stringof);
+}
+
+int writeValue(U : float) (FILE* f, U value) {
+	return fprintf(f,"%g",value);
+}
+
+int writeValue(U : int) (FILE* f, U value) {		
+	return fprintf(f,"%d",value);
+}
+
+int writeValue(U : ubyte) (FILE* f, U value) {
+	return fprintf(f,"%hhu",value);
+}
+
+
+class GridDataFile(T)
+{
+	private FILE* fp;
+
+	public this(string file)
+	{
+		fp = fOpen(file,"r","Cannot open: "~file);
+	}
+	
+	public this(FILE* fp)
+	{
+		this.fp = fp;
+	}
+	
+	private char guessDelimiter(string line)
+	{
+		string numberChars = "01234567890.e+-";
+		int pos = 0;
+		
+		while (numberChars.find(line[pos])==-1) {
+			pos++;
+		}
+		while (numberChars.find(line[pos])!=-1) {
+			pos++;
+		}
+		
+		return line[pos];
+	}
+	
+	
+	public int getLinesNo()
+	{
+		const int MAX_BUF = 1024;
+		char buffer[MAX_BUF];
+		
+		int count = 0;
+		while (fgets(&buffer[0],MAX_BUF,fp)) {
+			if (buffer[strlen(buffer.ptr)-1]=='\n') {
+				count++;
+			}
+		}
+		
+		rewind(fp);
+		return count;
+	}
+	
+	
+	private string readLine(ref char[] buffer)
+	{
+		const int INIT_SIZE = 1024;
+		
+		if (buffer.length==0) {
+			buffer.length = INIT_SIZE;
+		}
+		
+		char* ret = fgets(buffer.ptr,buffer.length,fp);
+		if (ret==null) {
+			return null;
+		}
+		int len = strlen(buffer.ptr);
+		while (buffer[len-1]!='\n') {
+			buffer.length = buffer.length + INIT_SIZE;
+			ret = fgets(buffer.ptr+len,buffer.length-len,fp);
+			if (ret==null) {
+				return null;
+			}
+			len = strlen(buffer.ptr);
+		}
+		return buffer[0..len-1];		
+	}	
+
+
+	private T[][] getValues()
+	{
+		static string buffer;
+		
+		int lines = getLinesNo();
+		
+		string line = readLine(buffer);
+		string delimiter;
+		delimiter ~= guessDelimiter(line);
+		
+		string[] tokens = strip(line).split(delimiter);
+		int veclen = tokens.length;
+		T[][] vecs = allocate_mat!(T[][])(lines,veclen);		
+		int count = 0;
+		while (line.length!=0) {
+			if (tokens.length==veclen) {
+				array_copy(vecs[count++],tokens);
+			} else {
+				debug {
+					Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(count+1));
+				}
+			}
+			line = readLine(buffer);
+			tokens = strip(line).split(delimiter);
+		}
+		
+		Logger.log(Logger.INFO,"Read %d features.",count);
+		vecs = vecs[0..count];
+				
+		return vecs;
+	}
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
 class Features(T = float) {
 
 		enum signature {
@@ -69,7 +222,7 @@ class Features(T = float) {
 		int count;         /* Number of vectors. */
 		int veclen;         /* Length of each vector. */
 		T[][] vecs;      /* Float vecs. */
- 		int[] match;         /* Array of indices to correct nearest neighbor. */
+ 		int[][] match;         /* Array of indices to correct nearest neighbor. */
 // 		int[] mtype;         /* Array of flags indicating if match is correct. */
 
 		public this() {}
@@ -79,7 +232,7 @@ class Features(T = float) {
 		{
 			this.count = size;
 			vecs = allocate!(T[][])(size);
-			match = allocate!(int[])(size);
+// 			match = allocate!(int[])(size);
 		}
 
 		public void init(U)(Features!(U) dataset) 
@@ -92,38 +245,6 @@ class Features(T = float) {
 			}			
 		}
 
-	int readValue(U) (FILE* f, inout U value) {
-		throw new Exception("readValue not implemented for type: "~U.stringof);
-	}
-	
-	int readValue(U : float) (FILE* f, inout U value) {
-		return fscanf(f,"%f ",&value);
-	}
-	
-	int readValue(U : int) (FILE* f, inout U value) {		
-		return fscanf(f,"%d ",&value);
-	}
-	
-	int readValue(U : ubyte) (FILE* f, inout U value) {
-		return fscanf(f,"%hhu ",&value);
-	}
-
-
-	int writeValue(U) (FILE* f, U value) {
-		throw new Exception("readValue not implemented for type: "~U.stringof);
-	}
-	
-	int writeValue(U : float) (FILE* f, U value) {
-		return fprintf(f,"%g",value);
-	}
-	
-	int writeValue(U : int) (FILE* f, U value) {		
-		return fprintf(f,"%d",value);
-	}
-	
-	int writeValue(U : ubyte) (FILE* f, U value) {
-		return fprintf(f,"%hhu",value);
-	}
 
 
 	/** 
@@ -153,7 +274,7 @@ class Features(T = float) {
 		this.count = vcount;
 		this.veclen = veclen;
 		this.vecs = allocate_mat!(T[][])(count,veclen);
-		this.match = new int[count];
+		this.match =allocate_mat!(int[][])(count,1);
 // 		this.mtype = new int[count];
 		
 		/* Read input vectors. */
@@ -164,7 +285,7 @@ class Features(T = float) {
 				throw new Exception("Invalid NN file.");
 			}
 			assert(seq == i);
-			this.match[i] = mat;
+			this.match[i][0] = mat;
 // 			this.mtype[i] = mtype;
 	
 			T val;
@@ -180,108 +301,27 @@ class Features(T = float) {
 	}
 	
 	
-	private char guessDelimiter(string line)
+
+	
+	
+	private void readDATFile(FILE* fp)
 	{
-		string numberChars = "01234567890.e+-";
-		int pos = 0;
-		while (numberChars.find(line[pos])==-1) {
-			pos++;
-		}
-		while (numberChars.find(line[pos])!=-1) {
-			pos++;
-		}
-		
-		return line[pos];
-	}
-	
-	private int getLinesNo(FILE* fp)
-	{
-		const int MAX_BUF = 1024;
-		char buffer[MAX_BUF];
-		
-		int count = 0;
-		while (fgets(&buffer[0],MAX_BUF,fp)) {
-			if (buffer[strlen(buffer.ptr)-1]=='\n') {
-				count++;
-			}
-		}
-		
-		return count;
-	}
-	
-	
-	private string readLine(FILE* fp, char[] buffer)
-	{
-		const int INIT_SIZE = 1024;
-		
-		if (buffer.length==0) {
-			buffer.length = INIT_SIZE;
-		}
-		
-		char* ret = fgets(buffer.ptr,buffer.length,fp);
-		if (ret==null) {
-			return null;
-		}
-		int len = strlen(buffer.ptr);
-		while (buffer[len-1]!='\n') {
-			buffer.length = buffer.length + INIT_SIZE;
-			ret = fgets(buffer.ptr+len,buffer.length-len,fp);
-			if (ret==null) {
-				return null;
-			}
-			len = strlen(buffer.ptr);
-		}
-		return buffer[0..len-1];		
-	}
-	
-	
-	private void readDATFile(FILE* fp) 
-	{
-		static string buffer;
-		
-		int lines = getLinesNo(fp);
-		rewind(fp);
-		
-		string line = readLine(fp,buffer);
-		string delimiter;
-		delimiter ~= guessDelimiter(line);
-		
-		string[] tokens = strip(line).split(delimiter);
-		veclen = tokens.length;
-		vecs = allocate_mat!(T[][])(lines,veclen);		
-		count = 0;
-		while (line.length!=0) {
-			if (tokens.length==veclen) {
-				array_copy(vecs[count++],tokens);
-			} else {
-				debug {
-					Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(count+1));
-				}
-			}
-			line = readLine(fp,buffer);
-			tokens = strip(line).split(delimiter);
-		}
-		
-		Logger.log(Logger.INFO,"Read %d features.",count);
-		vecs = vecs[0..count];
+		auto gridData = new GridDataFile!(T)(fp);
+		vecs = gridData.getValues();
+		count = vecs.length;
 	}
 	
 	
 	public void readMatches(string file)
 	{
-		FILE* fp = fOpen(file,"r","Cannot open input file: "~file);
+		auto gridData = new GridDataFile!(int)(file);
 		
-		match.length = count;
-		int index, m;
-		for (int i=0;i<count;++i) {
-			if (fscanf(fp, "%d %d", &index, &m)!=2) {
-				writefln(i);
-				throw new Exception("Invalid match file");
-			}
-			match[index] = m;
-		}
+		int[][] values = gridData.getValues();
 		
-	
+		match.length = values.length;
+		foreach (v;values) {
+			match[v[0]] = v[1..$];
+		}		
 	}
 	
 	private void dumpDatabase()
@@ -455,9 +495,9 @@ class Features(T = float) {
 		return newSet;
 	}
 	
-	public void computeGT(U)(Features!(U) dataset, int skip = 0)
+	public void computeGT(U)(Features!(U) dataset, int nn, int skip = 0)
 	{
-		match = computeGroundTruth(dataset,this, skip);
+		match = computeGroundTruth(dataset,this, nn, skip);
 	}
 
 }

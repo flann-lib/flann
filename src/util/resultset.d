@@ -6,34 +6,22 @@ module util.resultset;
 
 import util.heap;
 import util.utils;
+import util.allocator;
 
-
-struct Point {
-
-	static Point opCall(int index) 
-	{
-		Point p;
-//		p.point = point;
-		p.index = index;
-		
-		return p;
-	}
-
-	//float[] point;
-	int index;
-	float dist;
-}
 
 class ResultSet 
 {
-	Point[] points;
+	int[] indices;
+	float[] dists;
+	
 	float[] target;
 	
 	int count;
 	
 	public this(int capacity) 
 	{
-		points = new Point[capacity];
+		indices = allocate!(int[])(capacity);
+		dists = allocate!(float[])(capacity);
 	}
 	
 	public this(float[] target, int capacity)
@@ -49,32 +37,28 @@ class ResultSet
 	}
 	
 	
-	public int getPointIndex(int num) 
+	public int[] getNeighbors() 
 	{	
-		if (num<count) {
-			return points[num].index;
-		}
-		else {
-			return -1;
-		}
+		return indices;
 	}
 	
 	public bool full() 
 	{	//return false;
-		return count == points.length;
+		return count == indices.length;
 	}
 	
 	public bool addPoint(T)(T[] point, int index) 
 	{
-		Point p = Point(index);
-	
-		p.dist = target.squaredDist(point);
+		float dist = target.squaredDist(point);
 		
-		if (count<points.length) {
-			points[count++] = p;	
+		if (count<indices.length) {
+			indices[count] = index;
+			dists[count] = dist;	
+			count++;
 		} 
-		else if (p.dist < points[count-1].dist) {
-			points[count-1] = p;
+		else if (dist < dists[count-1]) {
+			indices[count-1] = index;
+			dists[count-1] = dist;
 		} 
 		else { 
 			return false;
@@ -82,8 +66,9 @@ class ResultSet
 		
 		int i = count-1;
 		// bubble up
-		while (i>=1 && points[i].dist<points[i-1].dist) {
-			swap(points[i],points[i-1]);
+		while (i>=1 && dists[i]<dists[i-1]) {
+			swap(indices[i],indices[i-1]);
+			swap(dists[i],dists[i-1]);
 			i--;
 		}
 		
@@ -92,7 +77,7 @@ class ResultSet
 	
 	public float worstDist()
 	{
-		return (count<points.length) ? float.max : points[count-1].dist;
+		return (count<dists.length) ? float.max : dists[count-1];
 	}
 	
 }

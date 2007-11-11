@@ -89,10 +89,14 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 	int testSampleSize = MIN(sampleSize/10, 1000);
 	Features!(float) testDataset = new Features!(float)();
 	testDataset.init(sampledDataset.sample(testSampleSize,true));
- 	testDataset.computeGT(sampledDataset);
 	
-	writefln("Sampled dataset size: ",sampledDataset.count);
-	writefln("Test dataset size: ",testDataset.count);
+	Logger.log(Logger.INFO,"Sampled dataset size: ",sampledDataset.count,"\n");
+	Logger.log(Logger.INFO,"Test dataset size: ",testDataset.count,"\n");
+ 	
+ 	
+ 	Logger.log(Logger.INFO,"Computing ground truth: ");
+ 	testDataset.computeGT(sampledDataset,1,0);
+	
 	
 	Logger.log(Logger.INFO,"Autotuning parameters...\n");
 	
@@ -122,7 +126,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 				
 				float buildTime = profile({kmeans.buildIndex();});	
 				float searchTime = mean( doSearch( REPEAT, { 
-							return testNNIndexPrecision!(true,false)(kmeans, testDataset, desiredPrecision, checks, nn);
+							return testNNIndexPrecision!(T,true,false)(kmeans, sampledDataset, testDataset, desiredPrecision, checks, nn);
 							} ) );
 				float cost = buildTime*indexFactor+searchTime;
 				
@@ -156,7 +160,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 			
 			float buildTime = profile({kdtree.buildIndex();});
 				float searchTime = mean( doSearch( REPEAT, { 
-							return testNNIndexPrecision!(true,false)(kdtree, testDataset, desiredPrecision, checks, nn);
+							return testNNIndexPrecision!(T,true,false)(kdtree, sampledDataset, testDataset, desiredPrecision, checks, nn);
 							} ) );
 			float cost = buildTime*indexFactor+searchTime;
 			
@@ -186,11 +190,11 @@ int estimateSearchParams(T)(NNIndex index, Features!(T) inputDataset, float desi
 	Features!(float) testDataset = new Features!(float)();
 	testDataset.init(inputDataset.sample(SAMPLE_COUNT,false));
 	writefln("computing ground truth");
-	testDataset.computeGT(inputDataset,1);
+	testDataset.computeGT(inputDataset,1,1);
 	
 	int checks;
 	writefln("Estimating number of checks");
-	testNNIndexPrecision!(true,false)(index, testDataset, desiredPrecision, checks, nn, 1);
+	testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
 	
 	writefln("required number of checks: ", checks);
 	

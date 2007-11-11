@@ -48,9 +48,8 @@ class RunTestCommand : IndexCommand
  		description = super.description~" Test the index against the test dataset (ground truth given in the match file).";
 	}
 	
-	void execute() 
+	private void executeWithType(T)() 
 	{
-		super.execute();
 		
 /+		if (params["checks"]!=null) {
 			checkList = params["checks"].get!(string);
@@ -88,21 +87,31 @@ class RunTestCommand : IndexCommand
 			assert(precision<=100);
 			int checks;
  			if (altEstimator) {
- 				testNNIndexPrecisionAlt!(true,true)(index,testData, precision, checks, nn, skipMatches);
+ 				testNNIndexPrecisionAlt!(T,true,true)(index,inputData!(T),testData, precision, checks, nn, skipMatches);
  			}
  			else {
-	 			testNNIndexPrecision!(true,true)(index,testData, precision, checks, nn, skipMatches);
+	 			testNNIndexPrecision!(T,true,true)(index,inputData!(T),testData, precision, checks, nn, skipMatches);
  			}
  			
 		}
 		else {
 			foreach (c;checks) {
-				testNNIndex!(true,true)(index,testData, c, nn, skipMatches);
+				testNNIndex!(T,true,true)(index,inputData!(T),testData, c, nn, skipMatches);
 			}
 		}
 
 	}
 	
 
+	void execute() 
+	{
+		super.execute();
+
+		if (byteFeatures) {
+			executeWithType!(ubyte)();
+		} else {
+			executeWithType!(float)();
+		}
+	}
 	
 }

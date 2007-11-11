@@ -11,32 +11,69 @@ import util.logger;
 import util.profiler;
 import output.console;
 import output.report;
+import util.dist;
 
 
 const float SEARCH_EPS = 0.10;
 
 template search(bool withOutput) {
-float search(int checks, out float time) 
+
+int countCorrectMatches(int[] neighbors, int[] groundTruth)
 {
-	int correct = 0;
-	time = profile( {
-	for (int i = 0; i < testData.count; i++) {
-		resultSet.init(testData.vecs[i]);
-		index.findNeighbors(resultSet,testData.vecs[i], checks);			
-		int nn_index = resultSet.getPointIndex(skipMatches);
-		
-		if (nn_index == testData.match[i]) {
-			correct++;
+	int n = neighbors.length;
+	
+	int count = 0;
+	foreach(m;neighbors) {
+		for (int i=0;i<n;++i) {
+			if (groundTruth[i]==m) {
+				count++;
+				break;
+			}
 		}
 	}
+	return count;
+}
+
+float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
+{
+	int n = neighbors.length;
+	
+	float ret = 0;
+	foreach(i,m;neighbors) {
+		ret += squaredDist(target,vecs[m])/squaredDist(target,vecs[groundTruth[i]]);
+		
+	}
+	return ret;
+}
+
+float search(int checks, out float time) 
+{
+	if (testData.match[0].length<nn) {
+		throw new Exception("Ground truth is not computed for as many neighbors as requested");
+	}
+	
+	int correct = 0;
+	float distR = 0;
+	
+	time = profile( {
+		for (int i = 0; i < testData.count; i++) {
+			auto target = testData.vecs[i];
+			resultSet.init(target);
+			index.findNeighbors(resultSet,target, checks);			
+			int[] neighbors = resultSet.getNeighbors();
+			neighbors = neighbors[skipMatches..$];
+					
+			correct += countCorrectMatches(neighbors,testData.match[i]);
+			distR += computeDistanceRaport(target,neighbors,testData.match[i]);
+		}
 	});
 	
-	float performance = 100*cast(float)correct/testData.count;
+	float performance = 100*cast(float)correct/(nn*testData.count);
 	
 	static if (withOutput) {
-		Logger.log(Logger.INFO,"  %5d     %6.2f      %6.2f      %6.3f\n",
+		Logger.log(Logger.INFO,"  %5d     %6.2f      %6.2f      %6.3f      %6.3f\n",
 				checks, performance,
-				time, 1000.0 * time / testData.count);
+				time, 1000.0 * time / testData.count, distR/testData.count);
 		Logger.log(Logger.SIMPLE,"%d %f %f %f\n",
 				checks, correct * 100.0 / cast(float) testData.count,
 				time, 1000.0 * time / testData.count);
@@ -48,33 +85,27 @@ float search(int checks, out float time)
 
 
 
-float testNNIndex(bool withOutput, bool withReporting)(NNIndex index, Features!(float) testData, int checks, int nn = 1, uint skipMatches = 0)
+float testNNIndex(T, bool withOutput, bool withReporting)
+				(NNIndex index, Features!(T) inputData, Features!(float) testData, int checks, int nn = 1, uint skipMatches = 0)
 {
+	T[][] vecs = inputData.vecs;
 	
 	static if (withOutput)
 		Logger.log(Logger.INFO,"Searching... \n");
 	
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
 	
-	mixin search!(false);
+	mixin search!(withOutput);
 	
-	float time;
-	float precision = search(checks,time);
-
-
-
 	static if (withOutput) {
 		Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
 				" checked   neighbors   (seconds)      (ms)\n"
 				" -------   ---------   ---------  -----------\n");
-		Logger.log(Logger.INFO,"  %5d     %6.2f      %6.2f      %6.3f\n",
-				checks, precision,
-				time, 1000.0 * time / testData.count);
-		Logger.log(Logger.SIMPLE,"%d %f %f %f\n",
-				checks, precision,
-				time, 1000.0 * time / testData.count);
 	}
 	
+	float time;
+	float precision = search(checks,time);
+
 	static if (withReporting) {
 		reportedValues["checks"] = checks;
 		reportedValues["match"] = cast(double)precision;
@@ -86,9 +117,11 @@ float testNNIndex(bool withOutput, bool withReporting)(NNIndex index, Features!(
 }
 
 
-float testNNIndexPrecision(bool withOutput, bool withReporting)
-						(NNIndex index, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
+float testNNIndexPrecision(T, bool withOutput, bool withReporting)
+						(NNIndex index,Features!(T) inputData, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
 {	
+	T[][] vecs = inputData.vecs;
+	
 	static if (withOutput) {
 		Logger.log(Logger.INFO,"Searching... \n");
 		Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
@@ -167,9 +200,11 @@ float testNNIndexPrecision(bool withOutput, bool withReporting)
 
 
 
-float testNNIndexPrecisionAlt(bool withOutput, bool withReporting)
-						(NNIndex index, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
+float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
+						(NNIndex index, Features!(T) inputData, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
 {
+	T[][] vecs = inputData.vecs;
+
 	static if (withOutput) {
 		Logger.log(Logger.INFO,"Searching... \n");
 		Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"

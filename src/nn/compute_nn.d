@@ -28,11 +28,14 @@ void computeNearestNeighbors(string outputFile, NNIndex index, Features!(float) 
 	
 			index.findNeighbors(resultSet,testData.vecs[i], checks);			
 			
+			int[] neighbors = resultSet.getNeighbors();
+			neighbors = neighbors[skipMatches..$];
+			
 			for (int j=0;j<nn;++j) {
 				if (j!=0) {
 					fwritef(fout," ");
 				}
-				fwritef(fout,"%d",resultSet.getPointIndex(j+skipMatches));
+				fwritef(fout,"%d",neighbors[i]);
 			}
 			fwritef(fout,"\n");
 		}

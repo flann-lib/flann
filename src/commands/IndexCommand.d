@@ -59,6 +59,7 @@ class IndexCommand : DefaultCommand
 	
 	private void executeWithType(T)() 
 	{
+		reportedValues["byte_features"] = byteFeatures?1:0;
 		
 // 		if (loadFile !is null) {
 // 		Logger.log(Logger.INFO,"Loading index from file %s... ",loadFile);
@@ -152,8 +153,6 @@ class IndexCommand : DefaultCommand
 	
 	void execute() 
 	{
-		reportedValues["byte_features"] = byteFeatures?1:0;
-
 		if (byteFeatures) {
 			executeWithType!(ubyte)();
 		} else {

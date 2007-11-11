@@ -16,9 +16,9 @@ import util.utils;
 import util.allocator;
 
 
-private int findNearest(T,U)(T[][] vecs, U[] query, int skip = 0) 
+private void findNearest(T,U)(T[][] vecs, U[] query, int[] matches, int skip = 0) 
 {
-	int n = skip + 1;
+	int n = matches.length + skip;
 	mixin(allocate_static("int[n] nn;"));
 	mixin(allocate_static("float[n] dists;"));
 	
@@ -46,17 +46,19 @@ private int findNearest(T,U)(T[][] vecs, U[] query, int skip = 0)
 		}
 	}
 	
+	for (int i=0;i<matches.length;++i) {
+		matches[i] = nn[i+skip];
+	}	
 	
-	return nn[skip];
 }
 
-public int[] computeGroundTruth(T,U)(Features!(T) inputData, Features!(U) testData, int skip = 0) 
+public int[][] computeGroundTruth(T,U)(Features!(T) inputData, Features!(U) testData, int nn, int skip = 0) 
 {
-	int[] matches = allocate!(int[])(testData.count);
+	int[][] matches = allocate_mat!(int[][])(testData.count,nn);
 
 	showProgressBar(testData.count, 70, (Ticker tick) {
 		for (int i=0;i<testData.count;++i) {
-			matches[i] = findNearest(inputData.vecs, testData.vecs[i], skip);
+			findNearest(inputData.vecs, testData.vecs[i], matches[i], skip);
 			tick();
 		}
 	});
@@ -65,22 +67,20 @@ public int[] computeGroundTruth(T,U)(Features!(T) inputData, Features!(U) testDa
 }
 
 
-void writeMatches(string match_file, int[] matches)
+void writeMatches(string match_file, int[][] matches)
 {
-
-	FILE* f = fopen(toStringz(match_file),"w");
-	if (f==null) {
-		throw new Exception("Cannot open file "~match_file);
-	}
-
-	for (int i=0;i<matches.length;++i) {
-		fwritefln(f,"%d %d",i,matches[i]);
-	}
-	
-	fclose(f);
+	withOpenFile(match_file,"w", (FILE* f){
+		foreach (index,match; matches) {
+			fwritef(f,"%d ",index);
+			foreach (value;match) {
+				fwritef(f,"%d ",value);
+			}
+			fwritefln(f);
+		}
+	});
 }
 
-void compute_gt(T)(string featuresFile, string testFile, string matchFile, int skip = 0)
+void compute_gt(T)(string featuresFile, string testFile, string matchFile, int nn, int skip = 0)
 {
 	Features!(T) inputData;
 	Features!(T) testData;
@@ -107,9 +107,9 @@ void compute_gt(T)(string featuresFile, string testFile, string matchFile, int s
 		});
 	}
 
-	int matches[];
+	int matches[][];
 	showOperation("Computing ground truth", {
-		matches = computeGroundTruth(inputData, testData, skip);
+		matches = computeGroundTruth(inputData, testData, nn, skip);
 	});
 
 	showOperation("Writing matches to "~matchFile, {
