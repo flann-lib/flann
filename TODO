@@ -9,15 +9,13 @@
 
 
 
-- when testing run until getting some precision (95% ?) (could also have a maximum number of steps)
+- automatically tuned parameters DONE
 
-- automatically tuned parameters
-
+- speedup kmeans using sampling or kdtree
 
 - profiling and optimization (GPU?, BLAS?, BLADE?)
 - checkout NVIDIA CUDA library for GPU optimized computations
 
-- speedup kmeans using sampling
 
 - mean shift clustering
 
