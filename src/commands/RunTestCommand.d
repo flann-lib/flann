@@ -81,8 +81,9 @@ class RunTestCommand : IndexCommand
 		}
 		
 		reportedValues["test_count"] = testData.count;
+		reportedValues["nn"] = nn;
 
-		writefln("AltEstimator: ",altEstimator);
+
 		if (precision>0) {
 			assert(precision<=100);
 			int checks;

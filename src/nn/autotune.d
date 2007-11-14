@@ -137,7 +137,9 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 					kmeansCost = cost;
 					
 				}
-			Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");	
+				Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");	
+				
+				std.gc.fullCollect();
 			}
 		}
 // 		Logger.log(Logger.INFO,"Best KMeans params: ",kmeansParams,"\n");
@@ -171,6 +173,8 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 				copy(kdtreeParams,params);
 				kdtreeCost = cost;
 			}
+			
+			std.gc.fullCollect();
 		}
 //  		Logger.log(Logger.INFO,"Best kdtree params: ",kdtreeParams,"\n");
 	}
