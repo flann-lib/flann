@@ -33,7 +33,7 @@ class Heap {
 	
 	public this(int size) 
 	{
-		heap = allocate!(T[])(size+1);  // heap uses 1-based indexing
+		heap = new T[size+1];  // heap uses 1-based indexing
 		count = 0;
 	}
 

@@ -3,7 +3,7 @@ module util.allocator;
 import std.c.stdlib;
 import std.stdio;
 
-
+/+
 template class_allocator()
 {
 	new(size_t sz)
@@ -48,12 +48,12 @@ public T[][] allocate_mat(T : T[][])(int rows, int cols) {
 	}
 	
 	return index[0..rows];
-}
+}+/
 
 
-public T allocate_once(T, A...)(A a) {
-	allocate!(T)(a);
-}
+// public T allocate_once(T, A...)(A a) {
+// 	allocate!(T)(a);
+// }
 
 
 string allocate_static(string declaration)
@@ -83,7 +83,7 @@ string allocate_static(string declaration)
 	return 	
 	"static "~type~"[] "~vec~";
 	if ("~vec~" is null || "~vec~".length!="~size~") {
-		"~vec~" = allocate!("~type~"[])("~size~");
+		"~vec~" = new "~type~"["~size~"];
 	}";
 }
 
@@ -105,7 +105,7 @@ string allocate_static(string declaration)
 /* The memory allocated by this class is not handled by the garbage collector. Be 
 carefull not to store in this memory pointers to memory handled by the gc.
 */
-
+/+
 class Pool {
 	
 	private static {
@@ -194,4 +194,4 @@ class Pool {
 		}
 	}
 	
-}
+}+/

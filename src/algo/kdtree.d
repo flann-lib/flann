@@ -130,13 +130,13 @@ class KDTree(T) : NNIndex{
 		vcount = inputData.count;
 		veclen = inputData.veclen;
 		vecs = inputData.vecs;
-		trees = allocate!(Tree[])(numTrees_);
+		trees = new Tree[numTrees_];
 		heap = new Heap!(BranchSt)(vecs.length);
 		checkID = -1000;
 		
 	
 		/* Create a permutable array of indices to the input vectors. */
-		vind = allocate!(int[])(vcount);
+		vind = new int[vcount];
 		for (int i = 0; i < vcount; i++) {
 			vind[i] = i;
 		}
@@ -179,7 +179,7 @@ class KDTree(T) : NNIndex{
 	{
 		Tree node;
 	
-		node = allocate!(TreeSt)();
+		node = new TreeSt();//allocate!(TreeSt)();
 		*pTree = node;
 	
 		/* If only one exemplar remains, then make this a leaf node. */
@@ -202,12 +202,6 @@ class KDTree(T) : NNIndex{
 		mixin(allocate_static("float[veclen] mean;"));
 		mixin(allocate_static("float[veclen] var;"));
 		
-/+		static float[] mean, var;
-		if (mean==null) {
-			mean = allocate!(float[])(veclen);
-			var = allocate!(float[])(veclen);
-		}
-		+/
 		mean[] = 0.0;
 		var[] = 0.0;
 		
@@ -476,7 +470,7 @@ class KDTree(T) : NNIndex{
 		
 		static T[][] points;
 		if (points==null) {
-			points = allocate!(T[][])(vcount);
+			points = new T[][vcount];
 		}
 		int size = 0;
 		getClusterPoints_Helper(node,points,size);
@@ -504,8 +498,8 @@ class KDTree(T) : NNIndex{
 			}
 		}
 			
-		float variances[] = allocate!(float[])(q.size);
-		int clusterSize[] = allocate!(int[])(q.size);
+		float variances[] = new float[q.size];
+		int clusterSize[] = new int[q.size];
 		
 		for (int i=0;i<q.size;++i) {
 			T[][] clusterPoints = getClusterPoints(q[i]);

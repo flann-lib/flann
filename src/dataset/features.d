@@ -174,7 +174,7 @@ class GridDataFile(T)
 		
 		string[] tokens = strip(line).split(delimiter);
 		int veclen = tokens.length;
-		T[][] vecs = allocate_mat!(T[][])(lines,veclen);		
+		T[][] vecs = new T[][](lines,veclen);		
 		int count = 0;
 		while (line.length!=0) {
 			if (tokens.length==veclen) {
@@ -231,15 +231,14 @@ class Features(T = float) {
 		public this(int size) 
 		{
 			this.count = size;
-			vecs = allocate!(T[][])(size);
-// 			match = allocate!(int[])(size);
+			vecs = new T[][size];
 		}
 
 		public void init(U)(Features!(U) dataset) 
 		{
 			this.count = dataset.count;
 			this.veclen = dataset.veclen;
-			vecs = allocate_mat!(T[][])(count,veclen);
+			vecs = new T[][](count,veclen);
 			foreach (index,vec;dataset.vecs) {
 				array_copy(vecs[index],vec);
 			}			
@@ -273,8 +272,8 @@ class Features(T = float) {
 	
 		this.count = vcount;
 		this.veclen = veclen;
-		this.vecs = allocate_mat!(T[][])(count,veclen);
-		this.match =allocate_mat!(int[][])(count,1);
+		this.vecs = new T[][](count,veclen);
+		this.match = new int[][](count,1);
 // 		this.mtype = new int[count];
 		
 		/* Read input vectors. */
@@ -358,8 +357,8 @@ class Features(T = float) {
 				
 		withOpenFile(realFile,"r", (FILE* bFile) {
 		
-			vecs = allocate_mat!(T[][])(count,veclen);
-			ubyte[] buffer = allocate!(ubyte[])(veclen*elemSize);
+			vecs = new T[][](count,veclen);
+			ubyte[] buffer = new ubyte[veclen*elemSize];
 		
 			showProgressBar(100, 70, (Ticker tick){
 				int t = count/100;

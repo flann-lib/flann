@@ -160,14 +160,14 @@ class KMeansTree(T) : NNIndex
 		int branchings[] = getBranchingFactors();
 		Logger.log(Logger.INFO,"Using the following branching factors: ",branchings,"\n");
 		
-		root = allocate!(KMeansNode[])(numTrees);
-		indices = allocate!(int[])(vecs.length);
+		root = new KMeansNode[numTrees];
+		indices = new int[vecs.length];
 		for (int i=0;i<vecs.length;++i) {
 			indices[i] = i;
 		}
 		
 		foreach (index,branchingValue; branchings) {
-			root[index] = allocate!(KMeansNodeSt)();
+			root[index] = new KMeansNodeSt();
 			computeNodeStatistics(root[index], indices);
 			computeClustering(root[index], indices, branchingValue);
 		}		
@@ -198,7 +198,7 @@ class KMeansTree(T) : NNIndex
 	
 		float radius = 0;
 		float variance = 0;
-		float[] mean = allocate!(float[])(vecs[0].length);
+		float[] mean = new float[vecs[0].length];
 		for (int i=0;i<indices.length;++i) {
 			for (int j=0;j<mean.length;++j) {
 				mean[j] += vecs[indices[i]][j];
@@ -250,17 +250,13 @@ class KMeansTree(T) : NNIndex
 			return;
 		}
 		
-//		float[][] centers = allocate_mat!(float[][])(nc,flength);		
 		float[][] centers = new float[][](nc,flength);
 		mat_copy(centers,initial_centers);
 		
-// 	 	float[] radiuses = allocate!(float[])(nc);		
 	 	float[] radiuses = new float[nc];		
-//		int[] count = allocate!(int[])(nc);		
 		int[] count = new int[nc];
 		
 		// assign points to clusters
-//		int[] belongs_to = allocate!(int[])(n);
 		int[] belongs_to = new int[n];
 		for (int i=0;i<n;++i) {
 
@@ -357,7 +353,7 @@ class KMeansTree(T) : NNIndex
 	
 	
 		// compute kmeans clustering for each of the resulting clusters
-		node.childs = allocate!(KMeansNode[])(nc);
+		node.childs = new KMeansNode[nc];
 		int start = 0;
 		int end = start;
 		for (int c=0;c<nc;++c) {
@@ -375,7 +371,7 @@ class KMeansTree(T) : NNIndex
 			variance /= s;
 			variance -= squaredDist(centers[c]);
 			
-			node.childs[c] = allocate!(KMeansNodeSt)();
+			node.childs[c] = new KMeansNodeSt();
 			node.childs[c].radius = radiuses[c];
 			node.childs[c].pivot = centers[c];
 			node.childs[c].variance = variance;
@@ -396,7 +392,7 @@ class KMeansTree(T) : NNIndex
 		DistinctRandom r = new DistinctRandom(indices.length);
 		
 		static T[][] centers;
-		if (centers is null || centers.length!=k) centers = allocate!(T[][])(k);
+		if (centers is null || centers.length!=k) centers = new T[][k];
 		int index;
 		for (index=0;index<k;++index) {
 			bool duplicate = true;
@@ -426,7 +422,7 @@ class KMeansTree(T) : NNIndex
 		int n = indices.length;
 		
 		static T[][] centers;
-		if (centers is null) centers = allocate!(T[][])(k);
+		if (centers is null) centers = new T[][k];
 		
 		int rand = cast(int) (drand48() * n);  
 		assert(rand >=0 && rand < n);
@@ -524,7 +520,7 @@ class KMeansTree(T) : NNIndex
 		else {
 			int nc = node.childs.length;
 			static float distances[];
-			if (distances is null || distances.length!=nc) distances = allocate!(float[])(nc);
+			if (distances is null || distances.length!=nc) distances = new float[nc];
 			int ci = getNearestCenter(node, vec, distances);
 			
 			for (int i=0;i<nc;++i) {
@@ -593,7 +589,7 @@ class KMeansTree(T) : NNIndex
 		} 
 		else {
 			int nc = node.childs.length;
-			int[] sort_indices = allocate!(int[])(nc);	
+			int[] sort_indices = new int[nc];
 			
 			getCenterOrdering(node, vec, sort_indices);
 
@@ -611,7 +607,7 @@ class KMeansTree(T) : NNIndex
 		
 		static float[] distances;
 		if (distances is null) {
-			distances = allocate!(float[])(nc);		
+			distances = new float[nc];
 		}
 		
 		for (int i=0;i<nc;++i) {
@@ -667,7 +663,7 @@ class KMeansTree(T) : NNIndex
 	
 		static T[][] points;
 		if (points==null) {
-			points = allocate!(T[][])(vecs.length);
+			points = new T[][vecs.length];
 		}
 		int size = 0;
 		getClusterPoints_Helper(node,points,size);
@@ -682,7 +678,7 @@ class KMeansTree(T) : NNIndex
 		KMeansNode[] clusters = getMinVarianceClusters(root[0], numClusters, variance);
 
 		static float[][] centers;
-		if (centers is null) centers = allocate!(float[][])(clusters.length);
+		if (centers is null) centers = new float[][clusters.length];
 		
 		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
 		
@@ -696,7 +692,7 @@ class KMeansTree(T) : NNIndex
 	private KMeansNode[] getMinVarianceClusters(KMeansNode root, int numClusters, out float varianceValue)
 	{
 		static KMeansNode[] clusters;
-		if (clusters==null) clusters = allocate!(KMeansNode[])(vecs.length);
+		if (clusters==null) clusters = new KMeansNode[vecs.length];
 		
 		int clusterCount = 1;
 		clusters[0] = root;

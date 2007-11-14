@@ -20,8 +20,8 @@ class ResultSet
 	
 	public this(int capacity) 
 	{
-		indices = allocate!(int[])(capacity);
-		dists = allocate!(float[])(capacity);
+		indices = new int[capacity];
+		dists = new float[capacity];
 	}
 	
 	public this(float[] target, int capacity)

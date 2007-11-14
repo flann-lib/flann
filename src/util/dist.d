@@ -148,27 +148,6 @@ const size_t D)+/
 }
 
 
-
-
-
-
-
-// public float DistSquared2(T : float,U : float)(T *v1, U *v2, int veclen)
-// {
-// 	static float[] vec;
-// 	if (vec is null) vec = allocate!(float[])(veclen);
-// 	
-// 	for (int i=0;i<veclen;++i) {
-// 		vec[i] = v1[i]-v2[i];
-// 	}
-// 	
-// 	int inc = 1;
-// 	float result = sdot_(&veclen,vec.ptr,&inc,vec.ptr,&inc);
-// 	
-// 	
-// 	return result;
-// }
-
 public float DistSquared(T)(T *v1, int veclen)
 {
 	float diff, distsq = 0.0;
