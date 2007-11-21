@@ -124,24 +124,24 @@ class IndexCommand : DefaultCommand
 			Logger.log(Logger.ERROR,"Algorithm not supported.\n");
 			Logger.log(Logger.ERROR,"Available algorithms:\n");
 			foreach (algo,val; indexRegistry!(T)) {
-				Logger.log(Logger.ERROR,"\t%s\n",algo);
+				Logger.log(Logger.ERROR,"      {}\n",algo);
 			}			
 			throw new Exception("Algorithm not found...bailing out...\n");
 		}
 
-		Logger.log(Logger.INFO,"Algorithm: %s\n",algorithm);
+		Logger.log(Logger.INFO,"Algorithm: {}\n",algorithm);
 		index = indexRegistry!(T)[algorithm](inputData!(T), params);
 
 		Logger.log(Logger.INFO,"Building index... \n");
-		float indexTime = profile({
+		double indexTime = profile({
 			index.buildIndex();
 		});
 		
 		reportedValues["cluster_time"] = indexTime;
 		
-		Logger.log(Logger.INFO,"Time to build %d tree%s for %d vectors: %5.2f seconds\n\n",
+		Logger.log(Logger.INFO,"Time to build {} tree{} for {} vectors: {} seconds\n\n",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
-		Logger.log(Logger.SIMPLE,"%f\n",indexTime);
+		Logger.log(Logger.SIMPLE,"{}\n",indexTime);
 
 // 		if (saveFile !is null) {
 // 			Logger.log(Logger.INFO,"Saving index to file %s... ",saveFile);

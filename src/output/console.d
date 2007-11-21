@@ -40,7 +40,7 @@ void showProgressBar(int maxValue, int maxWidth, void delegate(Ticker ticker) ac
 				
 				int percent = (100*crtValue)/maxValue;
 			
-				Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=(%2d%%)>",percent);
+				Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=({}%)>",percent);
 				crtWidth++;
 			}
 		}
@@ -72,7 +72,7 @@ void showProgressBarStep(int maxValue, int maxWidth, void delegate(int index) ac
 				
 				int percent = (100*crtValue)/maxValue;
 			
-				Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=(%2d%%)>",percent);
+				Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=({}%)>",percent);
 				crtWidth++;
 			}
 		}

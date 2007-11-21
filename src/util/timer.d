@@ -3,6 +3,7 @@ Project: nn
 */
 
 module util.timer;
+import tango.io.Stdout;
 
 version (Posix) {
  	import tango.stdc.posix.sys.time;
@@ -16,7 +17,7 @@ class StartStopTimer
 	private:
 	long startTime;
 
-	public float value;
+	public double value;
 	
 	public this() {
 		value = 0;
@@ -37,10 +38,11 @@ class StartStopTimer
 		version (Posix) {
 			timeval t;
 			gettimeofday(&t, null);
-			value += (cast(float)(t.tv_sec * 1000 + t.tv_usec / 1000) - startTime) / 1000;
+			long endTime = t.tv_sec * 1000 + t.tv_usec / 1000;
+			value += cast(typeof(value))(endTime - startTime) / 1000;
 		}
 		else {
-			value += (cast(float) clock() - startTime) / CLOCKS_PER_SEC;
+			value += (cast(typeof(value)) clock() - startTime) / CLOCKS_PER_SEC;
 		}
 	}
 	

@@ -212,7 +212,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 	
 	private void write(TreeNode node) 
 	{
-		Logger.log(Logger.INFO,"#%d ",node.orig_id);
+		Logger.log(Logger.INFO,"#{} ",node.orig_id);
 /+		writef("{");
 		for (int i=0;i<node.pivot.length;++i) {
 			if (i!=0) writef(",");
@@ -411,7 +411,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 		
 		
 		for (int i=0;i<clusterSize.length;++i) {
-			Logger.log(Logger.INFO,"Cluster %d size: %d\n",i, clusterSize[i]);
+			Logger.log(Logger.INFO,"Cluster {} size: {}\n",i, clusterSize[i]);
 		}
 		
 		
@@ -425,7 +425,7 @@ float[][] getClusterCenters(int numClusters)
 		float variance;
 		TreeNode[] clusters = getMinVarianceClusters(root, numClusters, variance);
 	
-		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
+		Logger.log(Logger.INFO,"Mean cluster variance for {} top level clusters: {}\n",clusters.length,variance);
 		
 		float[][] centers = new float[][clusters.length];
 		

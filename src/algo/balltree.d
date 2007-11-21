@@ -117,7 +117,7 @@ class BallTree : NNIndex {
 		int countNodes = 0;
 		
 		countNodesBallTree(btRoot, countNodes);
-		Logger.log(Logger.INFO,"Nodes in ball-tree: %d\n",countNodes);
+		Logger.log(Logger.INFO,"Nodes in ball-tree: {}\n",countNodes);
 	}
 	
 	private void countNodesBallTree(BallTreeNode node, inout int count) 

@@ -159,7 +159,7 @@ class KMeansTree(T) : NNIndex
 	{	
 	
 		int branchings[] = getBranchingFactors();
-		Logger.log(Logger.INFO,"Using the following branching factors: ",branchings,"\n");
+		Logger.log(Logger.INFO,"Using the following branching factors: {}\n");
 		
 		root = new KMeansNode[numTrees];
 		indices = new int[vecs.length];
@@ -664,7 +664,7 @@ class KMeansTree(T) : NNIndex
 		static float[][] centers;
 		if (centers is null) centers = new float[][clusters.length];
 		
-		Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",clusters.length,variance);
+		Logger.log(Logger.INFO,"Mean cluster variance for {} top level clusters: {}\n",clusters.length,variance);
 		
  		foreach (index, cluster; clusters) {
 			centers[index] = cluster.pivot;

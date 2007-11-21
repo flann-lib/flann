@@ -7,9 +7,18 @@ module util.logger;
 
 // import std.stdio;
 // import std.format;
+import tango.core.Vararg;
 import tango.text.convert.Layout;
+import tango.io.Console;
+import tango.io.Stdout;
 
 import util.defines;
+
+private static Layout!(char) layout;
+
+static this() {
+	layout = new Layout!(char);
+}
 
 class Logger 
 {
@@ -45,7 +54,16 @@ static {
 
 	public void log(LogLevel logLevel, ...)
 	{
+		const int BUFFER_SIZE = 1000;
+		char buffer[BUFFER_SIZE];
 		
+		if (logLevel in levels) {
+			int size = _arguments.length;
+			
+			char[] format = va_arg!(char[])(_argptr);
+			Cout(layout.sprint_(buffer,format,_arguments[1..$],_argptr));
+			Cout.flush;
+		}
 		
 	}
 	

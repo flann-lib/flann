@@ -326,7 +326,7 @@ class BottomUpAgglomerativeTree : NNIndex {
 
 			addPoint(newNode);
 		
-			writef("%d - %d\n",pcount, dcount);
+			writef("{} - {}\n",pcount, dcount);
 		
 			removeDistancesContaining(node1,node2);
 		
@@ -587,7 +587,7 @@ class BottomUpAgglomerativeTree : NNIndex {
 		
 		
 		for (int i=0;i<clusterSize.length;++i) {
-			writef("Cluster %d size: %d\n",i, clusterSize[i]);
+			writef("Cluster {} size: {}\n",i, clusterSize[i]);
 		}
 		
 		

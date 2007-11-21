@@ -333,7 +333,7 @@ class Features(T = float) {
 		ulong fileSize = FilePath(realFile).fileSize;
 		count = fileSize / (veclen*elemSize);
 		
-		Logger.log(Logger.INFO,"\nReading %d features: ",count);
+		Logger.log(Logger.INFO,"\nReading {} features: ",count);
 				
 		withOpenFile(realFile, (FileInput stream) {
 		
