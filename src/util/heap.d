@@ -20,8 +20,6 @@ module util.heap;
 import util.allocator;
 import util.profiler;
 
-import std.stdio;
-
 template Heap(T) {
 
 class Heap {

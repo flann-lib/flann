@@ -5,7 +5,7 @@ WARNS = -W -Wall
 INCLUDES = -Iinclude
 LIBS = 
 
-HAS_SQLITE = 1
+HAS_SQLITE = 0
 
 
 include Makefile.platform
@@ -14,7 +14,7 @@ ifdef UNIT_TEST
 	DFLAGS := ${DFLAGS} -unittest -debug 
 endif
 
-DFLAGS := ${DFLAGS} -version=Phobos
+DFLAGS := ${DFLAGS}
 
 ifeq ($(PROFILER),gprof)
 	DFLAGS := ${DFLAGS} -q,-pg -K-q,-pg

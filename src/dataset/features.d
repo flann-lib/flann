@@ -4,15 +4,20 @@ Project: nn
 
 module dataset.features;
 
-import std.stdio;
-import std.string;
-import std.c.string;
-import std.stream;
-import std.ctype;
-import std.conv;
-import std.file;
+// import std.stdio;
+// import std.string;
+// import std.c.string;
+// import std.stream;
+// import std.ctype;
+// import std.conv;
+// import std.file;
+import tango.stdc.string;
+import tango.core.Array;
+import tango.text.Util : trim,split;
+import tango.io.FilePath;
 
-import serialization.serializer;
+// import serialization.serializer;
+import util.defines;
 import util.logger;
 import util.utils;
 import util.random;
@@ -38,7 +43,12 @@ void addTo(T,U)(T[] a, U[] b) {
 
 void writeToFile(float[][] vecs, char[] file) 
 {
-	FILE* fp = fopen(toStringz(file),"w");
+	withOpenFile(file, (Writer write) {
+		for (int i=0;i<vecs.length;++i) {
+			write(vecs[i]);
+		}
+	});
+/+	FILE* fp = fopen(toStringz(file),"w");
 	if (fp is null) {
 		throw new Exception("Cannot open output file: "~file);
 	}
@@ -52,7 +62,7 @@ void writeToFile(float[][] vecs, char[] file)
 		}
 		fprintf(fp,"\n");
 	}
-	fclose(fp);
+	fclose(fp);+/
 }
 
 
@@ -92,17 +102,12 @@ int writeValue(U : ubyte) (FILE* f, U value) {
 
 class GridDataFile(T)
 {
-	private FILE* fp;
+	private string file;
 
 	public this(string file)
 	{
-		fp = fOpen(file,"r","Cannot open: "~file);
-	}
-	
-	public this(FILE* fp)
-	{
-		this.fp = fp;
-	}
+		this.file = file;
+	}	
 	
 	private char guessDelimiter(string line)
 	{
@@ -125,41 +130,17 @@ class GridDataFile(T)
 		const int MAX_BUF = 1024;
 		char buffer[MAX_BUF];
 		
-		int count = 0;
-		while (fgets(&buffer[0],MAX_BUF,fp)) {
-			if (buffer[strlen(buffer.ptr)-1]=='\n') {
-				count++;
+		int cnt = 0;
+		withOpenFile(file, (FileInput stream) {
+			while (stream.read(buffer)==MAX_BUF) {
+				cnt += count(buffer,'\n');
 			}
-		}
+		});
 		
-		rewind(fp);
-		return count;
+		return cnt;	
 	}
 	
 	
-	private string readLine(ref char[] buffer)
-	{
-		const int INIT_SIZE = 1024;
-		
-		if (buffer.length==0) {
-			buffer.length = INIT_SIZE;
-		}
-		
-		char* ret = fgets(buffer.ptr,buffer.length,fp);
-		if (ret==null) {
-			return null;
-		}
-		int len = strlen(buffer.ptr);
-		while (buffer[len-1]!='\n') {
-			buffer.length = buffer.length + INIT_SIZE;
-			ret = fgets(buffer.ptr+len,buffer.length-len,fp);
-			if (ret==null) {
-				return null;
-			}
-			len = strlen(buffer.ptr);
-		}
-		return buffer[0..len-1];		
-	}	
 
 
 	private T[][] getValues()
@@ -167,36 +148,36 @@ class GridDataFile(T)
 		static string buffer;
 		
 		int lines = getLinesNo();
+		T[][] vecs;
 		
-		string line = readLine(buffer);
-		string delimiter;
-		delimiter ~= guessDelimiter(line);
-		
-		string[] tokens = strip(line).split(delimiter);
-		int veclen = tokens.length;
-		T[][] vecs = new T[][](lines,veclen);		
-		int count = 0;
-		while (line.length!=0) {
-			if (tokens.length==veclen) {
-				array_copy(vecs[count++],tokens);
-			} else {
-				debug {
-					Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(count+1));
+		withOpenFile(file, (LineInput stream) {
+			
+			string line = stream.next;
+			string delimiter;
+			delimiter ~= guessDelimiter(line);
+			
+			string[] tokens = trim(line).split(delimiter);
+			int veclen = tokens.length;
+			int cnt = 0;
+			vecs = new T[][](lines,veclen);
+			array_copy(vecs[cnt++],tokens);
+			
+			foreach (index,line; stream) {
+				tokens = trim(line).split(delimiter);
+				if (tokens.length==veclen) {
+					array_copy(vecs[cnt++],tokens);
+				} else {
+					debug {
+						Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(cnt+1));
+					}
 				}
+					
 			}
-			line = readLine(buffer);
-			tokens = strip(line).split(delimiter);
-		}
-		
-		Logger.log(Logger.INFO,"Read %d features.",count);
-		vecs = vecs[0..count];
-				
+			Logger.log(Logger.INFO,"Read %d features.",cnt);
+			vecs = vecs[0..cnt];
+		});
 		return vecs;
 	}
-
-
-
-
 
 
 }
@@ -262,50 +243,45 @@ class Features(T = float) {
 		known to be a correct match, while 1 means it is correct
 		D. A sequence of the veclen values for the vector elements.
 	*/	
-	private void readNNFile(FILE* fp) 
+	private void readNNFile(string file) 
 	{
 	
-		int vcount, veclen, vtype;
-		if (fscanf(fp, "NN %d %d %d ", &vcount, &veclen, &vtype) != 3) {
-			throw new Exception("Invalid NN file header.");
-		}
-	
-		this.count = vcount;
-		this.veclen = veclen;
-		this.vecs = new T[][](count,veclen);
-		this.match = new int[][](count,1);
-// 		this.mtype = new int[count];
+		withOpenFile(file, (Reader stream) {
 		
-		/* Read input vectors. */
-		for (int i = 0; i < count; i++) {
-	
-			int seq, mat, mtype;
-			if (fscanf(fp, "%d %d %d", &seq, &mat, &mtype) != 3) {
-				throw new Exception("Invalid NN file.");
+			int vcount, veclen, vtype;
+			string header;
+			stream (header)(vcount)(veclen)(vtype);
+			
+			if (header!="NN") {
+				throw new Exception("Invalid NN file header.");
 			}
-			assert(seq == i);
-			this.match[i][0] = mat;
-// 			this.mtype[i] = mtype;
 	
-			T val;
-			/* Read an input vector. */
-			for (int j = 0; j < veclen; j++) {
-				if (readValue!(T)(fp,val) != 1) {
-					throw new Exception("Invalid vector value.");
-				}
-				this.vecs[i][j] = val;
+			this.count = vcount;
+			this.veclen = veclen;
+			this.vecs = new T[][](count,veclen);
+			this.match = new int[][](count,1);
+			
+		
+			/* Read input vectors. */
+			for (int i = 0; i < count; i++) {
+		
+				int seq, mat, mtype;
+				stream (seq)(mat)(mtype);
+				assert(seq == i);		
+				this.match[i][0] = mat;
+		
+				stream (vecs[i]);
 			}
-		}
-		return this;
+		});
 	}
 	
 	
 
 	
 	
-	private void readDATFile(FILE* fp)
+	private void readDATFile(string file)
 	{
-		auto gridData = new GridDataFile!(T)(fp);
+		auto gridData = new GridDataFile!(T)(file);
 		vecs = gridData.getValues();
 		count = vecs.length;
 	}
@@ -323,39 +299,43 @@ class Features(T = float) {
 		}		
 	}
 	
-	private void dumpDatabase()
+// 	private void dumpDatabase()
+// 	{
+// 		for (int i=0;i<count;++i) {
+// 			for (int j=0;j<veclen;++j) {
+// 				fprintf(stderr,"%f ",vecs[i][j]);
+// 			}
+// 			fprintf(stderr,"\n");
+// 		}
+// 	}
+		
+	private void readBINARYFile(string file) 
 	{
-		for (int i=0;i<count;++i) {
-			for (int j=0;j<veclen;++j) {
-				fprintf(stderr,"%f ",vecs[i][j]);
+		string realFile;
+		int elemSize;
+		
+		withOpenFile(file, (Reader read) {
+			string header;
+			read (header);
+			if (header != "BINARY") {
+				throw new Exception("Invalid file header, was expecting BINARY");
 			}
-			fprintf(stderr,"\n");
-		}
-	}
-		
-	private void readBINARYFile(FILE* fp) 
-	{
-		string header = readln(fp);
-		if (strip(header) != "BINARY") {
-			Logger.log(Logger.INFO,header);
-			throw new Exception("Invalid file type");
-		}
-		
-		string realFile = strip(readln(fp));
-		veclen = toInt(strip(readln(fp)));
-		int elemSize = toInt(strip(readln(fp)));
+			
+			read(realFile);
+			read(veclen);
+			read(elemSize);	
+		});
 		
 		if (elemSize!=T.sizeof) {
 			Logger.log(Logger.INFO, "Data elements size not equal to used type size. Performing conversion.\n	");
 		}
 		
-		ulong fileSize = getSize(realFile);
+		ulong fileSize = FilePath(realFile).fileSize;
 		count = fileSize / (veclen*elemSize);
 		
 		Logger.log(Logger.INFO,"\nReading %d features: ",count);
 				
-				
-		withOpenFile(realFile,"r", (FILE* bFile) {
+		withOpenFile(realFile, (FileInput stream) {
 		
 			vecs = new T[][](count,veclen);
 			ubyte[] buffer = new ubyte[veclen*elemSize];
@@ -363,7 +343,7 @@ class Features(T = float) {
 			showProgressBar(100, 70, (Ticker tick){
 				int t = count/100;
 				for (int i=0;i<count;++i) {
-					fread(&buffer[0],veclen,elemSize,bFile);
+					stream.read(buffer);
 					array_copy(vecs[i],buffer);
 					
 					if (i%t==0) tick();
@@ -376,88 +356,68 @@ class Features(T = float) {
 	
 	private signature checkSignature(string file)
 	{
-		FILE* fp = fopen(toStringz(file),"r");
-		if (fp is null) {
-			throw new Exception("Cannot open input file: "~file);
-		}		
-		char buf[10];
-		fread(&buf[0],buf.length,char.sizeof,fp);
-		fclose(fp);
-
-		if (buf[0..2]=="NN") {
-			return signature.NN_FILE;
-		}
-		else if (buf[0..6]=="BINARY") {
-				return signature.BINARY_FILE;
-		}
-		else {
-			return signature.DAT_FILE;
-		}
+		signature sig;
+		withOpenFile(file, (FileInput stream) {
+			
+			char buf[10];
+			stream.read(buf);
+			if (buf[0..2]=="NN") {
+				sig = signature.NN_FILE;
+			}
+			else if (buf[0..6]=="BINARY") {
+				sig = signature.BINARY_FILE;
+			}
+			else {
+				sig = signature.DAT_FILE;
+			}
+		});
+		
+		return sig;
 	}
 	
 	public void readFromFile(char[] file)
 	{
 		sig = checkSignature(file);
 		
-		FILE* fp = fopen(toStringz(file),"r");
-		if (fp is null) {
-			throw new Exception("Cannot open input file: "~file);
-		}
-		
-		
 		if (sig == signature.NN_FILE) {
-			readNNFile(fp);
+			readNNFile(file);
 		}
 		else if (sig == signature.DAT_FILE) {
-			readDATFile(fp);
+			readDATFile(file);
 		}
 		else if (sig == signature.BINARY_FILE) {
-			readBINARYFile(fp);
+			readBINARYFile(file);
 		}
-		
 	}
 	
 	
 	private void writeToFile_BINARY(char[] file)
 	{
-		FILE* fp = fOpen(file,"w","Cannot open input file: "~file);
-		
 		char[] bin_file = file ~ ".bin";
+	
+		withOpenFile(file, (FormatOutput print) {
+			print("BINARY").newline;
+			print(bin_file).newline;
+			print(veclen).newline;
+			print(T.sizeof).newline;
+		});
 		
-		fwritef(fp,"BINARY\n");
-		fwritef(fp,bin_file,"\n");
-		fwritef(fp,"%d\n",veclen);
-		fwritef(fp,"%d\n",T.sizeof);
+		withOpenFile(bin_file, (FileOutput stream) {
 		
-		fclose(fp);
-		
-		fp = fOpen(bin_file,"w","Cannot open input file: "~file);
-		
-		for (int i=0;i<count;++i) {
-			fwrite(vecs[i].ptr, veclen, T.sizeof, fp);
-		}
-		
-		fclose(fp);
+			for (int i=0;i<count;++i) {
+				stream.write(vecs[i]);
+			}
+		});
 	}
 	
 	private void writeToFile_DAT(char[] file)
 	{
-		FILE* fp = fopen(toStringz(file),"w");
-		if (fp is null) {
-			throw new Exception("Cannot open input file: "~file);
-		}
-		
-		for (int i=0;i<count;++i) {
-			for (int j=0;j<vecs[i].length;++j) {
-				if (j!=0) {
-					fprintf(fp," ");
-				}
-				writeValue!(T)(fp,vecs[i][j]);
+		withOpenFile(file, (Writer write) {
+			for (int i=0;i<count;++i) {
+				write(vecs[i]);
 			}
-			fprintf(fp,"\n");
-		}
+		});
 		
-		fclose(fp);
 	}
 	
 	public void writeToFile(char[] file)

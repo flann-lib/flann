@@ -7,7 +7,8 @@ module util.random;
 
 import util.utils;
 
-import std.c.time;
+import tango.stdc.time;
+// import std.c.time;
 
 
 extern (C) {

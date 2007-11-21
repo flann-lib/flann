@@ -1,10 +1,12 @@
 module commands.HelpCommand;
 
-import std.string;
+// import std.string;
+import tango.io.Stdout;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
 import util.logger;
+import util.defines;
 
 static this() {
  	register_command!(HelpCommand);
@@ -38,10 +40,9 @@ class HelpCommand : DefaultCommand
 	
 	public void showHelp()
 	{
-		writefln("Command: %s command_name",name);
-		writefln();
-		writefln("Shows help about 'command_name'.");
-		writefln("Valid commands:");
+		Stdout.format("Command: {} command_name\n",name);
+		Stdout("Shows help about 'command_name'.\n");
+		Stdout("Valid commands:\n");
 		showValidCommands();
 	}
 
@@ -55,19 +56,19 @@ class HelpCommand : DefaultCommand
 	{
 		string[] commands = get_commands();
 		foreach (command;commands) {
-			writefln("\t",command);
+			Stdout.formatln("\t{}",command);
 		}
 	}
 
 	private void showProgramHelp(string programName)
 	{
-		writefln("Usage: %s [command command_options]", programName);
-		writefln();
+		Stdout.format("Usage: {} [command command_options]\n", programName);
+		Stdout("\n");
 		
-		writefln("Commands:");
+		Stdout("Commands:\n");
 		showValidCommands();
-		writefln();
+		Stdout("\n");
 		
-		writefln("For more info type: %s help [command]",programName);		
+		Stdout.format("For more info type: {} help [command]\n",programName);		
 	}
 }

@@ -4,9 +4,10 @@ Project: nn
 
 module util.dataset_generator;
 
-import std.stdio;
-import std.string;
+// import std.stdio;
+// import std.string;
 
+import util.defines;
 import util.utils;
 import util.random;
 import output.console;
@@ -14,21 +15,20 @@ import util.logger;
 
 void generateRandomDataset(string file, uint count, uint length)
 {
-	FILE* fout = fOpen(file,"w","Cannot open file: "~file);
 	
-	Logger.log(Logger.INFO,"Generating random dataset with %d features of %d dimension(s).\n",count,length);	
-	
-	showProgressBar(count, 70, (Ticker tick) {
-		for (int i=0;i<count;++i) {
-			for (int j=0;j<length;++j) {
-				if (j!=0) {
-					fwritef(fout," ");
+	withOpenFile(file, (FormatOutput writer) {
+		Logger.log(Logger.INFO,"Generating random dataset with %d features of %d dimension(s).\n",count,length);	
+		showProgressBar(count, 70, (Ticker tick) {
+			for (int i=0;i<count;++i) {
+				for (int j=0;j<length;++j) {
+					if (j!=0) {
+						writer(" ");
+					}
+					writer.format("{} ",drand48());
 				}
-				fwritef(fout,"%g",drand48());
+				writer("\n");
+				tick();
 			}
-			fwritef(fout,"\n");
-			tick();
-		}
+		});
 	});
-	fclose(fout);
 }

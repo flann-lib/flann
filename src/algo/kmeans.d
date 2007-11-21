@@ -4,10 +4,11 @@ Project: nn
 
 module algo.kmeans;
 
-import std.c.time;
-import std.stdio;
+// import std.c.time;
+// import std.stdio;
 
 
+import util.defines;
 import algo.nnindex;
 import util.resultset;
 import util.heap;
@@ -174,24 +175,7 @@ class KMeansTree(T) : NNIndex
 //		Logger.log(Logger.INFO, "Time spend in allocating points: %.2f\n",timer.value);
 	}
 	
-	
-	private void writeIndex(string file) {
-		FILE* f = fOpen(file,"w","Cannot open " ~ file);
-		
-		void writeIndex_helper(KMeansNode node) {
-			if (node.childs.length==0) {
-				node.indices.sort;
-				foreach(v;node.indices) fwritefln(f,v);
-				fwritefln(f);
-			}
-			else {
-				foreach(v;node.childs) writeIndex_helper(v);
-			}
-		}
-		
-		writeIndex_helper(root[0]);
-		fclose(f);	
-	}
+
 	
 	
 	void computeNodeStatistics(KMeansNode node, int[] indices) {

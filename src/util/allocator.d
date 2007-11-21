@@ -1,8 +1,6 @@
-module util.allocator;
+	module util.allocator;
 
-import std.c.stdlib;
-import std.stdio;
-
+import util.defines;
 /+
 template class_allocator()
 {
@@ -63,7 +61,7 @@ string allocate_static(string declaration)
 		if (declaration[pos]=='[') break;
 	}
 	string type = declaration[0..pos];
-	int pos2;
+	int pos2;	
 	pos++;
 	for (pos2 = pos; pos2<declaration.length;++pos2) {
 		if (declaration[pos2]==']') break;

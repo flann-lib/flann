@@ -1,9 +1,9 @@
 module output.FileReporter;
 
-import std.stdio;
+// import std.stdio;
 
 import output.ResultReporter;
-import std.stdio;
+// import std.stdio;
 import util.utils;
 
 static this()
@@ -17,11 +17,11 @@ class FileReporter : ResultReporter
 	
 	public void flush(OrderedParams reporter) 
 	{
-		withOpenFile(output, "w", (FILE* f) {
+		withOpenFile(output, (FormatOutput writer) {
 			foreach (value; reporter) {
-				fwritef(f,value," ");
+				writer("{} ",value);
 			}
-			fwritefln(f);
+			writer("\n");
 		});
 	}
 }

@@ -4,6 +4,7 @@ import commands.GenericCommand;
 import commands.DefaultCommand;
 import dataset.compute_gt;
 import util.logger;
+import util.defines;
 
 static this() {
  	register_command!(ComputeGTCommand);

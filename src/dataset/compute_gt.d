@@ -4,10 +4,12 @@ Project: nn
 
 module dataset.compute_gt;
 
-import std.stdio;
-import std.string;
-import std.c.string;
-import std.conv;
+// import std.stdio;
+// import std.string;
+// import std.c.string;
+// import std.conv;
+
+import util.defines;
 import util.dist;
 import output.console;
 import util.logger;
@@ -69,13 +71,13 @@ public int[][] computeGroundTruth(T,U)(Features!(T) inputData, Features!(U) test
 
 void writeMatches(string match_file, int[][] matches)
 {
-	withOpenFile(match_file,"w", (FILE* f){
+	withOpenFile(match_file,(FormatOutput writer){
 		foreach (index,match; matches) {
-			fwritef(f,"%d ",index);
+			writer("{} ",index);
 			foreach (value;match) {
-				fwritef(f,"%d ",value);
+				writer("{} ",value);
 			}
-			fwritefln(f);
+			writer("\n");
 		}
 	});
 }
@@ -90,8 +92,8 @@ void compute_gt(T)(string featuresFile, string testFile, string matchFile, int n
 		inputData.readFromFile(featuresFile);
 	});
 	
-	
-	if (std.file.exists(testFile) && std.file.isfile(testFile)) {
+	auto path = new FilePath(testFile);
+	if (path.exists() && !path.isFolder()) {
 		showOperation("Reading test data from "~testFile, {
 			testData = new Features!(T)();
 			testData.readFromFile(testFile);

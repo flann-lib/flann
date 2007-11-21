@@ -4,10 +4,11 @@ Project: nn
 
 module util.timer;
 
-import std.c.time;
-import util.logger;
-version (Unix) {
-	import std.c.unix.unix;
+version (Posix) {
+ 	import tango.stdc.posix.sys.time;
+}
+else {
+	import tango.stdc.time;
 }
 
 class StartStopTimer
@@ -22,7 +23,7 @@ class StartStopTimer
 	}
 	
 	public void start() {
-		version(Unix) {
+		version(Posix) {
 			timeval t;
 			gettimeofday(&t, null);
 			startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
@@ -33,7 +34,7 @@ class StartStopTimer
 	}
 	
 	public void stop() {
-		version (Unix) {
+		version (Posix) {
 			timeval t;
 			gettimeofday(&t, null);
 			value += (cast(float)(t.tv_sec * 1000 + t.tv_usec / 1000) - startTime) / 1000;

@@ -5,6 +5,8 @@ Project: nn
 module output.console;
 
 import util.logger;
+import util.defines;
+
 
 typedef void delegate() Ticker;
 

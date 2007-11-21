@@ -1,7 +1,9 @@
 module commands.DefaultCommand;
 
-import std.string;
+// import std.string;
+import tango.text.Util : split,trim;
 
+import util.defines;
 import commands.GenericCommand;
 import util.logger;
 import output.report;
@@ -29,7 +31,7 @@ abstract class DefaultCommand : GenericCommand
 		
 		string[] logLevels = split(verbosity,",");
 		foreach (logLevel;logLevels) {
-			Logger.enableLevel(strip(logLevel));
+			Logger.enableLevel(trim(logLevel));
 		}
 		
 		string[] reporterList = split(reporters,",");

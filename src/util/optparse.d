@@ -117,9 +117,13 @@ module util.optparse;
 
 private
 {
-    import std.conv;
+/+    import std.conv;
     import std.stdio;
-    import std.string;
+    import std.string;+/
+	import tango.io.Stdout;
+	import tango.core.Array;
+	import tango.util.Convert;
+	import tango.text.Ascii;
 	
 	import util.variant;
 }
@@ -362,12 +366,12 @@ class OptionParser
             optSyntax ~= " ";
 
             if( optSyntax.length > indentWidth && option.helpMessage.length > 0 )
-                writef("%s\n%"~.toString(indentWidth)~"s", optSyntax, " ");
+                Stdout.format("{}\n{,"~to!(char[])(indentWidth)~"}", optSyntax, " ");
             
             else
-                writef("%-"~.toString(indentWidth)~"s", optSyntax);
+                Stdout.format("{,-"~to!(char[])(indentWidth)~"}", optSyntax);
             
-            writefln(option.helpMessage);
+            Stdout(option.helpMessage).newline;
         }
     }
 
@@ -594,8 +598,8 @@ abstract class Option
         rhsShort = o.shortName ? o.shortName : o.longName;
         rhsLong = o.longName ? o.longName : o.shortName;
         
-        int longCmp = cmp(lhsLong, rhsLong);
-        return ((longCmp == 0) ? cmp(lhsShort, rhsShort) : longCmp);
+        int longCmp = compare(lhsLong, rhsLong);
+        return ((longCmp == 0) ? compare(lhsShort, rhsShort) : longCmp);
     }
 
     char[] shortName() { return _shortName; }       /// This option's short name
@@ -648,7 +652,7 @@ class BoolOption : Option
 
     Variant parse(char[] argument)
     {
-        switch(tolower(argument))
+        switch(toLower(argument))
         {
             case "1":
             case "on":
@@ -721,26 +725,26 @@ unittest
     }
 }
 
-private
-{
-    template toNumericType(T)
-    {
-        static assert(0);
-    }
-
-    template toNumericType(T : byte) { alias toByte conv; }
-    template toNumericType(T : ubyte) { alias toUbyte conv; }
-    template toNumericType(T : short) { alias toShort conv; }
-    template toNumericType(T : ushort) { alias toUshort conv; }
-    template toNumericType(T : int) { alias toInt conv; }
-    template toNumericType(T : uint) { alias toUint conv; }
-    template toNumericType(T : long) { alias toLong conv; }
-    template toNumericType(T : ulong) { alias toUlong conv; }
-    
-    template toNumericType(T : float) { alias toFloat conv; }
-    template toNumericType(T : double) { alias toDouble conv; }
-    template toNumericType(T : real) { alias toReal conv; }
-}
+/+private
+{+/
+//     template toNumericType(T)
+//     {
+//         static assert(0);
+//     }
+// 
+//     template toNumericType(T : byte) { alias toByte conv; }
+//     template toNumericType(T : ubyte) { alias toUbyte conv; }
+//     template toNumericType(T : short) { alias toShort conv; }
+//     template toNumericType(T : ushort) { alias toUshort conv; }
+//     template toNumericType(T : int) { alias toInt conv; }
+//     template toNumericType(T : uint) { alias toUint conv; }
+//     template toNumericType(T : long) { alias toLong conv; }
+//     template toNumericType(T : ulong) { alias toUlong conv; }
+//     
+//     template toNumericType(T : float) { alias toFloat conv; }
+//     template toNumericType(T : double) { alias toDouble conv; }
+//     template toNumericType(T : real) { alias toReal conv; }
+// }
 
 /**
  * This templated class allows users to set options to any of
@@ -760,13 +764,9 @@ class NumericOption(T) : Option
     {
         try
         {
-            return Variant(toNumericType!(T).conv(argument));
+            return Variant(to!(T)(argument));
         }
-        catch( ConvError e )
-        {
-            throw new CannotParseArgument();
-        }
-        catch( ConvOverflowError e )
+        catch( ConversionException e )
         {
             throw new CannotParseArgument();
         }

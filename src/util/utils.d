@@ -11,17 +11,19 @@ Conversion to D: Marius Muja
 module util.utils;
 
 
-import std.stdio;
-import std.c.stdlib;
-import std.string;
-import std2.conv;
+// import std.stdio;
+// import std.c.stdlib;
+// import std.string;
+//import std2.conv;
+import tango.util.Convert;
+import tango.text.convert.Layout;
+import tango.io.stream.MapStream;
 
 import util.variant;
 import util.logger;
+import util.defines;
 
 public import util.dist;
-
-
 
 template MAX(T) {
 	T MAX(T x, T y) { return x > y ? x : y; }
@@ -43,24 +45,59 @@ void swap(T) (ref T a, ref T b) {
 }
 
 
-FILE* fOpen(string file, string mode, lazy string message)
+/* ----------------- Helper functions for working with files ----------------*/
+
+import tango.io.FileConduit;
+import tango.scrapple.PlainTextProtocol;
+public import tango.io.stream.FileStream;
+public import tango.io.stream.LineStream;
+public import tango.io.stream.FormatStream;
+public import tango.io.protocol.Reader;
+public import tango.io.protocol.Writer;
+
+void withOpenFile(string file, void delegate(FileInput) action) 
 {
-	FILE *f = std.c.stdio.fopen(toStringz(file),toStringz(mode));
-	if (f is null) {
-		throw new Exception(message());
-	}
-	return f;
+	auto stream = new FileInput(file);
+	scope (exit) stream.close();
+	action(stream);
 }
 
-
-void withOpenFile(string file, string mode, void delegate(FILE*) action) 
+void withOpenFile(string file, void delegate(LineInput) action) 
 {
-	FILE* f = fOpen(file,mode,"Cannot open file: "~file);
-	action(f);
-	fclose(f);
+	auto stream = new LineInput(new FileInput(file));
+	scope (exit) stream.close();
+	action(stream);
 }
 
+void withOpenFile(string file, void delegate(Reader) action) 
+{
+	auto conduit = new FileInput(file);
+	auto stream = new Reader(new PlainTextProtocol(conduit,false));
+	scope (exit) conduit.close();
+	action(stream);
+}
 
+void withOpenFile(string file, void delegate(FileOutput) action) 
+{
+	auto stream = new FileOutput(file);
+	scope (exit) stream.close();
+	action(stream);
+}
+
+void withOpenFile(string file, void delegate(Writer) action) 
+{
+	auto conduit = new FileInput(file);
+	auto stream = new Writer(new PlainTextProtocol(conduit,false));
+	scope (exit) conduit.close();
+	action(stream);
+}
+
+void withOpenFile(string file, void delegate(FormatOutput) action) 
+{
+	auto stream = new FormatOutput(new FileOutput(file));
+	scope (exit) stream.close();
+	action(stream);
+}
 
 
 void array_copy(U,V)(U[] dst, V[] src)
@@ -202,7 +239,8 @@ struct Params
 
 	string toString()
 	{
-		return format(data);
+		auto formater = new Layout!(char);
+		return formater("{}",data);
 	}
 }
 
@@ -212,6 +250,9 @@ void copy(ref Params a,Params b)
 		a[k] = v;
 	}
 }
+
+
+
 
 
 struct OrderedParams
@@ -266,9 +307,9 @@ void copyParams(T,U)(ref T a,U b,string[] params)
 
 void saveParams(string file, Params params) {
 	
-	withOpenFile(file,"w",(FILE* f) {
+	withOpenFile(file,(FormatOutput writer) {
 		foreach(name,value;params) {
-			fwritefln(f,name," = ",value);
+			writer.formatln("{} = {}",name,value);
 		}
 	});
 }
@@ -276,15 +317,11 @@ void saveParams(string file, Params params) {
 
 void loadParams(string file, ref Params params) {
 	
-	withOpenFile(file,"r",(FILE* f) {
-		string line;
-		line = readln(f);
-		while (line) {
-			int pos = line.find("=");
-			string name = line[0..pos];
-			string value = line[pos+1..$];
-			params[strip(name)] = strip(value);
-			line = readln(f);
+	withOpenFile(file, (FileInput stream) {
+		auto input = new MapInput!(char)(stream);
+		
+		foreach (name,value;input) {
+			params[name] = value;
 		}
 	});
 }
@@ -292,38 +329,38 @@ void loadParams(string file, ref Params params) {
 
 
 
-class Range 
-{
-	int begin;
-	int end;
-	int skip;
-	
-	this(int begin, int end, int skip) {
-		this.begin = begin;
-		this.end = end;
-		this.skip = skip;
-	}
-	
-	this(string range) {
-		int[] values = convert!(int[],string[])(split(range,":"));
-		
-		begin = values[0];
-		if (values.length>1) {
-			end = values[1];
-			
-			if (values.length>2) {
-				skip = values[2];
-			}
-			else {
-				skip = 1;
-			}
-		}
-		else {
-			skip = 1;
-			end = begin + skip;
-		} 
-	}
-}
+// class Range 
+// {
+// 	int begin;
+// 	int end;
+// 	int skip;
+// 	
+// 	this(int begin, int end, int skip) {
+// 		this.begin = begin;
+// 		this.end = end;
+// 		this.skip = skip;
+// 	}
+// 	
+// 	this(string range) {
+// 		int[] values = convert!(int[],string[])(split(range,":"));
+// 		
+// 		begin = values[0];
+// 		if (values.length>1) {
+// 			end = values[1];
+// 			
+// 			if (values.length>2) {
+// 				skip = values[2];
+// 			}
+// 			else {
+// 				skip = 1;
+// 			}
+// 		}
+// 		else {
+// 			skip = 1;
+// 			end = begin + skip;
+// 		} 
+// 	}
+// }
 
 
 

@@ -5,6 +5,7 @@ import algo.nnindex;
 import dataset.features;
 import util.utils;
 
+import util.defines;
 
 
 template IndexConstructor(T) {
@@ -24,8 +25,8 @@ template indexRegistry(T) {
 template AlgorithmRegistry(alias ALG,T)
 {
 	
-	import serialization.serializer;
-	import std.stream;
+// 	import serialization.serializer;
+// 	import std.stream;
 	
 	static this() 
 	{

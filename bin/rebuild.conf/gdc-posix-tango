@@ -34,13 +34,14 @@ flag=$i
 incdir=-I$i
 libdir=-L-L$i
 circular=-fall-sources
-optimize=-O
+#optimize=-O
+optimize=-q,-O3
 version=-version=$i
 
 
 [link]
 cmd=gdmd $i -of$o
-nodarwinflag=-q,-rdynamic
+#nodarwinflag=-q,-rdynamic
 
 libdir=-L-L$i
 lib=-L-l$i

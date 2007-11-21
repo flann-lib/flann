@@ -1,9 +1,11 @@
 module output.ConsoleReporter;
 
-import std.stdio;
+// import std.stdio;
+import tango.io.Stdout;
 
 import output.ResultReporter;
 import util.utils;
+import util.defines;
 
 static this()
 {
@@ -17,8 +19,8 @@ class ConsoleReporter : ResultReporter
 	public void flush(OrderedParams reporter) 
 	{
 		foreach (value; reporter) {
-			writef(value," ");
+			Stdout.format("{} ",value);
 		}
-		writefln();
+		Stdout("\n");
 	}
 }

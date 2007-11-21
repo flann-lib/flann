@@ -1,6 +1,7 @@
 module commands.ComputeClustersCommand;
 
-import std.string;
+// import std.string;
+import tango.text.convert.Sprint;
 
 import commands.GenericCommand;
 import commands.IndexCommand;
@@ -42,7 +43,7 @@ class ComputeClustersCommand : IndexCommand
 		if (clustersFile != "") {
 			float[][] centers = index.getClusterCenters(clusters);
 			
-			showOperation("Writing %d cluster centers to file %s... ".format(centers.length, clustersFile),{
+			showOperation((new Sprint!(char)).format("Writing %d cluster centers to file %s... ",centers.length, clustersFile),{
 				writeToFile(centers, clustersFile);
 			});
 		}

@@ -1,6 +1,7 @@
 module commands.SampleCommand;
 
-import std.string;
+// import std.string;
+import tango.text.convert.Sprint;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
@@ -39,7 +40,7 @@ class SampleCommand : DefaultCommand
 			auto dataset = new Features!(T)();
 			showOperation("Reading features from input file "~file, {dataset.readFromFile(file);});
 			Features!(T) sampledDataset; 
-			showOperation("Sampling %d features".format(count), {sampledDataset= dataset.sample(count);});
+			showOperation((new Sprint!(char)).format("Sampling {} features",count), {sampledDataset= dataset.sample(count);});
 			showOperation("Saving new dataset to file "~saveFile, {sampledDataset.writeToFile(saveFile);});
 		}
 		else {

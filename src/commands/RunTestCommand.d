@@ -1,6 +1,6 @@
 module commands.RunTestCommand;
 
-import std.string;
+// import std.string;
 
 import commands.GenericCommand;
 import commands.IndexCommand;
@@ -63,7 +63,7 @@ class RunTestCommand : IndexCommand
 		}
 		else +/
 		if (testFile != "") {
-			showOperation("Reading test data from %s".format(testFile),{
+			showOperation("Reading test data from "~testFile,{
 				testData = new Features!(float)();
 				testData.readFromFile(testFile);
 			});

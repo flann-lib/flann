@@ -1,9 +1,10 @@
 
 module output.ResultReporter;
 
+import tango.text.Util : trim,split;
+
 import util.utils;
-import std.stdio;
-import std.string;
+public import util.defines;
 
 abstract class ResultReporter
 {
@@ -38,8 +39,6 @@ bool is_reporter(string name)
 void activate_reporter(string name)
 {
 	string[] vals = split(name,":");
-
-	writefln(vals);
 
 	string reporterName = vals[0];
 	string reporterOutput = "";

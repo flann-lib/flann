@@ -1,7 +1,7 @@
 module commands.AutotuneParams;
 
-import std.string;
-import std.c.stdlib;
+// import std.string;
+// import std.c.stdlib;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
@@ -57,7 +57,7 @@ class AutotuneParams : DefaultCommand
 		
 		// read input data		
 		if (inputFile != "") {
-			showOperation( "Reading input data from %s".format(inputFile), {
+			showOperation( "Reading input data from "~inputFile, {
 				inputData = new Features!(T)();
 				inputData.readFromFile(inputFile);
 			});

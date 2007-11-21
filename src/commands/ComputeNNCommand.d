@@ -1,6 +1,7 @@
 module commands.ComputeNNCommand;
 
-import std.string;
+// import std.string;
+import tango.text.convert.Sprint;
 
 import commands.GenericCommand;
 import commands.IndexCommand;
@@ -48,7 +49,7 @@ class ComputeNNCommand : IndexCommand
 		}
 		else +/
 		if (testFile != "") {
-			showOperation("Reading test data from %s... ".format(testFile),{
+			showOperation((new Sprint!(char)).format("Reading test data from %s... ",testFile),{
 				testData = new Features!(float)();
 				testData.readFromFile(testFile);
 			});

@@ -6,12 +6,10 @@ Author: Marus Muja (2007)
 *************************************************************************/
 module main;
 
-import std.stdio;
+import tango.core.Memory;
 
-import util.random;
-import util.logger;
 import commands.all;
-
+import util.logger;
 
 /** 
 	Program entry point 
@@ -20,7 +18,7 @@ void main(char[][] args)
 {
 	Logger.enableLevel(Logger.ERROR);
 	// don't use garbage collector... manage memory manually
-	std.gc.disable();
+	GC.disable();
 	
 	if (args.length==1) {
 		execute_command("help",args[0..1]);

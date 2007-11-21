@@ -9,8 +9,9 @@ Author: Marius Muja (2007)
 module algo.agglomerativetree2;
 
 
-import std.math;
+// import std.math;
 
+import util.defines;
 import util.utils;
 import util.random;
 import util.heap;

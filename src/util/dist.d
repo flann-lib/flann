@@ -4,7 +4,7 @@ Project: nn
 
 module util.dist;
 
-import std.stdio;
+// import std.stdio;
 
 import util.allocator;
 	// import util.allocator;

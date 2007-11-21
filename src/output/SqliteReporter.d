@@ -1,6 +1,6 @@
 module output.SqliteRepoter;
 
-import std.stdio;
+// import std.stdio;
 
 import output.ResultReporter;
 import util.utils;

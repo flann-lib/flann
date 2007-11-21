@@ -8,6 +8,7 @@ Author: Marius Muja (2007)
 *************************************************************************/
 module algo.linearsearch;
 
+import util.defines;
 import util.utils;
 import util.resultset;
 import dataset.features;

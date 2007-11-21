@@ -13,10 +13,6 @@ src/algo/unused
 src/algo/unused/agglomerativetree.d
 src/algo/unused/bottom_up_agg.d
 src/main.d
-src/serialization
-src/serialization/basicarchive.d
-src/serialization/classregister.d
-src/serialization/serializer.d
 src/util
 src/util/dist.d
 src/util/heap.d
@@ -25,9 +21,6 @@ src/util/optparse.d
 src/util/random.d
 src/util/registry.d
 src/util/resultset.d
-src/util/unused
-src/util/unused/debuger.d
-src/util/unused/gpdebuger.d
 src/util/utils.d
 src/util/vector.d
 test

@@ -6,24 +6,25 @@
  */
 module variant;
 
-import std2.conv;
-import std.stdio;
+//import std2.conv;
+//import std.stdio;
 
 version( Tango )
 {
-    pragma(msg, `
-    ** WARNING **
-
-The Variant module does not fully support Tango.  Tango lacks string
-formatters for some basic types, and thus does not pass the unit tests.
-`);
+//     pragma(msg, `
+//     ** WARNING **
+// 
+// The Variant module does not fully support Tango.  Tango lacks string
+// formatters for some basic types, and thus does not pass the unit tests.
+// `);
 
     import tango.core.Exception : TracedException;
     import tango.core.Vararg : va_list;
     import tango.text.convert.Float;
     import tango.text.convert.Integer;
-    import tango.text.convert.Layout : Layout;
+    import tango.text.convert.Layout : Layout, ArgList;
     import tango.text.convert.Utf;
+    import tango.util.Convert;
 
     private
     {
@@ -513,15 +514,15 @@ struct Variant
         }
         else if( type is typeid(wchar[]) )
         {
-            return .toUTF8(get!(wchar[]));
+            return .toUtf8(get!(wchar[]));
         }
         else if( type is typeid(dchar[]) )
         {
-            return .toUTF8(get!(dchar[]));
+            return .toUtf8(get!(dchar[]));
         }	
         else if (type is typeid(float))
         {
-        	return .toString(value._float);
+        	return .toUtf8(value._float);
         }
         // Everything else
         else
@@ -529,7 +530,7 @@ struct Variant
             version( Tango )
             {
                 TypeInfo[1] tis = [type];
-                void* args = this.data.ptr;
+                ArgList args = cast(ArgList)this.data.ptr;
     
                 return layout.convert(tis, args, "{}");
             }

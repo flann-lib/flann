@@ -1,10 +1,12 @@
 module commands.GenericCommand;
 
-public import std.stdio;
+import tango.io.Stdout;
 
 import util.optparse;
 import util.utils;
 import util.variant;
+
+public import util.defines;
 
 private {
 alias GenericCommand function() CommandMaker;
@@ -109,12 +111,12 @@ abstract class GenericCommand
 	
 	void showHelp()
 	{
-		writefln("Command: %s [options]",name);
+		Stdout.formatln("Command: {} [options]",name);
 		if (description!="") {
-			writefln(description);
+			Stdout(description).newline;
 		}
-		writefln();
-		writefln("Options:");
+		Stdout.newline;
+		Stdout("Options:").newline;
 		optParser.showHelp();
 	}
 	

@@ -1,7 +1,10 @@
 module nn.autotune;
 
-import std.stdio;
-import std.math;
+// import std.stdio;
+// import std.math;
+import tango.math.Math;
+import tango.io.Stdout;
+import tango.core.Memory;
 
 import dataset.features;
 import util.utils;
@@ -11,15 +14,6 @@ import util.resultset;
 import util.logger;
 import util.utils;
 import nn.testing;
-
-struct OptimalParams 
-{
-	string algo;
-	int branching;
-	int maxIter;
-	int numTrees;
-	int checks;
-}
 
 /+
 float testNN(NNIndex index, Features!(float) testData, float desiredPrecision, out int checks)
@@ -83,7 +77,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 
 	
 	// subsample datasets
-	int sampleSize = lround(samplePercentage*inputDataset.count/100);
+	int sampleSize = rndint(samplePercentage*inputDataset.count/100);
 	Features!(T) sampledDataset = inputDataset.sample(sampleSize, false);
 	
 	int testSampleSize = MIN(sampleSize/10, 1000);
@@ -130,7 +124,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 							} ) );
 				float cost = buildTime*indexFactor+searchTime;
 				
-				writefln("buildTime: %g, searchTime: %g, cost: %g",buildTime, searchTime, cost);			
+				Stdout.formatln("buildTime: {}, searchTime: {}, cost: {}",buildTime, searchTime, cost);			
 				
 				if (cost<kmeansCost) {
 					copy(kmeansParams,params);
@@ -139,7 +133,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 				}
 				Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");	
 				
-				std.gc.fullCollect();
+				GC.collect();
 			}
 		}
 // 		Logger.log(Logger.INFO,"Best KMeans params: ",kmeansParams,"\n");
@@ -166,7 +160,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 							} ) );
 			float cost = buildTime*indexFactor+searchTime;
 			
-				writefln("buildTime: %g, searchTime: %g, cost: %g",buildTime, searchTime, cost);			
+				Stdout.formatln("buildTime: {}, searchTime: {}, cost: {}",buildTime, searchTime, cost);			
 // 				Logger.log(Logger.INFO,params);
 			
 			if (cost<kdtreeCost) {
@@ -174,7 +168,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 				kdtreeCost = cost;
 			}
 			
-			std.gc.fullCollect();
+			GC.collect();
 		}
 //  		Logger.log(Logger.INFO,"Best kdtree params: ",kdtreeParams,"\n");
 	}
@@ -193,14 +187,14 @@ int estimateSearchParams(T)(NNIndex index, Features!(T) inputDataset, float desi
 	const int SAMPLE_COUNT = 500;
 	Features!(float) testDataset = new Features!(float)();
 	testDataset.init(inputDataset.sample(SAMPLE_COUNT,false));
-	writefln("computing ground truth");
+	Stdout("computing ground truth\n");
 	testDataset.computeGT(inputDataset,1,1);
 	
 	int checks;
-	writefln("Estimating number of checks");
+	Stdout("Estimating number of checks\n");
 	testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
 	
-	writefln("required number of checks: ", checks);
+	Stdout("required number of checks: ")(checks).newline;
 	
 	return checks;
 }

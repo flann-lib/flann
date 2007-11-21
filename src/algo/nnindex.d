@@ -4,8 +4,8 @@ Project: nn
 
 module algo.nnindex;
 
-import std.stream;
-import serialization.serializer;
+// import std.stream;
+// import serialization.serializer;
 
 import util.resultset;
 
@@ -38,9 +38,9 @@ abstract class NNIndex
  		throw new Exception("Not implemented");
  	}
  	
- 	void save(string file)
-	{
-		Serializer s = new Serializer(file, FileMode.Out);
-		s.describe(this);
-	}
+//  	void save(string file)
+// 	{
+// 		Serializer s = new Serializer(file, FileMode.Out);
+// 		s.describe(this);
+// 	}
 }

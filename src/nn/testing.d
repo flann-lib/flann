@@ -1,7 +1,10 @@
 module nn.testing;
 
-import std.math;
-import std.stdio;
+// import std.math;
+// import std.stdio;
+
+import tango.math.Math;
+import tango.io.Stdout;
 
 import algo.nnindex;
 import dataset.features;
@@ -153,30 +156,30 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 	int cx;
 	float realPrecision;
 	if (abs(p2-precision)>SEARCH_EPS) {
-		static if (withOutput) writefln("Start linear estimation");
+		static if (withOutput) Stdout("Start linear estimation\n");
 		// after we got to values in the vecibity of the desired precision
 		// use linear approximation get a better estimation
 			
-		cx = lround(c1+(precision-p1)*(c2-c1)/(p2-p1));
+		cx = rndint(c1+(precision-p1)*(c2-c1)/(p2-p1));
 		realPrecision = search(cx,time);
 		while (abs(realPrecision-precision)>SEARCH_EPS) {
 			if (p2!=realPrecision) {
 				c1 = c2; p1 = p2;
 			}
 			c2 = cx; p2 = realPrecision;
-			cx = lround(c1+(precision-p1)*(c2-c1)/(p2-p1));
+			cx = rndint(c1+(precision-p1)*(c2-c1)/(p2-p1));
 			if (c2==cx) {
 				cx += precision>realPrecision?1:-1;
 			}
 			if (cx==c1) {
-				static if (withOutput) writefln("Got as close as I can");
+				static if (withOutput) Stdout("Got as close as I can\n");
 				break;
 			}
 			realPrecision = search(cx,time);
 		}
 		
 	} else {
-		static if (withOutput) writefln("No need for linear estimation");
+		static if (withOutput) Stdout("No need for linear estimation\n");
 		cx = c2;
 		realPrecision = p2;
 	}
@@ -244,7 +247,7 @@ float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
 		
 		float cx = exp((100-desiredPrecision-x[1])/x[0]);
 		
-		return lround(cx);
+		return rndint(cx);
 	}
 
 	
@@ -289,7 +292,7 @@ float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
 	float m1 = (p[count-2]-p[count-3])/(c[count-2]-c[count-3]);
 	float m2 = (p[count-1]-p[count-2])/(c[count-1]-c[count-2]);	
 	float alpha = abs((m1-m2)/(1+m1*m2));
- 	static if (withOutput) writefln("m1=%g, m2=%g, alpha = %g",m1,m2,alpha);	
+ 	static if (withOutput) Stdout.formatln("m1={}, m2={}, alpha = {}",m1,m2,alpha);	
 	
 	while (alpha>SLOPE_EPS && abs(p[count-1]-precision)>SEARCH_EPS) {
 		c[count] = estimate(c,p,count, precision);
@@ -301,38 +304,38 @@ float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
 		m1 = m2;
 		m2 = (p[count-1]-p[count-2])/(c[count-1]-c[count-2]);
 		alpha = abs((m1-m2)/(1+m1*m2));
-	 	static if (withOutput) writefln("m1=%g, m2=%g, alpha = %g",m1,m2,alpha);	
+	 	static if (withOutput) Stdout.formatln("m1={}, m2={}, alpha = {}",m1,m2,alpha);	
 	}
 	
 	int cx;
 	float realPrecision;
 	if (abs(p[count-1]-precision)>SEARCH_EPS) {
-		static if (withOutput) writefln("Start linear estimation");
+		static if (withOutput) Stdout("Start linear estimation\n");
 		// after we got to values in the vecibity of the desired precision
 		// use linear approximation get a better estimation
 		int c1 = c[count-2], c2 = c[count-1];
 		float p1 = p[count-2], p2 = p[count - 1];
 			
-		cx = lround(c1+(precision-p1)*(c2-c1)/(p2-p1));
+		cx = rndint(c1+(precision-p1)*(c2-c1)/(p2-p1));
 		realPrecision = search(cx,time);
 		while (abs(realPrecision-precision)>SEARCH_EPS) {
 			if (p2!=realPrecision) {
 				c1 = c2; p1 = p2;
 			}
 			c2 = cx; p2 = realPrecision;
-			cx = lround(c1+(precision-p1)*(c2-c1)/(p2-p1));
+			cx = rndint(c1+(precision-p1)*(c2-c1)/(p2-p1));
 			if (c2==cx) {
 				cx += precision>realPrecision?1:-1;
 			}
 			if (cx==c1) {
-				static if (withOutput) writefln("Got as close as I can");
+				static if (withOutput) Stdout("Got as close as I can\n");
 				break;
 			}
 			realPrecision = search(cx,time);
 		}
 		
 	} else {
-		static if (withOutput) writefln("No need for linear estimation");
+		static if (withOutput) Stdout("No need for linear estimation\n");
 		cx = c[count-1];
 		realPrecision = p[count-1];
 	}

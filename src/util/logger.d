@@ -5,8 +5,11 @@ Project: nn
 
 module util.logger;
 
-import std.stdio;
-import std.format;
+// import std.stdio;
+// import std.format;
+import tango.text.convert.Layout;
+
+import util.defines;
 
 class Logger 
 {
@@ -23,12 +26,6 @@ static {
 	private typedef string LogLevel;
 	
 	int[LogLevel] levels;
-	
- 	FILE* streams[];
-	
-	void addStream(FILE* stream) {
- 		streams[streams.length] = stream;
-	}
 	
 	
 	public void enableLevel(LogLevel level) 
@@ -48,17 +45,7 @@ static {
 
 	public void log(LogLevel logLevel, ...)
 	{
-		FILE* activeStream = stdout;
-
-		void putChar(dchar c)
-    	{
-			fputc(c, activeStream);
-    	}
-
-		if (logLevel in levels) {
-			doFormat(&putChar, _arguments, _argptr);
-			fflush(activeStream);		
-		}
+		
 		
 	}
 	

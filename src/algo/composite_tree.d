@@ -4,10 +4,11 @@ Project: nn
 
 module algo.composite_tree;
 
-import std.c.time;
-import std.stdio;
+// import std.c.time;
+// import std.stdio;
 
 
+import util.defines;
 import algo.nnindex;
 import algo.kmeans;
 import algo.kdtree;

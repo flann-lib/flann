@@ -1,7 +1,7 @@
 module commands.IndexCommand;
 
-import std.string;
-import std.c.stdlib;
+// import std.string;
+// import std.c.stdlib;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
@@ -73,7 +73,7 @@ class IndexCommand : DefaultCommand
 // 		}
 		
 		if (inputFile != "") {
-			showOperation( "Reading input data from %s".format(inputFile), {
+			showOperation( "Reading input data from "~inputFile, {
 				inputData!(T) = new Features!(T)();
 				inputData!(T).readFromFile(inputFile);
 			});
@@ -126,7 +126,7 @@ class IndexCommand : DefaultCommand
 			foreach (algo,val; indexRegistry!(T)) {
 				Logger.log(Logger.ERROR,"\t%s\n",algo);
 			}			
-			throw new Exception("Bailing out...\n");
+			throw new Exception("Algorithm not found...bailing out...\n");
 		}
 
 		Logger.log(Logger.INFO,"Algorithm: %s\n",algorithm);
