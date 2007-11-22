@@ -19,12 +19,16 @@ DFLAGS := ${DFLAGS}
 ifeq ($(PROFILER),gprof)
 	DFLAGS := ${DFLAGS} -q,-pg -K-q,-pg
 endif
+
+ifndef PROFILE
+	PROFILE := release
+endif
 	
-ifeq ($(CONFIGURATION),debug)
+ifeq ($(PROFILE),debug)
 #	DFLAGS := ${DFLAGS} -g -release -C-q,-msse2
 	#DFLAGS := ${DFLAGS} -g -debug -C-q,-msse2
 	DFLAGS := ${DFLAGS} -g -debug
-else
+else ifeq (${PROFILE},release)
 #	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
 	DFLAGS := ${DFLAGS} -O -inline -release
 endif
@@ -39,7 +43,7 @@ endif
 
 SRC_DIR = src
 LIBS_DIR = libs
-BUILD_DIR = $(HOME)/tmp/${TARGET}_build
+BUILD_DIR = $(HOME)/tmp/${TARGET}_build/${PROFILE}
 DEPS_DIR = ${BUILD_DIR}/deps
 OBJ_DIR = ${BUILD_DIR}/obj
 DOC_DIR = doc
@@ -51,6 +55,8 @@ MAIN_FILE=${SRC_DIR}/main.d
 
 # ------------------------ Rules --------------------------------
 
+.PHONY: clean all rebuild compile
+
 all: compile
 
 clean:
@@ -58,9 +64,6 @@ clean:
 
 rebuild: clean all
 
-.PHONY: clean all rebuild prepare compile
-
 compile:
 	 ${BIN_DIR}/rebuild -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${TARGET} ${DFLAGS} ${LIBS}
-
 

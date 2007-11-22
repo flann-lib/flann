@@ -7,4 +7,4 @@ ifndef TARGET
 endif
 # ------------------ Compilation options ------------------------
 
-include Makefile.d_rebuild
+include Makefile.rebuild

@@ -22,6 +22,5 @@ src/util/random.d
 src/util/registry.d
 src/util/resultset.d
 src/util/utils.d
-src/util/vector.d
 test
 test/test.d

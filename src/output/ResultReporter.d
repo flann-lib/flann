@@ -65,9 +65,13 @@ void activate_reporter(string name)
 void flush_reporters()
 {
 	foreach (name;active_reporters) {
-		get_reporter(name).flush(reportedValues);
+		get_reporter(name).flush(reportedValues_);
 	}
 }
 
-OrderedParams reportedValues;
+private OrderedParams reportedValues_;
+void report(T)(char[] name, T value) 
+{
+	reportedValues_[name] = value;
+}
 

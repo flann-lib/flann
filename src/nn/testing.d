@@ -74,13 +74,9 @@ float search(int checks, out float time)
 	float performance = 100*cast(float)correct/(nn*testData.count);
 	
 	static if (withOutput) {
-//		Logger.log(Logger.INFO,"  %5d     %6.2f      %6.2f      %6.3f      %6.3f\n",
-		Logger.log(Logger.INFO,"\t{}\t{}\t{}\t{}\t{}\n",
+		Logger.log(Logger.INFO,"{,8}{,12:2}{,12:3}{,13:3}{,10:3}\n",
 				checks, performance,
 				time, 1000.0 * time / testData.count, distR/testData.count);
-/+		Logger.log(Logger.SIMPLE,"%d %f %f %f\n",
-				checks, correct * 100.0 / cast(float) testData.count,
-				time, 1000.0 * time / testData.count);+/
 	}
 	
 	return performance;
@@ -111,9 +107,9 @@ float testNNIndex(T, bool withOutput, bool withReporting)
 	float precision = search(checks,time);
 
 	static if (withReporting) {
-		reportedValues["checks"] = checks;
-		reportedValues["match"] = cast(double)precision;
-		reportedValues["search_time"] = cast(double)time;
+		report("checks", checks);
+		report("match",cast(double)precision);
+		report("search_time", cast(double)time);
 		flush_reporters();
 	}
 
@@ -128,7 +124,7 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 	
 	static if (withOutput) {
 		Logger.log(Logger.INFO,"Searching... \n");
-		Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
+		Logger.log(Logger.INFO,"  Nodes    % correct    Time     Time/vector\n"
 				" checked   neighbors   (seconds)      (ms)\n"
 				" -------   ---------   ---------  -----------\n");
 	}
@@ -186,9 +182,9 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 	}
 	
 	static if (withReporting) {
-		reportedValues["checks"] = cx;
-		reportedValues["match"] = cast(double)realPrecision;
-		reportedValues["search_time"] = cast(double)time;
+		report("checks", cx);
+		report("match", cast(double)realPrecision);
+		report("search_time", cast(double)time);
 		flush_reporters();
 	}
 	
@@ -342,9 +338,9 @@ float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
 	}
 	
 	static if (withReporting) {
-		reportedValues["checks"] = cx;
-		reportedValues["match"] = cast(double)realPrecision;
-		reportedValues["search_time"] = cast(double)time;
+		report("checks", cx);
+		report("match", cast(double)realPrecision);
+		report("search_time", cast(double)time);
 		flush_reporters();
 	}
 

@@ -80,8 +80,8 @@ class RunTestCommand : IndexCommand
 			throw new Exception("There are no correct matches to compare to, aborting test phase.");
 		}
 		
-		reportedValues["test_count"] = testData.count;
-		reportedValues["nn"] = nn;
+		report("test_count", testData.count);
+		report("nn", nn);
 
 
 		if (precision>0) {

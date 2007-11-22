@@ -11,7 +11,6 @@ module dataset.features;
 // import std.ctype;
 // import std.conv;
 // import std.file;
-import tango.stdc.string;
 import tango.core.Array;
 import tango.text.Util : trim,split;
 import tango.io.FilePath;
@@ -64,43 +63,6 @@ void writeToFile(float[][] vecs, char[] file)
 	}
 	fclose(fp);+/
 }
-
-/+
-int readValue(U) (FILE* f, inout U value) {
-	throw new Exception("readValue not implemented for type: "~U.stringof);
-}
-
-int readValue(U : float) (FILE* f, inout U value) {
-	return fscanf(f,"%f ",&value);
-}
-
-int readValue(U : int) (FILE* f, inout U value) {		
-	return fscanf(f,"%d ",&value);
-}
-
-int readValue(U : ubyte) (FILE* f, inout U value) {
-	return fscanf(f,"%hhu ",&value);
-}
-
-
-int writeValue(U) (FILE* f, U value) {
-	throw new Exception("readValue not implemented for type: "~U.stringof);
-}
-
-int writeValue(U : float) (FILE* f, U value) {
-	return fprintf(f,"%g",value);
-}
-
-int writeValue(U : int) (FILE* f, U value) {		
-	return fprintf(f,"%d",value);
-}
-
-int writeValue(U : ubyte) (FILE* f, U value) {
-	return fprintf(f,"%hhu",value);
-}
-+/
-
-
 class GridDataFile(T)
 {
 	private string file;
@@ -127,7 +89,7 @@ class GridDataFile(T)
 	}
 	
 	
-	public int getLinesNo()
+	private int getLinesNo()
 	{
 		const int MAX_BUF = 1024;
 		char buffer[MAX_BUF];

@@ -59,7 +59,7 @@ class IndexCommand : DefaultCommand
 	
 	private void executeWithType(T)() 
 	{
-		reportedValues["byte_features"] = byteFeatures?1:0;
+		report("byte_features", byteFeatures?1:0);
 		
 // 		if (loadFile !is null) {
 // 		Logger.log(Logger.INFO,"Loading index from file %s... ",loadFile);
@@ -79,9 +79,9 @@ class IndexCommand : DefaultCommand
 			});
 		}
 		
-		reportedValues["dataset"] = inputFile;
-		reportedValues["input_count"] = inputData!(T).count;
-		reportedValues["input_size"] = inputData!(T).veclen;
+		report("dataset", inputFile);
+		report("input_count", inputData!(T).count);
+		report("input_size", inputData!(T).veclen);
 	
 		if (inputData!(T) is null) {
 			throw new Exception("No input data given.");
@@ -113,10 +113,10 @@ class IndexCommand : DefaultCommand
 			params["algorithm"] = algorithm;
 		}
 		
-		reportedValues["trees"] = params["trees"];
-		reportedValues["branching"] = params["branching"];
-		reportedValues["max_iterations"] = params["max-iterations"];
-		reportedValues["algorithm"] = params["algorithm"];
+		report("trees", params["trees"]);
+		report("branching", params["branching"]);
+		report("max_iterations", params["max-iterations"]);
+		report("algorithm", params["algorithm"]);
 		
 		string algorithm = params["algorithm"].get!(string);
 		
@@ -137,7 +137,7 @@ class IndexCommand : DefaultCommand
 			index.buildIndex();
 		});
 		
-		reportedValues["cluster_time"] = indexTime;
+		report("cluster_time", indexTime);
 		
 		Logger.log(Logger.INFO,"Time to build {} tree{} for {} vectors: {} seconds\n\n",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
