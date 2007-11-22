@@ -461,7 +461,7 @@ class AgglomerativeExTree : NNIndex {
 		
 		
 		for (int i=0;i<clusterSize.length;++i) {
-			Logger.log(Logger.INFO,"Cluster {} size: %d\n",i, clusterSize[i]);
+			Logger.log(Logger.INFO,"Cluster {} size: {}\n",i, clusterSize[i]);
 		}
 		
 		return meanVariance;		
@@ -473,7 +473,7 @@ class AgglomerativeExTree : NNIndex {
 		float variance;
 		TreeNode[] clusters = getMinVarianceClusters(root, numClusters, variance);
 	
-		Logger.log(Logger.INFO,"Mean cluster variance for {} top level clusters: %f\n",clusters.length,variance);
+		Logger.log(Logger.INFO,"Mean cluster variance for {} top level clusters: {}\n",clusters.length,variance);
 		
 		float[][] centers = new float[][clusters.length];
 		

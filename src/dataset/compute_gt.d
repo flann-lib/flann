@@ -73,9 +73,9 @@ void writeMatches(string match_file, int[][] matches)
 {
 	withOpenFile(match_file,(FormatOutput writer){
 		foreach (index,match; matches) {
-			writer("{} ",index);
+			writer.format("{} ",index);
 			foreach (value;match) {
-				writer("{} ",value);
+				writer.format("{} ",value);
 			}
 			writer("\n");
 		}

@@ -1,6 +1,7 @@
 module output.SqliteRepoter;
 
 // import std.stdio;
+import tango.io.Stdout;
 
 import output.ResultReporter;
 import util.utils;
@@ -26,15 +27,15 @@ class SqliteRepoter : ResultReporter
 		foreach (name,value; values) {
 			fields ~= (name~",");
 			if (value.isA!(string)) {
-				vals ~= ("'"~value.toString()~"',");
+				vals ~= ("'"~value.toUtf8()~"',");
 			}
 			else {
-				vals ~= (value.toString()~",");
+				vals ~= (value.toUtf8()~",");
 			}
 		}
 		
 		string query = "INSERT INTO results("~fields[0..$-1]~") VALUES ("~vals[0..$-1]~")";
-  		writefln(query);
+  		Stdout(query).newline;
 		db.execute(query);
 		
 		db.close();

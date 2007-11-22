@@ -133,7 +133,7 @@ class IndexCommand : DefaultCommand
 		index = indexRegistry!(T)[algorithm](inputData!(T), params);
 
 		Logger.log(Logger.INFO,"Building index... \n");
-		double indexTime = profile({
+		float indexTime = profile({
 			index.buildIndex();
 		});
 		

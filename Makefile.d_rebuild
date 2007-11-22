@@ -5,7 +5,7 @@ WARNS = -W -Wall
 INCLUDES = -Iinclude
 LIBS = 
 
-HAS_SQLITE = 0
+HAS_SQLITE = 1
 
 
 include Makefile.platform
@@ -22,7 +22,8 @@ endif
 	
 ifeq ($(CONFIGURATION),debug)
 #	DFLAGS := ${DFLAGS} -g -release -C-q,-msse2
-	DFLAGS := ${DFLAGS} -g -debug -C-q,-msse2
+	#DFLAGS := ${DFLAGS} -g -debug -C-q,-msse2
+	DFLAGS := ${DFLAGS} -g -debug
 else
 #	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
 	DFLAGS := ${DFLAGS} -O -inline -release

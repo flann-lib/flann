@@ -65,7 +65,7 @@ void writeToFile(float[][] vecs, char[] file)
 	fclose(fp);+/
 }
 
-
+/+
 int readValue(U) (FILE* f, inout U value) {
 	throw new Exception("readValue not implemented for type: "~U.stringof);
 }
@@ -98,6 +98,7 @@ int writeValue(U : int) (FILE* f, U value) {
 int writeValue(U : ubyte) (FILE* f, U value) {
 	return fprintf(f,"%hhu",value);
 }
++/
 
 
 class GridDataFile(T)
@@ -111,13 +112,14 @@ class GridDataFile(T)
 	
 	private char guessDelimiter(string line)
 	{
-		string numberChars = "01234567890.e+-";
+		const string numberChars = "01234567890.e+-";
+		const int length = numberChars.length;
 		int pos = 0;
 		
-		while (numberChars.find(line[pos])==-1) {
+		while (numberChars.find(line[pos])==length) {
 			pos++;
 		}
-		while (numberChars.find(line[pos])!=-1) {
+		while (numberChars.find(line[pos])!=length) {
 			pos++;
 		}
 		
@@ -132,17 +134,16 @@ class GridDataFile(T)
 		
 		int cnt = 0;
 		withOpenFile(file, (FileInput stream) {
-			while (stream.read(buffer)==MAX_BUF) {
-				cnt += count(buffer,'\n');
+			uint ret;
+			while ((ret=stream.read(buffer))!=stream.Eof) {
+				cnt += count(buffer[0..ret],'\n');
 			}
 		});
 		
-		return cnt;	
+		return cnt;
 	}
 	
 	
-
-
 	private T[][] getValues()
 	{
 		static string buffer;
@@ -151,7 +152,7 @@ class GridDataFile(T)
 		T[][] vecs;
 		
 		withOpenFile(file, (LineInput stream) {
-			
+					
 			string line = stream.next;
 			string delimiter;
 			delimiter ~= guessDelimiter(line);
@@ -168,12 +169,11 @@ class GridDataFile(T)
 					array_copy(vecs[cnt++],tokens);
 				} else {
 					debug {
-						Logger.log(Logger.DEBUG,"Wrong number of values on line %d... ignoring",(cnt+1));
+						Logger.log(Logger.DEBUG,"Wrong number of values on line {}... ignoring",(cnt+1));
 					}
-				}
-					
+				}	
 			}
-			Logger.log(Logger.INFO,"Read %d features.",cnt);
+//			Logger.log(Logger.INFO,"Read {} features.\n",cnt);
 			vecs = vecs[0..cnt];
 		});
 		return vecs;

@@ -6,9 +6,6 @@
  */
 module variant;
 
-//import std2.conv;
-//import std.stdio;
-
 version( Tango )
 {
 //     pragma(msg, `

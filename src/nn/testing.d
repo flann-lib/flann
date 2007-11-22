@@ -74,12 +74,13 @@ float search(int checks, out float time)
 	float performance = 100*cast(float)correct/(nn*testData.count);
 	
 	static if (withOutput) {
-		Logger.log(Logger.INFO,"  %5d     %6.2f      %6.2f      %6.3f      %6.3f\n",
+//		Logger.log(Logger.INFO,"  %5d     %6.2f      %6.2f      %6.3f      %6.3f\n",
+		Logger.log(Logger.INFO,"\t{}\t{}\t{}\t{}\t{}\n",
 				checks, performance,
 				time, 1000.0 * time / testData.count, distR/testData.count);
-		Logger.log(Logger.SIMPLE,"%d %f %f %f\n",
+/+		Logger.log(Logger.SIMPLE,"%d %f %f %f\n",
 				checks, correct * 100.0 / cast(float) testData.count,
-				time, 1000.0 * time / testData.count);
+				time, 1000.0 * time / testData.count);+/
 	}
 	
 	return performance;

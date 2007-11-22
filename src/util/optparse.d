@@ -198,7 +198,7 @@ class OptionParser
                 // Need to look for options that have an inline
                 // argument.
                 int eqPos = longName.find('=');
-                if( eqPos > -1 )
+                if( eqPos != longName.length )
                     if( option.longName == longName[0..eqPos] )
                         return option;
             }
@@ -257,7 +257,7 @@ class OptionParser
                         // See if there's an '=' in the option.
                         int eqPos = arg.find('=');
 
-                        if( eqPos > -1 )
+                        if( eqPos > arg.length )
                         {
                             optName = arg[0..eqPos];
                             argument = arg[eqPos+1..$];

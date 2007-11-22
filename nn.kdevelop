@@ -40,7 +40,7 @@
       <makebin/>
       <defaulttarget/>
       <makeoptions/>
-      <selectedenvironment>debug</selectedenvironment>
+      <selectedenvironment>default</selectedenvironment>
       <environments>
         <default/>
         <debug>

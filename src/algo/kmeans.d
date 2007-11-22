@@ -159,7 +159,12 @@ class KMeansTree(T) : NNIndex
 	{	
 	
 		int branchings[] = getBranchingFactors();
-		Logger.log(Logger.INFO,"Using the following branching factors: {}\n");
+		Logger.log(Logger.INFO,"Using the following branching factors: [");
+		foreach (i,b;branchings) {
+			if (i!=0) Logger.log(Logger.INFO,",");
+			Logger.log(Logger.INFO,"{}",b);
+		}
+		Logger.log(Logger.INFO,"]\n");
 		
 		root = new KMeansNode[numTrees];
 		indices = new int[vecs.length];

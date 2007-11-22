@@ -49,7 +49,7 @@ class ComputeNNCommand : IndexCommand
 		}
 		else +/
 		if (testFile != "") {
-			showOperation((new Sprint!(char)).format("Reading test data from %s... ",testFile),{
+			showOperation((new Sprint!(char)).format("Reading test data from {}... ",testFile),{
 				testData = new Features!(float)();
 				testData.readFromFile(testFile);
 			});

@@ -17,7 +17,7 @@ void generateRandomDataset(string file, uint count, uint length)
 {
 	
 	withOpenFile(file, (FormatOutput writer) {
-		Logger.log(Logger.INFO,"Generating random dataset with %d features of %d dimension(s).\n",count,length);	
+		Logger.log(Logger.INFO,"Generating random dataset with {} features of {} dimension(s).\n",count,length);	
 		showProgressBar(count, 70, (Ticker tick) {
 			for (int i=0;i<count;++i) {
 				for (int j=0;j<length;++j) {

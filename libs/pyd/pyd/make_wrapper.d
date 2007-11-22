@@ -29,8 +29,7 @@ import pyd.exception;
 import pyd.func_wrap;
 import pyd.lib_abstract :
     ReturnType,
-    ParameterTypeTuple,
-    ToString
+    ParameterTypeTuple
 ;
 
 template T(A ...) {

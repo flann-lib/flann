@@ -43,7 +43,7 @@ class ComputeClustersCommand : IndexCommand
 		if (clustersFile != "") {
 			float[][] centers = index.getClusterCenters(clusters);
 			
-			showOperation((new Sprint!(char)).format("Writing %d cluster centers to file %s... ",centers.length, clustersFile),{
+			showOperation((new Sprint!(char)).format("Writing {} cluster centers to file {}... ",centers.length, clustersFile),{
 				writeToFile(centers, clustersFile);
 			});
 		}
