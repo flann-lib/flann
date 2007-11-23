@@ -27,7 +27,6 @@ class FileReporter : ReportBackend
 	
 	public void flush(OrderedParams reporter) 
 	{
-		tango.io.Stdout.Stdout(file);
 		withOpenFile(file, (FormatOutput writer) {
 			foreach (value; reporter) {
 				writer.format("{} ",value.toUtf8);

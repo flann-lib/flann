@@ -36,7 +36,11 @@ abstract class DefaultCommand : GenericCommand
 		string[] reporterList = split(reporters,",");
 		foreach (reporter;reporterList) {
 			uint pos = find(reporter,":");
-			report.addBackend(get_registered!(ReportBackend)(reporter[0..pos]~"_reporter",reporter[pos+1..$]));
+			if (pos!=reporter.length) {
+				report.addBackend(get_registered!(ReportBackend)(reporter[0..pos]~"_reporter",reporter[pos+1..$]));
+			} else {
+				report.addBackend(get_registered!(ReportBackend)(reporter[0..pos]~"_reporter"));
+			}
 		}
 		
 		execute();

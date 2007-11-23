@@ -15,15 +15,16 @@ static this()
 		if (arguments.length!=1 && typeid(char[])!=arguments[0]) {
 			throw new Exception("Expected 1 argument of type char[]");
 		}
-		
+			
 		return new SqliteRepoter(va_arg!(char[])(argptr));
 	});
 }
+
 class SqliteRepoter : ReportBackend
 {
 	public char[] database;
 	
-	public this(char[]) 
+	public this(char[] database) 
 	{
 		this.database = database;
 	}
