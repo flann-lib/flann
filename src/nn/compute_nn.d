@@ -14,7 +14,7 @@ void computeNearestNeighbors(string outputFile, NNIndex index, Features!(float) 
 {
 	
 	withOpenFile(outputFile, (FormatOutput writer) {
-		Logger.log(Logger.INFO,"Searching... \n");
+		logger.info("Searching...");
 	
 		ResultSet resultSet = new ResultSet(nn+skipMatches);
 				

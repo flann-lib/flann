@@ -1,4 +1,4 @@
-	module util.allocator;
+module util.allocator;
 
 import util.defines;
 /+
@@ -49,9 +49,6 @@ public T[][] allocate_mat(T : T[][])(int rows, int cols) {
 }+/
 
 
-// public T allocate_once(T, A...)(A a) {
-// 	allocate!(T)(a);
-// }
 
 
 string allocate_static(string declaration)

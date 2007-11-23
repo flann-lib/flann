@@ -4,10 +4,6 @@ Project: nn
 
 module algo.composite_tree;
 
-// import std.c.time;
-// import std.stdio;
-
-
 import util.defines;
 import algo.nnindex;
 import algo.kmeans;
@@ -76,10 +72,9 @@ class CompositeTree(T) : NNIndex
 
 	public void buildIndex() 
 	{	
-	
-		Logger.log(Logger.INFO,"Building kmeans tree...\n");
+		logger.info("Building kmeans tree...");
 		kmeans.buildIndex();
-		Logger.log(Logger.INFO,"Building kdtree tree...\n");
+		logger.info("Building kdtree tree...");
 		kdtree.buildIndex();
 	}
 	

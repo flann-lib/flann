@@ -8,8 +8,6 @@ Author: Marius Muja (2007)
 *************************************************************************/
 module algo.balltree;
 
-// import std.math;
-
 import util.utils;
 import util.heap;
 import util.resultset;

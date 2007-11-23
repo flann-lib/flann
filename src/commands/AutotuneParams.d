@@ -1,8 +1,5 @@
 module commands.AutotuneParams;
 
-// import std.string;
-// import std.c.stdlib;
-
 import commands.GenericCommand;
 import commands.DefaultCommand;
 import util.logger;
@@ -71,13 +68,12 @@ class AutotuneParams : DefaultCommand
  		string algorithm = params["algorithm"].get!(string);
 		NNIndex index = indexRegistry!(T)[algorithm](inputData, params);
 		
-		Logger.log(Logger.INFO,"Building index... \n");
+		logger.info("Building index...");
 		float indexTime = profile( {
 			index.buildIndex();
 		});
-		Logger.log(Logger.INFO,"Time to build %d tree%s for {} vectors: {} seconds\n\n",
-			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
-		Logger.log(Logger.SIMPLE,"{}\n",indexTime);
+		logger.info(sprint("Time to build %d tree%s for {} vectors: {} seconds",
+			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime));
 		
 		uint checks = estimateSearchParams!(T)(index, inputData, precision);
 
@@ -88,7 +84,7 @@ class AutotuneParams : DefaultCommand
 			paramsFile = inputFile~".params";
 		}
 		
-		saveParams(paramsFile,params);
+		params.save(paramsFile);
 	}
 	
 	void execute() 

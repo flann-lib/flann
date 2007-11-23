@@ -17,12 +17,7 @@ Conversion to D: Marius Muja
 
 module util.heap;
 
-import util.allocator;
-import util.profiler;
-
-template Heap(T) {
-
-class Heap {
+class Heap(T) {
 
 	private {
 		T heap[];
@@ -143,12 +138,10 @@ class Heap {
 	}
 	
 	
-	
 	private void swap(T) (inout T a, inout T b) {
 		T t = a;
 		a = b;
 		b = t;
 	}
 
-}
 }

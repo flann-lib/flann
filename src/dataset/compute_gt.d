@@ -4,11 +4,6 @@ Project: nn
 
 module dataset.compute_gt;
 
-// import std.stdio;
-// import std.string;
-// import std.c.string;
-// import std.conv;
-
 import util.defines;
 import util.dist;
 import output.console;

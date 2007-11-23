@@ -2,76 +2,85 @@
 module output.ResultReporter;
 
 import tango.text.Util : trim,split;
+public import tango.core.Vararg;
 
 import util.utils;
 public import util.defines;
 
-abstract class ResultReporter
+
+public Reporter report;
+
+static this()
 {
-	string output;
+	report = new Reporter();
+}
+
+abstract class ReportBackend
+{
+	private ReportBackend next;
 	
 	void flush(OrderedParams values);	
 }
 
-private {
-alias ResultReporter function() ReporterMaker;
-ReporterMaker[string] reporters;
-string active_reporters[];
-}
-
-public: 
-void register_reporter(alias Reporter)()
+class Reporter 
 {
-	reporters[Reporter.NAME] = function() {static ResultReporter c; if (c is null ) c =  new Reporter(); return c;};
-}
+	private ReportBackend	backend;
+	private OrderedParams 	reportedValues;
+	
+	alias	report	opCall;
 
-
-ResultReporter get_reporter(string name)
-{
-	return (*(name in reporters))();
-}
-
-bool is_reporter(string name)
-{
-	return (name in reporters)!=null;
-}
-
-void activate_reporter(string name)
-{
-	string[] vals = split(name,":");
-
-	string reporterName = vals[0];
-	string reporterOutput = "";
-	if (vals.length==2) {
-		reporterOutput = vals[1];;
+	public Reporter addBackend(ReportBackend backend)
+	{
+		if (this.backend) {
+			backend.next = this.backend;
+		}
+		this.backend = backend;
+		return this;
+	}
+	
+	public Reporter clearBackends()
+	{
+		this.backend = null;
+		
+		return this;
 	}
 
-	if (is_reporter(reporterName)) {
-		bool found = false;
-		foreach (r;active_reporters) {
-			if (reporterName==r)  {
-				found = true;
-				break;
-			}
-		}
-		if (!found) {
-			active_reporters ~= reporterName;
+	public Reporter flush()
+	{
+		ReportBackend backend = this.backend;
+		while (backend) {
+			backend.flush(reportedValues);
+			backend = backend.next;
 		}
 		
-		get_reporter(reporterName).output = reporterOutput;
-	}	
-}
-
-void flush_reporters()
-{
-	foreach (name;active_reporters) {
-		get_reporter(name).flush(reportedValues_);
+		return this;
+	}
+	
+	public Reporter report(T)(char[] name, T value) 
+	{
+		reportedValues[name] = value;
+		
+		return this;
 	}
 }
 
-private OrderedParams reportedValues_;
-void report(T)(char[] name, T value) 
+void register(char[] name, Creator creator)
 {
-	reportedValues_[name] = value;
+	creators[name] = creator;
 }
 
+T get_registered(T) (char[] name, ...)
+{
+	if (name in creators) {
+		return cast(T)creators[name](_arguments,_argptr);
+	}
+	else {
+		throw new Exception("Cannot find creator for object: "~name);
+	}
+}
+
+private:
+	alias Object function (TypeInfo[],va_list) Creator;
+	Creator[char[]] creators;
+
+	

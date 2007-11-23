@@ -1,8 +1,6 @@
 module util.profiler;
 
-
 import util.timer;
-
 
 float profile( void delegate() action)
 {

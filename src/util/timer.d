@@ -3,7 +3,6 @@ Project: nn
 */
 
 module util.timer;
-import tango.io.Stdout;
 
 version (Posix) {
  	import tango.stdc.posix.sys.time;

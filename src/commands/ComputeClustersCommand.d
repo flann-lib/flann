@@ -1,6 +1,5 @@
 module commands.ComputeClustersCommand;
 
-// import std.string;
 import tango.text.convert.Sprint;
 
 import commands.GenericCommand;

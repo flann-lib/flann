@@ -1,7 +1,4 @@
-module commands.IndexCommand;
-
-// import std.string;
-// import std.c.stdlib;
+	module commands.IndexCommand;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
@@ -96,14 +93,14 @@ class IndexCommand : DefaultCommand
 		if (useParamsFile) {
 			if (paramsFile == "") {
 				paramsFile = inputFile~".params";
-				Logger.log(Logger.INFO, "No params file given, trying ",paramsFile,"\n");
+				logger.info("No params file given, trying "~paramsFile);
 			}
 			
 			try {
-				loadParams(paramsFile,params);
+				params.load(paramsFile);
 			}
 			catch(Exception e) {
-				Logger.log(Logger.INFO,"Cannot read params from file",paramsFile,"\n");
+				logger.warn("Cannot read params from file"~paramsFile);
 			}
 		} else {
 			params["trees"] = trees;
@@ -121,27 +118,26 @@ class IndexCommand : DefaultCommand
 		string algorithm = params["algorithm"].get!(string);
 		
 		if (!(algorithm in indexRegistry!(T))) {
-			Logger.log(Logger.ERROR,"Algorithm not supported.\n");
-			Logger.log(Logger.ERROR,"Available algorithms:\n");
+			logger.error("Algorithm not supported.");
+			logger.error("Available algorithms:");
 			foreach (algo,val; indexRegistry!(T)) {
-				Logger.log(Logger.ERROR,"      {}\n",algo);
+				logger.error("      {}"~algo);
 			}			
 			throw new Exception("Algorithm not found...bailing out...\n");
 		}
 
-		Logger.log(Logger.INFO,"Algorithm: {}\n",algorithm);
+		logger.info(sprint("Algorithm: {}",algorithm));
 		index = indexRegistry!(T)[algorithm](inputData!(T), params);
 
-		Logger.log(Logger.INFO,"Building index... \n");
+		logger.info("Building index...");
 		float indexTime = profile({
 			index.buildIndex();
 		});
 		
 		report("cluster_time", indexTime);
 		
-		Logger.log(Logger.INFO,"Time to build {} tree{} for {} vectors: {} seconds\n\n",
-			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime);
-		Logger.log(Logger.SIMPLE,"{}\n",indexTime);
+		logger.info(sprint("Time to build {} tree{} for {} vectors: {} seconds",
+			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime));
 
 // 		if (saveFile !is null) {
 // 			Logger.log(Logger.INFO,"Saving index to file %s... ",saveFile);

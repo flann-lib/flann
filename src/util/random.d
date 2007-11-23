@@ -5,10 +5,10 @@ Project: nn
 
 module util.random;
 
+import tango.stdc.time;
+
 import util.utils;
 
-import tango.stdc.time;
-// import std.c.time;
 
 
 extern (C) {

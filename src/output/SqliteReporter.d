@@ -10,17 +10,29 @@ import dbi.sqlite.SqliteDatabase;
 
 static this()
 {
-	register_reporter!(SqliteRepoter);
+	register("sqlite_reporter",function Object(TypeInfo[] arguments, va_list argptr)
+	{
+		if (arguments.length!=1 && typeid(char[])!=arguments[0]) {
+			throw new Exception("Expected 1 argument of type char[]");
+		}
+		
+		return new SqliteRepoter(va_arg!(char[])(argptr));
+	});
 }
-
-class SqliteRepoter : ResultReporter
+class SqliteRepoter : ReportBackend
 {
-	static string NAME = "sqlite";
+	public char[] database;
+	
+	public this(char[]) 
+	{
+		this.database = database;
+	}
 	
 	public void flush(OrderedParams values) 
 	{
 		auto db = new SqliteDatabase();
-		db.connect(output);
+		db.connect(database);
+		scope(exit) db.close();
 
 		string fields = "";
 		string vals = "";			
@@ -37,7 +49,5 @@ class SqliteRepoter : ResultReporter
 		string query = "INSERT INTO results("~fields[0..$-1]~") VALUES ("~vals[0..$-1]~")";
   		Stdout(query).newline;
 		db.execute(query);
-		
-		db.close();
 	}
 }

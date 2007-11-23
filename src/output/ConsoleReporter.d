@@ -1,6 +1,5 @@
 module output.ConsoleReporter;
 
-// import std.stdio;
 import tango.io.Stdout;
 
 import output.ResultReporter;
@@ -9,18 +8,19 @@ import util.defines;
 
 static this()
 {
-	register_reporter!(ConsoleReporter);
+	register("console_reporter",function Object(TypeInfo[] arguments, va_list argptr)
+	{
+		return new ConsoleReporter();
+	});
 }
 
-class ConsoleReporter : ResultReporter
+class ConsoleReporter : ReportBackend
 {
-	static string NAME = "console";
-	
 	public void flush(OrderedParams reporter) 
 	{
 		foreach (value; reporter) {
-			Stdout.format("{} ",value);
+			Stdout.format("{,5} ",value.toUtf8);
 		}
-		Stdout("\n");
+		Stdout.newline;
 	}
 }

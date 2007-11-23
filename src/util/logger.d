@@ -5,70 +5,31 @@ Project: nn
 
 module util.logger;
 
-// import std.stdio;
-// import std.format;
 import tango.core.Vararg;
 import tango.text.convert.Layout;
 import tango.text.convert.Sprint;
 import tango.io.Console;
-import tango.io.Stdout;
-
+import tango.util.log.Log;
+import tango.util.log.ConsoleAppender;
+	
 import util.defines;
-import util.allocator;
 
-private static Sprint!(char) sprint;
+public Logger logger;
+public Sprint!(char) sprint;
 
-static this() {
-	sprint = new Sprint!(char);
-}
+private Layout!(char) layout;
 
-class Logger 
+static this()
 {
-static {
-
-	const LogLevel INFO = cast(LogLevel)"info";
-	const LogLevel DEBUG = cast(LogLevel)"debug";
-	const LogLevel ERROR = cast(LogLevel)"error";
-	
-	const LogLevel SIMPLE = cast(LogLevel)"simple";
-	const LogLevel REPORT = cast(LogLevel)"report";
-
-	
-	private typedef string LogLevel;
-	
-	int[LogLevel] levels;
-	
-	
-	public void enableLevel(LogLevel level) 
-	{
-		levels[level] = levels.length;
-	}
-	
-	public void enableLevel(string level) 
-	{
-		enableLevel(cast(LogLevel)level);
-	}
-
-	public void disableLevel(LogLevel level) 
-	{
-		levels.remove(level);
-	}
-
-	public void log(LogLevel logLevel, ...)
-	{
-/+		const int BUFFER_SIZE = 1000;
-		mixin(allocate_static("char[BUFFER_SIZE] buffer;"));+/
-		
-		if (logLevel in levels) {
-			int size = _arguments.length;
-			
-			char[] format = va_arg!(char[])(_argptr);
-			Cout(sprint(format,_arguments[1..$],_argptr));
-			Cout.flush;
-		}
-		
-	}
-	
-	
+	sprint = new Sprint!(char);
+	layout = new Layout!(char);
+	Log.getRootLogger().addAppender(new ConsoleAppender());
+	logger = Log.getLogger("log");
 }
+
+void write(...)
+{
+	char[] format = va_arg!(char[])(_argptr);
+ 	layout((char[] s){return Cout.stream.write(s);},_arguments[1..$],_argptr,format);
+	Cout.flush();
 }

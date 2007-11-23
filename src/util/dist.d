@@ -4,12 +4,8 @@ Project: nn
 
 module util.dist;
 
-// import std.stdio;
-
 import util.allocator;
-	// import util.allocator;
-	// 
-	// 
+	
 	// extern(C) {
 	//   float sdot_(int *n, float *x, int *incx, float *y, int *incy);
 	// }

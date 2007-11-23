@@ -9,8 +9,6 @@ Author: Marius Muja (2007)
 module algo.agglomerativetree2;
 
 
-// import std.math;
-
 import util.defines;
 import util.utils;
 import util.random;
@@ -446,8 +444,6 @@ class AgglomerativeExTree : NNIndex {
 			float[][] clusterPoints = getClusterPoints(q[i]);
 			variances[i] = computeVariance(clusterPoints);
 			
-			Logger.log(Logger.INFO,"{} - {}\n",variances[i],q[i].variance);
-			
 			clusterSize[i] = clusterPoints.length;
 		}
 		
@@ -458,12 +454,7 @@ class AgglomerativeExTree : NNIndex {
 			sum += clusterSize[i];
 		}
 		meanVariance/=sum;
-		
-		
-		for (int i=0;i<clusterSize.length;++i) {
-			Logger.log(Logger.INFO,"Cluster {} size: {}\n",i, clusterSize[i]);
-		}
-		
+				
 		return meanVariance;		
 	}
 	
@@ -473,7 +464,7 @@ class AgglomerativeExTree : NNIndex {
 		float variance;
 		TreeNode[] clusters = getMinVarianceClusters(root, numClusters, variance);
 	
-		Logger.log(Logger.INFO,"Mean cluster variance for {} top level clusters: {}\n",clusters.length,variance);
+		logger.info(sprint("Mean cluster variance for {} top level clusters: {}",clusters.length,variance));
 		
 		float[][] centers = new float[][clusters.length];
 		

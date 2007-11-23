@@ -4,18 +4,9 @@ Project: nn
 
 module dataset.features;
 
-// import std.stdio;
-// import std.string;
-// import std.c.string;
-// import std.stream;
-// import std.ctype;
-// import std.conv;
-// import std.file;
 import tango.core.Array;
 import tango.text.Util : trim,split;
-import tango.io.FilePath;
 
-// import serialization.serializer;
 import util.defines;
 import util.logger;
 import util.utils;
@@ -23,8 +14,6 @@ import util.random;
 import util.allocator;
 import output.console;
 import dataset.compute_gt;
-
-
 
 void addTo(T,U)(T[] a, U[] b) {
 	foreach(index, inout value; a) {
@@ -131,7 +120,7 @@ class GridDataFile(T)
 					array_copy(vecs[cnt++],tokens);
 				} else {
 					debug {
-						Logger.log(Logger.DEBUG,"Wrong number of values on line {}... ignoring",(cnt+1));
+						logger.error(sprint("Wrong number of values on line {}... ignoring",(cnt+1)));
 					}
 				}	
 			}
@@ -289,13 +278,13 @@ class Features(T = float) {
 		});
 		
 		if (elemSize!=T.sizeof) {
-			Logger.log(Logger.INFO, "Data elements size not equal to used type size. Performing conversion.\n	");
+			logger.info("Data elements size not equal to used type size. Performing conversion.");
 		}
 		
 		ulong fileSize = FilePath(realFile).fileSize;
 		count = fileSize / (veclen*elemSize);
 		
-		Logger.log(Logger.INFO,"\nReading {} features: ",count);
+		logger.info(sprint("Reading {} features: ",count));
 				
 		withOpenFile(realFile, (FileInput stream) {
 		

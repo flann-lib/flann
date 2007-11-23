@@ -4,10 +4,6 @@ Project: nn
 
 module algo.kmeans;
 
-// import std.c.time;
-// import std.stdio;
-
-
 import util.defines;
 import algo.nnindex;
 import util.resultset;
@@ -159,12 +155,6 @@ class KMeansTree(T) : NNIndex
 	{	
 	
 		int branchings[] = getBranchingFactors();
-		Logger.log(Logger.INFO,"Using the following branching factors: [");
-		foreach (i,b;branchings) {
-			if (i!=0) Logger.log(Logger.INFO,",");
-			Logger.log(Logger.INFO,"{}",b);
-		}
-		Logger.log(Logger.INFO,"]\n");
 		
 		root = new KMeansNode[numTrees];
 		indices = new int[vecs.length];
@@ -177,7 +167,6 @@ class KMeansTree(T) : NNIndex
 			computeNodeStatistics(root[index], indices);
 			computeClustering(root[index], indices, branchingValue);
 		}		
-//		Logger.log(Logger.INFO, "Time spend in allocating points: %.2f\n",timer.value);
 	}
 	
 
@@ -669,7 +658,7 @@ class KMeansTree(T) : NNIndex
 		static float[][] centers;
 		if (centers is null) centers = new float[][clusters.length];
 		
-		Logger.log(Logger.INFO,"Mean cluster variance for {} top level clusters: {}\n",clusters.length,variance);
+		logger.info(sprint("Mean cluster variance for {} top level clusters: {}",clusters.length,variance));
 		
  		foreach (index, cluster; clusters) {
 			centers[index] = cluster.pivot;

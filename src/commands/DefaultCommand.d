@@ -1,7 +1,9 @@
 module commands.DefaultCommand;
 
 // import std.string;
+import tango.core.Array : find;
 import tango.text.Util : split,trim;
+import tango.util.log.Log;
 
 import util.defines;
 import commands.GenericCommand;
@@ -17,26 +19,24 @@ abstract class DefaultCommand : GenericCommand
 	
 	this(string name) {
 		super(name);
-		register(verbosity,"v","verbosity","info","The program verbosity.(info,error...)");
+		register(verbosity,"v","verbosity","info","The program verbosity (trace > info > warn > error > fatal > none) (Default: info)");
 		register(reporters,"e","reporters","","Comma-delimited list of reporters to use.");
 		register(help,"h","help",null,"Display help message");
 	}
 	
-	void executeDefault()
+	final void executeDefault()
 	{
 		if (help) {
 			showHelp();
 			return;
 		} 
 		
-		string[] logLevels = split(verbosity,",");
-		foreach (logLevel;logLevels) {
-			Logger.enableLevel(trim(logLevel));
-		}
+		Log.getLogger("log").setLevel(Log.level(verbosity));
 		
 		string[] reporterList = split(reporters,",");
 		foreach (reporter;reporterList) {
-			activate_reporter(reporter);
+			uint pos = find(reporter,":");
+			report.addBackend(get_registered!(ReportBackend)(reporter[0..pos]~"_reporter",reporter[pos+1..$]));
 		}
 		
 		execute();

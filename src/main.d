@@ -6,17 +6,15 @@ Author: Marus Muja (2007)
 *************************************************************************/
 module main;
 
-import tango.core.Memory;
+import tango.core.Memory : GC;
 
 import commands.all;
-import util.logger;
 
 /** 
 	Program entry point 
 */
 void main(char[][] args)
 {
-	Logger.enableLevel(Logger.ERROR);
 	// don't use garbage collector... manage memory manually
 	GC.disable();
 	

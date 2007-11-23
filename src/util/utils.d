@@ -10,11 +10,6 @@ Conversion to D: Marius Muja
 
 module util.utils;
 
-
-// import std.stdio;
-// import std.c.stdlib;
-// import std.string;
-//import std2.conv;
 import tango.util.Convert;
 import tango.text.convert.Layout;
 import tango.io.stream.MapStream;
@@ -44,9 +39,11 @@ void swap(T) (ref T a, ref T b) {
      b = t;
 }
 
+/********************************************************************************
+	
+	Helper functions for working with files 
 
-/* ----------------- Helper functions for working with files ----------------*/
-
+********************************************************************************/
 import tango.io.FileConduit;
 import tango.scrapple.PlainTextProtocol;
 public import tango.io.stream.FileStream;
@@ -98,6 +95,13 @@ void withOpenFile(string file, void delegate(FormatOutput) action)
 	scope (exit) stream.close();
 	action(stream);
 }
+
+
+/********************************************************************************/
+
+
+
+
 
 
 void array_copy(U,V)(U[] dst, V[] src)
@@ -242,6 +246,28 @@ struct Params
 		auto formater = new Layout!(char);
 		return formater("{}",data);
 	}
+	
+	
+	void save(string file) {
+	
+		withOpenFile(file,(FormatOutput writer) {
+			foreach(name,value;data) {
+				writer.formatln("{} = {}",name,value);
+			}
+		});
+	}
+
+
+	void load(string file) {
+		
+		withOpenFile(file, (FileInput stream) {
+			auto input = new MapInput!(char)(stream);
+			
+			foreach (name,value;input) {
+				opIndexAssign(value,name);
+			}
+		});
+	}	
 }
 
 void copy(ref Params a,Params b)
@@ -305,26 +331,7 @@ void copyParams(T,U)(ref T a,U b,string[] params)
 	}
 }
 
-void saveParams(string file, Params params) {
-	
-	withOpenFile(file,(FormatOutput writer) {
-		foreach(name,value;params) {
-			writer.formatln("{} = {}",name,value);
-		}
-	});
-}
 
-
-void loadParams(string file, ref Params params) {
-	
-	withOpenFile(file, (FileInput stream) {
-		auto input = new MapInput!(char)(stream);
-		
-		foreach (name,value;input) {
-			params[name] = value;
-		}
-	});
-}
 
 
 

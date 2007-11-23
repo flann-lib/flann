@@ -35,11 +35,6 @@ nn.c:
 
 module algo.kdtree;
 
-// import std.c.stdlib;
-// import std.c.math;
-// import std.c.string;
-// import std.gc;
-
 import util.utils;
 import util.random;
 import util.heap;

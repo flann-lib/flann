@@ -12,9 +12,9 @@ typedef void delegate() Ticker;
 
 void showOperation(string message, void delegate() action)
 {
-	Logger.log(Logger.INFO, message~"... ");
+	logger.info(message~"... ");
 	action();
-	Logger.log(Logger.INFO, "done\n");
+	logger.info("done");
 }
 
 
@@ -31,7 +31,7 @@ void showProgressBar(int maxValue, int maxWidth, void delegate(Ticker ticker) ac
 		}
 		
 		if (crtValue==maxValue) {
-			Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=====]\n");
+			write("\x08\x08\x08\x08\x08\x08=====]\n");
 			crtValue++;
 		}
 		else if (crtValue<maxValue) {
@@ -40,13 +40,13 @@ void showProgressBar(int maxValue, int maxWidth, void delegate(Ticker ticker) ac
 				
 				int percent = (100*crtValue)/maxValue;
 			
-				Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=({:2}%)>",percent);
+				write("\x08\x08\x08\x08\x08\x08=({:2}%)>",percent);
 				crtWidth++;
 			}
 		}
 	}
 
-	Logger.log(Logger.INFO,"[      ");
+	write("[      ");
 	
 	action(&tick);
 }
@@ -63,7 +63,7 @@ void showProgressBarStep(int maxValue, int maxWidth, void delegate(int index) ac
 		}
 		
 		if (crtValue==maxValue) {
-			Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=====]\n");
+			write("\x08\x08\x08\x08\x08\x08=====]\n");
 			crtValue++;
 		}
 		else if (crtValue<maxValue) {
@@ -72,13 +72,13 @@ void showProgressBarStep(int maxValue, int maxWidth, void delegate(int index) ac
 				
 				int percent = (100*crtValue)/maxValue;
 			
-				Logger.log(Logger.INFO,"\x08\x08\x08\x08\x08\x08=({}%)>",percent);
+				write("\x08\x08\x08\x08\x08\x08=({}%)>",percent);
 				crtWidth++;
 			}
 		}
 	}
 
-	Logger.log(Logger.INFO,"[      ");
+	write("[      ");
 	
 	for (int index=0;index<maxValue;++index) {
 		action(index);

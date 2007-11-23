@@ -25,9 +25,6 @@ template indexRegistry(T) {
 template AlgorithmRegistry(alias ALG,T)
 {
 	
-// 	import serialization.serializer;
-// 	import std.stream;
-	
 	static this() 
 	{
 		indexRegistry!(T)[ALG.NAME] = function(Features!(T) inputData, Params params) {return cast(NNIndex) new ALG(inputData, params);};

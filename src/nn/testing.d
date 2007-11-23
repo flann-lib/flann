@@ -74,9 +74,9 @@ float search(int checks, out float time)
 	float performance = 100*cast(float)correct/(nn*testData.count);
 	
 	static if (withOutput) {
-		Logger.log(Logger.INFO,"{,8}{,12:2}{,12:3}{,13:3}{,10:3}\n",
+		logger.info(sprint("{,8}{,12:2}{,12:3}{,13:3}{,10:3}",
 				checks, performance,
-				time, 1000.0 * time / testData.count, distR/testData.count);
+				time, 1000.0 * time / testData.count, distR/testData.count));
 	}
 	
 	return performance;
@@ -91,26 +91,25 @@ float testNNIndex(T, bool withOutput, bool withReporting)
 	T[][] vecs = inputData.vecs;
 	
 	static if (withOutput)
-		Logger.log(Logger.INFO,"Searching... \n");
+		logger.info("Searching... ");
 	
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
 	
 	mixin search!(withOutput);
 	
 	static if (withOutput) {
-		Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
+		logger.info("  Nodes    %% correct    Time     Time/vector\n"
 				" checked   neighbors   (seconds)      (ms)\n"
-				" -------   ---------   ---------  -----------\n");
+				" -------   ---------   ---------  -----------");
 	}
 	
 	float time;
 	float precision = search(checks,time);
 
 	static if (withReporting) {
-		report("checks", checks);
-		report("match",cast(double)precision);
-		report("search_time", cast(double)time);
-		flush_reporters();
+		report("checks", checks)
+			("match",cast(double)precision)
+			("search_time", cast(double)time).flush;
 	}
 
 	return time;
@@ -123,10 +122,10 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 	T[][] vecs = inputData.vecs;
 	
 	static if (withOutput) {
-		Logger.log(Logger.INFO,"Searching... \n");
-		Logger.log(Logger.INFO,"  Nodes    % correct    Time     Time/vector\n"
+		logger.info("Searching... ");
+		logger.info("  Nodes    % correct    Time     Time/vector\n"
 				" checked   neighbors   (seconds)      (ms)\n"
-				" -------   ---------   ---------  -----------\n");
+				" -------   ---------   ---------  -----------");
 	}
 	
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
@@ -182,18 +181,11 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 	}
 	
 	static if (withReporting) {
-		report("checks", cx);
-		report("match", cast(double)realPrecision);
-		report("search_time", cast(double)time);
-		flush_reporters();
+		report("checks", cx)
+			("match", cast(double)realPrecision)
+			("search_time", cast(double)time).flush;
 	}
 	
-	static if (withOutput) {
-		Logger.log(Logger.SIMPLE,"  %5d     %6.2f      %6.2f      %6.3f\n",
-					cx, realPrecision,
-					time, 1000.0 * time / testData.count);
-	}
-		
 	checks = cx;
 	return time;
 }
@@ -206,10 +198,10 @@ float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
 	T[][] vecs = inputData.vecs;
 
 	static if (withOutput) {
-		Logger.log(Logger.INFO,"Searching... \n");
-		Logger.log(Logger.INFO,"  Nodes    %% correct    Time     Time/vector\n"
+		logger.info("Searching... ");
+		logger.info("  Nodes    % correct    Time     Time/vector\n"
 				" checked   neighbors   (seconds)      (ms)\n"
-				" -------   ---------   ---------  -----------\n");
+				" -------   ---------   ---------  -----------");
  	}
 
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
@@ -338,16 +330,9 @@ float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
 	}
 	
 	static if (withReporting) {
-		report("checks", cx);
-		report("match", cast(double)realPrecision);
-		report("search_time", cast(double)time);
-		flush_reporters();
-	}
-
-	static if (withOutput) {
-		Logger.log(Logger.SIMPLE,"  %5d     %6.2f      %6.2f      %6.3f\n",
-					cx, realPrecision,
-					time, 1000.0 * time / testData.count);
+		report("checks", cx)
+			("match", cast(double)realPrecision)
+			("search_time", cast(double)time).flush;
 	}
 
 	checks = cx;

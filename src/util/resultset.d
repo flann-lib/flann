@@ -6,7 +6,6 @@ module util.resultset;
 
 import util.heap;
 import util.utils;
-import util.allocator;
 
 
 class ResultSet 
@@ -43,7 +42,7 @@ class ResultSet
 	}
 	
 	public bool full() 
-	{	//return false;
+	{	
 		return count == indices.length;
 	}
 	

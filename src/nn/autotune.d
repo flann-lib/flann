@@ -84,15 +84,15 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 	Features!(float) testDataset = new Features!(float)();
 	testDataset.init(sampledDataset.sample(testSampleSize,true));
 	
-	Logger.log(Logger.INFO,"Sampled dataset size: ",sampledDataset.count,"\n");
-	Logger.log(Logger.INFO,"Test dataset size: ",testDataset.count,"\n");
+	logger.info(sprint("Sampled dataset size: {}",sampledDataset.count));
+	logger.info(sprint("Test dataset size: {}",testDataset.count));
  	
  	
- 	Logger.log(Logger.INFO,"Computing ground truth: ");
+ 	logger.info("Computing ground truth: ");
  	testDataset.computeGT(sampledDataset,1,0);
 	
 	
-	Logger.log(Logger.INFO,"Autotuning parameters...\n");
+	logger.info("Autotuning parameters...");
 	
 	
 	const int REPEAT = 2;
@@ -131,7 +131,7 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 					kmeansCost = cost;
 					
 				}
-				Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");	
+				logger.info("Best KMeans bf: "~kmeansParams["branching"]);	
 				
 				GC.collect();
 			}
