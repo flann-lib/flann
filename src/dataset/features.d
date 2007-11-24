@@ -9,11 +9,13 @@ import tango.text.Util : trim,split;
 
 import util.defines;
 import util.logger;
+import util.profiler;
 import util.utils;
 import util.random;
 import util.allocator;
 import output.console;
 import dataset.compute_gt;
+
 
 void addTo(T,U)(T[] a, U[] b) {
 	foreach(index, inout value; a) {
@@ -31,27 +33,104 @@ void addTo(T,U)(T[] a, U[] b) {
 
 void writeToFile(float[][] vecs, char[] file) 
 {
-	withOpenFile(file, (Writer write) {
+	withOpenFile(file, (FormatOutput write) {
 		for (int i=0;i<vecs.length;++i) {
-			write(vecs[i]);
-		}
-	});
-/+	FILE* fp = fopen(toStringz(file),"w");
-	if (fp is null) {
-		throw new Exception("Cannot open output file: "~file);
-	}
-	
-	for (int i=0;i<vecs.length;++i) {
-		for (int j=0;j<vecs[i].length;++j) {
-			if (j!=0) {
-				fprintf(fp," ");
+			if (i!=0) {
+				write(" ");
 			}
-			fprintf(fp,"%f", vecs[i][j]);
+			write.format("{}",vecs[i]);
 		}
-		fprintf(fp,"\n");
-	}
-	fclose(fp);+/
+		write.newline;
+	});
 }
+
+// class GridDataFile(T)
+// {
+// 	private string file;
+// 
+// 	public this(string file)
+// 	{
+// 		this.file = file;
+// 	}	
+// 	
+// 	private char guessDelimiter(string line)
+// 	{
+// 		const string numberChars = "01234567890.e+-";
+// 		const int length = numberChars.length;
+// 		int pos = 0;
+// 		
+// 		while (numberChars.find(line[pos])==length) {
+// 			pos++;
+// 		}
+// 		while (numberChars.find(line[pos])!=length) {
+// 			pos++;
+// 		}
+// 		
+// 		return line[pos];
+// 	}
+// 	
+// 	
+// 	private void getFileInfo(out int lines, out int columns, out char[] delimiter)
+// 	{
+// 		const int MAX_BUF = 4096;
+// 		char buffer[MAX_BUF];
+// 		
+// 		lines = 0;
+// 		withOpenFile(file, (FileInput stream) {
+// 			uint ret;
+// 			while ((ret=stream.read(buffer))!=stream.Eof) {
+// 				lines += count(buffer[0..ret],'\n');
+// 			}
+// 		});
+// 		
+// 		withOpenFile(file, (LineInput stream) {
+// 			char[] line = stream.next;			
+// 			delimiter ~= guessDelimiter(line);
+// 
+// 			while (line !is null && line.length==0) {
+// 				line = stream.next;
+// 			}
+// 			string[] tokens = trim(line).split(delimiter);
+// 			columns = tokens.length;
+// 		});
+// 		
+// 	}
+// 	
+// 	
+// 	private T[][] getValues()
+// 	{
+// 		int lines,columns;
+// 		char[] delimiter;
+// 		getFileInfo(lines,columns,delimiter);
+// 		
+// 		write("lines: {}\n",lines)("columns: {}\n",columns);
+// 		
+// 		// allocate memory for the data
+// 		T[][] vecs = new T[][](lines,columns);
+// 		
+// 		// read in
+// /+		withOpenFile(file, (ScanReader read) {
+// 			foreach (vec; vecs) {
+// 				//read(vec);				
+// 			}
+// //			vecs = vecs[0..cnt];
+// 		});+/
+// // 		withOpenFile("test.out",(FormatOutput write) {
+// // 			foreach (vec; vecs) {
+// // 				foreach(elem;vec) {
+// // 					write.format("{} ",elem);
+// // 				}
+// // 				write("\n");
+// // 			}
+// // 		});
+// 		return vecs;
+// 	}
+// 
+// 
+// }
+
+
+
 class GridDataFile(T)
 {
 	private string file;
@@ -77,6 +156,32 @@ class GridDataFile(T)
 		return line[pos];
 	}
 	
+	private void getFileInfo(out int lines, out int columns, out char[] delimiter)
+	{
+		const int MAX_BUF = 4096;
+		char buffer[MAX_BUF];
+		
+		lines = 0;
+		withOpenFile(file, (FileInput stream) {
+			uint ret;
+			while ((ret=stream.read(buffer))!=stream.Eof) {
+				lines += count(buffer[0..ret],'\n');
+			}
+		});
+		
+		withOpenFile(file, (LineInput stream) {
+			char[] line = stream.next;			
+			delimiter ~= guessDelimiter(line);
+
+			while (line !is null && line.length==0) {
+				line = stream.next;
+			}
+			string[] tokens = trim(line).split(delimiter);
+			columns = tokens.length;
+		});
+		
+	}
+	
 	
 	private int getLinesNo()
 	{
@@ -99,8 +204,14 @@ class GridDataFile(T)
 	{
 		static string buffer;
 		
-		int lines = getLinesNo();
+			int lines,columns;
+		char[] delimiter;
+		getFileInfo(lines,columns,delimiter);
+
+		//lines = getLinesNo();
 		T[][] vecs;
+		T[][] vecs2 = new T[][](lines,columns);
+		write("lines: {}\ncolumns:: {}\n",lines,columns);
 		
 		withOpenFile(file, (LineInput stream) {
 					
@@ -115,6 +226,7 @@ class GridDataFile(T)
 			array_copy(vecs[cnt++],tokens);
 			
 			foreach (index,line; stream) {
+				if (line.length==0) continue;
 				tokens = trim(line).split(delimiter);
 				if (tokens.length==veclen) {
 					array_copy(vecs[cnt++],tokens);
@@ -132,12 +244,6 @@ class GridDataFile(T)
 
 
 }
-
-
-
-
-
-
 
 
 
@@ -176,8 +282,6 @@ class Features(T = float) {
 			}			
 		}
 
-
-
 	/** 
 		Read an NN file containing vectors for nearest-neighbor matching.
 	
@@ -196,8 +300,11 @@ class Features(T = float) {
 	*/	
 	private void readNNFile(string file) 
 	{
+		auto file_stream = new FileInput(file);
+		auto stream = new ScanReader(new ScanIterator(" \t\n",file_stream));
+
 	
-		withOpenFile(file, (Reader stream) {
+		//withOpenFile(file, (ScanReader stream) {
 		
 			int vcount, veclen, vtype;
 			string header;
@@ -223,11 +330,8 @@ class Features(T = float) {
 		
 				stream (vecs[i]);
 			}
-		});
+		//});
 	}
-	
-	
-
 	
 	
 	private void readDATFile(string file)
@@ -235,6 +339,7 @@ class Features(T = float) {
 		auto gridData = new GridDataFile!(T)(file);
 		vecs = gridData.getValues();
 		count = vecs.length;
+		veclen = vecs[0].length;
 	}
 	
 	
@@ -265,7 +370,7 @@ class Features(T = float) {
 		string realFile;
 		int elemSize;
 		
-		withOpenFile(file, (Reader read) {
+		withOpenFile(file, (ScanReader read) {
 			string header;
 			read (header);
 			if (header != "BINARY") {
@@ -363,10 +468,14 @@ class Features(T = float) {
 	
 	private void writeToFile_DAT(char[] file)
 	{
-		withOpenFile(file, (Writer write) {
+		withOpenFile(file, (FormatOutput write) {
 			for (int i=0;i<count;++i) {
-				write(vecs[i]);
+				if (i!=0) {
+					write(" ");
+				}
+				write.format("{}",vecs[i]);
 			}
+			write.newline;
 		});
 		
 	}

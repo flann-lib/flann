@@ -45,32 +45,71 @@ void swap(T) (ref T a, ref T b) {
 
 ********************************************************************************/
 import tango.io.FileConduit;
-import tango.scrapple.PlainTextProtocol;
 public import tango.io.stream.FileStream;
 public import tango.io.stream.LineStream;
+public import tango.io.stream.BufferStream;
 public import tango.io.stream.FormatStream;
 public import tango.io.protocol.Reader;
 public import tango.io.protocol.Writer;
+public import tango.text.stream.StreamIterator;
+public import tango.text.stream.SimpleIterator;
+
+alias SimpleIterator!(char) ScanIterator;
+
+private template isArray(T)
+{
+    static if( is( T U : U[] ) )
+        const isArray = true;
+    else
+        const isArray = false;
+}
+
+class ScanReader
+{
+	private StreamIterator!(char) streamIterator;
+	
+	alias get opCall;
+
+	public this(StreamIterator!(char) stream)
+	{
+		streamIterator = stream;
+	}
+
+	public ScanReader get(T) (inout T x)
+	{
+		static if ( isArray!(T) ) {
+			static if ( is(T==char[])) {
+				x = next;
+			}
+			else {
+				foreach (ref elem;x) {
+					elem = to!(typeof(elem))(next);
+				}
+			}
+		}
+		else {
+			x = to!(T)(next);
+		}
+		return this;
+	}
+	
+	private char[] next()
+	{
+		char[] tmp = streamIterator.next;
+		while (tmp !is null && tmp.length==0) {
+			tmp = streamIterator.next;
+		}
+		if (tmp is null) {
+				throw new Exception("Reading past the end of file");
+		}
+		return tmp;
+	}
+}
 
 void withOpenFile(string file, void delegate(FileInput) action) 
 {
 	auto stream = new FileInput(file);
 	scope (exit) stream.close();
-	action(stream);
-}
-
-void withOpenFile(string file, void delegate(LineInput) action) 
-{
-	auto stream = new LineInput(new FileInput(file));
-	scope (exit) stream.close();
-	action(stream);
-}
-
-void withOpenFile(string file, void delegate(Reader) action) 
-{
-	auto conduit = new FileInput(file);
-	auto stream = new Reader(new PlainTextProtocol(conduit,false));
-	scope (exit) conduit.close();
 	action(stream);
 }
 
@@ -81,17 +120,25 @@ void withOpenFile(string file, void delegate(FileOutput) action)
 	action(stream);
 }
 
-void withOpenFile(string file, void delegate(Writer) action) 
+
+void withOpenFile(string file, void delegate(LineInput) action) 
 {
-	auto conduit = new FileInput(file);
-	auto stream = new Writer(new PlainTextProtocol(conduit,false));
-	scope (exit) conduit.close();
+	auto stream = new LineInput(new FileInput(file));
+	scope (exit) stream.close();
 	action(stream);
+}
+
+void withOpenFile(string file, void delegate(ScanReader) action, char[] delimiter = " \t\n" ) 
+{
+	auto stream = new FileInput(file);
+	auto reader = new ScanReader(new ScanIterator(delimiter,stream));
+	scope (exit) stream.close();
+	action(reader);
 }
 
 void withOpenFile(string file, void delegate(FormatOutput) action) 
 {
-	auto stream = new FormatOutput(new FileOutput(file));
+	auto stream = new FormatOutput(new  BufferOutput(new FileOutput(file)));
 	scope (exit) stream.close();
 	action(stream);
 }

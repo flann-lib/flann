@@ -68,6 +68,7 @@ class RunTestCommand : IndexCommand
 				testData.readFromFile(testFile);
 			});
 		}
+		write("Got here!\n");
 		if (testData is null) {
 			throw new Exception("No test data given.");
 		}

@@ -47,11 +47,11 @@
           <envvar value="debug" name="PROFILE" />
         </debug>
         <debug_unittest>
-          <envvar value="debug" name="PROFILE" />
+          <envvar value="debug" name="CONFIGURATION" />
           <envvar value="yes" name="UNIT_TEST" />
         </debug_unittest>
         <profile>
-          <envvar value="debug" name="PROFILE" />
+          <envvar value="debug" name="CONFIGURATION" />
           <envvar value="gprof" name="PROFILER" />
         </profile>
       </environments>
@@ -183,12 +183,11 @@
       <otherbin></otherbin>
       <defaulttarget></defaulttarget>
       <otheroptions></otheroptions>
-      <selectedenvironment>profile</selectedenvironment>
+      <selectedenvironment>default</selectedenvironment>
       <environments>
         <debug/>
         <vector/>
         <default/>
-        <profile/>
       </environments>
     </other>
   </kdevcustomproject>

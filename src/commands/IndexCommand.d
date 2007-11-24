@@ -58,17 +58,6 @@ class IndexCommand : DefaultCommand
 	{
 		report("byte_features", byteFeatures?1:0);
 		
-// 		if (loadFile !is null) {
-// 		Logger.log(Logger.INFO,"Loading index from file %s... ",loadFile);
-// 		fflush(stdout);
-// 		index = loadIndexRegistry[algorithm](loadFile);
-// /+		Serializer s = new Serializer(loadFile, FileMode.In);
-// 		AgglomerativeExTree index2;
-// 		s.describe(index2);
-// 		index = index2;+/
-// 		Logger.log(Logger.INFO,"done\n");
-// 		}
-		
 		if (inputFile != "") {
 			showOperation( "Reading input data from "~inputFile, {
 				inputData!(T) = new Features!(T)();
@@ -121,7 +110,7 @@ class IndexCommand : DefaultCommand
 			logger.error("Algorithm not supported.");
 			logger.error("Available algorithms:");
 			foreach (algo,val; indexRegistry!(T)) {
-				logger.error("      {}"~algo);
+				logger.error(sprint("\t{}",algo));
 			}			
 			throw new Exception("Algorithm not found...bailing out...\n");
 		}
