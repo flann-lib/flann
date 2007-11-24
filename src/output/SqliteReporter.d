@@ -2,10 +2,13 @@ module output.SqliteRepoter;
 
 // import std.stdio;
 import tango.io.Stdout;
+import dbi.sqlite.SqliteDatabase;
+import dbi.DBIException;
+import dbi.ErrorCode;
 
 import output.ResultReporter;
 import util.utils;
-import dbi.sqlite.SqliteDatabase;
+import util.logger;
 
 
 static this()
@@ -49,6 +52,19 @@ class SqliteRepoter : ReportBackend
 		
 		string query = "INSERT INTO results("~fields[0..$-1]~") VALUES ("~vals[0..$-1]~")";
   		Stdout(query).newline;
-		db.execute(query);
+  		
+  		int retries = 0;
+  		bool success = false;
+  		while (retries<3 && !success) {
+			try {
+				db.execute(query);
+				success = true;
+			} catch(DBIException e) {
+				logger.error("Error inserting into database");
+				logger.error("SQL: "~e.getSql);
+				logger.error("Error code: "~toString(e.getErrorCode));
+				logger.error(sprint("Specific code: {}",e.getSpecificCode));
+			}
+		}	
 	}
 }
