@@ -5,7 +5,6 @@ import tango.math.Math;
 import algo.nnindex;
 import dataset.features;
 import util.resultset;
-import util.timer;
 import util.logger;
 import util.profiler;
 import output.console;

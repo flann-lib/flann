@@ -488,9 +488,5 @@ float[][] getClusterCenters(int numClusters)
 		
 		return clusters[0..clusterCount];
 	}
-	void describe(T)(T ar)
-	{
-	}	
-
 
 }

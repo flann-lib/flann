@@ -1,22 +1,36 @@
 module util.allocator;
 
+import tango.stdc.stdlib;
+
 import util.defines;
-/+
-template class_allocator()
-{
-	new(size_t sz)
-	{
-		void* p = Pool.malloc(sz);
-		assert(p !is null);
-		//std.gc.addRange(p, p + sz);
-		return p;
-	}
 
-	delete(void* p)
-	{
-	}
-}
+// public T[][] allocate_mat(T : T[][])(int rows, int cols) 
+// {
+// 	T[][] ret = new T[][rows];
+// 	foreach(ref row;ret) {
+// 		row = new T[cols];
+// 	}
+// 	return ret;
+// }
 
+
+
+// public T[][] allocate_mat(T : T[][])(int rows, int cols) {
+// 
+//     void[] mem = new void[rows*(T[]).sizeof+rows*cols*T.sizeof];
+//     if (mem is null) {
+//         throw new Exception("Cannot allocate memory");
+//     }
+//     T[]* index = cast(T[]*) mem.ptr;
+//     T* mat = cast(T*) (mem.ptr+rows*(T[]).sizeof);
+// 
+//     for (int i=0;i<rows;++i) {
+//         index[i] = mat[0..cols];
+//         mat += cols;
+//     }
+// 
+//     return index[0..rows];
+// }
 
 public T* allocate(T)() {
 	T* mem = cast(T*) Pool.malloc(T.sizeof);
@@ -46,9 +60,7 @@ public T[][] allocate_mat(T : T[][])(int rows, int cols) {
 	}
 	
 	return index[0..rows];
-}+/
-
-
+}
 
 
 string allocate_static(string declaration)
@@ -84,6 +96,7 @@ string allocate_static(string declaration)
 
 
 
+
 /*-------------------- Pooled storage allocator ---------------------------*/
 
 /* The following routines allow for the efficient allocation of storage in
@@ -100,7 +113,7 @@ string allocate_static(string declaration)
 /* The memory allocated by this class is not handled by the garbage collector. Be 
 carefull not to store in this memory pointers to memory handled by the gc.
 */
-/+
+
 class Pool {
 	
 	private static {
@@ -151,7 +164,7 @@ class Pool {
 		/* Allocate new storage. */
 			blocksize = (size + (void*).sizeof + (WORDSIZE-1) > BLOCKSIZE) ?
 						size + (void*).sizeof + (WORDSIZE-1) : BLOCKSIZE;
-			void* m = std.c.stdlib.malloc(blocksize);
+			void* m = tango.stdc.stdlib.malloc(blocksize);
 			if (! m) {
 				throw new Exception("Failed to allocate memory.");
 			}
@@ -184,9 +197,9 @@ class Pool {
 	
 		while (base != null) {
 			prev = *(cast(char **) base);  /* Get pointer to prev block. */
-			std.c.stdlib.free(base);
+			tango.stdc.stdlib.free(base);
 			base = prev;
 		}
 	}
 	
-}+/
+}

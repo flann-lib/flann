@@ -36,22 +36,7 @@ class BallTree : NNIndex {
 		
 		BallTreeNode children[];
 		
-		void describe(T)(T ar)
-		{
-			ar.describe(pivot);
-			ar.describe(variance);
-			ar.describe(size);
-			ar.describe(radius);
-			ar.describe(orig_id);
-			if (size>1) {
-				ar.describe(children);
-			}
-		}	
-
-	};
 	alias BallNodeSt* BallTreeNode;
-		
-	
 	
 	alias BranchStruct!(BallTreeNode) BallBranchStruct;
 

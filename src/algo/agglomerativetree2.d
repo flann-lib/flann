@@ -40,21 +40,6 @@ class AgglomerativeExTree : NNIndex {
 		
 		TreeNode child1;
 		TreeNode child2;
-			
-		void describe(T)(T ar)
-		{
-			ar.describe(ind);
-			ar.describe(pivot);
-			ar.describe(variance);
-			ar.describe(size);
-			ar.describe(radius);
-			ar.describe(orig_id);
-//			ar.describe(points);
-			if (size>1) {
-				ar.describe(child1);
-				ar.describe(child2);
-			}
-		}
 	};
 	alias NodeSt* TreeNode;
 	
@@ -527,14 +512,5 @@ class AgglomerativeExTree : NNIndex {
 		
 		return clusters[0..clusterCount];
 	}
-	
-	void describe(T)(T ar)
-	{
-		ar.describe(pcount);
-		ar.describe(veclen);
-		ar.describe(root);
-		ar.describe(indexSize);
-	}
-
 }
 

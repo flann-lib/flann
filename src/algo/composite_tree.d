@@ -16,7 +16,6 @@ import util.logger;
 import util.random;
 import util.allocator;
 import util.registry;	
-import util.timer;
 
 
 class CompositeTree(T) : NNIndex

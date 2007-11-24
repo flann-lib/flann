@@ -45,6 +45,7 @@ void swap(T) (ref T a, ref T b) {
 
 ********************************************************************************/
 import tango.io.FileConduit;
+import tango.scrapple.PlainTextProtocol;
 public import tango.io.stream.FileStream;
 public import tango.io.stream.LineStream;
 public import tango.io.stream.BufferStream;
@@ -121,6 +122,7 @@ void withOpenFile(string file, void delegate(FileOutput) action)
 }
 
 
+
 void withOpenFile(string file, void delegate(LineInput) action) 
 {
 	auto stream = new LineInput(new FileInput(file));
@@ -138,8 +140,25 @@ void withOpenFile(string file, void delegate(ScanReader) action, char[] delimite
 
 void withOpenFile(string file, void delegate(FormatOutput) action) 
 {
-	auto stream = new FormatOutput(new  BufferOutput(new FileOutput(file)));
+	auto stream = new FormatOutput(new BufferOutput(new FileOutput(file)));
 	scope (exit) stream.close();
+	action(stream);
+}
+
+
+void withOpenFile(string file, void delegate(Reader) action) 
+{
+	auto conduit = new FileInput(file);
+	auto stream = new Reader(new PlainTextProtocol(conduit,false));
+	scope (exit) conduit.close();
+	action(stream);
+}
+
+void withOpenFile(string file, void delegate(Writer) action) 
+{
+	auto conduit = new FileInput(file);
+	auto stream = new Writer(new PlainTextProtocol(conduit,false));
+	scope (exit) conduit.close();
 	action(stream);
 }
 

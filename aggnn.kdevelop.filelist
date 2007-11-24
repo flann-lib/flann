@@ -12,6 +12,9 @@ src/algo/nnindex.d
 src/algo/unused
 src/algo/unused/agglomerativetree.d
 src/algo/unused/bottom_up_agg.d
+src/dataset
+src/dataset/DatFormatHandler.d
+src/dataset/FormatHandler.d
 src/main.d
 src/util
 src/util/dist.d

@@ -512,12 +512,6 @@ class KDTree(T) : NNIndex{
 		
 		return meanVariance;		
 	}
-	
-	
-	void describe(T)(T ar)
-	{
-	}		
-	
 }
 
 mixin AlgorithmRegistry!(KDTree!(float),float);

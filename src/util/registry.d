@@ -24,19 +24,9 @@ template indexRegistry(T) {
 
 template AlgorithmRegistry(alias ALG,T)
 {
-	
 	static this() 
 	{
 		indexRegistry!(T)[ALG.NAME] = function(Features!(T) inputData, Params params) {return cast(NNIndex) new ALG(inputData, params);};
-		
-/+		Serializer.registerClassConstructor!(ALG)({return new ALG();});
-		
-		loadIndexRegistry[ALG.NAME] = delegate(string file) 
-			{ Serializer s = new Serializer(file, FileMode.In);
-				ALG index;
-				s.describe(index);
-				return cast(NNIndex)index;
-				};+/
 	}
 }
 

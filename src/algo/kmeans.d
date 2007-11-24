@@ -14,7 +14,6 @@ import util.logger;
 import util.random;
 import util.allocator;
 import util.registry;	
-import util.timer;
 
 
 class KMeansTree(T) : NNIndex
@@ -228,7 +227,8 @@ class KMeansTree(T) : NNIndex
 			return;
 		}
 		
-		float[][] centers = new float[][](nc,flength);
+ 		float[][] centers = allocate_mat!(float[][])(nc,flength);
+		//float[][] centers = new float[][](nc,flength);
 		mat_copy(centers,initial_centers);
 		
 	 	float[] radiuses = new float[nc];		
@@ -713,17 +713,6 @@ class KMeansTree(T) : NNIndex
 		varianceValue = meanVariance/root.size;
 		return clusters[0..clusterCount];
 	}
-
-
-
-	void describe(T)(T ar)
-	{
-		ar.describe(branching);
-		ar.describe(flength);
-		ar.describe(vecs);
-		//ar.describe(root);
-	}
-
 }
 
 mixin AlgorithmRegistry!(KMeansTree!(float),float);
