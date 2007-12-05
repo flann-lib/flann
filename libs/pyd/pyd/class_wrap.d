@@ -38,6 +38,7 @@ import pyd.make_wrapper;
 import pyd.lib_abstract :
     symbolnameof,
     prettytypeof,
+    toString,
     ParameterTypeTuple,
     ReturnType,
     minArgs,

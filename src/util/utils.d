@@ -140,7 +140,7 @@ void withOpenFile(string file, void delegate(ScanReader) action, char[] delimite
 
 void withOpenFile(string file, void delegate(FormatOutput) action) 
 {
-	auto stream = new FormatOutput(new BufferOutput(new FileOutput(file)));
+	auto stream = new FormatOutput(new FileOutput(file));
 	scope (exit) stream.close();
 	action(stream);
 }

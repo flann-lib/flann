@@ -33,6 +33,8 @@ version (Tango) {
     import tango.stdc.stdio;
     import tango.stdc.time;
     import tango.stdc.string;
+
+	alias char[] string;
 } else {
     import std.c.stdio;
     import std.c.time;
@@ -3621,7 +3623,7 @@ PyObject *PyStructSequence_SET_ITEM(PyObject *op, int i, PyObject *v) {
 ///////////////////////////////////////////////////////////////////////////////
   // Python-header-file: Include/timefuncs.h:
 
-  time_t _PyTime_DoubleToTimet(double x);
+	time_t _PyTime_DoubleToTimet(double x);
 
 
 

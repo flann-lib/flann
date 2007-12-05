@@ -26,13 +26,13 @@ module pyd.lib_abstract;
 
 version (Tango) {
     import tango.stdc.string : strlen;
-    import tango.text.convert.Integer : toUtf8;
+    import tango.text.convert.Integer : format;
     char[] toString(char* s) {
         return s[0 .. strlen(s)];
     }
     char[] toString(uint i) {
         char[64] tmp;
-        return toUtf8(i);
+        return format(tmp, i);
     }
 
     public import meta.Nameof : symbolnameof, prettytypeof, prettynameof;

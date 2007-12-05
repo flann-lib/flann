@@ -72,7 +72,7 @@ class AutotuneParams : DefaultCommand
 		float indexTime = profile( {
 			index.buildIndex();
 		});
-		logger.info(sprint("Time to build %d tree%s for {} vectors: {} seconds",
+		logger.info(sprint("Time to build {} tree{} for {} vectors: {} seconds",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime));
 		
 		uint checks = estimateSearchParams!(T)(index, inputData, precision);

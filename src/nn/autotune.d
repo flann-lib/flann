@@ -95,11 +95,11 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 	logger.info("Autotuning parameters...");
 	
 	
-	const int REPEAT = 2;
+	const int REPEAT = 1;
 		
 	int checks;
 	const int nn = 1;
-		
+version (kmeans_autotune) {		
 	Params kmeansParams;
 	float kmeansCost = float.max;
 	// search best kmeans params
@@ -139,7 +139,8 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 // 		Logger.log(Logger.INFO,"Best KMeans params: ",kmeansParams,"\n");
 //		Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");
 	}
-		
+}
+version (kdtree_autotune) {		
 	Params kdtreeParams;
 	float kdtreeCost = float.max;
 	// search best kdtree params
@@ -172,12 +173,60 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 		}
 //  		Logger.log(Logger.INFO,"Best kdtree params: ",kdtreeParams,"\n");
 	}
+}
 
-	if (kmeansCost<kdtreeCost) {
+	Params compositeParams;
+	float compositeCost = float.max;
+	// search best kmeans params
+	{
+/+		uint[] testIterations = [ 1, 3, 5, 7];
+		uint[] branchingFactors = [ 32, 64, 128, 256 ];
+		uint[] testTrees = [ 1, 5, 10, 16, 32];+/
+		uint[] testIterations = [ 1, 3];
+		uint[] branchingFactors = [ 32, 64 ];
+		uint[] testTrees = [ 4, 8 ];
+		
+		Params params;
+		params["algorithm"] = "composite";
+		params["centers-algorithm"] = "random";
+		foreach (maxIterations;testIterations) {
+			params["max-iterations"] = maxIterations;
+			foreach (branchingFactor;branchingFactors) {
+				params["branching"] = branchingFactor;
+				foreach (trees;testTrees) {
+					params["trees"] = trees;
+						
+					logger.info(sprint("Trying iterations:{}, branching:{}, trees:{}",maxIterations,branchingFactor, trees));	
+					
+					CompositeTree!(T) composite = new CompositeTree!(T)(sampledDataset,params);
+					
+					float buildTime = profile({composite.buildIndex();});	
+					float searchTime = mean( doSearch( REPEAT, { 
+								return testNNIndexPrecision!(T,true,false)(composite, sampledDataset, testDataset, desiredPrecision, checks, nn);
+								} ) );
+					float cost = buildTime*indexFactor+searchTime;
+									
+					if (cost<compositeCost) {
+						copy(compositeParams,params);
+						compositeCost = cost;
+						
+					}
+					
+					GC.collect();
+				}
+			}
+		}
+// 		Logger.log(Logger.INFO,"Best KMeans params: ",kmeansParams,"\n");
+//		Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");
+	}
+
+
+/+	if (kmeansCost<kdtreeCost) {
 		return kmeansParams;
 	} else {
 		return kdtreeParams;
-	}
+	}+/
+	return compositeParams;
 }
 
 
@@ -187,14 +236,14 @@ int estimateSearchParams(T)(NNIndex index, Features!(T) inputDataset, float desi
 	const int SAMPLE_COUNT = 500;
 	Features!(float) testDataset = new Features!(float)();
 	testDataset.init(inputDataset.sample(SAMPLE_COUNT,false));
-	Stdout("computing ground truth\n");
+	logger.info("Computing ground truth");
 	testDataset.computeGT(inputDataset,1,1);
 	
 	int checks;
-	Stdout("Estimating number of checks\n");
+	logger.info("Estimating number of checks");
 	testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
 	
-	Stdout("required number of checks: ")(checks).newline;
+	logger.info(sprint("Required number of checks: {} ",checks));;
 	
 	return checks;
 }

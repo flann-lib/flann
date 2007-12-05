@@ -105,6 +105,7 @@ class KDTree(T) : NNIndex{
 	};
 	alias TreeSt* Tree;
 	
+	Allocator allocator;
 
 	
 	
@@ -119,19 +120,25 @@ class KDTree(T) : NNIndex{
 	/* Build and return the k-d tree index used to find nearest neighbors to
 		a set of vectors. 
 	*/
-	public this(Features!(T) inputData, Params params)
+	public this(Features!(T) inputData, Params params, Allocator alloc = null)
 	{
+		if (allocator is null) {
+			allocator = new Allocator();
+		} else {
+			allocator = alloc;
+		}
+	
 		numTrees_ = params["trees"].get!(uint);
 		vcount = inputData.count;
 		veclen = inputData.veclen;
 		vecs = inputData.vecs;
-		trees = new Tree[numTrees_];
+		trees = allocator.allocate!(Tree[])(numTrees_);
 		heap = new Heap!(BranchSt)(vecs.length);
 		checkID = -1000;
 		
 	
 		/* Create a permutable array of indices to the input vectors. */
-		vind = new int[vcount];
+		vind = allocator.allocate!(int[])(vcount);
 		for (int i = 0; i < vcount; i++) {
 			vind[i] = i;
 		}
@@ -174,7 +181,7 @@ class KDTree(T) : NNIndex{
 	{
 		Tree node;
 	
-		node = new TreeSt();//allocate!(TreeSt)();
+		node = allocator.allocate!(TreeSt);//allocate!(TreeSt)();
 		*pTree = node;
 	
 		/* If only one exemplar remains, then make this a leaf node. */

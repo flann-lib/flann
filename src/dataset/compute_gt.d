@@ -51,7 +51,8 @@ private void findNearest(T,U)(T[][] vecs, U[] query, int[] matches, int skip = 0
 
 public int[][] computeGroundTruth(T,U)(Features!(T) inputData, Features!(U) testData, int nn, int skip = 0) 
 {
-	int[][] matches = allocate_mat!(int[][])(testData.count,nn);
+	Allocator alloc = testData.allocator;
+	int[][] matches = alloc.allocate!(int[][])(testData.count,nn);
 
 	showProgressBar(testData.count, 70, (Ticker tick) {
 		for (int i=0;i<testData.count;++i) {

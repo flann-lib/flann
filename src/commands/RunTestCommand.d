@@ -32,6 +32,7 @@ class RunTestCommand : IndexCommand
 	double precision;
 	uint skipMatches;
 	bool altEstimator = false;
+	char[] approxMatch;
 	
 
 	this(string name) 
@@ -44,6 +45,7 @@ class RunTestCommand : IndexCommand
 		register(precision,"P","precision", -1,"The desired precision.");
 		register(altEstimator,"A","alternative-estimator", null,"Use alternative precision estimator.");
 		register(skipMatches,"K","skip-matches", 0u,"Skip the first NUM matches at test phase.");
+		register(approxMatch,"X","approx-match", "","File to save approx matches to.");
  			
  		description = super.description~" Test the index against the test dataset (ground truth given in the match file).";
 	}
@@ -91,7 +93,7 @@ class RunTestCommand : IndexCommand
  				testNNIndexPrecisionAlt!(T,true,true)(index,inputData!(T),testData, precision, checks, nn, skipMatches);
  			}
  			else {
-	 			testNNIndexPrecision!(T,true,true)(index,inputData!(T),testData, precision, checks, nn, skipMatches);
+	 			testNNIndexPrecision!(T,true,true)(index,inputData!(T),testData, precision, checks, nn, skipMatches, approxMatch);
  			}
  			
 		}

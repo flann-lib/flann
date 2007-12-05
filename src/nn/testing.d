@@ -10,11 +10,13 @@ import util.profiler;
 import output.console;
 import output.report;
 import util.dist;
+import util.utils;
 
 
 const float SEARCH_EPS = 0.10;
 
 template search(bool withOutput) {
+
 
 int countCorrectMatches(int[] neighbors, int[] groundTruth)
 {
@@ -32,6 +34,28 @@ int countCorrectMatches(int[] neighbors, int[] groundTruth)
 	return count;
 }
 
+int countCorrectMatches(int[] neighbors, int[] groundTruth, char[] approxMatch)
+{
+	int n = neighbors.length;	
+	
+	
+	int count = 0;
+	auto writer = new FormatOutput(new FileOutput(approxMatch,FileOutput.WriteAppending));
+	scope (exit) writer.close();
+		foreach(m;neighbors) {
+			for (int i=0;i<n;++i) {
+				if (groundTruth[i]==m) {
+					count++;
+					break;
+				}
+				else {
+					writer.formatln("{}",groundTruth[i]);
+				}
+			}
+		}
+	return count;
+}
+
 float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 {
 	int n = neighbors.length;
@@ -44,7 +68,7 @@ float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 	return ret;
 }
 
-float search(int checks, out float time) 
+float search(int checks, out float time, char[] approxMatch = "") 
 {
 	if (testData.match[0].length<nn) {
 		throw new Exception("Ground truth is not computed for as many neighbors as requested");
@@ -61,7 +85,11 @@ float search(int checks, out float time)
 			int[] neighbors = resultSet.getNeighbors();
 			neighbors = neighbors[skipMatches..$];
 					
-			correct += countCorrectMatches(neighbors,testData.match[i]);
+			if (approxMatch == "") {
+				correct += countCorrectMatches(neighbors,testData.match[i]);
+			} else {
+				correct += countCorrectMatches(neighbors,testData.match[i],approxMatch);
+			}
 			distR += computeDistanceRaport(target,neighbors,testData.match[i]);
 		}
 	});
@@ -112,7 +140,7 @@ float testNNIndex(T, bool withOutput, bool withReporting)
 
 
 float testNNIndexPrecision(T, bool withOutput, bool withReporting)
-						(NNIndex index,Features!(T) inputData, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
+						(NNIndex index,Features!(T) inputData, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0, char[] approxMatch = "")
 {	
 	T[][] vecs = inputData.vecs;
 	
@@ -174,6 +202,10 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 		cx = c2;
 		realPrecision = p2;
 	}
+	if (approxMatch != "") {
+		realPrecision = search(cx,time,approxMatch);
+	}
+	
 	
 	static if (withReporting) {
 		report("checks", cx)

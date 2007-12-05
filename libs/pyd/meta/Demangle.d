@@ -14,6 +14,7 @@ module meta.Demangle;
  and a 'Consumed' metafunction, which returns an integer, the number of characters which
  are used.
 */
+alias char[] string;
 
 /*****************************************
  * How should the name be displayed?

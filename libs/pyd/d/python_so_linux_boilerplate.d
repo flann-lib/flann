@@ -6,13 +6,18 @@ extern(C) {
 
 void gc_init();
 void gc_term();
+void _moduleCtor();
+void _moduleDtor();
+
 
 void _init() {
     gc_init();
+	_moduleCtor();
 }
 
 void _fini() {
     gc_term();
+	_moduleDtor();
 }
 
 } /* extern(C) */

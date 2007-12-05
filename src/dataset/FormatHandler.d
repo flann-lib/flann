@@ -1,23 +1,27 @@
 module dataset.FormatHandler;
 
+import util.allocator;
+
 abstract class FormatHandler(T)
 {
 	public FormatHandler next;
 	
 	protected char[] name();
 	
-	protected T[][] readValues(char[] file);
+	protected T[][] readValues(char[] file, Allocator allocator);
 	
 	protected void writeValues(char[] file, T[][] vecs);
 	
-	public final T[][] read(char[] file) 
+	
+	
+	public final T[][] read(char[] file, Allocator allocator) 
 	{
-		T[][] ret = readValues(file);
+		T[][] ret = readValues(file,allocator);
 		if (ret) {
 			return ret;
 		} else {
 			if (next) {
-				return next.read(file);
+				return next.read(file,allocator);
 			} else {
 				throw new Exception("Format now recognized for file: "~file);
 			}

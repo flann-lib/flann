@@ -13,7 +13,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		return "binary";
 	}
 		
-	protected final T[][] readValues(char[] file) 
+	protected final T[][] readValues(char[] file, Allocator alloc) 
 	{
 		string realFile = null;
 		int veclen,elemSize;
@@ -46,8 +46,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		logger.info(sprint("Reading {} features: ",count));
 				
 		withOpenFile(realFile, (FileInput stream) {
-		
-			vecs = allocate_mat!(T[][])(count,veclen);
+			vecs = alloc.allocate!(T[][])(count,veclen);
 			ubyte[] buffer = new ubyte[veclen*elemSize];
 		
 			for (int i=0;i<count;++i) {

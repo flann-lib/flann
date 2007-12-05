@@ -4,64 +4,6 @@ import tango.stdc.stdlib;
 
 import util.defines;
 
-// public T[][] allocate_mat(T : T[][])(int rows, int cols) 
-// {
-// 	T[][] ret = new T[][rows];
-// 	foreach(ref row;ret) {
-// 		row = new T[cols];
-// 	}
-// 	return ret;
-// }
-
-
-
-// public T[][] allocate_mat(T : T[][])(int rows, int cols) {
-// 
-//     void[] mem = new void[rows*(T[]).sizeof+rows*cols*T.sizeof];
-//     if (mem is null) {
-//         throw new Exception("Cannot allocate memory");
-//     }
-//     T[]* index = cast(T[]*) mem.ptr;
-//     T* mat = cast(T*) (mem.ptr+rows*(T[]).sizeof);
-// 
-//     for (int i=0;i<rows;++i) {
-//         index[i] = mat[0..cols];
-//         mat += cols;
-//     }
-// 
-//     return index[0..rows];
-// }
-
-public T* allocate(T)() {
-	T* mem = cast(T*) Pool.malloc(T.sizeof);
-	 
-	return mem;
-}
-
-
-public T[] allocate(T : T[])(int count) {
-	T* mem = cast(T*) Pool.malloc(count*T.sizeof);
-	 
-	 return mem[0..count];
-}
-
-public T[][] allocate_mat(T : T[][])(int rows, int cols) {
-	if (rows & 1) rows++; // for 16 byte allignment
-	void* mem = Pool.malloc(rows*(T[]).sizeof+rows*cols*T.sizeof);
-	if (mem is null) {
-		throw new Exception("Cannot allocate memory");
-	}
-	T[]* index = cast(T[]*) mem;
-	T* mat = cast(T*) (mem+rows*(T[]).sizeof);
-	
-	for (int i=0;i<rows;++i) {
-		index[i] = mat[0..cols];
-		mat += cols;
-	}
-	
-	return index[0..rows];
-}
-
 
 string allocate_static(string declaration)
 {
@@ -114,43 +56,79 @@ string allocate_static(string declaration)
 carefull not to store in this memory pointers to memory handled by the gc.
 */
 
-class Pool {
-	
-	private static {
-			
-		/* We maintain memory alignment to word boundaries by requiring that all
-			allocations be in multiples of the machine wordsize.  
-		*/
-		const int WORDSIZE=16;   /* Size of machine word in bytes.  Must be power of 2. */
+class Allocator 
+{			
+	/* We maintain memory alignment to word boundaries by requiring that all
+		allocations be in multiples of the machine wordsize.  */
+	private const 	int 	WORDSIZE=16;   /* Size of machine word in bytes.  Must be power of 2. */	
+	/* Minimum number of bytes requested at a time from	the system.  Must be multiple of WORDSIZE. */
+	private const 	int 	BLOCKSIZE=2048;	
 		
-		const int BLOCKSIZE=2048;	/* Minimum number of bytes requested at a time from
-						the system.  Must be multiple of WORDSIZE. */
-		
-		int remaining;  /* Number of bytes left in current block of storage. */
-		void *base;     /* Pointer to base of current block of storage. */
-		void *loc;      /* Current location in block to next allocate memory. */
-	}
+	private int 	remaining;  /* Number of bytes left in current block of storage. */
+	private void*	base;     /* Pointer to base of current block of storage. */
+	private void*	loc;      /* Current location in block to next allocate memory. */
+	private int 	blocksize;
 	
-	private this() {};
+	alias	allocate opCall;
+	
 	/* 
 		Default constructor. Initializes a new pool.
 	*/
-	static this()
+	public this(int blocksize = BLOCKSIZE)
 	{
+		this.blocksize = blocksize;
 		remaining = 0;
 		base = null;
+	}
+	
+	public ~this()
+	{
+		free();
 	}
 	
 	/* Returns a pointer to a piece of new memory of the given size in bytes
 		allocated from the pool.
 	*/
 	
-	public static void* malloc(int size)
+	public T* allocate(T)(int count = 1) 
+	{
+		T* mem = cast(T*) malloc(T.sizeof*count);
+		return mem;
+	}
+	
+	
+	public T[] allocate(T : T[])(int count) 
+	{
+		T* mem = cast(T*) malloc(count*T.sizeof);		
+		return mem[0..count];
+	}
+	
+	public T[][] allocate(T : T[][])(int rows, int cols = -1) 
+	{
+		if (cols == -1) {
+			T[]* mem = cast(T[]*) malloc(rows*(T[]).sizeof);
+			return mem[0..rows];
+		} 
+		else {
+			//if (rows & 1) rows++; // for 16 byte allignment	
+			void* mem = malloc(rows*(T[]).sizeof+rows*cols*T.sizeof);
+			T[]* index = cast(T[]*) mem;
+			T* mat = cast(T*) (mem+rows*(T[]).sizeof);
+			
+			for (int i=0;i<rows;++i) {
+				index[i] = mat[0..cols];
+				mat += cols;
+			}
+			
+			return index[0..rows];
+		}
+	}
+	
+	
+	private void* malloc(int size)
 	{
 		int blocksize;
 		
-		//int size = T.sizeof * count;
-	
 		/* Round size up to a multiple of wordsize.  The following expression
 			only works for WORDSIZE that is a power of 2, by masking last bits of
 			incremented size to zero.
@@ -164,6 +142,8 @@ class Pool {
 		/* Allocate new storage. */
 			blocksize = (size + (void*).sizeof + (WORDSIZE-1) > BLOCKSIZE) ?
 						size + (void*).sizeof + (WORDSIZE-1) : BLOCKSIZE;
+						
+			// use the standard C malloc to allocate memory
 			void* m = tango.stdc.stdlib.malloc(blocksize);
 			if (! m) {
 				throw new Exception("Failed to allocate memory.");
@@ -178,8 +158,6 @@ class Pool {
 			
 			remaining = blocksize - (void*).sizeof - shift;
 			loc = m + (void*).sizeof + shift;
-			
-			
 		}
 		void* rloc = loc;
 		loc += size;
@@ -188,10 +166,10 @@ class Pool {
 		return rloc;
 	}
 	
-	
-	/* Free all storage that was previously allocated to this pool.
+	/*
+		Free all storage that was previously allocated to this pool.
 	*/
-	public static void free()
+	public void free()
 	{
 		char *prev;
 	

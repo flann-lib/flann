@@ -50,12 +50,13 @@ class Features(T = float) {
 
 	T[][] vecs;    
 	int[][] match;         /* indices to correct nearest neighbors. */
+	Allocator allocator;
 
 	static FormatHandler!(T) handler;
 	
 	static this() {
-		addFormat(new DatFormatHandler!(T)());
-		addFormat(new BinaryFormatHandler!(T)());
+		addFormat(new DatFormatHandler!(T));
+		addFormat(new BinaryFormatHandler!(T));
 	}
 	
 	static void addFormat(FormatHandler!(T) handler) 
@@ -64,19 +65,27 @@ class Features(T = float) {
 		this.handler = handler;
 	}
 
+
 	public this() 
 	{
+		allocator = new Allocator();
+	}
+	
+	public ~this()
+	{
+		delete allocator;
 	}
 	
 	
-	public this(int size) 
+	public this(int size, int veclen) 
 	{
-		vecs = new T[][size];
+		this();
+		vecs = allocator.allocate!(T[][])(size,veclen);
 	}
 
 	public void init(U)(Features!(U) dataset) 
 	{
-		vecs = allocate_mat!(T[][])(count,veclen);
+		vecs = allocator.allocate!(T[][])(dataset.count,dataset.veclen);
 		foreach (index,vec;dataset.vecs) {
 			array_copy(vecs[index],vec);
 		}			
@@ -100,7 +109,7 @@ class Features(T = float) {
 	public void readMatches(string file)
 	{
 		auto gridData = new DatFormatHandler!(int)();		
-		int[][] values = gridData.read(file);
+		int[][] values = gridData.read(file, allocator);
 		
 		match.length = values.length;
 		foreach (v;values) {
@@ -111,7 +120,7 @@ class Features(T = float) {
 	
 	public void readFromFile(char[] file)
 	{
-		vecs = handler.read(file);
+		vecs = handler.read(file, allocator);
 	}
 	
 	
@@ -124,11 +133,11 @@ class Features(T = float) {
 	public Features!(T) sample(int size, bool remove = true)
 	{
 		DistinctRandom rand = new DistinctRandom(count);
-		Features!(T) newSet = new Features!(T)(size);		
+		Features!(T) newSet = new Features!(T)(size,veclen);		
 		
 		for (int i=0;i<size;++i) {
 			int r = rand.nextRandom();
-			newSet.vecs[i] = vecs[r];
+			newSet.vecs[i][] = vecs[r];
 			if (remove) {
 				swap(vecs[count-i-1],vecs[r]);
 			}

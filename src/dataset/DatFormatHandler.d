@@ -11,6 +11,7 @@ import util.defines;
 
 class DatFormatHandler(T) : FormatHandler!(T)
 {
+
 	protected final char[] name() {
 		return "dat";
 	}
@@ -71,7 +72,7 @@ class DatFormatHandler(T) : FormatHandler!(T)
 	}
 	
 	
-	protected final T[][] readValues(char[] file)
+	protected final T[][] readValues(char[] file, Allocator allocator)
 	{
 		int lines,columns;
 		char[] delimiter;
@@ -80,7 +81,7 @@ class DatFormatHandler(T) : FormatHandler!(T)
 		}
 		
 		// allocate memory for the data
-		T[][] vecs = allocate_mat!(T[][])(lines,columns);
+		T[][] vecs = allocator.allocate!(T[][])(lines,columns);
 				
 		// read in
 		withOpenFile(file, (ScanReader read) {
@@ -96,13 +97,13 @@ class DatFormatHandler(T) : FormatHandler!(T)
 	protected final void writeValues(char[] file, T[][] vecs)
 	{
 		withOpenFile(file, (FormatOutput write) {
-			for (int i=0;i<vecs.length;++i) {
-				if (i!=0) {
-					write(" ");
+			foreach (vec;vecs) {
+				foreach (i,elem;vec) {
+					if (i!=0) write(" ");
+					write.format("{}",elem);
 				}
-				write.format("{}",vecs[i]);
+				write.newline;
 			}
-			write.newline;
 		});
 	}
 }
