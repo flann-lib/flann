@@ -2,14 +2,13 @@
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
-import util.logger;
-import util.registry;
-import util.utils;
-import util.profiler;
-import dataset.features;
+import dataset.Features;
 import algo.all;
-import output.console;
-import output.report;
+import output.Console;
+import output.Report;
+import util.Logger;
+import util.Utils;
+import util.Profiler;
 
 
 

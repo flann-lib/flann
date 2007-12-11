@@ -4,7 +4,7 @@ import commands.GenericCommand;
 import commands.DefaultCommand;
 
 import util.logger;
-import dataset.dataset_generator;
+import dataset.DatasetGenerator;
 
 
 static this() {

@@ -1,10 +1,10 @@
 module dataset.BinaryFormatHandler;
 
 import dataset.FormatHandler;
-import util.utils;
-import util.allocator;
+import util.Utils;
+import util.Allocator;
 import util.defines;
-import util.logger;
+import util.Logger;
 
 
 class BinaryFormatHandler(T) : FormatHandler!(T)

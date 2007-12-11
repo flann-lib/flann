@@ -2,20 +2,15 @@
 Project: nn
 */
 
-module algo.composite_tree;
+module algo.CompositeTree;
 
 import util.defines;
-import algo.nnindex;
-import algo.kmeans;
-import algo.kdtree;
-import util.resultset;
-import util.heap;
-import util.utils;
-import dataset.features;
-import util.logger;
-import util.random;
-import util.allocator;
-import util.registry;	
+import algo.NNIndex;
+import algo.KMeansTree;
+import algo.KDTree;
+import dataset.Features;
+import util.Logger;
+import util.Utils;
 
 
 class CompositeTree(T) : NNIndex

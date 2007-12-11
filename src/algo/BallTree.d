@@ -6,7 +6,7 @@ Module: balltree.d
 Author: Marius Muja (2007)
 
 *************************************************************************/
-module algo.balltree;
+module algo.BallTree;
 
 import util.utils;
 import util.heap;

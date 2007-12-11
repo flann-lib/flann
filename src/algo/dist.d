@@ -3,8 +3,6 @@ Project: nn
 */
 
 module util.dist;
-
-import util.allocator;
 	
 	// extern(C) {
 	//   float sdot_(int *n, float *x, int *incx, float *y, int *incy);

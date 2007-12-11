@@ -5,10 +5,10 @@ import tango.core.Array : find;
 import tango.text.Util : split,trim;
 import tango.util.log.Log;
 
-import util.defines;
 import commands.GenericCommand;
-import util.logger;
-import output.report;
+import output.Report;
+import util.defines;
+import util.Registry;
 
 
 abstract class DefaultCommand : GenericCommand
@@ -37,9 +37,9 @@ abstract class DefaultCommand : GenericCommand
 		foreach (reporter;reporterList) {
 			uint pos = find(reporter,":");
 			if (pos!=reporter.length) {
-				report.addBackend(get_registered!(ReportBackend)(reporter[0..pos]~"_reporter",reporter[pos+1..$]));
+				report.addBackend(Registry.get!(ReportBackend)(reporter[0..pos]~"_reporter",reporter[pos+1..$]));
 			} else {
-				report.addBackend(get_registered!(ReportBackend)(reporter[0..pos]~"_reporter"));
+				report.addBackend(Registry.get!(ReportBackend)(reporter[0..pos]~"_reporter"));
 			}
 		}
 		

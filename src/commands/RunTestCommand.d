@@ -4,16 +4,14 @@ module commands.RunTestCommand;
 
 import commands.GenericCommand;
 import commands.IndexCommand;
-import util.logger;
-import util.registry;
-import util.utils;
-import util.profiler;
-import nn.testing;
-import dataset.features;
-import algo.nnindex;
-import algo.kmeans;
-import output.console;
-import output.report;
+import nn.Testing;
+import dataset.Features;
+import algo.NNIndex;
+import output.Console;
+import output.Report;
+import util.Logger;
+import util.Utils;
+import util.Profiler;
 
 
 static this() {

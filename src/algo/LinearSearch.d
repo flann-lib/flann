@@ -6,14 +6,12 @@ Module: balltree.d
 Author: Marius Muja (2007)
 
 *************************************************************************/
-module algo.linearsearch;
+module algo.LinearSearch;
 
+import dataset.Features;
+import algo.NNIndex;
 import util.defines;
-import util.utils;
-import util.resultset;
-import dataset.features;
-import algo.nnindex;
-import util.registry;	
+import util.Utils;
 
 
 class LinearSearch(T): NNIndex {

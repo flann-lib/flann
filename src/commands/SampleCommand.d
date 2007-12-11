@@ -1,13 +1,11 @@
 module commands.SampleCommand;
 
-// import std.string;
 import tango.text.convert.Sprint;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
-import util.logger;
-import dataset.features;
-import output.console;
+import dataset.Features;
+import output.Console;
 
 
 static this() {

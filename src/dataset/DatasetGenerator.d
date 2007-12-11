@@ -2,13 +2,13 @@
 Project: nn
 */
 
-module util.dataset_generator;
+module util.DatasetGenerator;
 
+import output.Console;
 import util.defines;
-import util.utils;
-import util.random;
-import output.console;
-import util.logger;
+import util.Utils;
+import util.Random;
+import util.Logger;
 
 void generateRandomDataset(string file, uint count, uint length)
 {

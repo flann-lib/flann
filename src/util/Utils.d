@@ -14,11 +14,11 @@ import tango.util.Convert;
 import tango.text.convert.Layout;
 import tango.io.stream.MapStream;
 
-import util.variant;
-import util.logger;
+import lib.variant;
+import util.Logger;
 import util.defines;
 
-public import util.dist;
+//public import util.dist;
 
 template MAX(T) {
 	T MAX(T x, T y) { return x > y ? x : y; }
@@ -307,10 +307,31 @@ struct Params
 		return result;
     }
 
-	string toString()
+	string toUtf8()
 	{
+		char[1000] buffer;
+		char* p = buffer.ptr;
+		
+		uint sink(char[] s)
+		{
+			int len = s.length;
+			if (len < (buffer.ptr + buffer.length) - p)	{
+				p [0..len] = s;
+				p += len;
+			}
+			return len;
+		}
+		
 		auto formater = new Layout!(char);
-		return formater("{}",data);
+		
+		formater(&sink,"[");
+		foreach(k,v;data) {
+			formater(&sink,"{}: {}, ",k,v.toUtf8);		
+		}
+		if (*(p-1)==' ' && *(p-2)==',') p-=2;		
+		formater(&sink,"]");
+		
+		return buffer[0 .. p-buffer.ptr];
 	}
 	
 	
@@ -318,7 +339,7 @@ struct Params
 	
 		withOpenFile(file,(FormatOutput writer) {
 			foreach(name,value;data) {
-				writer.formatln("{} = {}",name,value);
+				writer.formatln("{} = {}",name,value.toUtf8);
 			}
 		});
 	}
@@ -560,7 +581,7 @@ unittest
 
 
 
-
+import algo.dist;
 public float computeVariance(T)(T[][] points)
 {
 	if (points.length==0) {

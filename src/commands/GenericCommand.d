@@ -2,9 +2,9 @@ module commands.GenericCommand;
 
 import tango.io.Stdout;
 
-import util.optparse;
-import util.utils;
-import util.variant;
+import lib.optparse;
+import lib.variant;
+import util.Utils;
 
 public import util.defines;
 

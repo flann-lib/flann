@@ -4,8 +4,8 @@ import tango.core.Array : find, count;
 import tango.text.Util : trim,split;
 
 import dataset.FormatHandler;
-import util.utils;
-import util.allocator;
+import util.Utils;
+import util.Allocator;
 import util.defines;
 
 

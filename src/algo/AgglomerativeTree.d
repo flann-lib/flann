@@ -6,18 +6,17 @@ Module: agglomerativetree.d (class that constructs an agglomerative tree
 Author: Marius Muja (2007)
 
 *************************************************************************/
-module algo.agglomerativetree2;
+module algo.AgglomerativeTree;
 
 
+import dataset.Features;	
+import algo.NNIndex;
+import algo.dist;
 import util.defines;
-import util.utils;
-import util.random;
-import util.heap;
-import util.resultset;
-import dataset.features;	
-import util.logger;	
-import algo.nnindex;
-import util.registry;	
+import util.Utils;
+import util.Random;
+import util.Heap;
+import util.Logger;	
 
 
 mixin AlgorithmRegistry!(AgglomerativeExTree,float);

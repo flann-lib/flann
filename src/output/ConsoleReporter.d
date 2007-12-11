@@ -3,16 +3,11 @@ module output.ConsoleReporter;
 import tango.io.Stdout;
 
 import output.ResultReporter;
-import util.utils;
 import util.defines;
+import util.Registry;
+import util.Utils;
 
-static this()
-{
-	register("console_reporter",function Object(TypeInfo[] arguments, va_list argptr)
-	{
-		return new ConsoleReporter();
-	});
-}
+mixin RegisterSingleton!("console_reporter",ConsoleReporter);
 
 class ConsoleReporter : ReportBackend
 {

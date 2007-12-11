@@ -2,11 +2,12 @@ module output.FileReporter;
 
 import output.ResultReporter;
 
-import util.utils;
+import util.Utils;
+import util.Registry;
 
 static this()
 {
-	register("file_reporter",function Object(TypeInfo[] arguments, va_list argptr)
+	Registry.register("file_reporter",function Object(TypeInfo[] arguments, va_list argptr)
 	{
 		if (arguments.length!=1 && typeid(char[])!=arguments[0]) {
 			throw new Exception("Expected 1 argument of type char[]");

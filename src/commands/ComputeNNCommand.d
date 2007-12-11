@@ -7,10 +7,10 @@ import commands.GenericCommand;
 import commands.IndexCommand;
 import util.logger;
 import util.utils;
-import nn.compute_nn;
-import dataset.features;
-import algo.nnindex;
-import output.console;
+import nn.ComputeNN;
+import dataset.Features;
+import algo.NNIndex;
+import output.Console;
 
 
 static this() {

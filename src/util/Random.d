@@ -7,7 +7,7 @@ module util.random;
 
 import tango.stdc.time;
 
-import util.utils;
+import util.Utils;
 
 
 

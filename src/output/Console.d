@@ -2,10 +2,46 @@
 Project: nn
 */
 
-module output.console;
+module output.Console;
 
-import util.logger;
+import tango.io.Console;
+import tango.core.Vararg;
+import tango.text.convert.Layout;
+
+import util.Logger;
 import util.defines;
+
+
+public ConsoleWriter write;
+
+static this()
+{
+	write = new ConsoleWriter();
+}
+
+class ConsoleWriter {
+
+	private Layout!(char) layout;
+	
+	alias write opCall;
+	
+	public this() 
+	{
+		layout = new Layout!(char);	
+	}
+
+	ConsoleWriter write(...)
+	{
+		char[] format = va_arg!(char[])(_argptr);
+		layout((char[] s){return Cout.stream.write(s);},_arguments[1..$],_argptr,format);
+		Cout.flush();
+		
+		return this;
+	}
+}
+
+
+
 
 
 typedef void delegate() Ticker;

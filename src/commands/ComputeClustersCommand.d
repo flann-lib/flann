@@ -4,15 +4,13 @@ import tango.text.convert.Sprint;
 
 import commands.GenericCommand;
 import commands.IndexCommand;
-import util.logger;
-import util.registry;
-import util.utils;
-import util.profiler;
-import nn.testing;
-import dataset.features;
-import algo.nnindex;
-import algo.kmeans;
-import output.console;
+import nn.Testing;
+import dataset.Features;
+import algo.NNIndex;
+import output.Console;
+import util.Logger;
+import util.Utils;
+import util.Profiler;
 
 
 static this() {
@@ -43,7 +41,8 @@ class ComputeClustersCommand : IndexCommand
 			float[][] centers = index.getClusterCenters(clusters);
 			
 			showOperation((new Sprint!(char)).format("Writing {} cluster centers to file {}... ",centers.length, clustersFile),{
-				writeToFile(centers, clustersFile);
+				Features!(float).handler.write(clustersFile,centers,"dat");
+				//writeToFile(centers, clustersFile);
 			});
 		}
 	}

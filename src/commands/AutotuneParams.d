@@ -2,16 +2,14 @@ module commands.AutotuneParams;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
-import util.logger;
-import util.registry;
-import util.utils;
-import util.profiler;
-import nn.autotune;
-import nn.testing;
-import dataset.features;
-import algo.nnindex;
-import algo.kmeans;
-import output.console;
+import nn.Autotune;
+import nn.Testing;
+import dataset.Features;
+import algo.NNIndex;
+import output.Console;
+import util.Logger;
+import util.Utils;
+import util.Profiler;
 
 
 static this() {

@@ -125,7 +125,7 @@ private
 	import tango.util.Convert;
 	import tango.text.Ascii;
 	
-	import util.variant;
+	import lib.variant;
 }
 
 /**

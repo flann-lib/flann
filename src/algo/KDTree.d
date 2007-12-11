@@ -33,17 +33,15 @@ nn.c:
 
  *************************************************************************/
 
-module algo.kdtree;
+module algo.KDTree;
 
-import util.utils;
-import util.random;
-import util.heap;
-import dataset.features;
-import util.resultset;
-import util.logger;
-import algo.nnindex;
-import util.allocator;
-import util.registry;
+import dataset.Features;
+import algo.NNIndex;
+import util.Allocator;
+import util.Utils;
+import util.Random;
+import util.Heap;
+import util.Logger;
 
 
 

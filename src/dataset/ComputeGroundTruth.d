@@ -2,15 +2,15 @@
 Project: nn
 */
 
-module dataset.compute_gt;
+module dataset.ComputeGroundTruth;
 
+import algo.dist;
+import output.Console;
+import dataset.Features;
 import util.defines;
-import util.dist;
-import output.console;
-import util.logger;
-import dataset.features;
-import util.utils;
-import util.allocator;
+import util.Logger;
+import util.Utils;
+import util.Allocator;
 
 
 private void findNearest(T,U)(T[][] vecs, U[] query, int[] matches, int skip = 0) 
@@ -111,7 +111,7 @@ void compute_gt(T)(string featuresFile, string testFile, string matchFile, int n
 	});
 
 	showOperation("Writing matches to "~matchFile, {
-		writeMatches(matchFile,matches);
+//		Features!(int).handler.write(matchFile,matches,'dat');
 	});
 
 }

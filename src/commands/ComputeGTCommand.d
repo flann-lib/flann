@@ -2,7 +2,7 @@ module commands.ComputeGTCommand;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
-import dataset.compute_gt;
+import dataset.ComputeGroundTruth;
 import util.logger;
 import util.defines;
 

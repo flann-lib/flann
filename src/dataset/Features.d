@@ -2,19 +2,19 @@
 Project: nn
 */
 
-module dataset.features;
+module dataset.Features;
 
 import util.defines;
-import util.logger;
-import util.profiler;
-import util.utils;
-import util.random;
-import util.allocator;
-import output.console;
-import dataset.compute_gt;
+import output.Console;
+import dataset.ComputeGroundTruth;
 import dataset.FormatHandler;
 import dataset.DatFormatHandler;
 import dataset.BinaryFormatHandler;
+import util.Logger;
+import util.Profiler;
+import util.Utils;
+import util.Random;
+import util.Allocator;
 
 void addTo(T,U)(T[] a, U[] b) {
 	foreach(index, inout value; a) {
@@ -29,7 +29,7 @@ void addTo(T,U)(T[] a, U[] b) {
 }
 
 
-
+/+
 void writeToFile(float[][] vecs, char[] file) 
 {
 	withOpenFile(file, (FormatOutput write) {
@@ -41,7 +41,7 @@ void writeToFile(float[][] vecs, char[] file)
 		}
 		write.newline;
 	});
-}
+}+/
 
 
 

@@ -2,18 +2,17 @@
 Project: nn
 */
 
-module algo.kmeans;
+module algo.KMeansTree;
 
 import util.defines;
-import algo.nnindex;
-import util.resultset;
-import util.heap;
-import util.utils;
-import dataset.features;
-import util.logger;
-import util.random;
-import util.allocator;
-import util.registry;	
+import algo.NNIndex;
+import algo.dist;
+import dataset.Features;
+import util.Logger;
+import util.Random;
+import util.Allocator;
+import util.Utils;
+import util.Heap;
 
 
 class KMeansTree(T) : NNIndex
@@ -187,12 +186,14 @@ class KMeansTree(T) : NNIndex
 	
 		float radius = 0;
 		float variance = 0;
-		float[] mean = new float[vecs[0].length];
+		float[] mean = allocator.allocate!(float[])(flength);
+		
+		mean[] = 0;
+		
 		for (int i=0;i<indices.length;++i) {
-			for (int j=0;j<mean.length;++j) {
-				mean[j] += vecs[indices[i]][j];
-			}			
-			variance += squaredDist(vecs[indices[i]]);
+			T[] vec = vecs[indices[i]];
+			addTo(mean,vec);
+			variance += squaredDist(vec);
 		}
 		for (int j=0;j<mean.length;++j) {
 			mean[j] /= indices.length;
@@ -207,6 +208,7 @@ class KMeansTree(T) : NNIndex
 				radius = tmp;
 			}
 		}
+		
 		
 		node.variance = variance;
 		node.radius = radius;
@@ -681,16 +683,16 @@ class KMeansTree(T) : NNIndex
 	
 	private KMeansNode[] getMinVarianceClusters(KMeansNode root, int numClusters, out float varianceValue)
 	{
+	
 		static KMeansNode[] clusters;
-		if (clusters==null) clusters = new KMeansNode[vecs.length];
+		if (clusters==null) clusters = new KMeansNode[numClusters];
 		
 		int clusterCount = 1;
 		clusters[0] = root;
-		 
+		
 		float meanVariance = root.variance*root.size;
 		
 		while (clusterCount<numClusters) {
-			
 			float minVariance = float.max;
 			int splitIndex = -1;
 			

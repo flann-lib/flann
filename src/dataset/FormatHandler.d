@@ -1,6 +1,6 @@
 module dataset.FormatHandler;
 
-import util.allocator;
+public import util.Allocator;
 
 abstract class FormatHandler(T)
 {

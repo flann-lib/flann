@@ -2,11 +2,9 @@
 module output.ResultReporter;
 
 import tango.text.Util : trim,split;
-public import tango.core.Vararg;
 
-import util.utils;
 public import util.defines;
-
+import util.Utils;
 
 public Reporter report;
 
@@ -63,24 +61,5 @@ class Reporter
 		return this;
 	}
 }
-
-void register(char[] name, Creator creator)
-{
-	creators[name] = creator;
-}
-
-T get_registered(T) (char[] name, ...)
-{
-	if (name in creators) {
-		return cast(T)creators[name](_arguments,_argptr);
-	}
-	else {
-		throw new Exception("Cannot find creator for object: "~name);
-	}
-}
-
-private:
-	alias Object function (TypeInfo[],va_list) Creator;
-	Creator[char[]] creators;
 
 	

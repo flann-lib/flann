@@ -2,10 +2,35 @@
 Project: nn
 */
 
-module util.resultset;
+module algo.NNIndex;
 
-import util.heap;
-import util.utils;
+import dataset.Features;
+import algo.dist;
+import util.Utils;
+import util.Heap;
+
+
+template IndexConstructor(T) {
+	alias NNIndex function(Features!(T), Params) IndexConstructor;
+}
+
+template indexRegistry(T) {
+	IndexConstructor!(T)[char[]] indexRegistry;
+}
+
+
+/*------------------- module constructor template--------------------*/
+
+template AlgorithmRegistry(alias ALG,T)
+{
+	static this() 
+	{
+		indexRegistry!(T)[ALG.NAME] = function(Features!(T) inputData, Params params) {return cast(NNIndex) new ALG(inputData, params);};
+	}
+}
+
+
+
 
 
 class ResultSet 
@@ -48,6 +73,9 @@ class ResultSet
 	
 	public bool addPoint(T)(T[] point, int index) 
 	{
+		for (int i=0;i<count;++i) {
+			if (indices[i]==index) return false;
+		}
 		float dist = target.squaredDist(point);
 		
 		if (count<indices.length) {
@@ -81,3 +109,32 @@ class ResultSet
 	
 }
 
+
+
+abstract class NNIndex 
+{
+	/**
+		Method responsible with building the index.
+	*/
+	void buildIndex();	
+
+
+	/**
+		Method that searches for NN
+	*/
+	void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck);
+	
+	/**
+		Number of features in this index.
+	*/
+	int size();
+	
+	/**
+	 The number of trees in this index 
+	*/
+ 	int numTrees();
+ 	
+ 	float[][] getClusterCenters(int number) {
+ 		throw new Exception("Not implemented");
+ 	} 	
+}
