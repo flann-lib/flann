@@ -61,11 +61,7 @@ class DBIException : Exception {
 			} else if (_arguments[i] == typeid(ErrorCode)) {
 				dbiCode = va_arg!(ErrorCode)(_argptr);
 			} else {
-				version (Phobos) {
 					throw new DBIException("Invalid argument of type \"" ~ _arguments[i].toString() ~ "\" passed to the DBIException constructor.");
-				} else {
-					throw new DBIException("Invalid argument of type \"" ~ _arguments[i].toUtf8() ~ "\" passed to the DBIException constructor.");
-				}
 			}
 		}
 	}

@@ -111,7 +111,8 @@ void compute_gt(T)(string featuresFile, string testFile, string matchFile, int n
 	});
 
 	showOperation("Writing matches to "~matchFile, {
-//		Features!(int).handler.write(matchFile,matches,'dat');
+//		Features!(int).handler.write(matchFile,matches,"dat");
+		writeMatches(matchFile,matches);
 	});
 
 }

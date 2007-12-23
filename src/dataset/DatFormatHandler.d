@@ -1,13 +1,13 @@
 module dataset.DatFormatHandler;
 
-import tango.core.Array : find, count;
+import tango.core.Array : find, count, countIf;
 import tango.text.Util : trim,split;
 
 import dataset.FormatHandler;
 import util.Utils;
 import util.Allocator;
 import util.defines;
-
+import output.Console;
 
 class DatFormatHandler(T) : FormatHandler!(T)
 {
@@ -43,14 +43,15 @@ class DatFormatHandler(T) : FormatHandler!(T)
 			delimiter ~= guessDelimiter(line);
 
 			string[] tokens = trim(line).split(delimiter);
-			columns = tokens.length;
+			columns = countIf(tokens,(char[] e) {return e.length!=0;});
 			
 			// check to see if the next few lines have the same number of elements
 			for (int i=0;i<10;++i) {
 				line = stream.next;
 				while (line !is null && line.length==0)	line = stream.next;
 				tokens = trim(line).split(delimiter);
-				if (tokens.length != columns) {
+				int cnt = countIf(tokens,(char[] e) {return e.length!=0;});
+				if (cnt != columns) {
 					correctFormat = false;
 					return;
 				}
@@ -85,8 +86,8 @@ class DatFormatHandler(T) : FormatHandler!(T)
 				
 		// read in
 		withOpenFile(file, (ScanReader read) {
-			foreach (vec; vecs) {
-				read(vec);				
+			foreach (index,vec; vecs) {
+				read(vec);
 			}
 		});
 		return vecs;

@@ -1,6 +1,8 @@
 module commands.RunTestCommand;
 
-// import std.string;
+import tango.text.Util : split;
+import tango.util.Convert;
+import tango.time.WallClock;
 
 import commands.GenericCommand;
 import commands.IndexCommand;
@@ -27,11 +29,11 @@ class RunTestCommand : IndexCommand
 	uint nn;
 	string checkList;
 	int[] checks;
-	double precision;
+	char[] precisionList;
 	uint skipMatches;
 	bool altEstimator = false;
 	char[] approxMatch;
-	
+	float maxTime;
 
 	this(string name) 
 	{
@@ -40,10 +42,11 @@ class RunTestCommand : IndexCommand
 		register(matchFile,"m","match-file", "","File containing ground-truth matches.");
 		register(nn,"n","nn", 1,"Number of nearest neighbors to search for.");
 		register(checkList,"c","checks", "32","Number of times to restart search (in best-bin-first manner).");
-		register(precision,"P","precision", -1,"The desired precision.");
+		register(precisionList,"P","precision", "","A coma-separated list with the desired precisions to be tested.");
 		register(altEstimator,"A","alternative-estimator", null,"Use alternative precision estimator.");
 		register(skipMatches,"K","skip-matches", 0u,"Skip the first NUM matches at test phase.");
 		register(approxMatch,"X","approx-match", "","File to save approx matches to.");
+		register(maxTime,"T","max-time", 0 ,"Max time for one search.");
  			
  		description = super.description~" Test the index against the test dataset (ground truth given in the match file).";
 	}
@@ -82,17 +85,16 @@ class RunTestCommand : IndexCommand
 		
 		report("test_count", testData.count);
 		report("nn", nn);
+		
+		auto d = WallClock.toDate();
+		char[] dateTime = sprint("{}-{}-{} {:D2}:{:D2}:{:D2}",d.date.year,d.date.month,d.date.day,d.time.hours,d.time.minutes,d.time.seconds).dup;
+		report("date",dateTime);
 
-
-		if (precision>0) {
-			assert(precision<=100);
-			int checks;
- 			if (altEstimator) {
- 				testNNIndexPrecisionAlt!(T,true,true)(index,inputData!(T),testData, precision, checks, nn, skipMatches);
- 			}
- 			else {
-	 			testNNIndexPrecision!(T,true,true)(index,inputData!(T),testData, precision, checks, nn, skipMatches, approxMatch);
- 			}
+		if (precisionList != "") {
+			char[][] precisionStrList = split(precisionList,",");
+			float[] precisions = to!(float[])(precisionStrList);
+			
+			testNNIndexPrecisions!(T,true,true)(index,inputData!(T),testData, precisions, nn, skipMatches, maxTime );
  			
 		}
 		else {

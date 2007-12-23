@@ -12,11 +12,11 @@ import util.Logger;
 import util.defines;
 
 
-public ConsoleWriter write;
+public ConsoleWriter console;
 
 static this()
 {
-	write = new ConsoleWriter();
+	console = new ConsoleWriter();
 }
 
 class ConsoleWriter {
@@ -67,7 +67,7 @@ void showProgressBar(int maxValue, int maxWidth, void delegate(Ticker ticker) ac
 		}
 		
 		if (crtValue==maxValue) {
-			write("\x08\x08\x08\x08\x08\x08=====]\n");
+			console("\x08\x08\x08\x08\x08\x08=====]\n");
 			crtValue++;
 		}
 		else if (crtValue<maxValue) {
@@ -76,13 +76,13 @@ void showProgressBar(int maxValue, int maxWidth, void delegate(Ticker ticker) ac
 				
 				int percent = (100*crtValue)/maxValue;
 			
-				write("\x08\x08\x08\x08\x08\x08=({:2}%)>",percent);
+				console("\x08\x08\x08\x08\x08\x08=({:D2}%)>",percent);
 				crtWidth++;
 			}
 		}
 	}
 
-	write("[      ");
+	console("[      ");
 	
 	action(&tick);
 }
@@ -99,7 +99,7 @@ void showProgressBarStep(int maxValue, int maxWidth, void delegate(int index) ac
 		}
 		
 		if (crtValue==maxValue) {
-			write("\x08\x08\x08\x08\x08\x08=====]\n");
+			console("\x08\x08\x08\x08\x08\x08=====]\n");
 			crtValue++;
 		}
 		else if (crtValue<maxValue) {
@@ -108,13 +108,13 @@ void showProgressBarStep(int maxValue, int maxWidth, void delegate(int index) ac
 				
 				int percent = (100*crtValue)/maxValue;
 			
-				write("\x08\x08\x08\x08\x08\x08=({}%)>",percent);
+				console("\x08\x08\x08\x08\x08\x08=({}%)>",percent);
 				crtWidth++;
 			}
 		}
 	}
 
-	write("[      ");
+	console("[      ");
 	
 	for (int index=0;index<maxValue;++index) {
 		action(index);

@@ -11,6 +11,7 @@ Conversion to D: Marius Muja
 module util.utils;
 
 import tango.util.Convert;
+import tango.core.Array;
 import tango.text.convert.Layout;
 import tango.io.stream.MapStream;
 
@@ -37,6 +38,19 @@ void swap(T) (ref T a, ref T b) {
      T t = a;
      a = b;
      b = t;
+}
+
+
+
+
+
+
+import tango.text.convert.Sprint;
+
+public Sprint!(char) sprint;
+static this()
+{
+	sprint = new Sprint!(char);
 }
 
 /********************************************************************************
@@ -101,8 +115,9 @@ class ScanReader
 			tmp = streamIterator.next;
 		}
 		if (tmp is null) {
-				throw new Exception("Reading past the end of file");
+			throw new Exception("Reading past the end of file");
 		}
+		
 		return tmp;
 	}
 }
@@ -307,7 +322,7 @@ struct Params
 		return result;
     }
 
-	string toUtf8()
+	string toString()
 	{
 		char[1000] buffer;
 		char* p = buffer.ptr;
@@ -326,7 +341,7 @@ struct Params
 		
 		formater(&sink,"[");
 		foreach(k,v;data) {
-			formater(&sink,"{}: {}, ",k,v.toUtf8);		
+			formater(&sink,"{}: {}, ",k,v.toString);		
 		}
 		if (*(p-1)==' ' && *(p-2)==',') p-=2;		
 		formater(&sink,"]");
@@ -339,7 +354,7 @@ struct Params
 	
 		withOpenFile(file,(FormatOutput writer) {
 			foreach(name,value;data) {
-				writer.formatln("{} = {}",name,value.toUtf8);
+				writer.formatln("{} = {}",name,value.toString);
 			}
 		});
 	}
@@ -380,7 +395,9 @@ struct OrderedParams
 	
 	void opIndexAssign(T)(T value, string name) 
 	{
-		order ~= name;
+		if (order.find(name) == order.length) {
+			order ~= name;
+		}
 		values[name] = value;
 	}
 

@@ -28,24 +28,6 @@ void addTo(T,U)(T[] a, U[] b) {
 	}+/
 }
 
-
-/+
-void writeToFile(float[][] vecs, char[] file) 
-{
-	withOpenFile(file, (FormatOutput write) {
-		for (int i=0;i<vecs.length;++i) {
-			if (i!=0) {
-				write(" ");
-			}
-			write.format("{}",vecs[i]);
-		}
-		write.newline;
-	});
-}+/
-
-
-
-
 class Features(T = float) {
 
 	T[][] vecs;    

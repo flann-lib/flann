@@ -1,8 +1,11 @@
-module output.SqliteRepoter;
+module output.SqliteReporter;
 
 // import std.stdio;
 import tango.io.Stdout;
+import tango.util.Convert : to;
+import tango.core.Thread;
 import dbi.sqlite.SqliteDatabase;
+import dbi.Row;
 import dbi.DBIException;
 import dbi.ErrorCode;
 
@@ -19,38 +22,47 @@ static this()
 			throw new Exception("Expected 1 argument of type char[]");
 		}
 			
-		return new SqliteRepoter(va_arg!(char[])(argptr));
+		return new SqliteReporter(va_arg!(char[])(argptr));
 	});
 }
 
-class SqliteRepoter : ReportBackend
+class SqliteReporter : ReportBackend
 {
-	public char[] database;
+	SqliteDatabase db;
+	int run;
 	
 	public this(char[] database) 
 	{
-		this.database = database;
+		db = new SqliteDatabase();
+		db.connect(database);
+		
+		Row row = db.queryFetchOne("SELECT MAX(run) as max_run FROM results");
+		run = to!(int)(row["max_run"]);
+		run++;
+	}
+	
+	public ~this() 
+	{
+		db.close();
 	}
 	
 	public void flush(OrderedParams values) 
 	{
-		auto db = new SqliteDatabase();
-		db.connect(database);
-		scope(exit) db.close();
-
 		string fields = "";
-		string vals = "";			
+		string vals = "";
 		foreach (name,value; values) {
 			fields ~= (name~",");
 			if (value.isA!(string)) {
-				vals ~= ("'"~value.toUtf8()~"',");
-			}
+				vals ~= ("'"~value.toString()~"',");
+			}// 		this.database = database;
+
 			else {
-				vals ~= (value.toUtf8()~",");
+				vals ~= (value.toString()~",");
 			}
 		}
 		
-		string query = "INSERT INTO results("~fields[0..$-1]~") VALUES ("~vals[0..$-1]~")";
+		
+		string query = "INSERT INTO results(run,"~fields[0..$-1]~") VALUES ("~to!(char[])(run)~","~vals[0..$-1]~")";
   		Stdout(query).newline;
   		
   		int retries = 0;
@@ -62,9 +74,11 @@ class SqliteRepoter : ReportBackend
 			} catch(DBIException e) {
 				logger.error("Error inserting into database");
 				logger.error("SQL: "~e.getSql);
-				logger.error("Error code: "~toString(e.getErrorCode));
+				logger.error("Error code: "~dbi.ErrorCode.toString(e.getErrorCode));
 				logger.error(sprint("Specific code: {}",e.getSpecificCode));
 			}
+			retries++;
+			Thread.sleep(1);
 		}	
 	}
 }

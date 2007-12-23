@@ -11,7 +11,7 @@ version (Phobos) {
 	private import std.string : toDString = toString, toCString = toStringz;
 	debug (UnitTest) private import std.stdio;
 } else {
-	private import tango.stdc.stringz : toDString = fromUtf8z, toCString = toUtf8z;
+	private import tango.stdc.stringz : toDString = fromUtf8z, toCString = toStringz;
 }
 private import dbi.Database, dbi.DBIException, dbi.Result, dbi.Row, dbi.Statement;
 private import dbi.sqlite.imp, dbi.sqlite.SqliteError, dbi.sqlite.SqliteResult;

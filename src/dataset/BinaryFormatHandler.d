@@ -1,22 +1,55 @@
 module dataset.BinaryFormatHandler;
 
+import tango.io.protocol.Reader;
+import tango.io.protocol.NativeProtocol;
+
 import dataset.FormatHandler;
 import util.Utils;
 import util.Allocator;
 import util.defines;
 import util.Logger;
+import output.Console;
 
 
 class BinaryFormatHandler(T) : FormatHandler!(T)
 {
 	protected final char[] name() {
-		return "binary";
+		return "bin";
 	}
+	
+	private T[][] readBinaryFile(U)(char[] file, int veclen, Allocator alloc)
+	{
+		T[][] vecs = null;
 		
+		if (U.sizeof!=T.sizeof) {
+			logger.warn("Data elements size not equal to used type size. Performing conversion.");
+		}
+		
+		ulong fileSize = FilePath(file).fileSize;
+		int count = fileSize / (veclen*U.sizeof);
+		
+		logger.info(sprint("Reading {} features: ",count));
+				
+		withOpenFile(file, (FileInput stream) {
+			Reader read = new Reader(new NativeProtocol(stream,false));
+			
+			vecs = alloc.allocate!(T[][])(count,veclen);
+			scope U[] buffer = new U[veclen];
+			
+			for (int i=0;i<count;++i) {
+				read(buffer);
+				array_copy(vecs[i],buffer);
+			}
+		});
+		
+		return vecs;
+	}
+	
 	protected final T[][] readValues(char[] file, Allocator alloc) 
 	{
 		string realFile = null;
-		int veclen,elemSize;
+		int veclen;
+		char[] elemType;
 		
 		T[][] vecs = null;
 		
@@ -29,31 +62,23 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 			
 			read(realFile);
 			read(veclen);
-			read(elemSize);	
+			read(elemType);	
 		});
 		
 		if (realFile is null) { // wrong format
 			return null;
 		}
 		
-		if (elemSize!=T.sizeof) {
-			logger.warn("Data elements size not equal to used type size. Performing conversion.");
+		switch (elemType) {
+			case "float":
+				vecs = readBinaryFile!(float)(realFile,veclen, alloc);
+				break;
+			case "ubyte":
+				vecs = readBinaryFile!(ubyte)(realFile,veclen, alloc);
+				break;
+			default:
+				logger.error("Element type not supported for binary format.");
 		}
-		
-		ulong fileSize = FilePath(realFile).fileSize;
-		int count = fileSize / (veclen*elemSize);
-		
-		logger.info(sprint("Reading {} features: ",count));
-				
-		withOpenFile(realFile, (FileInput stream) {
-			vecs = alloc.allocate!(T[][])(count,veclen);
-			ubyte[] buffer = new ubyte[veclen*elemSize];
-		
-			for (int i=0;i<count;++i) {
-				stream.read(buffer);
-				array_copy(vecs[i],buffer);
-			}
-		});		
 		
 		return vecs;
 	}
@@ -66,7 +91,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 			print("BINARY").newline;
 			print(bin_file).newline;
 			print(vecs[0].length).newline;
-			print(T.sizeof).newline;
+			print(T.stringof).newline;
 		});
 		
 		withOpenFile(bin_file, (FileOutput stream) {

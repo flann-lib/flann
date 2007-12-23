@@ -2,6 +2,17 @@ module util.profiler;
 
 version (Posix) {
  	import tango.stdc.posix.sys.time;
+	import tango.stdc.posix.unistd;
+	
+ 	struct tms {
+      clock_t tms_utime;  /* user time */
+      clock_t tms_stime;  /* system time */
+      clock_t tms_cutime; /* user time of children */
+      clock_t tms_cstime; /* system time of children */
+	}
+
+	extern(C) clock_t times(tms *buf);
+ 	
 }
 else {
 	import tango.stdc.time;
@@ -10,19 +21,24 @@ else {
 class StartStopTimer
 {
 	private:
-	long startTime;
+	version (Posix) {
+		tms startTime;
+		int clk_tck;
+	}
+	else {
+		long startTime;
+	}
 
 	public double value;
 	
 	public this() {
 		value = 0;
+		clk_tck = sysconf(_SC_CLK_TCK);
 	}
 	
 	public void start() {
 		version(Posix) {
-			timeval t;
-			gettimeofday(&t, null);
-			startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
+			times(&startTime);
 		}
 		else {
 			startTime = clock();
@@ -31,10 +47,9 @@ class StartStopTimer
 	
 	public void stop() {
 		version (Posix) {
-			timeval t;
-			gettimeofday(&t, null);
-			long endTime = t.tv_sec * 1000 + t.tv_usec / 1000;
-			value += cast(typeof(value))(endTime - startTime) / 1000;
+			tms stopTime;
+			times(&stopTime);
+			value += (cast(typeof(value))(stopTime.tms_utime-startTime.tms_utime))/clk_tck;
 		}
 		else {
 			value += (cast(typeof(value)) clock() - startTime) / CLOCKS_PER_SEC;

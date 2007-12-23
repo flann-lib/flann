@@ -25,16 +25,14 @@ version( Tango )
 
     private
     {
-        alias tango.text.convert.Float.toUtf8 toUtf8;
-        alias tango.text.convert.Integer.toUtf8 toUtf8;
-        alias tango.text.convert.Utf.toUtf8 toUtf8;
+        alias tango.text.convert.Float.toString toString;
+        alias tango.text.convert.Integer.toString toString;
+        alias tango.text.convert.Utf.toString toString;
     
-        char[] toUtf8(bool v)
+        char[] toString(bool v)
         {
             return v ? "true" : "false";
         }
-    
-        alias toUtf8 toString;
     
         Layout!(char) layout;
     }
@@ -237,12 +235,8 @@ class VariantTypeMismatchException : BaseException
 {
     this(TypeInfo expected, TypeInfo got)
     {
-        version( Tango )
-            super("cannot convert "~expected.toUtf8
-                    ~" value to a "~got.toUtf8);
-        else
-            super("cannot convert "~expected.toString
-                    ~" value to a "~got.toString);
+		super("cannot convert "~expected.toString
+				~" value to a "~got.toString);
     }
 }
 
@@ -488,14 +482,7 @@ struct Variant
             return value.arr;
     }
 
-    version( Tango )
-    {
-        alias toStringImpl toUtf8;
-        version( PhobosCompatibility )
-            alias toStringImpl toString;
-    }
-    else
-        alias toStringImpl toString;
+    alias toStringImpl toString;
 
     public char[] toStringImpl()
     {
@@ -511,15 +498,15 @@ struct Variant
         }
         else if( type is typeid(wchar[]) )
         {
-            return .toUtf8(get!(wchar[]));
+            return .toString(get!(wchar[]));
         }
         else if( type is typeid(dchar[]) )
         {
-            return .toUtf8(get!(dchar[]));
+            return .toString(get!(dchar[]));
         }	
         else if (type is typeid(float))
         {
-        	return .toUtf8(value._float);
+        	return .toString(value._float);
         }
         // Everything else
         else

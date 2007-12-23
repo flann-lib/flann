@@ -30,7 +30,7 @@ class FileReporter : ReportBackend
 	{
 		withOpenFile(file, (FormatOutput writer) {
 			foreach (value; reporter) {
-				writer.format("{} ",value.toUtf8);
+				writer.format("{} ",value.toString);
 			}
 			writer.newline;
 		});

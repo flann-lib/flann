@@ -325,16 +325,17 @@ class KDTree(T) : NNIndex{
 	
 		leafs = 0;
 	
-		/* Search once through each tree down to root. */
-		for (i = 0; i < numTrees_; i++) {
-			SearchLevelExact(result, vec, trees[i], 0.0);
+		if (numTrees_ > 1) {
+			logger.info("Doesn't make any sense to use more than one tree for exact search");
 		}
+		if (numTrees_>0) {
+			SearchLevelExact(result, vec, trees[0], 0.0);		
+		}		
 		assert(result.full);
 	}
 	
 	private void GetNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
-	
 		int i;
 		BranchSt branch;
 	
@@ -358,6 +359,7 @@ class KDTree(T) : NNIndex{
 	}
 	
 	
+	import output.Console;
 	/* Search starting from a given node of the tree.  Based on any mismatches at
 		higher levels, all exemplars below this level must have a distance of
 		at least "mindistsq". 
@@ -367,11 +369,6 @@ class KDTree(T) : NNIndex{
 	{
 		float val, diff;
 		Tree bestChild, otherChild;
-	
-// 		if (mindistsq > result.worstDist) {
-// 			return;
-// 		}
-
 	
 		/* If this is a leaf node, then do check and return. */
 		if (node.child1 == null  &&  node.child2 == null) {
@@ -419,11 +416,6 @@ class KDTree(T) : NNIndex{
 	{
 		float val, diff;
 		Tree bestChild, otherChild;
-	
-/+		if (mindistsq > result.worstDist) {
-			return;
-		}+/
-	
 	
 		/* If this is a leaf node, then do check and return. */
 		if (node.child1 == null  &&  node.child2 == null) {

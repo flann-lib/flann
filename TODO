@@ -7,19 +7,21 @@
 
 - improve build system DONE
 
-
-
 - automatically tuned parameters DONE
 
-- speedup kmeans using sampling or kdtree
+- port to tango library DONE
+
+
+- fix write performance for dat files
+
 
 - profiling and optimization (GPU?, BLAS?, BLADE?)
 - checkout NVIDIA CUDA library for GPU optimized computations
 
 
+- speedup kmeans using sampling or kdtree ( make sense only for very large branching factor... not sure if the case)
 - mean shift clustering
 
-- port to tango library
 
 
 

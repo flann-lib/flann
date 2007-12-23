@@ -23,7 +23,7 @@ abstract class FormatHandler(T)
 			if (next) {
 				return next.read(file,allocator);
 			} else {
-				throw new Exception("Format now recognized for file: "~file);
+				throw new Exception("Format not recognized for file: "~file);
 			}
 		}
 	}

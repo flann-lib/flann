@@ -14,7 +14,7 @@ class ConsoleReporter : ReportBackend
 	public void flush(OrderedParams reporter) 
 	{
 		foreach (value; reporter) {
-			Stdout.format("{,5} ",value.toUtf8);
+			Stdout.format("{,5} ",value.toString);
 		}
 		Stdout.newline;
 	}
