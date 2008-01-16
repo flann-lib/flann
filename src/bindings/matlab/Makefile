@@ -3,7 +3,7 @@
 
 LIB_DIRS = 
 
-LIBS = ${LIB_DIRS} -lm -lpthread -lphobos 
+LIBS = ${LIB_DIRS}
 
 INCLUDES = -I../c
 
@@ -40,7 +40,7 @@ all: ${MEXS}
 
 
 ${DST_DIR}/%.mexglx : ${SRC_DIR}/%.cc Makefile
-	${MEX} ${INCLUDES} $< -o $@ -L. -lnn -lgphobos -lm -lpthread
+	${MEX} ${INCLUDES} $< -o $@ -L../../.. -lnn -lgphobos -lm -lpthread
 
 
 clean:

@@ -62,6 +62,7 @@ cmd=ranlib $i
 
 [shliblink]
 shlibs=yes
+#cmd=gdmd -q,-shared -q,-nodefaultlibs $i -of$o
 cmd=gdmd -q,-shared -q,-nodefaultlibs $i -of$o
 
 libdir=-L-L$i

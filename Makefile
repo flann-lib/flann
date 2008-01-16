@@ -34,7 +34,7 @@ INCLUDES = -Iinclude
 LIBS = 
 LLIBS = -llc -llgphobos -llm -llpthread -llgcc_s
 
-LIB_DFLAGS := -C-q,-fPIC -shlib ${DFLAGS} 
+LIB_DFLAGS := -C-q,-fPIC -lib ${DFLAGS} 
 
 ifeq ($(HAS_SQLITE),1)
 	DFLAGS := ${DFLAGS} -version=hasSqlite
@@ -59,20 +59,19 @@ LIB_FILE=${SRC_DIR}/bindings/exports.d
 
 .PHONY: clean all rebuild compile
 
-all: program library dist
+all: program library matlab_bindings
 
 clean:
 	rm -rf ${BUILD_DIR}/*
-	
-dist:
-	cp ${BUILD_DIR}/${TARGET} ${DIST_DIR}
-	cp ${BUILD_DIR}/${LIB_TARGET} ${DIST_DIR}
 
 rebuild: clean all
 
+matlab_bindings: library
+	(cd src/bindings/matlab; make)
+
 program:
-	${BIN_DIR}/build -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${BUILD_DIR}/${TARGET} ${DFLAGS} ${LIBS}
+	${BIN_DIR}/build -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${TARGET} ${DFLAGS} ${LIBS}
 
 library:
-	 ${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${BUILD_DIR}/${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
+	 ${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
 

@@ -16,7 +16,7 @@ int __data_start;  // hack to solve unresolved symbol problem
 void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
 {
 	/* Check if there is one Input matrix     */ 
-	if(nInArray != 3) {
+	if(nInArray != 4) {
 		mexErrMsgTxt("Incorrect number of input arguments");
 	}
 
@@ -51,12 +51,17 @@ void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray
 	float* testset = (float*) mxGetData(testsetMat);
 	int* result = (int*)malloc(tcount*nn*sizeof(int));
 	
+	
+	const mxArray* paramMat = InArray[3];
+
+	double* pp = mxGetPr(paramMat);
+
 	Parameters p;
-	p.checks=32;
-	p.algo = KMEANS;
-	p.trees=1;
-	p.branching=32;
-	p.iterations=7;
+	p.checks=(int)pp[0];
+	p.algo = (Algorithm)pp[1];
+	p.trees=(int)pp[2];
+	p.branching=(int)pp[3];
+	p.iterations=(int)pp[4];
 	
 	static int started = 0;
 	if (!started) {
