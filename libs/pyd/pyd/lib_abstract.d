@@ -38,7 +38,7 @@ version (Tango) {
     public import meta.Nameof : symbolnameof, prettytypeof, prettynameof;
     public import meta.Default : minArgs, ParameterTypeTuple, ReturnType;
     char[] objToStr(Object o) {
-        return o.toUtf8();
+        return o.toString();
     }
 } else {
     string objToStr(Object o) {

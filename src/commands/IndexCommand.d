@@ -1,4 +1,4 @@
-	module commands.IndexCommand;
+module commands.IndexCommand;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;

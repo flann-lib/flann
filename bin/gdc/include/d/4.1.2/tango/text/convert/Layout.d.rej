@@ -1,0 +1,135 @@
+***************
+*** 28,33 ****
+  
+  private import  tango.core.Exception;
+  
+  private import  Unicode = tango.text.convert.Utf;
+  
+  private import  Float   = tango.text.convert.Float,
+--- 28,35 ----
+  
+  private import  tango.core.Exception;
+  
++ private import  tango.core.Vararg;
++ 
+  private import  Unicode = tango.text.convert.Utf;
+  
+  private import  Float   = tango.text.convert.Float,
+***************
+*** 187,194 ****
+                  assert (formatStr, "null format specifier");
+                  assert (arguments.length < 64, "too many args in Layout.convert");
+  
+-         version (X86_64)
+-                 {
+                  Arg[64] arglist = void;
+                  int[64] intargs = void;
+                  byte[64] byteargs = void;
+--- 189,194 ----
+                  assert (formatStr, "null format specifier");
+                  assert (arguments.length < 64, "too many args in Layout.convert");
+  
+                  Arg[64] arglist = void;
+                  int[64] intargs = void;
+                  byte[64] byteargs = void;
+***************
+*** 201,207 ****
+  
+                  foreach (i, arg; arguments)
+                          {
+-                         arglist[i] = args.ptr;
+                          /* Since floating point types don't live on
+                           * the stack, they must be accessed by the
+                           * correct type. */
+--- 201,211 ----
+  
+                  foreach (i, arg; arguments)
+                          {
++ 				        version (X86_64)
++                 			arglist[i] = args.ptr;
++                         else
++                 			arglist[i] = args;
++                         
+                          /* Since floating point types don't live on
+                           * the stack, they must be accessed by the
+                           * correct type. */
+***************
+*** 235,264 ****
+                                    {
+                                    case 1:
+                                         byteargs[i] = va_arg!(byte)(args);
+-                                        arglist[i] = &byteargs[i];
+                                         break;
+                                    case 2:
+                                         shortargs[i] = va_arg!(short)(args);
+-                                        arglist[i] = &shortargs[i];
+                                         break;
+                                    case 4:
+                                         intargs[i] = va_arg!(int)(args);
+-                                        arglist[i] = &intargs[i];
+                                         break;
+                                    case 8:
+                                         longargs[i] = va_arg!(long)(args);
+-                                        arglist[i] = &longargs[i];
+                                         break;
+                                    case 16:
+                                         voidargs[i] = va_arg!(void[])(args);
+-                                        arglist[i] = &voidargs[i];
+                                         break;
+                                    default:
+                                         assert (false, "Unknown size: " ~ Integer.toUtf8 (arg.tsize));
+                                    }
+                             }
+                          }
+-                 }
+               else
+                  {
+                  Arg[64] arglist = void;
+--- 239,268 ----
+                                    {
+                                    case 1:
+                                         byteargs[i] = va_arg!(byte)(args);
++                                        arglist[i] = cast(Arg) &byteargs[i];
+                                         break;
+                                    case 2:
+                                         shortargs[i] = va_arg!(short)(args);
++                                        arglist[i] = cast(Arg) &shortargs[i];
+                                         break;
+                                    case 4:
+                                         intargs[i] = va_arg!(int)(args);
++                                        arglist[i] = cast(Arg) &intargs[i];
+                                         break;
+                                    case 8:
+                                         longargs[i] = va_arg!(long)(args);
++                                        arglist[i] = cast(Arg) &longargs[i];
+                                         break;
+                                    case 16:
+                                         voidargs[i] = va_arg!(void[])(args);
++                                        arglist[i] = cast(Arg) &voidargs[i];
+                                         break;
+                                    default:
+                                         assert (false, "Unknown size: " ~ Integer.toUtf8 (arg.tsize));
+                                    }
+                             }
+                          }
++ /+                }
+               else
+                  {
+                  Arg[64] arglist = void;
+***************
+*** 267,273 ****
+                          arglist[i] = args;
+                          args += (arg.tsize + int.sizeof - 1) & ~ (int.sizeof - 1);
+                          }
+-                 }
+                  return parse (formatStr, arguments, arglist, sink);
+          }
+  
+--- 271,277 ----
+                          arglist[i] = args;
+                          args += (arg.tsize + int.sizeof - 1) & ~ (int.sizeof - 1);
+                          }
++                 }+/
+                  return parse (formatStr, arguments, arglist, sink);
+          }
+  

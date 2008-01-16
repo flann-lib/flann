@@ -1,0 +1,107 @@
+.TH rebuild 1
+.SH NAME
+rebuild - Build tool for D
+.SH SYNOPSIS
+.B rebuild
+files.d
+...
+.I { -switch }
+.SH DESCRIPTION
+.IP files.d
+D source files
+.IP -rf<filename>
+Use specified response file
+.IP -dc=<compiler>
+use the specified compiler configuration
+.IP -p
+do not compile (or link)
+.IP -c
+do not link
+.IP -lib
+link a static library
+.IP -libs-safe
+exit failure or success for whether libraries can be safely be used with any D code
+.IP -shlib
+link a shared library
+.IP -shlib-support
+exit failure or success for whether shared libraries are supported
+.IP -dylib
+link a dynamic library (a library intended to be loaded at runtime)
+.IP -dylib-support
+exit failure or success for whether dynamic libraries are supported
+.IP -g
+add symbolic debug info
+.IP -gc
+add symbolic debug info, pretend to be C
+.IP -files
+list files which would be compiled (but don't compile)
+.IP -objfiles
+list object files generated
+.IP -full
+compile all source files, regardless of their age
+.IP -explicit
+only compile files explicitly named, not dependencies
+.IP --help
+print help
+.IP -Ipath
+where to look for imports
+.IP -Ccompileflag
+pass compileflag to compilation
+.IP -Llinkerflag
+pass linkerflag to the linker at link time
+.IP -Klinkerflag
+pass linkerflag to the compiler at link time
+.IP -ll<lib>
+link in the specified library
+.RS
+.IP Windows:
+Link to <lib>.lib
+.IP Posix:
+Link to lib<lib>.{a,so}
+.RE
+.IP -Spath
+search path for libraries
+.IP -O
+optimize
+.IP -oqobjdir
+write object files to directory objdir with fully-qualified module names
+.IP -odobjdir
+write object files to directory objdir
+.IP -offilename
+name output file to filename
+.IP -quiet
+suppress unnecessary messages
+.IP -release
+compile release version
+.IP -exec
+run resulting program
+.IP -v
+verbose
+.IP -n
+just list the commands to be run, don't run them
+.IP -version=level
+compile in version code >= level
+.IP -version=ident
+compile in version code identified by ident
+.IP -debug
+compile in debug code
+.IP -debug=level
+compile in debug code <= level
+.IP -debug=ident
+compile in debug code identified by ident
+.IP -clean
+remove object files after done building
+.IP -circular
+allow circular dependencies to work on some compilers (namely GDC) 
+.IP -testversion=<version>
+exit failure or success for whether the specified version is defined
+.IP -reflect
+use drefgen to make rodin-compatible reflections of all included modules
+.IP -candydoc
+generate the modules.ddoc file for candydoc (must specify -Dd, implies -explicit)
+
+All other flags are passed to the compiler.
+.SH AUTHOR
+written by Walter Bright and Gregor Richards
+.SH COPYRIGHT
+Copyright (c) 1999-2007 by Digital Mars and Gregor Richards

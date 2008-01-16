@@ -1,10 +1,5 @@
 # ------------------ Compilation options ------------------------
 
-
-WARNS = -W -Wall
-INCLUDES = -Iinclude
-LIBS = 
-
 HAS_SQLITE = 1
 
 
@@ -33,42 +28,51 @@ else ifeq (${PROFILE},release)
 	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe
 endif
 
+
+WARNS = -W -Wall
+INCLUDES = -Iinclude
+LIBS = 
+LLIBS = -llc -llgphobos -llm -llpthread -llgcc_s
+
+LIB_DFLAGS := -C-q,-fPIC -shlib ${DFLAGS} 
+
 ifeq ($(HAS_SQLITE),1)
 	DFLAGS := ${DFLAGS} -version=hasSqlite
 	LIBS := -llsqlite3 -lldl
 endif
 
-
-ifndef TARGET	
-	#TARGET := $(shell basename `pwd`)
-	TARGET = nn
-endif
+TARGET = nn
+LIB_TARGET = libnn.a
 # --------------------- Dirs  ----------------------------
-
 SRC_DIR = src
 LIBS_DIR = libs
 BUILD_DIR = $(HOME)/tmp/${TARGET}_build/${PROFILE}
-DEPS_DIR = ${BUILD_DIR}/deps
 OBJ_DIR = ${BUILD_DIR}/obj
-DOC_DIR = doc
-RES_DIR = res
+LIB_OBJ_DIR = ${BUILD_DIR}/lib_obj
 BIN_DIR = bin
+DIST_DIR = .
 
 MAIN_FILE=${SRC_DIR}/main.d
-
+LIB_FILE=${SRC_DIR}/bindings/exports.d
 
 # ------------------------ Rules --------------------------------
 
 .PHONY: clean all rebuild compile
 
-all: compile
-	cp ${BUILD_DIR}/${TARGET} .
+all: program library dist
 
 clean:
 	rm -rf ${BUILD_DIR}/*
+	
+dist:
+	cp ${BUILD_DIR}/${TARGET} ${DIST_DIR}
+	cp ${BUILD_DIR}/${LIB_TARGET} ${DIST_DIR}
 
 rebuild: clean all
 
-compile:
-	 ${BIN_DIR}/rebuild -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${BUILD_DIR}/${TARGET} ${DFLAGS} ${LIBS}
+program:
+	${BIN_DIR}/build -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${BUILD_DIR}/${TARGET} ${DFLAGS} ${LIBS}
+
+library:
+	 ${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${BUILD_DIR}/${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
 

@@ -33,6 +33,7 @@ class Features(T = float) {
 	T[][] vecs;    
 	int[][] match;         /* indices to correct nearest neighbors. */
 	Allocator allocator;
+	bool ownAllocator;
 
 	static FormatHandler!(T) handler;
 	
@@ -48,21 +49,33 @@ class Features(T = float) {
 	}
 
 
-	public this() 
+	public this(Allocator alloc = null) 
 	{
-		allocator = new Allocator();
+		if (alloc is null) {
+			this.allocator = new Allocator();
+			ownAllocator = true;
+		}
+		else {
+			ownAllocator = false;
+			this.allocator = alloc;
+		}
+	}
+		
+	public this(int size, int veclen, Allocator alloc = null) 
+	{
+		this(alloc);
+		vecs = allocator.allocate!(T[][])(size,veclen);
+	}
+
+	public this(T[][] dataset, Allocator alloc = null) 
+	{
+		this(alloc);
+		vecs = dataset;
 	}
 	
 	public ~this()
 	{
-		delete allocator;
-	}
-	
-	
-	public this(int size, int veclen) 
-	{
-		this();
-		vecs = allocator.allocate!(T[][])(size,veclen);
+		if (ownAllocator) delete allocator;
 	}
 
 	public void init(U)(Features!(U) dataset) 

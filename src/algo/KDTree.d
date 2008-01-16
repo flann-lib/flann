@@ -85,9 +85,8 @@ class KDTree(T) : NNIndex{
 		compute the mean and variance at each level when building a tree.
 		A value of 100 seems to perform as well as using all values.
 	*/
-	const int SampleMean = 100;
-	
-	
+	const int SampleMean = 400;
+		
 	/*--------------------- Internal Data Structures --------------------------*/
 	
 	/* This is a node of the binary k-d tree.  All nodes that have 
@@ -104,14 +103,10 @@ class KDTree(T) : NNIndex{
 	alias TreeSt* Tree;
 	
 	Allocator allocator;
+	bool ownAllocator;
 
 	
 	
-	
-	private this()
-	{
-	}
-
 	
 	/*------------------------ Build k-d tree index ---------------------------*/
 	
@@ -122,8 +117,10 @@ class KDTree(T) : NNIndex{
 	{
 		if (allocator is null) {
 			allocator = new Allocator();
+			ownAllocator = true;
 		} else {
 			allocator = alloc;
+			ownAllocator = false;
 		}
 	
 		numTrees_ = params["trees"].get!(uint);
@@ -140,6 +137,11 @@ class KDTree(T) : NNIndex{
 		for (int i = 0; i < vcount; i++) {
 			vind[i] = i;
 		}
+	}
+	
+	public ~this()
+	{
+		if (ownAllocator) delete allocator;
 	}
 	
 	
