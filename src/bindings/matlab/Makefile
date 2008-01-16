@@ -40,7 +40,7 @@ all: ${MEXS}
 
 
 ${DST_DIR}/%.mexglx : ${SRC_DIR}/%.cc Makefile
-	${MEX} ${INCLUDES} $< -o $@ -L../../.. -lnn -lgphobos -lm -lpthread
+	${MEX} ${INCLUDES} $< -o $@ -L../../.. -L${LDPATH} -lnn -lgphobos -lm -lpthread
 
 
 clean:

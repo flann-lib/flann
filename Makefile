@@ -44,17 +44,19 @@ endif
 TARGET = nn
 LIB_TARGET = libnn.a
 # --------------------- Dirs  ----------------------------
-SRC_DIR = src
-LIBS_DIR = libs
+CRT_DIR = $(shell pwd)
+SRC_DIR = ${CRT_DIR}/src
+LIBS_DIR = ${CRT_DIR}/libs
 BUILD_DIR = $(HOME)/tmp/${TARGET}_build/${PROFILE}
 OBJ_DIR = ${BUILD_DIR}/obj
 LIB_OBJ_DIR = ${BUILD_DIR}/lib_obj
-BIN_DIR = bin
-DIST_DIR = .
+BIN_DIR = ${CRT_DIR}/bin
+export DIST_DIR = ${CRT_DIR}
 
 MAIN_FILE=${SRC_DIR}/main.d
 LIB_FILE=${SRC_DIR}/bindings/exports.d
 
+export LDPATH=${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2
 # ------------------------ Rules --------------------------------
 
 .PHONY: clean all rebuild compile
