@@ -102,6 +102,11 @@ class AgglomerativeExTree : NNIndex {
 		return indexSize;
 	}
 	
+	public int length() 
+	{
+		return veclen;
+	}
+	
 	public int numTrees()
 	{
 		return 1;

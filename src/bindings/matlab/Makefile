@@ -8,12 +8,10 @@ LIBS = ${LIB_DIRS}
 INCLUDES = -I../c
 
 
-WARNS = -W -Wall
-
 ifeq ($(PROFILE),debug)
-	CFLAGS = ${WARNS} -g
+	CFLAGS = -g
 else
-	CFLAGS = ${WARNS} -O3 
+	CFLAGS = -O
 endif
 CXXFLAGS = ${CFLAGS}
 LINKLAGS = 
@@ -39,8 +37,8 @@ all: ${MEXS}
 .phony: all clean
 
 
-${DST_DIR}/%.mexglx : ${SRC_DIR}/%.cc Makefile
-	${MEX} ${INCLUDES} $< -o $@ -L../../.. -L${LDPATH} -lnn -lgphobos -lm -lpthread
+${DST_DIR}/%.mexglx : ${SRC_DIR}/%.cc Makefile ../../../libnn.a
+	${MEX} ${INCLUDES} ${CFLAGS} $< -o $@ -L../../.. -L${LDPATH} -lnn -lgphobos -lm -lpthread
 
 
 clean:

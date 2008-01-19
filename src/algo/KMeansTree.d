@@ -72,8 +72,8 @@ class KMeansTree(T) : NNIndex
 	
 	public this(Features!(T) inputData, Params params, Allocator alloc = null)
 	{
-		if (allocator is null) {
-			allocator = new Allocator();
+		if (alloc is null) {
+			allocator = inputData.allocator;
 		} else {
 			allocator = alloc;
 		}
@@ -103,6 +103,11 @@ class KMeansTree(T) : NNIndex
 	public int size() 
 	{
 		return vecs.length;
+	}
+	
+	public int length() 
+	{
+		return flength;
 	}
 	
 	public int numTrees()

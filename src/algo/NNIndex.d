@@ -130,6 +130,11 @@ abstract class NNIndex
 	int size();
 	
 	/**
+		The length of features in this index.
+	*/
+	int length();
+	
+	/**
 	 The number of trees in this index 
 	*/
  	int numTrees();

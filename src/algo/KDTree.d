@@ -103,7 +103,6 @@ class KDTree(T) : NNIndex{
 	alias TreeSt* Tree;
 	
 	Allocator allocator;
-	bool ownAllocator;
 
 	
 	
@@ -115,12 +114,10 @@ class KDTree(T) : NNIndex{
 	*/
 	public this(Features!(T) inputData, Params params, Allocator alloc = null)
 	{
-		if (allocator is null) {
-			allocator = new Allocator();
-			ownAllocator = true;
+		if (alloc is null) {
+			allocator = inputData.allocator;
 		} else {
 			allocator = alloc;
-			ownAllocator = false;
 		}
 	
 		numTrees_ = params["trees"].get!(uint);
@@ -141,7 +138,6 @@ class KDTree(T) : NNIndex{
 	
 	public ~this()
 	{
-		if (ownAllocator) delete allocator;
 	}
 	
 	
@@ -165,6 +161,11 @@ class KDTree(T) : NNIndex{
 	public int size() 
 	{
 		return vcount;
+	}
+	
+	public int length()
+	{
+		return veclen;
 	}
 	
 	public int numTrees()

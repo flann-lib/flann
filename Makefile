@@ -57,6 +57,7 @@ MAIN_FILE=${SRC_DIR}/main.d
 LIB_FILE=${SRC_DIR}/bindings/exports.d
 
 export LDPATH=${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2
+export PROFILE
 # ------------------------ Rules --------------------------------
 
 .PHONY: clean all rebuild compile

@@ -45,6 +45,11 @@ class LinearSearch(T): NNIndex {
 		return dataset.count;
 	}
 	
+	public int length() 
+	{
+		return dataset.veclen;
+	}
+	
 	public int numTrees()
 	{
 		return 1;

@@ -14,48 +14,7 @@ import util.profiler;
 import util.logger;
 import util.utils;
 
-/+
-float testNN(NNIndex index, Features!(float) testData, float desiredPrecision, out int checks)
-{
-	const int skipMatches = 0;
-	ResultSet resultSet = new ResultSet(1+skipMatches);
-	
-	float search(int checks) {
-		int correct = 0;
-		float elapsed = profile( {
-		for (int i = 0; i < testData.count; i++) {
-			resultSet.init(testData.vecs[i]);
-			index.findNeighbors(resultSet,testData.vecs[i], checks);			
-			int nn_index = resultSet.getPointIndex(0+skipMatches);
-			
-			if (nn_index == testData.match[i]) {
-				correct++;
-			}
-			else {
-// 				writefln("I got: %d, I want: %d",nn_index,testData.match[i]);
-			}
-		}
-		});
-		float performance = 100*cast(float)correct/testData.count;
-		return performance;
-	}
-
-	checks = 1;
-	float performance;
-	float searchTime = profile({performance = search(checks);});
-	while (performance<desiredPrecision) {
-		checks *=2;
-		searchTime = profile({performance = search(checks);});
-// 		writefln("checks: ",checks,", performance: ",performance);
-	}
-	
-	// optional: interpolate checks number
-	
-	return searchTime;
-}+/
-
-
-Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, float indexFactor, float samplePercentage)
+Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, float indexFactor = 0, float samplePercentage = 0.1)
 {
 	float[] doSearch(int times, float delegate() action)
 	{

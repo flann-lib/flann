@@ -4,6 +4,7 @@ import algo.all;
 import dataset.Features;
 import util.Allocator;
 import util.Utils;
+import nn.Autotune;
 
 extern(C):
 
@@ -22,6 +23,63 @@ struct Parameters {
 	int iterations;
 };
 
+alias int NN_INDEX;
+
+Object nn_ids[64];
+int nn_ids_count;
+
+static this()
+{
+	nn_ids_count = 0;
+}
+
+private {
+	struct AlgoMapping {
+		Algorithm algo;
+		char[] algoName;
+	};
+	AlgoMapping[] algoMappings = [ 
+		{Algorithm.LINEAR, "linear"},
+		{Algorithm.KMEANS, "kmeans"},
+		{Algorithm.KDTREE, "kdtree"},
+		{Algorithm.COMPOSITE, "composite"}
+	];
+
+	Params parametersToParams(Parameters parameters)
+	{
+		Params p;
+		p["checks"] = parameters.checks;
+		p["trees"] = parameters.trees;
+		p["max-iterations"] = parameters.iterations;
+		p["branching"] = parameters.branching;
+		p["centers-algorithm"] = "random";
+		foreach (mapping; algoMappings) {
+			if (mapping.algo == parameters.algo) {
+				p["algorithm"] = mapping.algoName;
+				break;
+			}
+		}
+		
+		return p;
+	}
+	
+	Parameters paramsToParameters(Params params)
+	{
+		Parameters p;
+		p.checks = params["checks"].get!(int);
+		p.trees = params["trees"].get!(int);
+		p.iterations = params["max-iterations"].get!(int);
+		p.branching = params["branching"].get!(int);
+		foreach (mapping; algoMappings) {
+			if (mapping.algoName == params["algorithm"] ) {
+				p.algo = mapping.algo;
+				break;
+			}
+		}
+		return p;
+	}
+}
+
 void rt_init();
 void rt_term();
 
@@ -36,41 +94,69 @@ void nn_term()
 }
 
 
-void find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters)
+private Features!(T) makeFeatures(T)(T* dataset, int count, int length)
 {
 	auto allocator = new Allocator();
 	
-	float[][] vecs = allocator.allocate!(float[][])(count);
+	T[][] vecs = allocator.allocate!(T[][])(count);
 	for (int i=0;i<count;++i) {
 		vecs[i] = dataset[0..length];
 		dataset += length;
 	}
-	auto inputData = new Features!(float)(vecs,allocator);
+	auto inputData = new Features!(T)(vecs,allocator);
 	
-	char[][int] algo_map;
-	algo_map[Algorithm.LINEAR] = "linear";
-	algo_map[Algorithm.KDTREE] = "kdtree";
-	algo_map[Algorithm.KMEANS] = "kmeans";
-	algo_map[Algorithm.COMPOSITE] = "composite";
+	return inputData;
+}
+
+Parameters estimate_index_parameters(float* dataset, int count, int length, float target_precision)
+{
+	auto inputData = makeFeatures(dataset,count,length);
 	
-	Params params;
-	params["trees"] = parameters.trees;
-	params["branching"] = parameters.branching;
-	params["centers-algorithm"] = "random";
-	params["max-iterations"] = parameters.iterations;
+	Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
+	return paramsToParameters(params);
+}
+
+NN_INDEX build_index(float* dataset, int count, int length, float target_precision, Parameters* parameters)
+{	
+	auto inputData = makeFeatures(dataset,count,length);
 	
-	char[] algorithm = algo_map[parameters.algo];
-	params["algorithm"] = algorithm;
+	Parameters p;	
+	if (parameters !is null) {
+		p = *parameters;
+	}
+	else {
+		p = estimate_index_parameters(dataset, count, length, target_precision);
+	}
+	
+	Params params = parametersToParams(p);
+	char[] algorithm = params["algorithm"].get!(char[]);
 	
 	NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
 	index.buildIndex();
 	
-/+	float[][] test_vecs = allocator.allocate!(float[][])(tcount);
-	for (int i=0;i<tcount;++i) {
-		vecs[i] = testset[0..length];
-		testset += length;
+	NN_INDEX indexID = nn_ids_count++;
+	nn_ids[indexID] = index;
+	
+	return indexID;
+}
+
+
+void find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters)
+{
+	auto inputData = makeFeatures(dataset,count,length);
+	
+	Parameters p;	
+	if (parameters !is null) {
+		p = *parameters;
 	}
-	auto testData = new Features!(float)(test_vecs,allocator);+/
+	else {
+		p = estimate_index_parameters(dataset, count, length, target_precision);
+	}
+	Params params = parametersToParams(p);
+	char[] algorithm = params["algorithm"].get!(char[]);
+	
+	NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
+	index.buildIndex();
 	
 	int skipMatches = 0;
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
@@ -86,5 +172,46 @@ void find_nearest_neighbors(float* dataset, int count, int length, float* testse
 		
 		resultIndex += nn;
 		testset += length;
+	}
+}
+
+void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, float target_precision, int checks)
+{
+	if (index_id < nn_ids_count) {
+		Object indexObj = nn_ids[index_id];
+		if (indexObj !is null) {
+			NNIndex index = cast(NNIndex) indexObj;
+			int length = index.length;
+				
+			if (target_precision >= 0 && target_precision <=100) {
+				auto testData = makeFeatures(testset,tcount,length);
+				checks = estimateSearchParams!(float)(index, testData, target_precision);
+			}
+			
+			int skipMatches = 0;
+			ResultSet resultSet = new ResultSet(nn+skipMatches);
+			
+			int resultIndex = 0;
+			for (int i = 0; i < tcount; i++) {
+				resultSet.init(testset[0..length]);
+		
+				index.findNeighbors(resultSet,testset[0..length], checks);
+				
+				int[] neighbors = resultSet.getNeighbors();
+				result[resultIndex..resultIndex+nn] = neighbors[skipMatches..$];
+				
+				resultIndex += nn;
+				testset += length;
+			}
+		}
+	}
+}
+
+void free_index(NN_INDEX index_id)
+{
+	if (index_id < nn_ids_count) {
+		Object index = nn_ids[index_id];
+		nn_ids[index_id] = null;
+		delete index;
 	}
 }
