@@ -17,7 +17,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		return "bin";
 	}
 	
-	private T[][] readBinaryFile(U)(char[] file, int veclen, Allocator alloc)
+	private T[][] readBinaryFile(U)(char[] file, int veclen)
 	{
 		T[][] vecs = null;
 		
@@ -33,7 +33,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		withOpenFile(file, (FileInput stream) {
 			Reader read = new Reader(new NativeProtocol(stream,false));
 			
-			vecs = alloc.allocate!(T[][])(count,veclen);
+			vecs = allocate!(T[][])(count,veclen);
 			scope U[] buffer = new U[veclen];
 			
 			for (int i=0;i<count;++i) {
@@ -45,7 +45,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		return vecs;
 	}
 	
-	protected final T[][] readValues(char[] file, Allocator alloc) 
+	protected final T[][] readValues(char[] file) 
 	{
 		string realFile = null;
 		int veclen;
@@ -71,10 +71,10 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		
 		switch (elemType) {
 			case "float":
-				vecs = readBinaryFile!(float)(realFile,veclen, alloc);
+				vecs = readBinaryFile!(float)(realFile,veclen);
 				break;
 			case "ubyte":
-				vecs = readBinaryFile!(ubyte)(realFile,veclen, alloc);
+				vecs = readBinaryFile!(ubyte)(realFile,veclen);
 				break;
 			default:
 				logger.error("Element type not supported for binary format.");

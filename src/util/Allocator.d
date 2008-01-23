@@ -5,6 +5,64 @@ import tango.stdc.stdlib;
 import util.defines;
 
 
+
+/**
+	Helper functions for allocating memory
+*/
+public T* allocate(T)(int count = 1) 
+{
+	T* mem = cast(T*) tango.stdc.stdlib.malloc(T.sizeof*count);
+	return mem;
+}
+
+public T[] allocate(T : T[])(int count) 
+{
+	T* mem = cast(T*) tango.stdc.stdlib.malloc(count*T.sizeof);		
+	return mem[0..count];
+}
+
+public T[][] allocate(T : T[][])(int rows, int cols = -1) 
+{
+	if (cols == -1) {
+		T[]* mem = cast(T[]*) tango.stdc.stdlib.malloc(rows*(T[]).sizeof);
+		return mem[0..rows];
+	} 
+	else {
+		//if (rows & 1) rows++; // for 16 byte allignment	
+		void* mem = tango.stdc.stdlib.malloc(rows*(T[]).sizeof+rows*cols*T.sizeof);
+		T[]* index = cast(T[]*) mem;
+		T* mat = cast(T*) (mem+rows*(T[]).sizeof);
+		
+		for (int i=0;i<rows;++i) {
+			index[i] = mat[0..cols];
+			mat += cols;
+		}
+		
+		return index[0..rows];
+	}
+}
+
+private template isArray(T)
+{
+    static if( is( T U : U[] ) )
+        const isArray = true;
+    else
+        const isArray = false;
+}
+
+public void free(T)(T ptr)
+{
+	static if ( isArray!(T) ) {
+		tango.stdc.stdlib.free(cast(void*) ptr.ptr);
+	}
+	else {
+		tango.stdc.stdlib.free(cast(void*) ptr);
+	}
+}
+
+
+
+
 string allocate_static(string declaration)
 {
 	int pos;
@@ -38,6 +96,49 @@ string allocate_static(string declaration)
 
 
 
+/** 
+	Template containing the operators for custom allocation using a pool of memory.
+	Using this type of allocation is very efficient for small objects.
+	This template should be 'mixed-in' any object that is desired to be pool-allocated.
+*/
+template PooledAllocated(bool saveToGlobal = false)
+{
+   /** 
+   		Custom new operator that allocated the memory for the newly created object
+   		inside a pool
+   */
+   new(size_t sz, PooledAllocator allocator)
+   {
+      static if (saveToGlobal) {
+      	globalPooledAllocator = allocator;
+      }
+      return allocator.malloc(sz);
+   }
+
+	/**
+		The associated delete operator
+	*/
+	delete(void* p)
+	{
+		// do nothing here, object gets deleted once the pool is deleted
+	}
+}
+private PooledAllocator globalPooledAllocator;
+
+/**
+	Base class for object that are pooled allocated (and also maintain a reference to the pool).
+*/
+class PooledAllocatedObject
+{
+	mixin PooledAllocated!(true);			// mixin the new and delete operators
+	
+	PooledAllocator pool;			// reference to the pooled used to allocate the object
+	
+	this() 
+	{
+		pool = globalPooledAllocator;
+	}
+}
 
 /*-------------------- Pooled storage allocator ---------------------------*/
 
@@ -56,7 +157,7 @@ string allocate_static(string declaration)
 carefull not to store in this memory pointers to memory handled by the gc.
 */
 
-class Allocator 
+class PooledAllocator 
 {			
 	/* We maintain memory alignment to word boundaries by requiring that all
 		allocations be in multiples of the machine wordsize.  */
@@ -84,48 +185,13 @@ class Allocator
 	public ~this()
 	{
 		free();
-	}
-	
-	/* Returns a pointer to a piece of new memory of the given size in bytes
+	}	
+		
+	/**
+		Returns a pointer to a piece of new memory of the given size in bytes
 		allocated from the pool.
 	*/
-	
-	public T* allocate(T)(int count = 1) 
-	{
-		T* mem = cast(T*) malloc(T.sizeof*count);
-		return mem;
-	}
-	
-	
-	public T[] allocate(T : T[])(int count) 
-	{
-		T* mem = cast(T*) malloc(count*T.sizeof);		
-		return mem[0..count];
-	}
-	
-	public T[][] allocate(T : T[][])(int rows, int cols = -1) 
-	{
-		if (cols == -1) {
-			T[]* mem = cast(T[]*) malloc(rows*(T[]).sizeof);
-			return mem[0..rows];
-		} 
-		else {
-			//if (rows & 1) rows++; // for 16 byte allignment	
-			void* mem = malloc(rows*(T[]).sizeof+rows*cols*T.sizeof);
-			T[]* index = cast(T[]*) mem;
-			T* mat = cast(T*) (mem+rows*(T[]).sizeof);
-			
-			for (int i=0;i<rows;++i) {
-				index[i] = mat[0..cols];
-				mat += cols;
-			}
-			
-			return index[0..rows];
-		}
-	}
-	
-	
-	private void* malloc(int size)
+	public void* malloc(int size)
 	{
 		int blocksize;
 		
@@ -180,4 +246,38 @@ class Allocator
 		}
 	}
 	
+	public T* allocate(T)(int count = 1) 
+	{
+		T* mem = cast(T*) this.malloc(T.sizeof*count);
+		return mem;
+	}
+	
+	
+	public T[] allocate(T : T[])(int count) 
+	{
+		T* mem = cast(T*) this.malloc(count*T.sizeof);		
+		return mem[0..count];
+	}
+	
+	public T[][] allocate(T : T[][])(int rows, int cols = -1) 
+	{
+		if (cols == -1) {
+			T[]* mem = cast(T[]*) this.malloc(rows*(T[]).sizeof);
+			return mem[0..rows];
+		} 
+		else {
+			//if (rows & 1) rows++; // for 16 byte allignment	
+			void* mem = this.malloc(rows*(T[]).sizeof+rows*cols*T.sizeof);
+			T[]* index = cast(T[]*) mem;
+			T* mat = cast(T*) (mem+rows*(T[]).sizeof);
+			
+			for (int i=0;i<rows;++i) {
+				index[i] = mat[0..cols];
+				mat += cols;
+			}
+			
+			return index[0..rows];
+		}
+	}
 }
+

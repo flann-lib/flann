@@ -32,8 +32,6 @@ class Features(T = float) {
 
 	T[][] vecs;    
 	int[][] match;         /* indices to correct nearest neighbors. */
-	Allocator allocator;
-	bool ownAllocator;
 
 	static FormatHandler!(T) handler;
 	
@@ -49,38 +47,28 @@ class Features(T = float) {
 	}
 
 
-	public this(Allocator alloc = null) 
+	public this() 
 	{
-		if (alloc is null) {
-			this.allocator = new Allocator();
-			ownAllocator = true;
-		}
-		else {
-			ownAllocator = false;
-			this.allocator = alloc;
-		}
 	}
 		
-	public this(int size, int veclen, Allocator alloc = null) 
+	public this(int size, int veclen) 
 	{
-		this(alloc);
-		vecs = allocator.allocate!(T[][])(size,veclen);
+		vecs = allocate!(T[][])(size,veclen);
 	}
 
-	public this(T[][] dataset, Allocator alloc = null) 
+	public this(T[][] dataset) 
 	{
-		this(alloc);
 		vecs = dataset;
 	}
 	
 	public ~this()
 	{
-		if (ownAllocator) delete allocator;
+		free(vecs);
 	}
 
 	public void init(U)(Features!(U) dataset) 
 	{
-		vecs = allocator.allocate!(T[][])(dataset.count,dataset.veclen);
+		vecs = allocate!(T[][])(dataset.count,dataset.veclen);
 		foreach (index,vec;dataset.vecs) {
 			array_copy(vecs[index],vec);
 		}			
@@ -104,7 +92,7 @@ class Features(T = float) {
 	public void readMatches(string file)
 	{
 		auto gridData = new DatFormatHandler!(int)();		
-		int[][] values = gridData.read(file, allocator);
+		int[][] values = gridData.read(file);
 		
 		match.length = values.length;
 		foreach (v;values) {
@@ -115,7 +103,7 @@ class Features(T = float) {
 	
 	public void readFromFile(char[] file)
 	{
-		vecs = handler.read(file, allocator);
+		vecs = handler.read(file);
 	}
 	
 	

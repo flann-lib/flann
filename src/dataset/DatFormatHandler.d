@@ -73,7 +73,7 @@ class DatFormatHandler(T) : FormatHandler!(T)
 	}
 	
 	
-	protected final T[][] readValues(char[] file, Allocator allocator)
+	protected final T[][] readValues(char[] file)
 	{
 		int lines,columns;
 		char[] delimiter;
@@ -82,7 +82,7 @@ class DatFormatHandler(T) : FormatHandler!(T)
 		}
 		
 		// allocate memory for the data
-		T[][] vecs = allocator.allocate!(T[][])(lines,columns);
+		T[][] vecs = allocate!(T[][])(lines,columns);
 				
 		// read in
 		withOpenFile(file, (ScanReader read) {

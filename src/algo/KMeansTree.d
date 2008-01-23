@@ -35,9 +35,7 @@ class KMeansTree(T) : NNIndex
 	private BranchHeap heap;	
 	private int checkID = -1;
 	
-	
-	
-	struct KMeansNodeSt	{	
+	struct KMeansNodeSt	{
 		float[] pivot;
 		float radius;
 		float variance;
@@ -56,28 +54,21 @@ class KMeansTree(T) : NNIndex
 	alias T[][] delegate(int k, T[][] vecs, int[] indices) centersAlgDelegate;
 	centersAlgDelegate[string] centerAlgs;
 	
-	Allocator allocator;
-
-	private this(Allocator alloc = null)
-	{
-		if (allocator is null) {
-			allocator = new Allocator();
-		} else {
-			allocator = alloc;
-		}
 	
+	private	PooledAllocator pool;
+	
+	private this()
+	{	
+		pool = new PooledAllocator();
+		
 		heap = new BranchHeap(512);
 		initCentersAlgorithms();
 	}
 	
-	public this(Features!(T) inputData, Params params, Allocator alloc = null)
+	public this(Features!(T) inputData, Params params)
 	{
-		if (alloc is null) {
-			allocator = inputData.allocator;
-		} else {
-			allocator = alloc;
-		}
-		
+		pool = new PooledAllocator();
+	
 		this.branching = params["branching"].get!(uint);
 		this.numTrees_ = params["trees"].get!(uint);
 		this.max_iter = params["max-iterations"].get!(uint);
@@ -91,6 +82,11 @@ class KMeansTree(T) : NNIndex
 		initCentersAlgorithms();
 	}
 	
+	
+	public ~this()
+	{
+		delete pool;
+	}
 
 	private void initCentersAlgorithms()
 	{
@@ -178,7 +174,7 @@ class KMeansTree(T) : NNIndex
 		}
 		
 		foreach (index,branchingValue; branchings) {
-			root[index] = new KMeansNodeSt();
+			root[index] = pool.allocate!(KMeansNodeSt);
 			computeNodeStatistics(root[index], indices);
 			computeClustering(root[index], indices, branchingValue);
 		}		
@@ -191,7 +187,7 @@ class KMeansTree(T) : NNIndex
 	
 		float radius = 0;
 		float variance = 0;
-		float[] mean = allocator.allocate!(float[])(flength);
+		float[] mean = pool.allocate!(float[])(flength);
 		
 		mean[] = 0;
 		
@@ -247,7 +243,7 @@ class KMeansTree(T) : NNIndex
 			return;
 		}
 		
- 		float[][] centers = allocator.allocate!(float[][])(nc,flength);
+ 		float[][] centers = pool.allocate!(float[][])(nc,flength);
 		//float[][] centers = new float[][](nc,flength);
 		mat_copy(centers,initial_centers);
 		
@@ -351,7 +347,7 @@ class KMeansTree(T) : NNIndex
 	
 	
 		// compute kmeans clustering for each of the resulting clusters
-		node.childs = allocator.allocate!(KMeansNode[])(nc);
+		node.childs = pool.allocate!(KMeansNode[])(nc);
 		int start = 0;
 		int end = start;
 		for (int c=0;c<nc;++c) {
@@ -369,7 +365,7 @@ class KMeansTree(T) : NNIndex
 			variance /= s;
 			variance -= squaredDist(centers[c]);
 			
-			node.childs[c] = allocator.allocate!(KMeansNodeSt);
+			node.childs[c] = pool.allocate!(KMeansNodeSt);
 			node.childs[c].radius = radiuses[c];
 			node.childs[c].pivot = centers[c];
 			node.childs[c].variance = variance;
