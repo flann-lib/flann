@@ -3,7 +3,7 @@ module commands.ComputeGTCommand;
 import commands.GenericCommand;
 import commands.DefaultCommand;
 import dataset.ComputeGroundTruth;
-import util.logger;
+import util.Logger;
 import util.defines;
 
 static this() {

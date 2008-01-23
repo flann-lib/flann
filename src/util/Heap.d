@@ -15,7 +15,7 @@ Conversion to D: Marius Muja
  */
 
 
-module util.heap;
+module util.Heap;
 
 class Heap(T) {
 
@@ -53,8 +53,7 @@ class Heap(T) {
 	{
 		/* If heap is full, then return without adding this element. */
 		if (count == heap.length-1) {
-			heap.length = heap.length * 2;
-			//return;
+			return;
 		}
 			
 		int loc = ++(count);   /* Remember 1-based indexing. */

@@ -4,12 +4,12 @@ import tango.math.Math;
 
 import algo.NNIndex;
 import dataset.Features;
-import util.logger;
-import util.profiler;
+import util.Logger;
+import util.Profiler;
 import output.Console;
 import output.Report;
-import util.dist;
-import util.utils;
+import algo.dist;
+import util.Utils;
 
 
 const float SEARCH_EPS = 0.10;
@@ -96,7 +96,7 @@ float search(int checks, out float time, char[] approxMatch = "")
 	float performance = 100*cast(float)correct/(nn*testData.count);
 	
 	static if (withOutput) {
-		logger.info(sprint("{,8}{,10:2}{,12:3}{,12:3}{,12:3}",
+		logger.info(sprint("{,8}{,10:d2}{,12:d3}{,12:d3}{,12:d3}",
 				checks, performance,
 				time, 1000.0 * time / testData.count, distR/testData.count));
 	}
@@ -158,7 +158,6 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 	float p1;
 	
 	float time;
-	
 	
 	p2 = search(c2,time);
 	while (p2<precision) {

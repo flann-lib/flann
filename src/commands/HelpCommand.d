@@ -5,7 +5,7 @@ import tango.io.Stdout;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
-import util.logger;
+import util.Logger;
 import util.defines;
 
 static this() {

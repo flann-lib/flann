@@ -12,7 +12,7 @@ import util.utils;
 import util.heap;
 import util.resultset;
 import dataset.features;
-import util.logger;
+import util.Logger;
 import algo.nnindex;
 import algo.agglomerativetree2;
 import util.registry;	

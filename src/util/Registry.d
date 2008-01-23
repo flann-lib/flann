@@ -1,4 +1,4 @@
-module util.registry;
+module util.Registry;
 
 public import tango.core.Vararg;
 import util.defines;

@@ -2,7 +2,7 @@
 Project: nn
 */
 
-module util.DatasetGenerator;
+module dataset.DatasetGenerator;
 
 import output.Console;
 import util.defines;
@@ -21,7 +21,7 @@ void generateRandomDataset(string file, uint count, uint length)
 					if (j!=0) {
 						writer(" ");
 					}
-					writer.format("{:10} ",drand48());
+					writer.format("{:d10} ",drand48());
 				}
 				writer("\n");
 				tick();

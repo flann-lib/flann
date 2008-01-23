@@ -1,4 +1,4 @@
-module util.allocator;
+module util.Allocator;
 
 import tango.stdc.stdlib;
 

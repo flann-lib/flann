@@ -1,4 +1,4 @@
-module util.profiler;
+module util.Profiler;
 
 version (Posix) {
  	import tango.stdc.posix.sys.time;

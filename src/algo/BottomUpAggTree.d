@@ -14,9 +14,9 @@ import util.random;
 import util.heap;
 import util.resultset;
 import dataset.features;
-import util.logger;
+import util.Logger;
 import algo.nnindex;
-import util.registry;	
+import util.Registry;	
 
 
 mixin AlgorithmRegistry!(BottomUpSimpleAgglomerativeTree,float);

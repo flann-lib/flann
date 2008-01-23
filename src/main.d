@@ -10,6 +10,10 @@ import tango.core.Memory : GC;
 
 import commands.all;
 
+debug {
+import jive.stacktrace;
+}
+
 /** 
 	Program entry point 
 */

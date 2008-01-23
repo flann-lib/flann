@@ -38,7 +38,7 @@ version=-version=$i
 
 
 [link]
-cmd=dmd -L--start-group -L-lphobos $i -of$o
+cmd=dmd -L--start-group $i -of$o
 
 libdir=-L-L$i
 lib=-L-l$i

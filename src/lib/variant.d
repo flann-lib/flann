@@ -4,7 +4,7 @@
  *
  * I hereby release this code to the Public Domain; share and enjoy.
  */
-module variant;
+module lib.variant;
 
 version( Tango )
 {

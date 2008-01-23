@@ -3,7 +3,7 @@ Project: nn
 */
 
 
-module util.random;
+module util.Random;
 
 import tango.stdc.time;
 

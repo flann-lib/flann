@@ -5,8 +5,8 @@ import tango.text.convert.Sprint;
 
 import commands.GenericCommand;
 import commands.IndexCommand;
-import util.logger;
-import util.utils;
+import util.Logger;
+import util.Utils;
 import nn.ComputeNN;
 import dataset.Features;
 import algo.NNIndex;

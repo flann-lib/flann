@@ -9,10 +9,9 @@ import tango.core.Memory;
 import dataset.Features;
 import algo.all;
 import nn.Testing;
-import util.utils;
-import util.profiler;
-import util.logger;
-import util.utils;
+import util.Profiler;
+import util.Logger;
+import util.Utils;
 
 Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, float indexFactor = 0, float samplePercentage = 0.1)
 {

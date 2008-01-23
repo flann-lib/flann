@@ -62,11 +62,12 @@ class IndexCommand : DefaultCommand
 				inputData!(T) = new Features!(T)();
 				inputData!(T).readFromFile(inputFile);
 			});
+		
+			report("dataset", inputFile);
+			report("input_count", inputData!(T).count);
+			report("input_size", inputData!(T).veclen);
 		}
 		
-		report("dataset", inputFile);
-		report("input_count", inputData!(T).count);
-		report("input_size", inputData!(T).veclen);
 	
 		if (inputData!(T) is null) {
 			throw new Exception("No input data given.");

@@ -113,7 +113,7 @@ Project: nn
  *
  */
 
-module util.optparse;
+module lib.optparse;
 
 private
 {

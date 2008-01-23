@@ -3,7 +3,7 @@ module commands.GenerateRandomCommand;
 import commands.GenericCommand;
 import commands.DefaultCommand;
 
-import util.logger;
+import util.Logger;
 import dataset.DatasetGenerator;
 
 

@@ -3,7 +3,7 @@ Project: nn
 */
 
 
-module util.logger;
+module util.Logger;
 
 import tango.util.log.Log;
 import tango.util.log.ConsoleAppender;

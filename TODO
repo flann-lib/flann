@@ -14,6 +14,8 @@
 
 - fix write performance for dat files
 
+- speedup heap operations by using a smaller double-ended heap: http://www.diku.dk/forskning/performance-engineering/Jesper/heaplab/heapsurvey_html/node11.html#SECTION00400000000000000000
+
 
 - profiling and optimization (GPU?, BLAS?, BLADE?)
 - checkout NVIDIA CUDA library for GPU optimized computations

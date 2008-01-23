@@ -8,7 +8,7 @@ Conversion to D: Marius Muja
 
 *************************************************************************/
 
-module util.utils;
+module util.Utils;
 
 import tango.util.Convert;
 import tango.core.Array;
@@ -19,7 +19,6 @@ import lib.variant;
 import util.Logger;
 import util.defines;
 
-//public import util.dist;
 
 template MAX(T) {
 	T MAX(T x, T y) { return x > y ? x : y; }
@@ -59,7 +58,6 @@ static this()
 
 ********************************************************************************/
 import tango.io.FileConduit;
-import tango.scrapple.PlainTextProtocol;
 public import tango.io.stream.FileStream;
 public import tango.io.stream.LineStream;
 public import tango.io.stream.BufferStream;
@@ -157,23 +155,6 @@ void withOpenFile(string file, void delegate(FormatOutput) action)
 {
 	auto stream = new FormatOutput(new FileOutput(file));
 	scope (exit) stream.close();
-	action(stream);
-}
-
-
-void withOpenFile(string file, void delegate(Reader) action) 
-{
-	auto conduit = new FileInput(file);
-	auto stream = new Reader(new PlainTextProtocol(conduit,false));
-	scope (exit) conduit.close();
-	action(stream);
-}
-
-void withOpenFile(string file, void delegate(Writer) action) 
-{
-	auto conduit = new FileInput(file);
-	auto stream = new Writer(new PlainTextProtocol(conduit,false));
-	scope (exit) conduit.close();
 	action(stream);
 }
 
