@@ -20,12 +20,12 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	/* Check the number of input arguments */ 
 	if(nInArray != 4) {
 		mexErrMsgTxt("Incorrect number of input arguments, expecting:\n"
-		"dataset, testset, nearest_neighbors, params");
+		"selector, dataset, testset, nearest_neighbors, params");
 	}
 
-	/* Check if there is one Output matrix */ 
-	if(nOutArray != 1) {
-		mexErrMsgTxt("One output required.");
+	/* Check the number of output arguments */ 
+	if (nOutArray != 1 && nOutArray != 2) {
+		mexErrMsgTxt("Incorrect number of outputs.");
 	}
 		
 	const mxArray* datasetMat = InArray[0];
@@ -54,7 +54,6 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	float* testset = (float*) mxGetData(testsetMat);
 	int* result = (int*)malloc(tcount*nn*sizeof(int));
 	
-	
 	const mxArray* pMat = InArray[3];
 
 	int pSize = mxGetN(pMat)*mxGetM(pMat);
@@ -64,13 +63,18 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	
 	double* pp = mxGetPr(pMat);
 
-	if (pSize==1) { 
+	Parameters p;
+	if (pSize==1) {
+		float target_precision = pp[0];
+		if (target_precision>100 || target_precision<0) {
+			mexErrMsgTxt("Target precision must be between 0 and 100");
+		}
+		
 		/* pp contains desired precision */
-		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, pp[0], NULL);
+		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, pp[0], &p);
 	}
 	else {
 		/* pp contains index & search parameters */
-		Parameters p;
 		p.checks=(int)pp[0];
 		p.algo = (Algorithm)pp[1];
 		p.trees=(int)pp[2];
@@ -78,14 +82,26 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 		p.iterations=(int)pp[4];
 		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, -1, &p);			
 	}	
-		
-	/* Allocate memory for Output Matrix */ 
-	OutArray[0] = mxCreateDoubleMatrix(tcount, nn, mxREAL);	
 	
+	/* Allocate memory for Output Matrix */ 
+	OutArray[0] = mxCreateDoubleMatrix(tcount, nn, mxREAL);
+		
 	/* Get pointer to Output matrix and store result*/ 
 	double* pOut = mxGetPr(OutArray[0]);
 	for (int i=0;i<tcount*nn;++i) {
 		pOut[i] = result[i];
+	}
+	free(result);
+	
+	if (nOutArray == 2) {
+		OutArray[1] = mxCreateDoubleMatrix(1, 5, mxREAL);
+		double* pParams = mxGetPr(OutArray[1]);
+		
+		pParams[0] = p.checks;
+		pParams[1] = p.algo;
+		pParams[2] = p.trees;
+		pParams[3] = p.branching;
+		pParams[4] = p.iterations;
 	}
 }
 
@@ -137,6 +153,7 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	for (int i=0;i<tcount*nn;++i) {
 		pOut[i] = result[i];
 	}
+	free(result);
 }
 
 static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
@@ -146,9 +163,9 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		mexErrMsgTxt("Incorrect number of input arguments");
 	}
 
-	/* Check if there is one Output matrix */ 
-	if(nOutArray != 1) {
-		mexErrMsgTxt("One output required.");
+	/* Check the number of output arguments */ 
+	if (nOutArray != 1 && nOutArray != 2) {
+		mexErrMsgTxt("Incorrect number of outputs.");
 	}
 		
 	const mxArray* datasetMat = InArray[0];
@@ -170,20 +187,26 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	double* pp = mxGetPr(pMat);
 
 	NN_INDEX indexID;
-	if (pSize==1) { 
+		Parameters p;
+	if (pSize==1) {
+		float target_precision = pp[0];
+		if (target_precision>100 || target_precision<0) {
+			mexErrMsgTxt("Target precision must be between 0 and 100");
+		}
+		
 		/* pp contains desired precision */
-		indexID = build_index(dataset,dcount,length, pp[0], NULL);
+		indexID = build_index(dataset,dcount,length, pp[0], &p);
 	}
 	else {
 		/* pp contains index & search parameters */
-		Parameters p;
 		p.checks=(int)pp[0];
 		p.algo = (Algorithm)pp[1];
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
-		indexID = build_index(dataset,dcount,length, -1, &p);
+		indexID = build_index(dataset,dcount,length, -1, &p);		
 	}	
+
 		
 	/* Allocate memory for Output Matrix */ 
 	OutArray[0] = mxCreateDoubleMatrix(1, 1, mxREAL);	
@@ -191,47 +214,18 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	/* Get pointer to Output matrix and store result*/ 
 	double* pOut = mxGetPr(OutArray[0]);
 	pOut[0] = indexID;
-}
 
-static void _estimate_parameters(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
-{
-	/* Check the number of input arguments */ 
-	if(nInArray != 2) {
-		mexErrMsgTxt("Incorrect number of input arguments, expecting:\n"
-		"dataset, target_precision");
-	}
-
-	/* Check if there is one Output matrix */ 
-	if(nOutArray != 1) {
-		mexErrMsgTxt("One output required.");
-	}
+	if (nOutArray == 2) {
+		OutArray[1] = mxCreateDoubleMatrix(1, 5, mxREAL);
+		double* pParams = mxGetPr(OutArray[1]);
 		
-	const mxArray* datasetMat = InArray[0];
-	const mxArray* precisionMat = InArray[1];
-	
-	if (!mxIsSingle(datasetMat)) {
-		mexErrMsgTxt("Need single precision datasets for now...");
-	}	 
+		pParams[0] = p.checks;
+		pParams[1] = p.algo;
+		pParams[2] = p.trees;
+		pParams[3] = p.branching;
+		pParams[4] = p.iterations;
+	}
 
-	int dcount = mxGetN(datasetMat);
-	int length = mxGetM(datasetMat);
-	float* dataset = (float*) mxGetData(datasetMat);
-	float target_precision = *mxGetPr(precisionMat);
-	
-	Parameters p = estimate_index_parameters(dataset, dcount, length, target_precision);
-
-	
-	/* Allocate memory for Output Matrix */ 
-	OutArray[0] = mxCreateDoubleMatrix(1, 5, mxREAL);	
-	
-	/* Get pointer to Output matrix and store result*/ 
-	double* pOut = mxGetPr(OutArray[0]);
-	
-	pOut[0] = p.checks;
-	pOut[1] = p.algo;
-	pOut[2] = p.trees;
-	pOut[3] = p.branching;
-	pOut[4] = p.iterations;
 }
 
 static void _free_index(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
@@ -257,7 +251,6 @@ void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray
 		"find_nn\n"
 		"build_index\n"
 		"index_find_nn\n"
-		"estimate_parameters\n"
 		"free_index");
 	}
 	
@@ -272,9 +265,6 @@ void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray
 	}
 	else if (strcmp(selector,"index_find_nn")==0) {
 		_find_nearest_neighbors_index(nOutArray,OutArray, nInArray-1, InArray+1);
-	}
-	else if (strcmp(selector,"estimate_parameters")==0) {
-		_estimate_parameters(nOutArray,OutArray, nInArray-1, InArray+1);
 	}
 	else if (strcmp(selector,"free_index")==0) {
 		_free_index(nOutArray,OutArray, nInArray-1, InArray+1);
