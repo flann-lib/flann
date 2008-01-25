@@ -20,7 +20,7 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	/* Check the number of input arguments */ 
 	if(nInArray != 4) {
 		mexErrMsgTxt("Incorrect number of input arguments, expecting:\n"
-		"dataset, testset, neighbors_number, params");
+		"dataset, testset, nearest_neighbors, params");
 	}
 
 	/* Check if there is one Output matrix */ 
@@ -218,9 +218,20 @@ static void _estimate_parameters(int nOutArray, mxArray *OutArray[], int nInArra
 	float* dataset = (float*) mxGetData(datasetMat);
 	float target_precision = *mxGetPr(precisionMat);
 	
-	estimate_index_parameters(dataset, dcount, length, target_precision);
+	Parameters p = estimate_index_parameters(dataset, dcount, length, target_precision);
 
-
+	
+	/* Allocate memory for Output Matrix */ 
+	OutArray[0] = mxCreateDoubleMatrix(1, 5, mxREAL);	
+	
+	/* Get pointer to Output matrix and store result*/ 
+	double* pOut = mxGetPr(OutArray[0]);
+	
+	pOut[0] = p.checks;
+	pOut[1] = p.algo;
+	pOut[2] = p.trees;
+	pOut[3] = p.branching;
+	pOut[4] = p.iterations;
 }
 
 static void _free_index(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
