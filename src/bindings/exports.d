@@ -1,13 +1,14 @@
 module bindings.exports;
 
 import tango.core.Memory;
-import tango.io.Stdout;
 
 import algo.all;
 import dataset.Features;
 import util.Allocator;
 import util.Utils;
 import nn.Autotune;
+
+debug import util.Logger;
 
 extern(C):
 
@@ -29,6 +30,7 @@ struct Parameters {
 alias int NN_INDEX;
 
 Object nn_ids[64];
+Object features[64];
 int nn_ids_count;
 
 static this()
@@ -112,40 +114,35 @@ private Features!(T) makeFeatures(T)(T* dataset, int count, int length)
 	return inputData;
 }
 
-Parameters estimate_index_parameters(float* dataset, int count, int length, float target_precision)
-{
-	auto inputData = makeFeatures(dataset,count,length);
-	Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
-	delete inputData;
-	
-	params["checks"] = 45;
-	
-	Parameters p;
-	
-	return paramsToParameters(params);
-}
-
 NN_INDEX build_index(float* dataset, int count, int length, float target_precision, Parameters* parameters)
 {	
 	auto inputData = makeFeatures(dataset,count,length);
 	
-	Parameters p;	
-	if (parameters !is null) {
-		p = *parameters;
+	
+	NNIndex index;
+	if (target_precision < 0) {
+		Params params = parametersToParams(*parameters);
+		char[] algorithm = params["algorithm"].get!(char[]);		
+		index = indexRegistry!(float)[algorithm](inputData, params);
+		index.buildIndex();
 	}
 	else {
-		p = estimate_index_parameters(dataset, count, length, target_precision);
+		Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
+		char[] algorithm = params["algorithm"].get!(char[]);		
+		index = indexRegistry!(float)[algorithm](inputData, params);
+		index.buildIndex();
+		params["checks"] = estimateSearchParams(index,inputData,target_precision);
+		
+		*parameters = paramsToParameters(params);
 	}
 	
-	Params params = parametersToParams(p);
-	char[] algorithm = params["algorithm"].get!(char[]);
-	
-	NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
-	index.buildIndex();
 	
 	NN_INDEX indexID = nn_ids_count++;
 	nn_ids[indexID] = index;
-	
+	features[indexID] = inputData;
+		
+/+	GC.setAttr(nn_ids.ptr,GC.BlkAttr.NO_SCAN);
+	GC.collect();+/
 	return indexID;
 }
 
@@ -154,20 +151,22 @@ void find_nearest_neighbors(float* dataset, int count, int length, float* testse
 {
 	auto inputData = makeFeatures(dataset,count,length);
 	
-	Parameters p;	
-	if (parameters !is null) {
-		p = *parameters;
+	NNIndex index;
+	if (target_precision < 0) {
+		Params params = parametersToParams(*parameters);
+		char[] algorithm = params["algorithm"].get!(char[]);		
+		index = indexRegistry!(float)[algorithm](inputData, params);
+		index.buildIndex();
 	}
-	else {
-		p = estimate_index_parameters(dataset, count, length, target_precision);
-		p.checks = 32;
+	else {	
+		Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
+		char[] algorithm = params["algorithm"].get!(char[]);		
+		index = indexRegistry!(float)[algorithm](inputData, params);
+		index.buildIndex();
+		params["checks"] = estimateSearchParams(index,inputData,target_precision);
+		
+		*parameters = paramsToParameters(params);
 	}
-	return;
-	Params params = parametersToParams(p);
-	char[] algorithm = params["algorithm"].get!(char[]);
-	
-	NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
-	index.buildIndex();
 	
 	int skipMatches = 0;
 	ResultSet resultSet = new ResultSet(nn+skipMatches);
@@ -216,14 +215,43 @@ void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount,
 			}
 			delete resultSet;
 		}
+		else {
+			throw new Exception("Invalid index ID");
+		}
+	} 
+	else {
+		throw new Exception("Invalid index ID");
 	}
+// 	GC.collect();
 }
 
 void free_index(NN_INDEX index_id)
 {
 	if (index_id < nn_ids_count) {
 		Object index = nn_ids[index_id];
+		Object inputData = features[index_id];
 		nn_ids[index_id] = null;
+		features[index_id] = null;
 		delete index;
+		delete inputData;
 	}
+	GC.collect();
+}
+
+void compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, Parameters* parameters)
+{
+	auto inputData = makeFeatures(dataset,count,length);
+	
+	Params params = parametersToParams(*parameters);
+	char[] algorithm = params["algorithm"].get!(char[]);		
+	NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
+	
+	float[][] centers = index.getClusterCenters(clusters);
+	
+	foreach(c;centers) {
+		result[0..length] = c;
+		result+=length;
+	}
+	
+	GC.collect();
 }

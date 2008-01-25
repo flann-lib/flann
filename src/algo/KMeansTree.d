@@ -669,8 +669,7 @@ class KMeansTree(T) : NNIndex
 		float variance;
 		KMeansNode[] clusters = getMinVarianceClusters(root[0], numClusters, variance);
 
-		static float[][] centers;
-		if (centers is null) centers = new float[][clusters.length];
+		float[][] centers = new float[][clusters.length];
 		
 		logger.info(sprint("Mean cluster variance for {} top level clusters: {}",clusters.length,variance));
 		
