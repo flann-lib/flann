@@ -35,7 +35,7 @@ NN_INDEX build_index(float* dataset, int count, int length, float target_precisi
 
 void find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters);
 
-void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, float target_precision, int checks);
+void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks);
 
 void free_index(NN_INDEX indexID);
 

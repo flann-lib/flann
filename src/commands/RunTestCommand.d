@@ -82,7 +82,6 @@ class RunTestCommand : IndexCommand
 		if (testData.match is null) {
 			throw new Exception("There are no correct matches to compare to, aborting test phase.");
 		}
-		
 		report("test_count", testData.count);
 		report("nn", nn);
 		
@@ -102,7 +101,10 @@ class RunTestCommand : IndexCommand
 				testNNIndex!(T,true,true)(index,inputData!(T),testData, c, nn, skipMatches);
 			}
 		}
-
+		
+		delete index;
+		delete inputData!(T);
+		delete testData;
 	}
 	
 

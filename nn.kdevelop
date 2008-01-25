@@ -40,20 +40,23 @@
       <makebin></makebin>
       <defaulttarget>program</defaulttarget>
       <makeoptions></makeoptions>
-      <selectedenvironment>profile</selectedenvironment>
+      <selectedenvironment>debug_profile</selectedenvironment>
       <environments>
         <default/>
         <debug>
           <envvar value="debug" name="PROFILE" />
         </debug>
-        <debug_unittest>
-          <envvar value="debug" name="CONFIGURATION" />
-          <envvar value="yes" name="UNIT_TEST" />
-        </debug_unittest>
         <profile>
           <envvar value="debug" name="PROFILE" />
           <envvar value="gprof" name="PROFILER" />
         </profile>
+        <default_profile>
+          <envvar value="gprof" name="PROFILER" />
+        </default_profile>
+        <debug_profile>
+          <envvar value="debug" name="PROFILE" />
+          <envvar value="gprof" name="PROFILER" />
+        </debug_profile>
       </environments>
     </make>
     <filetypes>
@@ -183,12 +186,13 @@
       <otherbin></otherbin>
       <defaulttarget></defaulttarget>
       <otheroptions></otheroptions>
-      <selectedenvironment>profile</selectedenvironment>
+      <selectedenvironment>default_profile</selectedenvironment>
       <environments>
         <debug/>
         <vector/>
         <default/>
         <profile/>
+        <default_profile/>
       </environments>
     </other>
   </kdevcustomproject>
@@ -333,7 +337,7 @@
     </tree>
   </kdevfileview>
   <ctagspart>
-    <customArguments/>
+    <customArguments></customArguments>
     <customTagfilePath>/home/marius/ubc/nn/tags</customTagfilePath>
     <activeTagsFiles/>
   </ctagspart>

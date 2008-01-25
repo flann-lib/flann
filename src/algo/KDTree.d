@@ -113,6 +113,8 @@ class KDTree(T) : NNIndex{
 	*/
 	public this(Features!(T) inputData, Params params)
 	{
+		pool = new PooledAllocator();
+	
 		numTrees_ = params["trees"].get!(uint);
 		vcount = inputData.count;
 		veclen = inputData.veclen;
@@ -196,8 +198,10 @@ class KDTree(T) : NNIndex{
 	*/
 	private void ChooseDivision(Tree node, int first, int last)
 	{
-		mixin(allocate_static("float[veclen] mean;"));
-		mixin(allocate_static("float[veclen] var;"));
+		scope float[] mean = new float[veclen];
+		scope float[] var = new float[veclen];
+/+		mixin(allocate_static("float[veclen] mean;"));
+		mixin(allocate_static("float[veclen] var;"));+/
 		
 		mean[] = 0.0;
 		var[] = 0.0;

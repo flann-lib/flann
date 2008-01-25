@@ -63,6 +63,9 @@ class Features(T = float) {
 	
 	public ~this()
 	{
+		if (match !is null) {
+			free(match);
+		}
 		free(vecs);
 	}
 
@@ -94,10 +97,13 @@ class Features(T = float) {
 		auto gridData = new DatFormatHandler!(int)();		
 		int[][] values = gridData.read(file);
 		
-		match.length = values.length;
-		foreach (v;values) {
-			match[v[0]] = v[1..$];
-		}		
+		if (values.length >= 1) {
+			match = allocate!(int[][])(values.length, values[0].length-1);
+			foreach (v;values) {
+				match[v[0]][] = v[1..$];
+			}
+		}
+		free(values);
 	}
 	
 	

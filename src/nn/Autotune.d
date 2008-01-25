@@ -13,7 +13,7 @@ import util.Profiler;
 import util.Logger;
 import util.Utils;
 
-Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, float indexFactor = 0, float samplePercentage = 0.1)
+Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, float indexFactor = 0, float samplePercentage = 10)
 {
 	float[] doSearch(int times, float delegate() action)
 	{

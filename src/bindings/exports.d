@@ -1,5 +1,8 @@
 module bindings.exports;
 
+import tango.core.Memory;
+import tango.io.Stdout;
+
 import algo.all;
 import dataset.Features;
 import util.Allocator;
@@ -30,6 +33,8 @@ int nn_ids_count;
 
 static this()
 {
+	GC.disable(); // disable garbage collector and do manual memory allocation
+	
 	nn_ids_count = 0;
 }
 
@@ -66,6 +71,7 @@ private {
 	Parameters paramsToParameters(Params params)
 	{
 		Parameters p;
+		
 		p.checks = params["checks"].get!(int);
 		p.trees = params["trees"].get!(int);
 		p.iterations = params["max-iterations"].get!(int);
@@ -96,14 +102,12 @@ void nn_term()
 
 private Features!(T) makeFeatures(T)(T* dataset, int count, int length)
 {
-	auto allocator = new Allocator();
-	
-	T[][] vecs = allocator.allocate!(T[][])(count);
+	T[][] vecs = allocate!(T[][])(count);
 	for (int i=0;i<count;++i) {
 		vecs[i] = dataset[0..length];
 		dataset += length;
 	}
-	auto inputData = new Features!(T)(vecs,allocator);
+	auto inputData = new Features!(T)(vecs);
 	
 	return inputData;
 }
@@ -111,8 +115,13 @@ private Features!(T) makeFeatures(T)(T* dataset, int count, int length)
 Parameters estimate_index_parameters(float* dataset, int count, int length, float target_precision)
 {
 	auto inputData = makeFeatures(dataset,count,length);
-	
 	Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
+	delete inputData;
+	
+	params["checks"] = 45;
+	
+	Parameters p;
+	
 	return paramsToParameters(params);
 }
 
@@ -151,7 +160,9 @@ void find_nearest_neighbors(float* dataset, int count, int length, float* testse
 	}
 	else {
 		p = estimate_index_parameters(dataset, count, length, target_precision);
+		p.checks = 32;
 	}
+	return;
 	Params params = parametersToParams(p);
 	char[] algorithm = params["algorithm"].get!(char[]);
 	
@@ -173,20 +184,20 @@ void find_nearest_neighbors(float* dataset, int count, int length, float* testse
 		resultIndex += nn;
 		testset += length;
 	}
+	
+	delete resultSet;
+	delete index;
+	delete inputData;
+	GC.collect();
 }
 
-void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, float target_precision, int checks)
+void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks)
 {
 	if (index_id < nn_ids_count) {
 		Object indexObj = nn_ids[index_id];
 		if (indexObj !is null) {
 			NNIndex index = cast(NNIndex) indexObj;
 			int length = index.length;
-				
-			if (target_precision >= 0 && target_precision <=100) {
-				auto testData = makeFeatures(testset,tcount,length);
-				checks = estimateSearchParams!(float)(index, testData, target_precision);
-			}
 			
 			int skipMatches = 0;
 			ResultSet resultSet = new ResultSet(nn+skipMatches);
@@ -203,6 +214,7 @@ void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount,
 				resultIndex += nn;
 				testset += length;
 			}
+			delete resultSet;
 		}
 	}
 }

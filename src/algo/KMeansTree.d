@@ -17,7 +17,6 @@ import util.Heap;
 
 class KMeansTree(T) : NNIndex
 {
-	//mixin class_allocator;
 	
 	static const NAME = "kmeans";
 

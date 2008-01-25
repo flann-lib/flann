@@ -19,7 +19,8 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 {
 	/* Check the number of input arguments */ 
 	if(nInArray != 4) {
-		mexErrMsgTxt("Incorrect number of input arguments");
+		mexErrMsgTxt("Incorrect number of input arguments, expecting:\n"
+		"dataset, testset, neighbors_number, params");
 	}
 
 	/* Check if there is one Output matrix */ 
@@ -126,13 +127,7 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	int ppSize = mxGetN(pMat)*mxGetM(pMat);
 	double* pp = mxGetPr(pMat);
 
-	if (ppSize==1) { 
-		/* pp contains desired precision */
-		find_nearest_neighbors_index(indexID,testset, tcount, result, nn, pp[0], -1);
-	}
-	else {
-		find_nearest_neighbors_index(indexID,testset, tcount, result, nn, -1, (int)pp[0]);
-	}	
+	find_nearest_neighbors_index(indexID,testset, tcount, result, nn, (int)pp[0]);
 		
 	/* Allocate memory for Output Matrix */ 
 	OutArray[0] = mxCreateDoubleMatrix(tcount, nn, mxREAL);	
@@ -200,6 +195,31 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 
 static void _estimate_parameters(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
 {
+	/* Check the number of input arguments */ 
+	if(nInArray != 2) {
+		mexErrMsgTxt("Incorrect number of input arguments, expecting:\n"
+		"dataset, target_precision");
+	}
+
+	/* Check if there is one Output matrix */ 
+	if(nOutArray != 1) {
+		mexErrMsgTxt("One output required.");
+	}
+		
+	const mxArray* datasetMat = InArray[0];
+	const mxArray* precisionMat = InArray[1];
+	
+	if (!mxIsSingle(datasetMat)) {
+		mexErrMsgTxt("Need single precision datasets for now...");
+	}	 
+
+	int dcount = mxGetN(datasetMat);
+	int length = mxGetM(datasetMat);
+	float* dataset = (float*) mxGetData(datasetMat);
+	float target_precision = *mxGetPr(precisionMat);
+	
+	estimate_index_parameters(dataset, dcount, length, target_precision);
+
 
 }
 
@@ -221,12 +241,13 @@ void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray
    		started = 1;
    	}
 	
-	if(nInArray == 0) {
-		mexErrMsgTxt("Incorrect number of input arguments");
-	}
-	
-	if (!mxIsChar(InArray[0])) {
-		mexErrMsgTxt("Expecting first argument to be a string");
+	if(nInArray == 0 || !mxIsChar(InArray[0])) {
+		mexErrMsgTxt("Expecting first argument to be one of:\n"
+		"find_nn\n"
+		"build_index\n"
+		"index_find_nn\n"
+		"estimate_parameters\n"
+		"free_index");
 	}
 	
 	char selector[64];

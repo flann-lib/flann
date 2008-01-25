@@ -24,7 +24,6 @@ class IndexCommand : DefaultCommand
 	bool byteFeatures;
 	string centersAlgorithm;
 	int maxIter;
-	bool useParamsFile;
 	
 	protected {
 		NNIndex index;
@@ -47,7 +46,6 @@ class IndexCommand : DefaultCommand
 		register(byteFeatures,"B","byte-features", null ,"Use byte-sized feature elements.");
 		register(centersAlgorithm,"C","centers-algorithm", "random","Algorithm to choose cluster centers for kmeans (default: random).");
 		register(maxIter,"M","max-iterations", int.max,"Max iterations to perform for kmeans (default: until convergence).");		
-		register(useParamsFile,"U","use-params-file", null,"Use the file with autotuned params.");		
  		
  		description = "Index the input dataset.";
 	}
@@ -79,12 +77,7 @@ class IndexCommand : DefaultCommand
 			maxIter = int.max;
 		}
 				
-		if (useParamsFile) {
-			if (paramsFile == "") {
-				paramsFile = inputFile~".params";
-				logger.info("No params file given, trying "~paramsFile);
-			}
-			
+		if (paramsFile != "") {
 			try {
 				params.load(paramsFile);
 			}

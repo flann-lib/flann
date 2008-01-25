@@ -12,7 +12,7 @@ endif
 DFLAGS := ${DFLAGS}
 
 ifeq ($(PROFILER),gprof)
-	DFLAGS := ${DFLAGS} -q,-pg -K-q,-pg
+	DFLAGS := ${DFLAGS} -C-q,-pg -K-q,-pg
 endif
 
 ifndef PROFILE
