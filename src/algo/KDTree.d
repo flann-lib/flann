@@ -85,7 +85,7 @@ class KDTree(T) : NNIndex{
 		compute the mean and variance at each level when building a tree.
 		A value of 100 seems to perform as well as using all values.
 	*/
-	const int SampleMean = 400;
+	const int SampleMean = 100;
 		
 	/*--------------------- Internal Data Structures --------------------------*/
 	
@@ -200,8 +200,6 @@ class KDTree(T) : NNIndex{
 	{
 		scope float[] mean = new float[veclen];
 		scope float[] var = new float[veclen];
-/+		mixin(allocate_static("float[veclen] mean;"));
-		mixin(allocate_static("float[veclen] var;"));+/
 		
 		mean[] = 0.0;
 		var[] = 0.0;
@@ -210,22 +208,23 @@ class KDTree(T) : NNIndex{
 			sampled to get a good estimate.
 		*/
 		int end = MIN(first + SampleMean, last);
-		int ind, count = 0;
+		int count = end - first + 1;
 		for (int j = first; j <= end; ++j) {
-			count++;
-			ind = vind[j];
-			for (int i = 0; i < veclen; ++i)
-				mean[i] += vecs[ind][i];
+			T[] v = vecs[vind[j]];
+			foreach (i,ref elem; v) {
+				mean[i] += elem;
+			}
 		}
-		for (int i = 0; i < veclen; ++i)
-			mean[i] /= count;
+		foreach (ref elem; mean) {
+			elem /= count;
+		}
 	
+		
 		/* Compute variances (no need to divide by count). */
 		for (int j = first; j <= end; ++j) {
-			ind = vind[j];
-			for (int i = 0; i < veclen; ++i) {
-				float val = vecs[ind][i];
-				float dist = val - mean[i];
+			T[] v = vecs[vind[j]];
+			foreach (i, ref elem; v) {
+				float dist = elem - mean[i];
 				var[i] += dist * dist;
 			}
 		}
