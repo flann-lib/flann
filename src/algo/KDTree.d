@@ -44,6 +44,7 @@ import util.Heap;
 import util.Logger;
 
 
+import tango.stdc.stdlib : alloca;
 
 /* Contains the k-d trees and other information for indexing a set of points
    for nearest-neighbor matching.
@@ -76,16 +77,16 @@ class KDTree(T) : NNIndex{
 	/*--------------------------- Constants -----------------------------*/
 	
 	/* When creating random trees, the dimension on which to subdivide is
-		selected at random from among the top RandDim dimensions with the
+		selected at random from among the top RAND_DIM dimensions with the
 		highest variance.  A value of 5 works well.
 	*/
-	const int RandDim=5;
+	const int RAND_DIM=5;
 	
-	/* To improve efficiency, only SampleMean random values are used to
+	/* To improve efficiency, only SAMPLE_MEAN random values are used to
 		compute the mean and variance at each level when building a tree.
 		A value of 100 seems to perform as well as using all values.
 	*/
-	const int SampleMean = 100;
+	const int SAMPLE_MEAN = 100;
 		
 	/*--------------------- Internal Data Structures --------------------------*/
 	
@@ -148,7 +149,7 @@ class KDTree(T) : NNIndex{
 				swap(vind[j], vind[rand]);
 			}
 			trees[i] = null;
-			DivideTree(& trees[i], 0, vcount - 1);
+			divideTree(&trees[i], 0, vcount - 1);
 		}
 		
 		//Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
@@ -174,7 +175,7 @@ class KDTree(T) : NNIndex{
 		to vind[last].  The routine is called recursively on each sublist.
 		Place a pointer to this new tree node in the location pTree. 
 	*/
-	private void DivideTree(Tree* pTree, int first, int last)
+	private void divideTree(Tree* pTree, int first, int last)
 	{
 		Tree node;
 	
@@ -186,8 +187,8 @@ class KDTree(T) : NNIndex{
 			node.child1 = node.child2 = null;    /* Mark as leaf node. */
 			node.divfeat = vind[first];    /* Store index of this vec. */
 		} else {
-			ChooseDivision(node, first, last);
-			Subdivide(node, first, last);
+			chooseDivision(node, first, last);
+			subdivide(node, first, last);
 		}
 	}
 	
@@ -196,18 +197,25 @@ class KDTree(T) : NNIndex{
 		Make a random choice among those with the highest variance, and use
 		its variance as the threshold value.
 	*/
-	private void ChooseDivision(Tree node, int first, int last)
+	private void chooseDivision(Tree node, int first, int last)
 	{
-		scope float[] mean = new float[veclen];
-		scope float[] var = new float[veclen];
+// 		scope float[] mean = new float[veclen];
+// 		scope float[] var = new float[veclen];
+/+		float[] mean = (cast(float*)alloca(veclen*float.sizeof))[0..veclen];
+		float[] var = (cast(float*)alloca(veclen*float.sizeof))[0..veclen];+/
+		
+		float[] mean =  allocate!(float[])(veclen);
+		float[] var =  allocate!(float[])(veclen);
+		scope(exit) free(mean);
+		scope(exit) free(var);
 		
 		mean[] = 0.0;
 		var[] = 0.0;
 		
-		/* Compute mean values.  Only the first SampleMean values need to be
+		/* Compute mean values.  Only the first SAMPLE_MEAN values need to be
 			sampled to get a good estimate.
 		*/
-		int end = MIN(first + SampleMean, last);
+		int end = MIN(first + SAMPLE_MEAN, last);
 		int count = end - first + 1;
 		for (int j = first; j <= end; ++j) {
 			T[] v = vecs[vind[j]];
@@ -229,75 +237,76 @@ class KDTree(T) : NNIndex{
 			}
 		}
 		/* Select one of the highest variance indices at random. */
-		node.divfeat = SelectDiv(var);
-		node.divval = mean[node.divfeat];
+		node.divfeat = selectDivision(var);
+		node.divval = mean[node.divfeat];		
 	}
 	
 	
-	/* Select the top RandDim largest values from v and return the index of
+	/* Select the top RAND_DIM largest values from v and return the index of
 		one of these selected at random.
 	*/
-	private int SelectDiv(float[] v)
+	private int selectDivision(float[] v)
 	{
-		int i, j, rand, num = 0;
-		int topind[RandDim];
+		int num = 0;
+		int topind[RAND_DIM];
 	
-		/* Create a list of the indices of the top RandDim values. */
-		for (i = 0; i < v.length; i++) {
-			if (num < RandDim  ||  v[i] > v[topind[num-1]]) {
+		/* Create a list of the indices of the top RAND_DIM values. */
+		for (int i = 0; i < v.length; ++i) {
+			if (num < RAND_DIM  ||  v[i] > v[topind[num-1]]) {
 				/* Put this element at end of topind. */
-				if (num < RandDim)
+				if (num < RAND_DIM) {
 					topind[num++] = i;            /* Add to list. */
-				else topind[num-1] = i;         /* Replace last element. */
+				}
+				else {
+					topind[num-1] = i;         /* Replace last element. */
+				}
 				/* Bubble end value down to right location by repeated swapping. */
-				j = num - 1;
+				int j = num - 1;
 				while (j > 0  &&  v[topind[j]] > v[topind[j-1]]) {				
 					swap(topind[j], topind[j-1]);
-					j--;
+					--j;
 				}
 			}
 		}
 		/* Select a random integer in range [0,num-1], and return that index. */
-		//rand = random(num)%num;
-		rand = cast(int) (drand48() * num);
+		int rand = cast(int) (drand48() * num);
 		assert(rand >=0 && rand < num);
 		return topind[rand];
 	}
 	
 	
-	/* Subdivide the list of exemplars using the feature and division
-		value given in this node.  Call DivideTree recursively on each list.
+	/* subdivide the list of exemplars using the feature and division
+		value given in this node.  Call divideTree recursively on each list.
 	*/
-	private void Subdivide(Tree node, int first, int last)
-	{
-		int i, j, ind;
-		float val;
-	
+	private void subdivide(Tree node, int first, int last)
+	{	
 		/* Move vector indices for left subtree to front of list. */
-		i = first;
-		j = last;
+		int i = first;
+		int j = last;
 		while (i <= j) {
-			ind = vind[i];
-			val = vecs[ind][node.divfeat];
+			int ind = vind[i];
+			float val = vecs[ind][node.divfeat];
 			if (val < node.divval) {
-				i++;
+				++i;
 			} else {
 				/* Move to end of list by swapping vind i and j. */
 				swap(vind[i], vind[j]);
-				j--;
+				--j;
 			}
 		}
 		/* If either list is empty, it means we have hit the unlikely case
 			in which all remaining features are identical.  We move one
 			vector to the empty list to avoid need for special case.
 		*/
-		if (i == first)
-			i++;
-		if (i == last + 1)
-			i--;
+		if (i == first) {
+			++i;
+		}
+		if (i == last + 1) {
+			--i;
+		}
 	
-		DivideTree(& node.child1, first, i - 1);
-		DivideTree(& node.child2, i, last);
+		divideTree(& node.child1, first, i - 1);
+		divideTree(& node.child2, i, last);
 	}
 	
 	
@@ -318,9 +327,6 @@ class KDTree(T) : NNIndex{
 	
 	private void GetExactNeighbors(ResultSet result, float[] vec)
 	{
-		int i;
-		BranchSt branch;
-	
 		checkID -= 1;  /* Set a different unique ID for each search. */
 	
 		leafs = 0;
@@ -344,7 +350,7 @@ class KDTree(T) : NNIndex{
 		checkID -= 1;  /* Set a different unique ID for each search. */
 	
 		/* Search once through each tree down to root. */
-		for (i = 0; i < numTrees_; i++) {
+		for (i = 0; i < numTrees_; ++i) {
 			SearchLevel(result, vec, trees[i], 0.0, maxCheck);
 		}
 	
