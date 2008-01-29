@@ -109,16 +109,19 @@ class PooledAllocator
 		allocations be in multiples of the machine wordsize.  */
 	private const 	int 	WORDSIZE=16;   /* Size of machine word in bytes.  Must be power of 2. */	
 	/* Minimum number of bytes requested at a time from	the system.  Must be multiple of WORDSIZE. */
-	private const 	int 	BLOCKSIZE=2048;	
+	private const 	int 	BLOCKSIZE=4096;	
 		
 	private int 	remaining;  /* Number of bytes left in current block of storage. */
 	private void*	base;     /* Pointer to base of current block of storage. */
 	private void*	loc;      /* Current location in block to next allocate memory. */
 	private int 	blocksize;
 	
+	public int 	usedMemory;
+	public int 	wastedMemory;
+	
 	alias	allocate opCall;
 	
-	/* 
+	/**
 		Default constructor. Initializes a new pool.
 	*/
 	public this(int blocksize = BLOCKSIZE)
@@ -126,8 +129,14 @@ class PooledAllocator
 		this.blocksize = blocksize;
 		remaining = 0;
 		base = null;
+		
+		usedMemory = 0;
+		wastedMemory = 0;
 	}
 	
+	/**
+		Destructor. Frees all the memory belonging to this pool.
+	*/
 	public ~this()
 	{
 		free();
@@ -152,6 +161,8 @@ class PooledAllocator
 		*/
 		if (size > remaining) {
 			
+			wastedMemory += remaining;
+			
 		/* Allocate new storage. */
 			blocksize = (size + (void*).sizeof + (WORDSIZE-1) > BLOCKSIZE) ?
 						size + (void*).sizeof + (WORDSIZE-1) : BLOCKSIZE;
@@ -175,6 +186,8 @@ class PooledAllocator
 		void* rloc = loc;
 		loc += size;
 		remaining -= size;
+		
+		usedMemory += size;
 		
 		return rloc;
 	}
