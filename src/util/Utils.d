@@ -173,7 +173,7 @@ void array_copy(U,V)(U[] dst, V[] src)
 	}
 	else {
 		foreach(index,value;src) {
-			dst[index] = convert!(U,V)(value);
+			dst[index] = to!(U)(value);
 		}
 	}
 } 
@@ -188,39 +188,18 @@ void mat_copy(U,V)(U[][] dst, V[][] src)
 	else {
 		foreach(row_index,row;src) {
 			foreach(index,value;row) {
-				dst[row_index][index] = convert!(U,V)(value);
+				dst[row_index][index] = to!(U)(value);
 			}
 		}
 	}
 } 
 
 
-
-
-
-
-
-
-T convert(T,U) (U value) 
-{ 
-	return to!(T)(value);
-}
-
-T[] convert(T : T[],U : U[])(U[] srcVec)
-{
-	static if ( is ( T == U) )
-		return srcVec.dup;
-	else {
-		T[] vec = new T[srcVec.length];
-		foreach (i,value; srcVec) {
-			vec[i] = convert!(T,U)(value);
-		}
-		
-		return vec;
+void add(T,U)(T[] a, U[] b) {
+	foreach(index, inout value; a) {
+		value += b[index];
 	}
 }
-
-
 
 
 /* This record represents a branch point when finding neighbors in
@@ -580,13 +559,16 @@ unittest
 
 
 import algo.dist;
+import util.Allocator;
 public float computeVariance(T)(T[][] points)
 {
 	if (points.length==0) {
 		return 0;
 	}
 	
-	float[] mu = convert!(float[],T[])(points[0]);
+	float[] mu = allocate!(float[])(points[0].length);
+	scope(exit) free(mu);
+	array_copy(mu,points[0]);
 	
 	mu[] = 0;	
 	for (int j=0;j<mu.length;++j) {

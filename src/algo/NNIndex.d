@@ -139,6 +139,11 @@ abstract class NNIndex
 	*/
  	int numTrees();
  	
+	/**
+	 The amount of memory (in bytes) this index uses.
+	*/
+ 	int memoryUsed();
+ 	
  	float[][] getClusterCenters(int number) {
  		throw new Exception("Not implemented");
  	} 	

@@ -184,7 +184,7 @@ version (kdtree_autotune) {
 		return kdtreeParams;
 	}+/
 	
-	logger.info(sprint("Params chosen: {}",compositeParams.toString));
+	logger.info(sprint("Params chosen: {}",compositeParams));
 	
 	return compositeParams;
 }

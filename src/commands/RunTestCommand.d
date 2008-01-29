@@ -58,7 +58,7 @@ class RunTestCommand : IndexCommand
 			checkList = params["checks"].get!(string);
 		}+/
 		
-		checks = convert!(typeof(checks),string[])(split(checkList,","));
+		checks = to!(typeof(checks))(split(checkList,","));
 
 		Features!(float) testData;
 /+		if ((testFile == "") && (inputData !is null)) {

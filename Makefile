@@ -32,14 +32,14 @@ endif
 
 WARNS = -W -Wall
 INCLUDES = -Iinclude
-LIBS = 
-LLIBS = -llc -llgphobos -llm -llpthread -llgcc_s
+LIBS = -llblas
+LLIBS = ${LIBS} -llc -llgphobos -llm -llpthread -llgcc_s
 
 LIB_DFLAGS := -C-q,-fPIC -lib ${DFLAGS} 
 
 ifeq ($(HAS_SQLITE),1)
 	DFLAGS := ${DFLAGS} -version=hasSqlite
-	LIBS := -llsqlite3 -lldl
+	LIBS := ${LIBS} -llsqlite3 -lldl
 endif
 
 TARGET = nn

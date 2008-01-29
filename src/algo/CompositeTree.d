@@ -68,6 +68,10 @@ class CompositeTree(T) : NNIndex
 		return numTrees_;
 	}
 	
+	public int memoryUsed()
+	{
+		return kmeans.memoryUsed+kdtree.memoryUsed;
+	}
 
 	public void buildIndex() 
 	{	

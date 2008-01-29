@@ -52,23 +52,25 @@ class LinearSearch(T): NNIndex {
 	
 	public int numTrees()
 	{
-		return 1;
+		return 0;
+	}
+	
+	public int memoryUsed()
+	{
+		return 0;
 	}
 
 	public void buildIndex() 
 	{
 		/* nothing to do here for linear search */
 	}
-	
-	
+
 	public void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck) 
 	{
 		for (int i=0;i<dataset.count;++i) {
 			resultSet.addPoint(dataset.vecs[i],i);
 		}
 	}
-	
-
 }
 
 mixin AlgorithmRegistry!(LinearSearch!(float),float);

@@ -84,6 +84,9 @@ class KMeansTree(T) : NNIndex
 	
 	public ~this()
 	{
+		logger.info(sprint("KMeansTree used memory: {} KB", pool.usedMemory/1000));
+		logger.info(sprint("KMeansTree wasted memory: {} KB", pool.wastedMemory/1000));
+		logger.info(sprint("KMeansTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
 		delete pool;
 	}
 
@@ -110,6 +113,10 @@ class KMeansTree(T) : NNIndex
 		return numTrees_;
 	}
 	
+	public int memoryUsed()
+	{
+		return  pool.usedMemory+pool.wastedMemory;
+	}
 
 	private int[] getBranchingFactors()	
 	{
@@ -192,7 +199,7 @@ class KMeansTree(T) : NNIndex
 		
 		for (int i=0;i<indices.length;++i) {
 			T[] vec = vecs[indices[i]];
-			addTo(mean,vec);
+			mean.add(vec);
 			variance += squaredDist(vec);
 		}
 		for (int j=0;j<mean.length;++j) {
@@ -284,7 +291,7 @@ class KMeansTree(T) : NNIndex
 		
 			// compute the new clusters
 			foreach (i,index; indices) {
- 				addTo(centers[belongs_to[i]],vecs[index]);
+ 				centers[belongs_to[i]].add(vecs[index]);
 /+				auto vecs_i = vecs[index]; 
 				foreach (k, inout value; centers[belongs_to[i]]) 
 				 	value += vecs_i[k];+/

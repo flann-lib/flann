@@ -43,8 +43,7 @@ import util.Random;
 import util.Heap;
 import util.Logger;
 
-
-import tango.stdc.stdlib : alloca;
+//import tango.stdc.stdlib : alloca;
 
 /* Contains the k-d trees and other information for indexing a set of points
    for nearest-neighbor matching.
@@ -134,6 +133,9 @@ class KDTree(T) : NNIndex{
 	
 	public ~this()
 	{
+		logger.info(sprint("KDTree used memory: {} KB", pool.usedMemory/1000));
+		logger.info(sprint("KDTree wasted memory: {} KB", pool.wastedMemory/1000));
+		logger.info(sprint("KDTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
 		delete pool;
 	}
 	
@@ -170,6 +172,11 @@ class KDTree(T) : NNIndex{
 		return numTrees_;
 	}
 	
+	
+	public int memoryUsed()
+	{
+		return  pool.usedMemory+pool.wastedMemory;
+	}
 	
 	/* Create a tree node that subdivides the list of vecs from vind[first]
 		to vind[last].  The routine is called recursively on each sublist.
@@ -219,15 +226,12 @@ class KDTree(T) : NNIndex{
 		int count = end - first + 1;
 		for (int j = first; j <= end; ++j) {
 			T[] v = vecs[vind[j]];
-			foreach (i,ref elem; v) {
-				mean[i] += elem;
-			}
+			mean.add(v);
 		}
 		foreach (ref elem; mean) {
 			elem /= count;
 		}
 	
-		
 		/* Compute variances (no need to divide by count). */
 		for (int j = first; j <= end; ++j) {
 			T[] v = vecs[vind[j]];
