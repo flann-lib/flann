@@ -16,8 +16,9 @@ import util.Allocator;
 private void findNearest(T,U)(T[][] vecs, U[] query, int[] matches, int skip = 0) 
 {
 	int n = matches.length + skip;
-	mixin(allocate_static("int[n] nn;"));
-	mixin(allocate_static("float[n] dists;"));
+	
+	scope int[] nn = new int[n];
+	scope float[] dists = new float[n];
 	
 	dists[0] = squaredDist(vecs[0], query);
 	int dcnt = 1;

@@ -81,7 +81,7 @@ class ResultSet
 		if (count<indices.length) {
 			indices[count] = index;
 			dists[count] = dist;	
-			count++;
+			++count;
 		} 
 		else if (dist < dists[count-1]) {
 			indices[count-1] = index;

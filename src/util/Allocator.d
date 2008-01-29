@@ -2,8 +2,6 @@ module util.Allocator;
 
 import tango.stdc.stdlib;
 
-import util.defines;
-
 
 
 /**
@@ -62,46 +60,12 @@ public void free(T)(T ptr)
 
 
 
-
-string allocate_static(string declaration)
-{
-	int pos;
-	for (pos = 0; pos<declaration.length;++pos) {
-		if (declaration[pos]=='[') break;
-	}
-	string type = declaration[0..pos];
-	int pos2;	
-	pos++;
-	for (pos2 = pos; pos2<declaration.length;++pos2) {
-		if (declaration[pos2]==']') break;
-	}
-	string size = declaration[pos..pos2];
-	
-	for (pos = pos2+1; pos<declaration.length;++pos) {
-		if (declaration[pos]==' ') continue;
-		break;
-	}
-	for (pos2 = pos; pos2<declaration.length;++pos2) {
-		if (declaration[pos2]==';') break;
-	}
-	
-	string vec = declaration[pos..pos2];
-
-	return 	
-	"static "~type~"[] "~vec~";
-	if ("~vec~" is null || "~vec~".length!="~size~") {
-		"~vec~" = new "~type~"["~size~"];
-	}";
-}
-
-
-
 /** 
 	Template containing the operators for custom allocation using a pool of memory.
 	Using this type of allocation is very efficient for small objects.
 	This template should be 'mixed-in' any object that is desired to be pool-allocated.
 */
-template PooledAllocated(bool saveToGlobal = false)
+template PooledAllocated()
 {
    /** 
    		Custom new operator that allocated the memory for the newly created object
@@ -109,9 +73,6 @@ template PooledAllocated(bool saveToGlobal = false)
    */
    new(size_t sz, PooledAllocator allocator)
    {
-      static if (saveToGlobal) {
-      	globalPooledAllocator = allocator;
-      }
       return allocator.malloc(sz);
    }
 
@@ -123,22 +84,7 @@ template PooledAllocated(bool saveToGlobal = false)
 		// do nothing here, object gets deleted once the pool is deleted
 	}
 }
-private PooledAllocator globalPooledAllocator;
 
-/**
-	Base class for object that are pooled allocated (and also maintain a reference to the pool).
-*/
-class PooledAllocatedObject
-{
-	mixin PooledAllocated!(true);			// mixin the new and delete operators
-	
-	PooledAllocator pool;			// reference to the pooled used to allocate the object
-	
-	this() 
-	{
-		pool = globalPooledAllocator;
-	}
-}
 
 /*-------------------- Pooled storage allocator ---------------------------*/
 
@@ -205,13 +151,14 @@ class PooledAllocator
 			of a block is reserved for a pointer to the previous block.
 		*/
 		if (size > remaining) {
+			
 		/* Allocate new storage. */
 			blocksize = (size + (void*).sizeof + (WORDSIZE-1) > BLOCKSIZE) ?
 						size + (void*).sizeof + (WORDSIZE-1) : BLOCKSIZE;
 						
 			// use the standard C malloc to allocate memory
 			void* m = tango.stdc.stdlib.malloc(blocksize);
-			if (! m) {
+			if (!m) {
 				throw new Exception("Failed to allocate memory.");
 			}
 			
@@ -237,10 +184,10 @@ class PooledAllocator
 	*/
 	public void free()
 	{
-		char *prev;
+		void *prev;
 	
 		while (base != null) {
-			prev = *(cast(char **) base);  /* Get pointer to prev block. */
+			prev = *(cast(void **) base);  /* Get pointer to prev block. */
 			tango.stdc.stdlib.free(base);
 			base = prev;
 		}
