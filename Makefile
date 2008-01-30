@@ -31,7 +31,7 @@ endif
 
 WARNS = -W -Wall
 INCLUDES = -Iinclude
-LIBS = -llblas
+LIBS =
 LLIBS = ${LIBS} -llc -llgphobos -llm -llpthread -llgcc_s
 
 LIB_DFLAGS := -C-q,-fPIC -lib ${DFLAGS} 
