@@ -10,7 +10,7 @@ import algo.NNIndex;
 import output.Console;
 import util.Logger;
 import util.Utils;
-import util.Profiler;
+import util.Profile;
 
 
 static this() {
@@ -45,6 +45,8 @@ class ComputeClustersCommand : IndexCommand
 				//writeToFile(centers, clustersFile);
 			});
 		}
+		
+		delete index;
 	}
 	
 

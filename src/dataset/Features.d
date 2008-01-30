@@ -11,7 +11,7 @@ import dataset.FormatHandler;
 import dataset.DatFormatHandler;
 import dataset.BinaryFormatHandler;
 import util.Logger;
-import util.Profiler;
+import util.Profile;
 import util.Utils;
 import util.Random;
 import util.Allocator;

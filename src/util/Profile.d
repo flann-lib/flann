@@ -1,4 +1,4 @@
-module util.Profiler;
+module util.Profile;
 
 version (Posix) {
  	import tango.stdc.posix.sys.time;
@@ -12,7 +12,6 @@ version (Posix) {
 	}
 
 	extern(C) clock_t times(tms *buf);
- 	
 }
 else {
 	import tango.stdc.time;
@@ -64,7 +63,7 @@ class StartStopTimer
 
 float profile( void delegate() action)
 {
-	StartStopTimer t = new StartStopTimer();
+	scope StartStopTimer t = new StartStopTimer();
 	t.start;
 	action();
 	t.stop;

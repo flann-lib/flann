@@ -29,15 +29,15 @@ void nn_init();
 
 void nn_term();
 
-NN_INDEX build_index(float* dataset, int count, int length, float target_precision, Parameters* parameters);
+NN_INDEX build_index(float* dataset, int rows, int cols, float target_precision, Parameters* parameters);
 
-void find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters);
+void find_nearest_neighbors(float* dataset, int rows, int cols, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters);
 
 void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks);
 
 void free_index(NN_INDEX indexID);
 
-void compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, Parameters* parameters);
+void compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, Parameters* parameters);
 
 #ifdef __cplusplus
 }

@@ -16,11 +16,6 @@ import util.Utils;
 
 class LinearSearch(T): NNIndex {
 
-	void describe(T)(T ar)
-	{
-	}
-
-
 	static string NAME = "linear";
 	
 	Features!(T) dataset;
