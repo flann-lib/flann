@@ -8,7 +8,7 @@ import output.Console;
 import output.Report;
 import util.Logger;
 import util.Utils;
-import util.Profiler;
+import util.Profile;
 
 
 

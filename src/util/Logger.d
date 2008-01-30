@@ -12,7 +12,11 @@ public Logger logger;
 
 static this()
 {
-	Log.getRootLogger().addAppender(new ConsoleAppender());
 	logger = Log.getLogger("log");
+}
+
+void initLogger()
+{
+	logger.addAppender(new ConsoleAppender());
 }
 

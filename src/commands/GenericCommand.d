@@ -5,6 +5,7 @@ import tango.io.Stdout;
 import lib.optparse;
 import lib.variant;
 import util.Utils;
+import util.Logger;
 
 public import util.defines;
 
@@ -86,6 +87,8 @@ abstract class GenericCommand
 		assert(optParser !is null);
 	}
 	body {
+		initLogger();
+		
 		optParser.parse(args);
 		positionalArgs = optParser.positionalArgs;
 		foreach(o;optParser.options) {

@@ -684,14 +684,15 @@ class KMeansTree(T) : NNIndex
 			centers[index] = cluster.pivot;
 		}
 		
+		free(clusters);
+
 		return centers;
 	}
 	
+
 	private KMeansNode[] getMinVarianceClusters(KMeansNode root, int numClusters, out float varianceValue)
 	{
-	
-		static KMeansNode[] clusters;
-		if (clusters==null) clusters = new KMeansNode[numClusters];
+		KMeansNode[] clusters = allocate!(KMeansNode[])(numClusters);
 		
 		int clusterCount = 1;
 		clusters[0] = root;
@@ -717,14 +718,14 @@ class KMeansTree(T) : NNIndex
 				}
 			}
 			
-			if (splitIndex==-1) break;
+			if (splitIndex==-1) break;			
+			if ( (clusters[splitIndex].childs.length+clusterCount) >numClusters) break;
 			
 			meanVariance = minVariance;
 			
 			// split node
 			KMeansNode toSplit = clusters[splitIndex];
 			clusters[splitIndex] = toSplit.childs[0];
-			
 			for (int i=1;i<toSplit.childs.length;++i) {
 				clusters[clusterCount++] = toSplit.childs[i];
 			}

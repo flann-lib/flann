@@ -9,7 +9,7 @@ import tango.core.Memory;
 import dataset.Features;
 import algo.all;
 import nn.Testing;
-import util.Profiler;
+import util.Profile;
 import util.Logger;
 import util.Utils;
 

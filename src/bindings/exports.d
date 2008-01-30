@@ -245,6 +245,7 @@ void compute_cluster_centers(float* dataset, int count, int length, int clusters
 	Params params = parametersToParams(*parameters);
 	char[] algorithm = params["algorithm"].get!(char[]);		
 	NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
+	index.buildIndex();
 	
 	float[][] centers = index.getClusterCenters(clusters);
 	
@@ -253,5 +254,7 @@ void compute_cluster_centers(float* dataset, int count, int length, int clusters
 		result+=length;
 	}
 	
+	delete index;
+	delete centers;
 	GC.collect();
 }

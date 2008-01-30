@@ -5,7 +5,7 @@ import tango.math.Math;
 import algo.NNIndex;
 import dataset.Features;
 import util.Logger;
-import util.Profiler;
+import util.Profile;
 import output.Console;
 import output.Report;
 import algo.dist;

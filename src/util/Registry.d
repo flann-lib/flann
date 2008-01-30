@@ -4,11 +4,8 @@ public import tango.core.Vararg;
 import util.defines;
 
 /*****************************************************
-    
     Generic object registry
-
 *****************************************************/
-
 
 template Register(char[] name, alias Type)
 {
