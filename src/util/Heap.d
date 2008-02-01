@@ -17,6 +17,8 @@ Conversion to D: Marius Muja
 
 module util.Heap;
 
+import output.Console;
+
 class Heap(T) {
 
 	private {
@@ -49,6 +51,7 @@ class Heap(T) {
 		We select the next empty leaf node, and then keep moving any larger
 		parents down until the right location is found to store this element.
 	*/
+	
 	public void insert(in T value)
 	{
 		/* If heap is full, then return without adding this element. */
@@ -66,7 +69,7 @@ class Heap(T) {
 			par = loc / 2;
 		}
 		/* Insert the element at the determined location. */
-		heap[loc] = value;
+		heap[loc] = value;		
 	}
 	
 	

@@ -61,7 +61,7 @@ class AutotuneParams : DefaultCommand
 			throw new Exception("No input data given.");
 		}
 				
-		Params params = estimateBuildIndexParams!(T)(inputData, precision, indexFactor, samplePercentage);
+		Params params = estimateBuildIndexParams2!(T)(inputData, precision, indexFactor, samplePercentage);
 		
  		string algorithm = params["algorithm"].get!(string);
 		NNIndex index = indexRegistry!(T)[algorithm](inputData, params);

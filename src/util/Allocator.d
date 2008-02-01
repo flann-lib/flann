@@ -109,7 +109,7 @@ class PooledAllocator
 		allocations be in multiples of the machine wordsize.  */
 	private const 	int 	WORDSIZE=16;   /* Size of machine word in bytes.  Must be power of 2. */	
 	/* Minimum number of bytes requested at a time from	the system.  Must be multiple of WORDSIZE. */
-	private const 	int 	BLOCKSIZE=4096;	
+	private const 	int 	BLOCKSIZE=8192;	
 		
 	private int 	remaining;  /* Number of bytes left in current block of storage. */
 	private void*	base;     /* Pointer to base of current block of storage. */

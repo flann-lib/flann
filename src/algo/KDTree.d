@@ -44,6 +44,7 @@ import util.Heap;
 import util.Logger;
 
 //import tango.stdc.stdlib : alloca;
+import tango.core.Thread;
 
 /* Contains the k-d trees and other information for indexing a set of points
    for nearest-neighbor matching.
@@ -212,8 +213,8 @@ class KDTree(T) : NNIndex{
 		float[] var = (cast(float*)alloca(veclen*float.sizeof))[0..veclen];+/
 		
 		float[] mean =  allocate!(float[])(veclen);
-		float[] var =  allocate!(float[])(veclen);
 		scope(exit) free(mean);
+		float[] var =  allocate!(float[])(veclen);
 		scope(exit) free(var);
 		
 		mean[] = 0.0;
@@ -308,7 +309,7 @@ class KDTree(T) : NNIndex{
 		if (i == last + 1) {
 			--i;
 		}
-	
+		
 		divideTree(& node.child1, first, i - 1);
 		divideTree(& node.child2, i, last);
 	}
@@ -367,9 +368,7 @@ class KDTree(T) : NNIndex{
 		
 		assert(result.full);
 	}
-	
-	
-	import output.Console;
+		
 	/* Search starting from a given node of the tree.  Based on any mismatches at
 		higher levels, all exemplars below this level must have a distance of
 		at least "mindistsq". 
