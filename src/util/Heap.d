@@ -73,24 +73,24 @@ class Heap(T) {
 	}
 	
 	
-	public void remove(in T value)
-	{
-		if (count == 0) {
- 			return;
-		}
-		
-		int ind = 1;
-		while (ind<=count) {
-			if (heap[ind]==value) {
-				swap(heap[ind],heap[count]);
-				count--;
-				heapify(ind); 
-				
-				break;
-			}
-			ind++;
-		}
-	}
+// 	public void remove(in T value)
+// 	{
+// 		if (count == 0) {
+//  			return;
+// 		}
+// 		
+// 		int ind = 1;
+// 		while (ind<=count) {
+// 			if (heap[ind]==value) {
+// 				swap(heap[ind],heap[count]);
+// 				count--;
+// 				heapify(ind); 
+// 				
+// 				break;
+// 			}
+// 			ind++;
+// 		}
+// 	}
 	
 	
 	/* Return the node from the heap with minimum value.  Reorganize

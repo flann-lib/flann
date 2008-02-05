@@ -365,7 +365,7 @@ struct OrderedParams
     {   
     	int result = 0;
 
-		for (int index;index<order.length;++index)
+		for (int index=0;index<order.length;++index)
 		{
 			result = dg(values[order[index]]);
 			if (result) break;
@@ -377,7 +377,7 @@ struct OrderedParams
     {   
     	int result = 0;
 
-		for (int index;index<order.length;++index)
+		for (int index=0;index<order.length;++index)
 		{
 			result = dg(order[index],values[order[index]]);
 			if (result) break;

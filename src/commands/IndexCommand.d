@@ -8,7 +8,7 @@ import output.Console;
 import output.Report;
 import util.Logger;
 import util.Utils;
-import util.Profile;
+import util.Profile;	
 
 
 
@@ -24,6 +24,9 @@ class IndexCommand : DefaultCommand
 	bool byteFeatures;
 	string centersAlgorithm;
 	int maxIter;
+	
+	
+	Params params;
 	
 	protected {
 		NNIndex index;
@@ -62,17 +65,15 @@ class IndexCommand : DefaultCommand
 			});
 		
 			report("dataset", inputFile);
-			report("input_count", inputData!(T).count);
-			report("input_size", inputData!(T).veclen);
+			report("input_count", inputData!(T).rows);
+			report("input_size", inputData!(T).cols);
 		}
 		
 	
 		if (inputData!(T) is null) {
 			throw new Exception("No input data given.");
 		}
-		
-		Params params;
-		
+				
 		if (maxIter==-1) {
 			maxIter = int.max;
 		}

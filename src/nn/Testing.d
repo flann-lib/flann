@@ -77,7 +77,7 @@ float search(int checks, out float time, char[] approxMatch = "")
 	float distR = 0;
 	
 	time = profile( {
-		for (int i = 0; i < testData.count; i++) {
+		for (int i = 0; i < testData.rows; i++) {
 			auto target = testData.vecs[i];
 			resultSet.init(target);
 			index.findNeighbors(resultSet,target, checks);			
@@ -93,12 +93,12 @@ float search(int checks, out float time, char[] approxMatch = "")
 		}
 	});
 	
-	float performance = 100*cast(float)correct/(nn*testData.count);
+	float performance = 100*cast(float)correct/(nn*testData.rows);
 	
 	static if (withOutput) {
 		logger.info(sprint("{,8}{,10:d2}{,12:d3}{,12:d3}{,12:d3}",
 				checks, performance,
-				time, 1000.0 * time / testData.count, distR/testData.count));
+				time, 1000.0 * time / testData.rows, distR/testData.rows));
 	}
 	
 	return performance;

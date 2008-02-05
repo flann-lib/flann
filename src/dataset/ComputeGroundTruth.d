@@ -52,10 +52,10 @@ private void findNearest(T,U)(T[][] vecs, U[] query, int[] matches, int skip = 0
 
 public int[][] computeGroundTruth(T,U)(Features!(T) inputData, Features!(U) testData, int nn, int skip = 0) 
 {
-	int[][] matches = allocate!(int[][])(testData.count,nn);
+	int[][] matches = allocate!(int[][])(testData.rows,nn);
 
-	showProgressBar(testData.count, 70, (Ticker tick) {
-		for (int i=0;i<testData.count;++i) {
+	showProgressBar(testData.rows, 70, (Ticker tick) {
+		for (int i=0;i<testData.rows;++i) {
 			findNearest(inputData.vecs, testData.vecs[i], matches[i], skip);
 			tick();
 		}

@@ -37,12 +37,12 @@ class LinearSearch(T): NNIndex {
 	
 	public int size() 
 	{
-		return dataset.count;
+		return dataset.rows;
 	}
 	
 	public int length() 
 	{
-		return dataset.veclen;
+		return dataset.cols;
 	}
 	
 	public int numTrees()
@@ -50,7 +50,7 @@ class LinearSearch(T): NNIndex {
 		return 0;
 	}
 	
-	public int memoryUsed()
+	public int usedMemory()
 	{
 		return 0;
 	}
@@ -62,7 +62,7 @@ class LinearSearch(T): NNIndex {
 
 	public void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck) 
 	{
-		for (int i=0;i<dataset.count;++i) {
+		for (int i=0;i<dataset.rows;++i) {
 			resultSet.addPoint(dataset.vecs[i],i);
 		}
 	}

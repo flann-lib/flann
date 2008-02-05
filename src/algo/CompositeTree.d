@@ -44,7 +44,7 @@ class CompositeTree(T) : NNIndex
 		numTrees_ = params["trees"].get!(uint);
 
 		this.vecs = inputData.vecs;
-		this.flength = inputData.veclen;
+		this.flength = inputData.cols;
 		
 		
 		kdtree = new KDTree!(T)(inputData,params);
@@ -68,9 +68,9 @@ class CompositeTree(T) : NNIndex
 		return numTrees_;
 	}
 	
-	public int memoryUsed()
+	public int usedMemory()
 	{
-		return kmeans.memoryUsed+kdtree.memoryUsed;
+		return kmeans.usedMemory+kdtree.usedMemory;
 	}
 
 	public void buildIndex() 

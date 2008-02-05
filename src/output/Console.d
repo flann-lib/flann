@@ -30,7 +30,7 @@ class ConsoleWriter {
 		layout = new Layout!(char);	
 	}
 
-	ConsoleWriter write(...)
+	typeof(this) write(...)
 	{
 		char[] format = va_arg!(char[])(_argptr);
 		layout((char[] s){return Cout.stream.write(s);},_arguments[1..$],_argptr,format);

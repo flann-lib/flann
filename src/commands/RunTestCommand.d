@@ -53,12 +53,7 @@ class RunTestCommand : IndexCommand
 	
 	private void executeWithType(T)() 
 	{
-		
-/+		if (params["checks"]!=null) {
-			checkList = params["checks"].get!(string);
-		}+/
-		
-		checks = to!(typeof(checks))(split(checkList,","));
+				
 
 		Features!(float) testData;
 /+		if ((testFile == "") && (inputData !is null)) {
@@ -82,7 +77,7 @@ class RunTestCommand : IndexCommand
 		if (testData.match is null) {
 			throw new Exception("There are no correct matches to compare to, aborting test phase.");
 		}
-		report("test_count", testData.count);
+		report("test_count", testData.rows);
 		report("nn", nn);
 		
 		auto d = WallClock.toDate();
@@ -97,6 +92,13 @@ class RunTestCommand : IndexCommand
  			
 		}
 		else {
+			try {
+				checkList = params["checks"].get!(char[]);
+			} catch(Exception e) {};
+		
+			checks = to!(typeof(checks))(split(checkList,","));
+
+		
 			foreach (c;checks) {
 				testNNIndex!(T,true,true)(index,inputData!(T),testData, c, nn, skipMatches);
 			}

@@ -117,8 +117,8 @@ class KDTree(T) : NNIndex{
 		pool = new PooledAllocator();
 	
 		numTrees_ = params["trees"].get!(uint);
-		vcount = inputData.count;
-		veclen = inputData.veclen;
+		vcount = inputData.rows;
+		veclen = inputData.cols;
 		vecs = inputData.vecs;
 		trees = pool.allocate!(Tree[])(numTrees_);
 		heap = new Heap!(BranchSt)(vecs.length);
@@ -134,9 +134,11 @@ class KDTree(T) : NNIndex{
 	
 	public ~this()
 	{
-		logger.info(sprint("KDTree used memory: {} KB", pool.usedMemory/1000));
-		logger.info(sprint("KDTree wasted memory: {} KB", pool.wastedMemory/1000));
-		logger.info(sprint("KDTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
+		debug {
+			logger.info(sprint("KDTree used memory: {} KB", pool.usedMemory/1000));
+			logger.info(sprint("KDTree wasted memory: {} KB", pool.wastedMemory/1000));
+			logger.info(sprint("KDTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
+		}
 		delete pool;
 	}
 	
@@ -174,7 +176,7 @@ class KDTree(T) : NNIndex{
 	}
 	
 	
-	public int memoryUsed()
+	public int usedMemory()
 	{
 		return  pool.usedMemory+pool.wastedMemory;
 	}

@@ -142,7 +142,7 @@ abstract class NNIndex
 	/**
 	 The amount of memory (in bytes) this index uses.
 	*/
- 	int memoryUsed();
+ 	int usedMemory();
  	
  	float[][] getClusterCenters(int number) {
  		throw new Exception("Not implemented");
