@@ -270,7 +270,7 @@ class MinMaxHeap(T) {
 
 	private void trickleDownMax(int loc, T item)
 	{
-		while (loc <= count/2) {
+		while (2* loc <= count) {
 			int k = maxChildGrandchild(loc);
 			if (item >= heap[k]) { // no need to go further down, place the element here
 				break;
