@@ -246,7 +246,7 @@ class MinMaxHeap(T) {
 		return minloc;
 	}
 
-	void trickleDownMin(int loc, T item)
+	private void trickleDownMin(int loc, T item)
 	{
 		while (2*loc <= count) { // while loc has children
 			int k = minChildGrandchild(loc);
@@ -268,7 +268,7 @@ class MinMaxHeap(T) {
 		heap[loc] = item;		
 	}
 
-	void trickleDownMax(int loc, T item)
+	private void trickleDownMax(int loc, T item)
 	{
 		while (loc <= count/2) {
 			int k = maxChildGrandchild(loc);
