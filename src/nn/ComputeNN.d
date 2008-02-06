@@ -15,8 +15,8 @@ void computeNearestNeighbors(string outputFile, NNIndex index, Features!(float) 
 	
 		ResultSet resultSet = new ResultSet(nn+skipMatches);
 	
-		showProgressBar(testData.count, 70, (Ticker tick){
-			for (int i = 0; i < testData.count; i++) {
+		showProgressBar(testData.rows, 70, (Ticker tick){
+			for (int i = 0; i < testData.rows; i++) {
 				tick();
 				
 				resultSet.init(testData.vecs[i]);

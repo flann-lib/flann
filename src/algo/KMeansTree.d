@@ -74,9 +74,9 @@ class KMeansTree(T) : NNIndex
 		centersAlgorithm = params["centers-algorithm"].get!(string);
 		
 		this.vecs = inputData.vecs;
-		this.flength = inputData.veclen;
+		this.flength = inputData.cols;
 		
-		heap = new BranchHeap(inputData.count);
+		heap = new BranchHeap(inputData.rows);
 		
 		initCentersAlgorithms();
 	}
@@ -84,9 +84,11 @@ class KMeansTree(T) : NNIndex
 	
 	public ~this()
 	{
-		logger.info(sprint("KMeansTree used memory: {} KB", pool.usedMemory/1000));
-		logger.info(sprint("KMeansTree wasted memory: {} KB", pool.wastedMemory/1000));
-		logger.info(sprint("KMeansTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
+		debug {
+			logger.info(sprint("KMeansTree used memory: {} KB", pool.usedMemory/1000));
+			logger.info(sprint("KMeansTree wasted memory: {} KB", pool.wastedMemory/1000));
+			logger.info(sprint("KMeansTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
+		}
 		delete pool;
 	}
 
@@ -113,7 +115,7 @@ class KMeansTree(T) : NNIndex
 		return numTrees_;
 	}
 	
-	public int memoryUsed()
+	public int usedMemory()
 	{
 		return  pool.usedMemory+pool.wastedMemory;
 	}

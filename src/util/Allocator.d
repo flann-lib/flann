@@ -86,18 +86,21 @@ template PooledAllocated()
 }
 
 
-/*-------------------- Pooled storage allocator ---------------------------*/
+/**
+ * Pooled storage allocator
+ * 
+ * The following routines allow for the efficient allocation of storage in 
+ * small chunks from a specified pool.  Rather than allowing each structure 
+ * to be freed individually, an entire pool of storage is freed at once. 
+ * This method has two advantages over just using malloc() and free().  First,
+ * it is far more efficient for allocating small objects, as there is
+ * no overhead for remembering all the information needed to free each
+ * object or consolidating fragmented memory.  Second, the decision about 
+ * how long to keep an object is made at the time of allocation, and there
+ * is no need to track down all the objects to free them.
+ * 
+ */
 
-/* The following routines allow for the efficient allocation of storage in
-     small chunks from a specified pool.  Rather than allowing each structure
-     to be freed individually, an entire pool of storage is freed at once.
-   This method has two advantages over just using malloc() and free().  First,
-     it is far more efficient for allocating small objects, as there is
-     no overhead for remembering all the information needed to free each
-     object or consolidating fragmented memory.  Second, the decision about 
-     how long to keep an object is made at the time of allocation, and there
-     is no need to track down all the objects to free them.
-*/
 
 /* The memory allocated by this class is not handled by the garbage collector. Be 
 carefull not to store in this memory pointers to memory handled by the gc.

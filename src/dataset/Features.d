@@ -60,17 +60,17 @@ class Features(T = float) {
 
 	public void init(U)(Features!(U) dataset) 
 	{
-		vecs = allocate!(T[][])(dataset.count,dataset.veclen);
+		vecs = allocate!(T[][])(dataset.rows,dataset.cols);
 		foreach (index,vec;dataset.vecs) {
 			array_copy(vecs[index],vec);
 		}			
 	}
 	
-	public int count() {
+	public int rows() {
 		return vecs.length;
 	}
 	
-	public int veclen()
+	public int cols()
 	{
 		if (vecs is null) {
 			return -1;
@@ -110,14 +110,14 @@ class Features(T = float) {
 	
 	public Features!(T) sample(int size, bool remove = true)
 	{
-		DistinctRandom rand = new DistinctRandom(count);
-		Features!(T) newSet = new Features!(T)(size,veclen);		
+		DistinctRandom rand = new DistinctRandom(rows);
+		Features!(T) newSet = new Features!(T)(size,cols);
 		
 		for (int i=0;i<size;++i) {
 			int r = rand.nextRandom();
 			newSet.vecs[i][] = vecs[r];
 			if (remove) {
-				swap(vecs[count-i-1],vecs[r]);
+				swap(vecs[rows-i-1],vecs[r]);
 			}
 		}
 		

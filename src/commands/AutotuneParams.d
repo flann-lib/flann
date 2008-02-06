@@ -24,6 +24,7 @@ class AutotuneParams : DefaultCommand
 	string paramsFile;
 	float precision;
 	float indexFactor;
+	float memoryFactor;
 	bool byteFeatures;
 	float samplePercentage;
 	
@@ -34,8 +35,9 @@ class AutotuneParams : DefaultCommand
 		register(inputFile,"i","input-file", "","Name of file with input dataset.");
 		register(paramsFile,"p","params-file", "","Name of file where to save the params.");
 		register(precision,"P","precision", 95,"The desired search precision (default: 95%).");
-		register(indexFactor,"f","index-factor", 0,"Index build time penalty factor (relative to search time).");
-		register(samplePercentage,"s","sample-percentage", 10,"Percentage of the inpute dataset to use for parameter tunning default: 10%).");
+		register(indexFactor,"f","index-factor", 0.1,"Index build time penalty factor (relative to search time).");
+		register(memoryFactor,"m","memory-factor", 0.1,"Memory penalty factor.");
+		register(samplePercentage,"s","sample-percentage", 0.1,"Fraction of the input dataset to use for parameter tunning( default: 0.1).");
 		
 		register(byteFeatures,"B","byte-features", 2,"Use byte-sized feature elements.");
  			
@@ -61,7 +63,7 @@ class AutotuneParams : DefaultCommand
 			throw new Exception("No input data given.");
 		}
 				
-		Params params = estimateBuildIndexParams2!(T)(inputData, precision, indexFactor, samplePercentage);
+		Params params = estimateBuildIndexParams!(T)(inputData, precision, indexFactor, memoryFactor, samplePercentage);
 		
  		string algorithm = params["algorithm"].get!(string);
 		NNIndex index = indexRegistry!(T)[algorithm](inputData, params);
