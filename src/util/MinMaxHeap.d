@@ -75,7 +75,7 @@ class MinMaxHeap(T) {
     */
 	private bool isMinLevel(int pos)
 	{
-		return (floor(log2(level))%2==0);	
+		return (floor(log2(pos))%2==0);	
 	}
 	
 	/**
