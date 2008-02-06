@@ -40,7 +40,7 @@ import algo.NNIndex;
 import util.Allocator;
 import util.Utils;
 import util.Random;
-import util.Heap;
+import util.MinMaxHeap;
 import util.Logger;
 
 //import tango.stdc.stdlib : alloca;
@@ -68,9 +68,9 @@ class KDTree(T) : NNIndex{
 	
 	alias BranchStruct!(Tree) BranchSt;
 	alias BranchSt* Branch;
-
-	Heap!(BranchSt) heap;
 	
+	alias MinMaxHeap!(BranchSt) BranchHeap;
+	BranchHeap heap;
 
 
 	
@@ -121,7 +121,7 @@ class KDTree(T) : NNIndex{
 		veclen = inputData.cols;
 		vecs = inputData.vecs;
 		trees = pool.allocate!(Tree[])(numTrees_);
-		heap = new Heap!(BranchSt)(vecs.length);
+// 		heap = new Heap!(BranchSt)(vecs.length);
 		checkID = -1000;
 		
 	
@@ -353,7 +353,7 @@ class KDTree(T) : NNIndex{
 		BranchSt branch;
 	
 		checkCount = 0;
-		heap.init();
+		heap = new BranchHeap(maxCheck);
 		checkID -= 1;  /* Set a different unique ID for each search. */
 	
 		/* Search once through each tree down to root. */
@@ -367,6 +367,8 @@ class KDTree(T) : NNIndex{
 			SearchLevel(result, vec, branch.node,
 					branch.mindistsq, maxCheck);
 		}
+		
+		delete heap;
 		
 		assert(result.full);
 	}

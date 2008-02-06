@@ -37,7 +37,7 @@ void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount,
 
 void free_index(NN_INDEX indexID);
 
-void compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, Parameters* parameters);
+int compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, Parameters* parameters);
 
 #ifdef __cplusplus
 }

@@ -238,7 +238,7 @@ void free_index(NN_INDEX index_id)
 	GC.collect();
 }
 
-void compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, Parameters* parameters)
+int compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, Parameters* parameters)
 {
 	auto inputData = makeFeatures(dataset,count,length);
 	
@@ -249,6 +249,8 @@ void compute_cluster_centers(float* dataset, int count, int length, int clusters
 	
 	float[][] centers = index.getClusterCenters(clusters);
 	
+	int clusterNum = centers.length;
+	
 	foreach(c;centers) {
 		result[0..length] = c;
 		result+=length;
@@ -257,4 +259,6 @@ void compute_cluster_centers(float* dataset, int count, int length, int clusters
 	delete index;
 	delete centers;
 	GC.collect();
+	
+	return clusterNum;
 }
