@@ -32,7 +32,9 @@ class StartStopTimer
 	
 	public this() {
 		value = 0;
-		clk_tck = sysconf(_SC_CLK_TCK);
+		version (Posix) {
+			clk_tck = sysconf(_SC_CLK_TCK);
+		}
 	}
 	
 	public void start() {

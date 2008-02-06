@@ -17,8 +17,6 @@ Conversion to D: Marius Muja
 
 module util.Heap;
 
-import output.Console;
-
 class Heap(T) {
 
 	private {
