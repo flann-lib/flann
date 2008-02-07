@@ -1,4 +1,4 @@
-function [index, params] = nn_build_index(dataset, params)
+function [index, params] = fann_build_index(dataset, params)
 %NN_BUILD_INDEX  Builds an index for fast approximate nearest neighbors search
 %
 % [index, params] = nn_build_index(dataset, precision) - Constructs the

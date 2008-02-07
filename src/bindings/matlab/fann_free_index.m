@@ -1,4 +1,4 @@
-function nn_free_index(index_id)
+function fann_free_index(index_id)
 %NN_FREE_INDEX  Deletes the nearest-neighbors index
 %
 % nn_free_index(index_id) deletes the index referenced by the 'index_id'

@@ -43,7 +43,6 @@ import util.Random;
 import util.Heap;
 import util.Logger;
 
-//import tango.stdc.stdlib : alloca;
 import tango.core.Thread;
 
 /* Contains the k-d trees and other information for indexing a set of points

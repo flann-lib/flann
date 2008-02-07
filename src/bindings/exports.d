@@ -8,7 +8,7 @@ import util.Allocator;
 import util.Utils;
 import nn.Autotune;
 
-debug import util.Logger;
+import util.Logger;
 
 extern(C):
 
@@ -74,10 +74,26 @@ private {
 	{
 		Parameters p;
 		
-		p.checks = params["checks"].get!(int);
-		p.trees = params["trees"].get!(int);
-		p.iterations = params["max-iterations"].get!(int);
-		p.branching = params["branching"].get!(int);
+		try {
+			p.checks = params["checks"].get!(int);
+		} catch (Exception e) {
+			p.checks = -1;
+		}
+		try {
+			p.trees = params["trees"].get!(int);
+		} catch (Exception e) {
+			p.trees = 1;
+		}
+		try {
+			p.iterations = params["max-iterations"].get!(int);
+		} catch (Exception e) {
+			p.iterations = -1;
+		}
+		try {
+			p.branching = params["branching"].get!(int);
+		} catch (Exception e) {
+			p.branching = 32;
+		}
 		foreach (mapping; algoMappings) {
 			if (mapping.algoName == params["algorithm"] ) {
 				p.algo = mapping.algo;
@@ -94,6 +110,8 @@ void rt_term();
 void nn_init()
 {
 	rt_init();
+	
+	initLogger();
 }
 
 void nn_term()

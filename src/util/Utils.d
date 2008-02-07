@@ -146,8 +146,8 @@ void withOpenFile(string file, void delegate(LineInput) action)
 void withOpenFile(string file, void delegate(ScanReader) action, char[] delimiter = " \t\n" ) 
 {
 	auto stream = new FileInput(file);
-	auto reader = new ScanReader(new ScanIterator(delimiter,stream));
 	scope (exit) stream.close();
+	auto reader = new ScanReader(new ScanIterator(delimiter,stream));
 	action(reader);
 }
 
@@ -220,16 +220,6 @@ struct BranchStruct(T) {
 			return 0;
 		}
 	}
-	
-	static BranchStruct!(T) opCall(T aNode, float dist) 
-	{
-		BranchStruct!(T) s;
-		s.node = aNode;
-		s.mindistsq = dist;
-		
-		return s;
-	}
-	
 }; 
 
 

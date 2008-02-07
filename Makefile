@@ -42,8 +42,8 @@ ifeq ($(HAS_SQLITE),1)
 	LIBS := ${LIBS} -llsqlite3 -lldl
 endif
 
-TARGET = nn
-LIB_TARGET = libnn.a
+TARGET = fann
+LIB_TARGET = libfann.a
 # --------------------- Dirs  ----------------------------
 CRT_DIR = $(shell pwd)
 SRC_DIR = ${CRT_DIR}/src
