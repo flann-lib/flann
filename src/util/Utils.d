@@ -138,7 +138,8 @@ void withOpenFile(string file, void delegate(FileOutput) action)
 
 void withOpenFile(string file, void delegate(LineInput) action) 
 {
-	auto stream = new LineInput(new FileInput(file));
+	auto bufferedStream = new BufferInput(new FileInput(file), 128*1024);
+	auto stream = new LineInput(bufferedStream);
 	scope (exit) stream.close();
 	action(stream);
 }
