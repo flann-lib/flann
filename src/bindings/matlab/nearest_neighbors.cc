@@ -6,7 +6,7 @@
 ***********************************************************************/
 
 #include "mex.h"
-#include "nn.h"
+#include "fann.h"
 #include <stdio.h>
 #include <string.h>
 

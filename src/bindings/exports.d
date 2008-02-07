@@ -222,7 +222,7 @@ void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount,
 			int resultIndex = 0;
 			for (int i = 0; i < tcount; i++) {
 				resultSet.init(testset[0..length]);
-		
+						
 				index.findNeighbors(resultSet,testset[0..length], checks);
 				
 				int[] neighbors = resultSet.getNeighbors();

@@ -1,6 +1,6 @@
 	
 	
-#include "nn.h"
+#include "fann.h"
 
 #include <stdio.h>
 #include <stdlib.h>

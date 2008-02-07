@@ -721,7 +721,7 @@ class KMeansTree(T) : NNIndex
 			}
 			
 			if (splitIndex==-1) break;			
-			if ( (clusters[splitIndex].childs.length+clusterCount) >numClusters) break;
+			if ( (clusters[splitIndex].childs.length+clusterCount-1) > numClusters) break;
 			
 			meanVariance = minVariance;
 			

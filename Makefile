@@ -63,15 +63,20 @@ export PROFILE
 
 .PHONY: clean all rebuild compile
 
-all: program library matlab_bindings
+all: program library matlab_bindings test_c_bindings
 
 clean:
 	rm -rf ${BUILD_DIR}/*
+	-(cd src/bindings/matlab; make clean)
+	-(cd src/bindings/c; make clean)
 
 rebuild: clean all
 
 matlab_bindings: library
 	(cd src/bindings/matlab; make)
+
+test_c_bindings: library
+	(cd src/bindings/c; make)
 
 program:
 	${BIN_DIR}/build -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${TARGET} ${DFLAGS} ${LIBS}

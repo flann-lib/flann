@@ -18,7 +18,7 @@ if (isstruct(params))
 else
     p = params;
 end
-[index, p2] = nearest_neighbors('build_index',dataset',p);
+[index, p2] = nearest_neighbors('build_index',dataset,p);
 
 params.checks = p2(1);
 params.algorithm = get_algorithm(p2(2));

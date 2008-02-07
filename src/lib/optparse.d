@@ -256,8 +256,8 @@ class OptionParser
 
                         // See if there's an '=' in the option.
                         int eqPos = arg.find('=');
-
-                        if( eqPos > arg.length )
+                        
+                        if( eqPos < arg.length )
                         {
                             optName = arg[0..eqPos];
                             argument = arg[eqPos+1..$];

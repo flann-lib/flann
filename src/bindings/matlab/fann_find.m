@@ -17,7 +17,7 @@ else
 end
 
 if (size(data,1)==1 && size(data,2)==1)
-    result = nearest_neighbors('index_find_nn', data, testset', n, p)';
+    result = nearest_neighbors('index_find_nn', data, testset, n, p)';
 else
-    result = nearest_neighbors('find_nn', data', testset', n, p)';
+    result = nearest_neighbors('find_nn', data, testset, n, p)';
 end

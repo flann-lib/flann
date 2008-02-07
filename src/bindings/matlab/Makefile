@@ -37,8 +37,8 @@ all: ${MEXS}
 .phony: all clean
 
 
-${DST_DIR}/%.mexglx : ${SRC_DIR}/%.cc Makefile ../../../libnn.a
-	${MEX} ${INCLUDES} ${CFLAGS} $< -o $@ -L../../.. -L${LDPATH} -lnn -lgphobos -lm -lpthread
+${DST_DIR}/%.mexglx : ${SRC_DIR}/%.cc Makefile ../../../libfann.a
+	${MEX} ${INCLUDES} ${CFLAGS} $< -o $@ -L../../.. -L${LDPATH} -lfann -lgphobos -lm -lpthread
 
 
 clean:
