@@ -81,10 +81,10 @@ int main(int argc, char** argv)
    	nn_init();
    	
 	printf("Computing clusters.\n");
-   	compute_cluster_centers(dataset,rows, cols, cluster_count, clusters, &p);
+   	int c_count = compute_cluster_centers(dataset,rows, cols, cluster_count, clusters, &p);
 	
 	printf("Writing clusters to dat file.\n");
-	write_dat_file("clusters.dat",clusters, cluster_count, cols);
+	write_dat_file("clusters.dat",clusters, c_count, cols);
 	
 	free(dataset);
 	free(clusters);

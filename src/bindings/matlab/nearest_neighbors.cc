@@ -84,12 +84,12 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	}	
 	
 	/* Allocate memory for Output Matrix */ 
-	OutArray[0] = mxCreateDoubleMatrix(tcount, nn, mxREAL);
-		
+	OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL);	
+	
 	/* Get pointer to Output matrix and store result*/ 
 	double* pOut = mxGetPr(OutArray[0]);
 	for (int i=0;i<tcount*nn;++i) {
-		pOut[i] = result[i];
+		pOut[i] = result[i]+1; // matlab uses 1-based indexing
 	}
 	free(result);
 	
@@ -146,12 +146,12 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	find_nearest_neighbors_index(indexID,testset, tcount, result, nn, (int)pp[0]);
 		
 	/* Allocate memory for Output Matrix */ 
-	OutArray[0] = mxCreateDoubleMatrix(tcount, nn, mxREAL);	
+	OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL);	
 	
 	/* Get pointer to Output matrix and store result*/ 
 	double* pOut = mxGetPr(OutArray[0]);
 	for (int i=0;i<tcount*nn;++i) {
-		pOut[i] = result[i];
+		pOut[i] = result[i]+1; // matlab uses 1-based indexing
 	}
 	free(result);
 }

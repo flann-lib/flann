@@ -23,7 +23,8 @@ ifeq ($(PROFILE),debug)
 #	DFLAGS := ${DFLAGS} -g -release -C-q,-msse2
 	#DFLAGS := ${DFLAGS} -g -debug -C-q,-msse2
 	DFLAGS := ${DFLAGS} -g -debug
-else ifeq (${PROFILE},release)
+endif
+ifeq (${PROFILE},release)
 #	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
 	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe
 endif
