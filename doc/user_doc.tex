@@ -1,0 +1,125 @@
+\documentclass[letter,10pt]{article}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{epsfig}
+\usepackage{url}
+\usepackage{fancyvrb}
+\usepackage{hyperref}
+
+
+%opening
+\title{FANN - Fast Approximate Nearest Neighbors\\User Guide}
+\author{Marius Muja}
+
+\begin{document}
+
+
+\maketitle
+
+
+
+\section{Introduction}
+
+We can define the \emph{nearest neighbor search (NSS)} problem in the following way: given a set of points $P=p_1,p_2,\dots,p_n$ in a metric space $X$, these points must be preprocessed in such a way that given a new query point $q \in X$, finding the point in $P$ that is nearest to $q$ can be done quickly.
+
+The problem of nearest neighbor search is one of major importance in a variety of applications such as image recognition, data compression, pattern recognition and classification, machine learning,  document retrieval systems, statistics and data analysis. However, solving this problem in high dimensional spaces seems to be a very difficult task and there is no algorithm that performs significantly better than the standard brute-force search. This has lead to an increassing interest in a class of algorithms that perform approximate nearest neighbor searches, which have proven to be a good-enough approximation in most practical applications and in most cases, orders of magnitude faster that the algorithms performing the exact searches.
+
+FANN (Fast Approximate Nearest Neighbors) is an application/library for performing fast approximate nearest neighbor searches. FANN is written in the D programming language (D is a C/C++ like language with a cleaner syntax, more features and just as fast as C/C++). FANN can be used in the following ways:
+\begin{itemize}
+ \item As a standalone console application
+\item As a library that can be used from other programs. To make this easy for C/C++ programs a set of C bindings are provided with the library.
+\item From MATLAB using a set of matlab wrappers.
+\end{itemize}
+
+
+\section{FANN command line application}
+
+
+
+\section{Using FANN from MATLAB}
+
+The FANN library can be used from MATLAB through the following wrapper functions: \texttt{fann\_build\_index}, \texttt{fann\_search} and \texttt{fann\_free\_index}. The \texttt{fann\_build\_index} function creates a search index from the dataset points, \texttt{fann\_search} uses this index to perform nearest-neighbor searches and \texttt{fann\_free\_index} deletes the index and releases the memory it uses. In the next sections each of this functions is presented in more detail together  with examples of how they can be used.
+
+
+\begin{description}
+ \item[fann\_build\_index:] This function creates a search index from the initial dataset of points, index that it used to speedup further searches for nearest-neighbors. This process requires a set of paratemers to specify the characteristincs of the index:
+\begin{Verbatim}
+index = fann_build_index(dataset,parameters);
+\end{Verbatim}
+
+The \texttt{dataset} is a $d \times n$ matrix containing $n$ $d$-dimensional points. The \texttt{parameters} arguments is a matlab structure containing the following parameters required for the index creation:
+\begin{itemize}
+	\item \texttt{parameters.algorithm} - the algorithm to use for building the index. The possible values are: \texttt{linear}, \texttt{kdtree}, \texttt{kmeans} and \texttt{composite}. The \texttt{linear} option does not create any index, it uses brute-force search in the original dataset points, \texttt{kdtree} creates one or more randomized kd-trees, \texttt{kmeans} creates a hierarchical kmeans clustering tree and \texttt{composite} is a mix of both kdtree and kmeans trees.
+	
+	\item \texttt{parameters.trees} - the number of randomized kd-trees to create. This parameter is required only when the algorithm used is kdtree.
+	
+	\item \texttt{parameters.branching} - the branching factor to use for the hierarchial kmeans tree creation. While kdtree is always a binary tree, each node in the kmeans tree may have several branches depending on the value of this parameter.
+	
+	\item \texttt{params.iterations} - the maximum number of iterations to use in the kmeans clustering when building the kmeans tree. A value of -1 specifies that the kmeans clustering should be perfomed until convergence.
+\end{itemize}
+
+The above parameters have a big impact on the performance of the new search index (nearest-neighbor search time) and on the time and memory required to build the index. The optimum parameter values depend on the dataset characteristics (number of dimensions, distribution of points in the dataset) and on the application domain (desired precision for the appoximate nearest neighbor searches). In order to simplify the process of selecting good parameters when a new index is created, the FANN library can automatically determine the optimim (or near-optimim) parameters to 
+be used in each case. In oder to use the parameter estimation feature, the index has to be created in the following manner:
+\begin{Verbatim}
+[index, parameters] = fann_build_index(dataset, precision, 
+			build_time_factor, memory_factor);
+\end{Verbatim}
+The arguments used in this case have the following meaning:
+\begin{itemize}
+ \item \texttt{precision} - is a number between 0 and 100 specifying the percentage of the approximate nearest-neighbor searches that return the exact nearest-neighbor. Using a higher value for this parameter gives more accurate results, but the searching step takes longer. The optimum value usually depends on the application.
+
+\item \texttt{build\_time\_factor} - specifies the importance of the index build time raported to the nearest-neighbor search time. In some applications it's acceptable for the index build step to take a long time if the subsequent searches in the index can be performed very fast, while in other applications it's required that the index be build as fast as possible even if that leads to slightly longer search times. (Default value: 0.1)
+
+\item \texttt{memory\_factor} - is used to specify the tradeoff between time (index build time and search time) and memory used by the index.
+\end{itemize}
+
+When computing the optimum parameters, the \texttt{fann\_build\_index} returns them together with the index. This way the next time an index is created from similar data points (comming from the same distribution), the previously computed parameters can be used, allowing us to skip over the parameter estimation step which is usually costly.
+
+
+\item[fann\_search:] This function performs the nearest-neighbor search using the index already created:
+\begin{Verbatim}
+result = fann_search(index, testset, k, parameters);
+\end{Verbatim}
+
+The arguments required by this function are:
+\begin{itemize}
+ \item \texttt{index}- the index returned by the \texttt{fann\_build\_index} function
+ \item \texttt{testset} - a $d \times m$ matrix containing $m$ test points whose k-nearest-neighbors need to be found
+ \item \texttt{k} - the number of nearest neighbors to be returned for each point from \texttt{testset}
+\item \texttt{parameters} - structure containing the search parameters. Currently it has only one member, \texttt{parameters.checks}, denoting the number of times the index should be recursivelly checked. A higher value for this parameter would give better search precision, but also take more time. If the parameter estimation step was used when the index was created, the number of checks required to achive the specified precision is also computed. In such case, the parameters structure returned by the \texttt{fann\_build\_index} function can be passed directly to the \texttt{fann\_search} function.
+\end{itemize}
+
+
+\item[fann\_free\_index:] This function must be called to delete an index and release all the memory used by it.
+
+
+\end{description}
+
+Let's look at a few examples showing how the functions described above are used:
+
+\paragraph{Example 1:}
+
+\begin{Verbatim}
+
+>> dataset = single(load('dataset.dat'))';
+>> testset = single(load('testset.dat'))';
+>> 
+>> [index,params] = fann_build_index(dataset,90); 
+
+\end{Verbatim}
+
+
+
+
+% \bibliographystyle{alpha}
+% \bibliography{references}
+
+
+
+
+
+
+\end{document}
