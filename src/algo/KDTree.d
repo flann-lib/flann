@@ -17,7 +17,7 @@
 
 module algo.KDTree;
 
-import dataset.Features;
+import dataset.Dataset;
 import algo.NNIndex;
 import util.Allocator;
 import util.Utils;
@@ -153,7 +153,7 @@ class KDTree(T) : NNIndex{
 	 * 		inputData = dataset with the input features
 	 * 		params = parameters passed to the kdtree algorithm
 	 */
-	public this(Features!(T) inputData, Params params)
+	public this(Dataset!(T) inputData, Params params)
 	{
 		pool = new PooledAllocator();
 	
@@ -400,8 +400,6 @@ class KDTree(T) : NNIndex{
 	private void GetExactNeighbors(ResultSet result, float[] vec)
 	{
 		checkID -= 1;  /* Set a different unique ID for each search. */
-	
-		leafs = 0;
 	
 		if (numTrees_ > 1) {
 			logger.info("Doesn't make any sense to use more than one tree for exact search");

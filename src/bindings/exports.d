@@ -3,7 +3,7 @@ module bindings.exports;
 import tango.core.Memory;
 
 import algo.all;
-import dataset.Features;
+import dataset.Dataset;
 import util.Allocator;
 import util.Utils;
 import nn.Autotune;
@@ -120,14 +120,14 @@ void nn_term()
 }
 
 
-private Features!(T) makeFeatures(T)(T* dataset, int count, int length)
+private Dataset!(T) makeFeatures(T)(T* dataset, int count, int length)
 {
 	T[][] vecs = allocate!(T[][])(count);
 	for (int i=0;i<count;++i) {
 		vecs[i] = dataset[0..length];
 		dataset += length;
 	}
-	auto inputData = new Features!(T)(vecs);
+	auto inputData = new Dataset!(T)(vecs);
 	
 	return inputData;
 }

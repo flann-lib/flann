@@ -5,7 +5,7 @@ import tango.text.convert.Sprint;
 import commands.GenericCommand;
 import commands.IndexCommand;
 import nn.Testing;
-import dataset.Features;
+import dataset.Dataset;
 import algo.NNIndex;
 import output.Console;
 import util.Logger;
@@ -41,7 +41,7 @@ class ComputeClustersCommand : IndexCommand
 			float[][] centers = index.getClusterCenters(clusters);
 			
 			showOperation((new Sprint!(char)).format("Writing {} cluster centers to file {}... ",centers.length, clustersFile),{
-				Features!(float).handler.write(clustersFile,centers,"dat");
+				Dataset!(float).handler.write(clustersFile,centers,"dat");
 				//writeToFile(centers, clustersFile);
 			});
 		}

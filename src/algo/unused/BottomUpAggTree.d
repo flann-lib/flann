@@ -84,7 +84,7 @@ class BottomUpSimpleAgglomerativeTree : NNIndex {
 	{
 	}
 
-	public this(Features!(float) inputData, Params params)
+	public this(Dataset!(float) inputData, Params params)
 	{
 		int count = inputData.count;
 		

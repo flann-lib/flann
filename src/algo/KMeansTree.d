@@ -7,7 +7,7 @@ module algo.KMeansTree;
 import util.defines;
 import algo.NNIndex;
 import algo.dist;
-import dataset.Features;
+import dataset.Dataset;
 import util.Logger;
 import util.Random;
 import util.Allocator;
@@ -66,7 +66,7 @@ class KMeansTree(T) : NNIndex
 		initCentersAlgorithms();
 	}
 	
-	public this(Features!(T) inputData, Params params)
+	public this(Dataset!(T) inputData, Params params)
 	{
 		pool = new PooledAllocator();
 	

@@ -4,7 +4,7 @@ import tango.text.convert.Sprint;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
-import dataset.Features;
+import dataset.Dataset;
 import output.Console;
 import util.Logger;
 import util.Utils;
@@ -31,8 +31,8 @@ class TestMatch : DefaultCommand
 	
 	void execute() 
 	{
-		auto m1 = new Features!(float)();
-		auto m2 = new Features!(float)();
+		auto m1 = new Dataset!(float)();
+		auto m2 = new Dataset!(float)();
 		
 		m1.readMatches(file);
 		m2.readMatches(matchFile);

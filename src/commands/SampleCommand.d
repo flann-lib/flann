@@ -4,7 +4,7 @@ import tango.text.convert.Sprint;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
-import dataset.Features;
+import dataset.Dataset;
 import output.Console;
 import util.Logger;
 import util.Utils;
@@ -39,9 +39,9 @@ class SampleCommand : DefaultCommand
 	private void executeWithType(T)() 
 	{
 		if (count>0) {
-			auto dataset = new Features!(T)();
+			auto dataset = new Dataset!(T)();
 			showOperation("Reading features from input file "~file, {dataset.readFromFile(file);});
-			Features!(T) sampledDataset; 
+			Dataset!(T) sampledDataset; 
 			showOperation(sprint("Sampling {} features",count), {sampledDataset = dataset.sample(count);});
 			showOperation("Saving new dataset to file "~saveFile, {sampledDataset.writeToFile(saveFile, format);});
 		}

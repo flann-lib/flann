@@ -8,7 +8,7 @@ Author: Marius Muja (2007)
 *************************************************************************/
 module algo.LinearSearch;
 
-import dataset.Features;
+import dataset.Dataset;
 import algo.NNIndex;
 import util.defines;
 import util.Utils;
@@ -18,14 +18,14 @@ class LinearSearch(T): NNIndex {
 
 	static string NAME = "linear";
 	
-	Features!(T) dataset;
+	Dataset!(T) dataset;
 
 	private this() 
 	{
 	}
 
 	
-	public this(Features!(T) inputData, Params params)
+	public this(Dataset!(T) inputData, Params params)
 	{
 		dataset = inputData;
 		

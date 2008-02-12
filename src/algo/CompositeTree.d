@@ -8,7 +8,7 @@ import util.defines;
 import algo.NNIndex;
 import algo.KMeansTree;
 import algo.KDTree;
-import dataset.Features;
+import dataset.Dataset;
 import util.Logger;
 import util.Utils;
 
@@ -35,7 +35,7 @@ class CompositeTree(T) : NNIndex
 	{
 	}
 	
-	public this(Features!(T) inputData, Params params)
+	public this(Dataset!(T) inputData, Params params)
 	{
 		this.branching = params["branching"].get!(uint);
 		this.numTrees_ = params["trees"].get!(uint);

@@ -4,7 +4,7 @@ import commands.GenericCommand;
 import commands.DefaultCommand;
 import nn.Autotune;
 import nn.Testing;
-import dataset.Features;
+import dataset.Dataset;
 import algo.NNIndex;
 import output.Console;
 import util.Logger;
@@ -50,12 +50,12 @@ class AutotuneParams : DefaultCommand
 	
 	private void executeWithType(T)()
 	{
-		Features!(T) inputData;
+		Dataset!(T) inputData;
 		
 		// read input data		
 		if (inputFile != "") {
 			showOperation( "Reading input data from "~inputFile, {
-				inputData = new Features!(T)();
+				inputData = new Dataset!(T)();
 				inputData.readFromFile(inputFile);
 			});
 		}	

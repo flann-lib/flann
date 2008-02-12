@@ -6,7 +6,7 @@ module dataset.ComputeGroundTruth;
 
 import algo.dist;
 import output.Console;
-import dataset.Features;
+import dataset.Dataset;
 import util.defines;
 import util.Logger;
 import util.Utils;
@@ -50,7 +50,7 @@ private void findNearest(T,U)(T[][] vecs, U[] query, int[] matches, int skip = 0
 	
 }
 
-public int[][] computeGroundTruth(T,U)(Features!(T) inputData, Features!(U) testData, int nn, int skip = 0) 
+public int[][] computeGroundTruth(T,U)(Dataset!(T) inputData, Dataset!(U) testData, int nn, int skip = 0) 
 {
 	int[][] matches = allocate!(int[][])(testData.rows,nn);
 
@@ -80,18 +80,18 @@ void writeMatches(string match_file, int[][] matches)
 
 void compute_gt(T)(string featuresFile, string testFile, string matchFile, int nn, int skip = 0)
 {
-	Features!(T) inputData;
-	Features!(T) testData;
+	Dataset!(T) inputData;
+	Dataset!(T) testData;
 	
 	showOperation("Reading input data from "~featuresFile, {
-		inputData = new Features!(T)();
+		inputData = new Dataset!(T)();
 		inputData.readFromFile(featuresFile);
 	});
 	
 	auto path = new FilePath(testFile);
 	if (path.exists() && !path.isFolder()) {
 		showOperation("Reading test data from "~testFile, {
-			testData = new Features!(T)();
+			testData = new Dataset!(T)();
 			testData.readFromFile(testFile);
 		});
 	} 
@@ -111,7 +111,7 @@ void compute_gt(T)(string featuresFile, string testFile, string matchFile, int n
 	});
 
 	showOperation("Writing matches to "~matchFile, {
-//		Features!(int).handler.write(matchFile,matches,"dat");
+//		Dataset!(int).handler.write(matchFile,matches,"dat");
 		writeMatches(matchFile,matches);
 	});
 	free(matches);

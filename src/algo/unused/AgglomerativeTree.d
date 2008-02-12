@@ -9,7 +9,7 @@ Author: Marius Muja (2007)
 module algo.AgglomerativeTree;
 
 
-import dataset.Features;	
+import dataset.Dataset;	
 import algo.NNIndex;
 import algo.dist;
 import util.defines;
@@ -61,7 +61,7 @@ class AgglomerativeExTree : NNIndex {
 		heap = new Heap!(BranchSt)(512);
 	}
 	
-	public this(Features!(float) inputData, Params params)
+	public this(Dataset!(float) inputData, Params params)
 	{
 		pcount = inputData.count;
 		indexSize = pcount;

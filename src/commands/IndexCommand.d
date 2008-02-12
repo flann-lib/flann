@@ -2,7 +2,7 @@ module commands.IndexCommand;
 
 import commands.GenericCommand;
 import commands.DefaultCommand;
-import dataset.Features;
+import dataset.Dataset;
 import algo.all;
 import output.Console;
 import output.Report;
@@ -32,9 +32,9 @@ class IndexCommand : DefaultCommand
 		NNIndex index;
 		
 		template inputData(T) {
-			Features!(T) inputData = null;
+			Dataset!(T) inputData = null;
 		}
-		//Features!(ubyte) inputDataByte = null;
+		//Dataset!(ubyte) inputDataByte = null;
 	}
 	
 
@@ -60,7 +60,7 @@ class IndexCommand : DefaultCommand
 		
 		if (inputFile != "") {
 			showOperation( "Reading input data from "~inputFile, {
-				inputData!(T) = new Features!(T)();
+				inputData!(T) = new Dataset!(T)();
 				inputData!(T).readFromFile(inputFile);
 			});
 		

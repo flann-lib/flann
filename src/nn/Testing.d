@@ -3,7 +3,7 @@ module nn.Testing;
 import tango.math.Math;
 
 import algo.NNIndex;
-import dataset.Features;
+import dataset.Dataset;
 import util.Logger;
 import util.Profile;
 import output.Console;
@@ -108,7 +108,7 @@ float search(int checks, out float time, char[] approxMatch = "")
 
 
 float testNNIndex(T, bool withOutput, bool withReporting)
-				(NNIndex index, Features!(T) inputData, Features!(float) testData, int checks, int nn = 1, uint skipMatches = 0)
+				(NNIndex index, Dataset!(T) inputData, Dataset!(float) testData, int checks, int nn = 1, uint skipMatches = 0)
 {
 	T[][] vecs = inputData.vecs;
 	
@@ -138,7 +138,7 @@ float testNNIndex(T, bool withOutput, bool withReporting)
 
 
 float testNNIndexPrecision(T, bool withOutput, bool withReporting)
-						(NNIndex index,Features!(T) inputData, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0, char[] approxMatch = "")
+						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0, char[] approxMatch = "")
 {	
 	T[][] vecs = inputData.vecs;
 	
@@ -214,7 +214,7 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 
 
 float testNNIndexPrecisions(T, bool withOutput, bool withReporting)
-						(NNIndex index,Features!(T) inputData, Features!(float) testData, float[] precisions, int nn = 1, uint skipMatches = 0, float maxTime = 0)
+						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData, float[] precisions, int nn = 1, uint skipMatches = 0, float maxTime = 0)
 {	
 	// make sure precisions array is sorted
 	precisions.sort;
@@ -314,7 +314,7 @@ float testNNIndexPrecisions(T, bool withOutput, bool withReporting)
 
 
 float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
-						(NNIndex index, Features!(T) inputData, Features!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
+						(NNIndex index, Dataset!(T) inputData, Dataset!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
 {
 	T[][] vecs = inputData.vecs;
 

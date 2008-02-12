@@ -55,7 +55,7 @@ class BallTree : NNIndex {
 		btHeap = new Heap!(BallBranchStruct)(512);
 	}
 	
-	public this(Features!(float) inputData, Params params)
+	public this(Dataset!(float) inputData, Params params)
 	{
 		this();
 		aggTree = new AgglomerativeExTree(inputData,params);

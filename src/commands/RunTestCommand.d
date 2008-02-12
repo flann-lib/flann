@@ -7,7 +7,7 @@ import tango.time.WallClock;
 import commands.GenericCommand;
 import commands.IndexCommand;
 import nn.Testing;
-import dataset.Features;
+import dataset.Dataset;
 import algo.NNIndex;
 import output.Console;
 import output.Report;
@@ -55,14 +55,14 @@ class RunTestCommand : IndexCommand
 	{
 				
 
-		Features!(float) testData;
+		Dataset!(float) testData;
 /+		if ((testFile == "") && (inputData !is null)) {
 			testData = inputData;
 		}
 		else +/
 		if (testFile != "") {
 			showOperation("Reading test data from "~testFile,{
-				testData = new Features!(float)();
+				testData = new Dataset!(float)();
 				testData.readFromFile(testFile);
 			});
 		}

@@ -8,7 +8,7 @@ import commands.IndexCommand;
 import util.Logger;
 import util.Utils;
 import nn.ComputeNN;
-import dataset.Features;
+import dataset.Dataset;
 import algo.NNIndex;
 import output.Console;
 
@@ -43,14 +43,14 @@ class ComputeNNCommand : IndexCommand
 	{
 		super.execute();
 		
-		Features!(float) testData;
+		Dataset!(float) testData;
 /+		if ((testFile == "") && (inputData !is null)) {
 			testData = inputData;
 		}
 		else +/
 		if (testFile != "") {
 			showOperation(sprint("Reading test data from {}... ",testFile),{
-				testData = new Features!(float)();
+				testData = new Dataset!(float)();
 				testData.readFromFile(testFile);
 			});
 		}

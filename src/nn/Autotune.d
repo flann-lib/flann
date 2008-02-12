@@ -8,7 +8,7 @@ import tango.math.Math;
 import tango.io.Stdout;
 import tango.core.Memory;
 
-import dataset.Features;
+import dataset.Dataset;
 import algo.all;
 import nn.Testing;
 import util.Profile;
@@ -161,14 +161,14 @@ float executeActions(int times, float delegate() action)
 	return sum/times;
 }
 
-Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPrecision, float buildTimeFactor = 0.1, float memoryFactor = 0.1, float samplePercentage = 0.1)
+Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecision, float buildTimeFactor = 0.1, float memoryFactor = 0.1, float samplePercentage = 0.1)
 {	
 	// subsample datasets
 	int sampleSize = rndint(samplePercentage*inputDataset.rows);
-	Features!(T) sampledDataset = inputDataset.sample(sampleSize, false);
+	Dataset!(T) sampledDataset = inputDataset.sample(sampleSize, false);
 	
 	int testSampleSize = MIN(sampleSize/10, 1000);
-	Features!(float) testDataset = new Features!(float)();
+	Dataset!(float) testDataset = new Dataset!(float)();
 	testDataset.init(sampledDataset.sample(testSampleSize,true));
 	
 	logger.info(sprint("Sampled dataset size: {}",sampledDataset.rows));
@@ -291,14 +291,14 @@ Params estimateBuildIndexParams(T)(Features!(T) inputDataset, float desiredPreci
 
 
 
-Params estimateBuildIndexParams_(T)(Features!(T) inputDataset, float desiredPrecision, float indexFactor = 0, float samplePercentage = 10)
+Params estimateBuildIndexParams_(T)(Dataset!(T) inputDataset, float desiredPrecision, float indexFactor = 0, float samplePercentage = 10)
 {	
 	// subsample datasets
 	int sampleSize = rndint(samplePercentage*inputDataset.rows);
-	Features!(T) sampledDataset = inputDataset.sample(sampleSize, false);
+	Dataset!(T) sampledDataset = inputDataset.sample(sampleSize, false);
 	
 	int testSampleSize = MIN(sampleSize/10, 1000);
-	Features!(float) testDataset = new Features!(float)();
+	Dataset!(float) testDataset = new Dataset!(float)();
 	testDataset.init(sampledDataset.sample(testSampleSize,true));
 	
 	logger.info(sprint("Sampled dataset size: {}",sampledDataset.count));
@@ -450,11 +450,11 @@ version (kdtree_autotune) {
 }
 
 
-int estimateSearchParams(T)(NNIndex index, Features!(T) inputDataset, float desiredPrecision)
+int estimateSearchParams(T)(NNIndex index, Dataset!(T) inputDataset, float desiredPrecision)
 {
 	const int nn = 1;
 	const int SAMPLE_COUNT = 500;
-	Features!(float) testDataset = new Features!(float)();
+	Dataset!(float) testDataset = new Dataset!(float)();
 	testDataset.init(inputDataset.sample(SAMPLE_COUNT,false));
 	logger.info("Computing ground truth");
 	testDataset.computeGT(inputDataset,1,1);

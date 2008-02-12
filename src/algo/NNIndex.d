@@ -4,14 +4,14 @@ Project: nn
 
 module algo.NNIndex;
 
-import dataset.Features;
+import dataset.Dataset;
 import algo.dist;
 import util.Utils;
 import util.Heap;
 
 
 template IndexConstructor(T) {
-	alias NNIndex function(Features!(T), Params) IndexConstructor;
+	alias NNIndex function(Dataset!(T), Params) IndexConstructor;
 }
 
 template indexRegistry(T) {
@@ -25,7 +25,7 @@ template AlgorithmRegistry(alias ALG,T)
 {
 	static this() 
 	{
-		indexRegistry!(T)[ALG.NAME] = function(Features!(T) inputData, Params params) {return cast(NNIndex) new ALG(inputData, params);};
+		indexRegistry!(T)[ALG.NAME] = function(Dataset!(T) inputData, Params params) {return cast(NNIndex) new ALG(inputData, params);};
 	}
 }
 

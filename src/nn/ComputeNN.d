@@ -2,12 +2,12 @@ module nn.ComputeNN;
 
 import util.defines;
 import algo.NNIndex;
-import dataset.Features;
+import dataset.Dataset;
 import util.Logger;
 import util.Utils;
 import output.Console;
 
-void computeNearestNeighbors(string outputFile, NNIndex index, Features!(float) testData, int nn, int checks, uint skipMatches)
+void computeNearestNeighbors(string outputFile, NNIndex index, Dataset!(float) testData, int nn, int checks, uint skipMatches)
 {
 	
 	withOpenFile(outputFile, (FormatOutput writer) {
