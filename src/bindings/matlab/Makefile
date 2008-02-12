@@ -26,20 +26,18 @@ MEX = mex
 
 
 
-SOURCES = nearest_neighbors.cc
 SRC_DIR = .
-DST_DIR = .
-MEXS = ${patsubst %.cc, ${DST_DIR}/%.mexglx, ${SOURCES}}
 
-all: ${MEXS}
-	echo ${MEXS}
+
+all: ${BUILD_DIR}/matlab/nearest_neighbors.mexglx
 
 .phony: all clean
 
 
-${DST_DIR}/%.mexglx : ${SRC_DIR}/%.cc Makefile ../../../libfann.a
-	${MEX} ${INCLUDES} ${CFLAGS} $< -o $@ -L../../.. -L${LDPATH} -lfann -lgphobos -lm -lpthread
+${BUILD_DIR}/matlab/%.mexglx : ${SRC_DIR}/%.cc Makefile ${BUILD_DIR}/libfann.a
+	@if [ ! -d ${BUILD_DIR}/matlab ] ; then mkdir ${BUILD_DIR}/matlab; fi
+	${MEX} ${INCLUDES} ${CFLAGS} $< -o $@ -L${BUILD_DIR} -L${LDPATH} -lfann -lgphobos -lm -lpthread
+	cp ${SRC_DIR}/*.m ${BUILD_DIR}/matlab
 
 
 clean:
-	rm ${MEXS}

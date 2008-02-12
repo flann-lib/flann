@@ -14,6 +14,7 @@ import util.Allocator;
 import util.Utils;
 import util.Heap;
 
+import tango.math.Math;
 
 class KMeansTree(T) : NNIndex
 {
@@ -39,6 +40,7 @@ class KMeansTree(T) : NNIndex
 		float radius;
 		float variance;
 		int size;
+		
 		
 		KMeansNode[] childs;
 		int[] indices;
@@ -185,7 +187,16 @@ class KMeansTree(T) : NNIndex
 			root[index] = pool.allocate!(KMeansNodeSt);
 			computeNodeStatistics(root[index], indices);
 			computeClustering(root[index], indices, branchingValue);
-		}		
+		}
+		
+		int[] cs = clusterSizes();
+		
+		withOpenFile("cluster_sizes.txt",(FormatOutput output) {
+			foreach(c;cs) {
+				output.formatln("{}",c);
+			}
+		});
+
 	}
 	
 
@@ -230,33 +241,36 @@ class KMeansTree(T) : NNIndex
 	private void computeClustering(KMeansNode node, int[] indices, int branching)
 	{
 		int n = indices.length;
-		int nc = branching;
+		node.size = n;
 		
-		node.size = indices.length;
+		if (indices.length < branching) {
+			
+			node.indices = indices.sort;
+			node.childs.length = 0;
+			return;
+		}
 		
-//		Logger.log(Logger.INFO,"\rStarting clustering, size: %d                 ",node.size);		
-				
 		T[][] initial_centers;
 		if (centersAlgorithm in centerAlgs) {
-			initial_centers = centerAlgs[centersAlgorithm](nc,vecs, indices); 
+			initial_centers = centerAlgs[centersAlgorithm](branching, vecs, indices); 
 		}
 		else {
 			throw new Exception("Unknown algorithm for choosing initial centers.");
 		}
 		
 		
-		if (initial_centers.length<nc) {
+		if (initial_centers.length<branching) {
 			node.indices = indices.sort;
 			node.childs.length = 0;
 			return;
 		}
 		
- 		float[][] centers = pool.allocate!(float[][])(nc,flength);
+ 		float[][] centers = pool.allocate!(float[][])(branching,flength);
 		//float[][] centers = new float[][](nc,flength);
 		mat_copy(centers,initial_centers);
 		
-	 	float[] radiuses = new float[nc];		
-		int[] count = new int[nc];
+	 	float[] radiuses = new float[branching];
+		int[] count = new int[branching];
 		
 		// assign points to clusters
 		int[] belongs_to = new int[n];
@@ -264,7 +278,7 @@ class KMeansTree(T) : NNIndex
 
 			float sq_dist = squaredDist(vecs[indices[i]],centers[0]); 
 			belongs_to[i] = 0;
-			for (int j=1;j<nc;++j) {
+			for (int j=1;j<branching;++j) {
 				float new_sq_dist = squaredDist(vecs[indices[i]],centers[j]);
 				if (sq_dist>new_sq_dist) {
 					belongs_to[i] = j;
@@ -283,13 +297,10 @@ class KMeansTree(T) : NNIndex
 		while (!converged && iteration<max_iter) {
 			converged = true;
 			iteration++;
-//			Logger.log(Logger.INFO,"\rIteration %d",iteration);		
-
 			
-			for (int i=0;i<nc;++i) {
+			for (int i=0;i<branching;++i) {
 				centers[i][] = 0.0;				
 			}
-			
 		
 			// compute the new clusters
 			foreach (i,index; indices) {
@@ -311,7 +322,7 @@ class KMeansTree(T) : NNIndex
 			for (int i=0;i<n;++i) {
 				float sq_dist = squaredDist(vecs[indices[i]],centers[0]); 
 				int new_centroid = 0;
-				for (int j=1;j<nc;++j) {
+				for (int j=1;j<branching;++j) {
 					float new_sq_dist = squaredDist(vecs[indices[i]],centers[j]);
 					if (sq_dist>new_sq_dist) {
 						new_centroid = j;
@@ -330,13 +341,13 @@ class KMeansTree(T) : NNIndex
 				}
 			}
 			
-			for (int i=0;i<nc;++i) {
+			for (int i=0;i<branching;++i) {
 				// if one cluster converges to an empty cluster,
 				// move an element into that cluster
 				if (count[i]==0) {
-					int j = (i+1)%nc;
+					int j = (i+1)%branching;
 					while (count[j]<=1) {
-						j = (j+1)%nc;
+						j = (j+1)%branching;
 					}					
 					
 					for (int k=0;k<n;++k) {
@@ -355,10 +366,10 @@ class KMeansTree(T) : NNIndex
 	
 	
 		// compute kmeans clustering for each of the resulting clusters
-		node.childs = pool.allocate!(KMeansNode[])(nc);
+		node.childs = pool.allocate!(KMeansNode[])(branching);
 		int start = 0;
 		int end = start;
-		for (int c=0;c<nc;++c) {
+		for (int c=0;c<branching;++c) {
 			int s = count[c];
 			
 			float variance = 0;
@@ -383,7 +394,7 @@ class KMeansTree(T) : NNIndex
 		
 		delete radiuses;
 		delete count;
-		delete belongs_to;
+		delete belongs_to;		
 	}
 	
 	
@@ -643,7 +654,29 @@ class KMeansTree(T) : NNIndex
 	}
 	
 	
+	private int[] clusterSizes()
+	{
+		static int cluster_sizes[100_000];
+		int cnt = 0;
+
 		
+		void testTreeNode(KMeansNode node) 
+		{
+			if (node.childs.length == 0) {
+				cluster_sizes[cnt++] = node.indices.length;
+			}
+			else {
+				for (int i=0;i<node.childs.length;++i) {
+					testTreeNode(node.childs[i]);
+				}
+			}
+		}
+	
+	
+		testTreeNode(root[0]);
+		
+		return cluster_sizes[0..cnt];
+	}	
 	
 	private T[][] getClusterPoints(KMeansNode node)
 	{

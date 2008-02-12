@@ -42,23 +42,25 @@ ifeq ($(HAS_SQLITE),1)
 	LIBS := ${LIBS} -llsqlite3 -lldl
 endif
 
-TARGET = fann
-LIB_TARGET = libfann.a
 # --------------------- Dirs  ----------------------------
 CRT_DIR = $(shell pwd)
 SRC_DIR = ${CRT_DIR}/src
 LIBS_DIR = ${CRT_DIR}/libs
-BUILD_DIR = $(HOME)/tmp/${TARGET}_build/${PROFILE}
-OBJ_DIR = ${BUILD_DIR}/obj
-LIB_OBJ_DIR = ${BUILD_DIR}/lib_obj
+BUILD_DIR = ${CRT_DIR}/build
+TMP_DIR= ${CRT_DIR}/tmp
+OBJ_DIR = ${TMP_DIR}/build/${PROFILE}/obj
+LIB_OBJ_DIR = ${TMP_DIR}/build/${PROFILE}/lib_obj
 BIN_DIR = ${CRT_DIR}/bin
-export DIST_DIR = ${CRT_DIR}
 
 MAIN_FILE=${SRC_DIR}/main.d
 LIB_FILE=${SRC_DIR}/bindings/exports.d
 
-export LDPATH=${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2
-export PROFILE
+TARGET = ${BUILD_DIR}/fann
+LIB_TARGET = ${BUILD_DIR}/libfann.a
+
+
+LDPATH=${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2
+export PROFILE BUILD_DIR LDPATH
 # ------------------------ Rules --------------------------------
 
 .PHONY: clean all rebuild compile

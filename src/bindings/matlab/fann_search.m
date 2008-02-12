@@ -1,5 +1,5 @@
-function result = fann_find(data, testset, n, params)
-%NN_FIND  Fast approximate nearest neighbors search
+function result = fann_search(data, testset, n, params)
+%NN_SEARCH  Fast approximate nearest neighbors search
 %
 %   result = nn_find(dataset,features,n,params)  - performs an approximate
 %   nearest neighbors search for each row of FEATURES in the DATASET. For
@@ -17,7 +17,7 @@ else
 end
 
 if (size(data,1)==1 && size(data,2)==1)
-    result = nearest_neighbors('index_find_nn', data, testset, n, p)';
+    result = nearest_neighbors('index_find_nn', data, testset, n, p);
 else
-    result = nearest_neighbors('find_nn', data, testset, n, p)';
+    result = nearest_neighbors('find_nn', data, testset, n, p);
 end

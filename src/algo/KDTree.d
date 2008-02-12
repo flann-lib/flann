@@ -1,36 +1,18 @@
-
 /************************************************************************
-Project: nn
-
-Module: kdtree.d (approximate nearest-neighbor matching)
-Author: David Lowe (2006)
-Conversion to D: Marius Muja
-
-nn.c:
-  This module finds the nearest-neighbors of vectors in high dimensional
-      spaces using a search of multiple randomized k-d trees.
-
-  The following routines are the interface to this module:
-
-  Default constructor: this(ubyte **vecs, int vcount, int veclen, int numTrees_)
-    This routine creates an Index data structure containing the k-d trees
-    and other information used to find neighbors to the given set of vectors.
-        vecs: array of pointers to the vectors to be indexed. 
-        vcount: number of vectors in vecs.
-        veclen: the length of each vector.
-        numTrees_: the number of randomized trees to build.
-
-  Destructor ~this()
-    Frees all memory for the given index.
-
-  FindNeighbors(int *result, int numNN, float *vec, int maxCheck)
-  Find the numNN nearest neighbors to vec and store their indices in the
-  "result" vector, which must have length numNN.  The returned indices
-  refer to position in the original vecs used to create the index.
-  Seach a maximum of maxCheck tree nodes for the result (this is what
-  determines the amount of computation).
-
-
+ * KDTree approximate nearest neighbor search
+ * 
+ * This module finds the nearest-neighbors of vectors in high dimensional 
+ * spaces using a search of multiple randomized k-d trees.
+ * 
+ * Authors: David Lowe, initial implementation
+ * 			Marius Muja, conversion to D and further changes
+ * 
+ * Version: 0.9
+ * 
+ * History:
+ * 
+ * License:
+ * 
  *************************************************************************/
 
 module algo.KDTree;
@@ -43,94 +25,158 @@ import util.Random;
 import util.Heap;
 import util.Logger;
 
-import tango.core.Thread;
-
-/* Contains the k-d trees and other information for indexing a set of points
-   for nearest-neighbor matching.
+/**
+ * Randomized kd-tree index
+ * 
+ * Contains the k-d trees and other information for indexing a set of points
+ * for nearest-neighbor matching.
  */
-
 class KDTree(T) : NNIndex{
 
+	/**
+	 * Index name.
+	 * 
+	 * Used by the AlgorithmRegistry template for registering a new algorithm with
+	 * the application. 
+	 */
 	static const NAME = "kdtree";
 
-	int numTrees_;       /* Number of randomized trees that are used. */
-	int checkCount;     /* Number of neighbors checked so far in this lookup. */
-	float searchDistSq; /* Distance cutoff for searching (not used yet). */
-	int vcount;         /* Number of vectors stored in this index. */
-	int veclen;         /* Length of each vector. */
-	T[][] vecs;      /* Float vecs.  */
-	int []vind;          /* Array of indices to vecs.  When doing
-						   lookup, this is used instead to mark checkID. */
+	/**
+	 * To improve efficiency, only SAMPLE_MEAN random values are used to
+	 * compute the mean and variance at each level when building a tree.
+	 * A value of 100 seems to perform as well as using all values.
+	 */
+	const int SAMPLE_MEAN = 100;
 	
-	int checkID;        /* A unique ID for each lookup. */
-	Tree []trees;  /* Array of k-d trees used to find neighbors. */
+	/**
+	 * Top random dimensions to consider
+	 * 
+	 * When creating random trees, the dimension on which to subdivide is
+	 * selected at random from among the top RAND_DIM dimensions with the
+	 * highest variance.  A value of 5 works well.
+	 */
+	const int RAND_DIM=5;
+	
+	
+	/**
+	 * Number of randomized trees that are used
+	 */
+	private int numTrees_;       	
+
+	/**
+	 * Number of neighbors checked in one lookup phase
+	 */
+	private int checkCount;
+
+	/**
+	 * The dataset containing the vectors.
+	 */
+	private T[][] vecs;
+
+	/**
+	 * Number of vectors stored in this index.
+	 */
+	private int vcount;
+	
+	/**
+	 * Length of each vector.
+	 */
+	private int veclen;
+	
+	/**
+	 *  Array of indices to vecs.  When doing lookup, 
+	 *  this is used instead to mark checkID.
+	 */
+	private int[] vind;
+	
+	/**
+	 * An unique ID for each lookup.
+	 */
+	private int checkID;
+	
+
+	/**
+	 * Array of k-d trees used to find neighbors.
+	 */
+	private Tree[] trees;
+	
 	
 	alias BranchStruct!(Tree) BranchSt;
 	alias BranchSt* Branch;
-
-	Heap!(BranchSt) heap;
+	/**
+	 * Priority queue storing intermediate branches in the best-bin-first search
+	 */
+	private Heap!(BranchSt) heap;
 	
 
-
-	
-	/*--------------------------- Constants -----------------------------*/
-	
-	/* When creating random trees, the dimension on which to subdivide is
-		selected at random from among the top RAND_DIM dimensions with the
-		highest variance.  A value of 5 works well.
-	*/
-	const int RAND_DIM=5;
-	
-	/* To improve efficiency, only SAMPLE_MEAN random values are used to
-		compute the mean and variance at each level when building a tree.
-		A value of 100 seems to perform as well as using all values.
-	*/
-	const int SAMPLE_MEAN = 100;
-		
 	/*--------------------- Internal Data Structures --------------------------*/
 	
-	/* This is a node of the binary k-d tree.  All nodes that have 
-		vec[divfeat] < divval are placed in the child1 subtree, else child2.
-		A leaf node is indicated if both children are NULL.
-	*/
+	/**
+	 * A node of the binary k-d tree.
+	 * 
+	 *  This is   All nodes that have vec[divfeat] < divval are placed in the
+	 *   child1 subtree, else child2., A leaf node is indicated if both children are NULL.
+	 */
 	struct TreeSt {
-		int divfeat;    /* Index of the vector feature used for subdivision.
-							If this is a leaf node (both children are NULL) then
-							this holds vector index for this leaf. */
-		float divval;   /* The value used for subdivision. */
-		TreeSt* child1, child2;  /* Child nodes. */
+		/**
+		 * Index of the vector feature used for subdivision.
+		 * If this is a leaf node (both children are NULL) then
+		 * this holds vector index for this leaf. 
+		 */
+		int divfeat;
+		/**
+		 * The value used for subdivision.
+		 */
+		float divval;
+		/**
+		 * The child nodes.
+		 */
+		Tree child1, child2;
 	};
 	alias TreeSt* Tree;
 	
 	
+	/**
+	 * Pooled memory allocator.
+	 * 
+	 * Using a pooled memory allocator is more efficient
+	 * than allocating memory directly when there is a large
+	 * number small of memory allocations.
+	 */
 	private	PooledAllocator pool;
 	
 	
-	/*------------------------ Build k-d tree index ---------------------------*/
-	
-	/* Build and return the k-d tree index used to find nearest neighbors to
-		a set of vectors. 
-	*/
+	/**
+	 * KDTree constructor
+	 *
+	 * Params:
+	 * 		inputData = dataset with the input features
+	 * 		params = parameters passed to the kdtree algorithm
+	 */
 	public this(Features!(T) inputData, Params params)
 	{
 		pool = new PooledAllocator();
 	
+		// get the parameters
 		numTrees_ = params["trees"].get!(uint);
+		
 		vcount = inputData.rows;
 		veclen = inputData.cols;
 		vecs = inputData.vecs;
 		trees = pool.allocate!(Tree[])(numTrees_);
 		heap = new Heap!(BranchSt)(vecs.length);
 		checkID = -1000;
-		
-	
-		/* Create a permutable array of indices to the input vectors. */
-		vind = pool.allocate!(int[])(vcount);
+			
+		// Create a permutable array of indices to the input vectors.
+		vind = allocate!(int[])(vcount);
 		for (int i = 0; i < vcount; i++) {
 			vind[i] = i;
 		}
 	}
 	
+	/**
+	 * Standard destructor
+	 */
 	public ~this()
 	{
 		debug {
@@ -138,10 +184,14 @@ class KDTree(T) : NNIndex{
 			logger.info(sprint("KDTree wasted memory: {} KB", pool.wastedMemory/1000));
 			logger.info(sprint("KDTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
 		}
+		free(vind);
 		delete pool;
 	}
 	
 	
+	/**
+	 * Builds the index
+	 */
 	public void buildIndex() 
 	{
 		/* Construct the randomized trees. */
@@ -159,25 +209,41 @@ class KDTree(T) : NNIndex{
 		//Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
 	}
 	
+	/**
+	 * Size of the index
+	 * Returns: number of points in the index
+	 */
 	public int size() 
 	{
 		return vcount;
 	}
 	
+	/**
+	 * 
+	 * Returns: length of each vector(point) in the index
+	 */
 	public int length()
 	{
 		return veclen;
 	}
 	
+	/**
+	 * 
+	 * Returns: number of random trees in the index
+	 */
 	public int numTrees()
 	{
 		return numTrees_;
 	}
 	
 	
+	/**
+	 * Computes the inde memory usage
+	 * Returns: memory used by the index
+	 */
 	public int usedMemory()
 	{
-		return  pool.usedMemory+pool.wastedMemory;
+		return  pool.usedMemory+pool.wastedMemory+vind.length*int.sizeof;
 	}
 	
 	/* Create a tree node that subdivides the list of vecs from vind[first]
@@ -420,8 +486,6 @@ class KDTree(T) : NNIndex{
 		SearchLevel(result, vec, bestChild, mindistsq, maxCheck);
 	}
 	
-	int leafs = 0;
-	
 	private void SearchLevelExact(ResultSet result, float[] vec, Tree node, float mindistsq)
 	{
 		float val, diff;
@@ -482,7 +546,7 @@ class KDTree(T) : NNIndex{
 	
 	
 	
-	public float meanClusterVariance(int numClusters)
+	private float meanClusterVariance(int numClusters)
 	{
 		Queue!(Tree) q = new Queue!(Tree)(numClusters);
 		
