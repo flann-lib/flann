@@ -58,7 +58,7 @@ class CompositeTree(T) : NNIndex
 		return vecs.length;
 	}
 	
-	public int length() 
+	public int veclen() 
 	{
 		return flength;
 	}

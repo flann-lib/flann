@@ -214,7 +214,7 @@ void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount,
 		Object indexObj = nn_ids[index_id];
 		if (indexObj !is null) {
 			NNIndex index = cast(NNIndex) indexObj;
-			int length = index.length;
+			int length = index.veclen;
 			
 			int skipMatches = 0;
 			ResultSet resultSet = new ResultSet(nn+skipMatches);

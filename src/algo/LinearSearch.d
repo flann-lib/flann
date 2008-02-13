@@ -40,7 +40,7 @@ class LinearSearch(T): NNIndex {
 		return dataset.rows;
 	}
 	
-	public int length() 
+	public int veclen() 
 	{
 		return dataset.cols;
 	}

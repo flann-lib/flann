@@ -111,6 +111,9 @@ class ResultSet
 
 
 
+/**
+ * Nearest-neighbor index base class 
+ */
 abstract class NNIndex 
 {
 	/**
@@ -130,9 +133,9 @@ abstract class NNIndex
 	int size();
 	
 	/**
-		The length of features in this index.
+		The length of each vector in this index.
 	*/
-	int length();
+	int veclen();
 	
 	/**
 	 The number of trees in this index 

@@ -1,7 +1,18 @@
-/*
-Project: nn
-*/
-
+/************************************************************************
+ * Hierarchical KMeans approximate nearest neighbor search
+ * 
+ * This module finds the nearest-neighbors of vectors in high dimensional 
+ * spaces using a search of a kmeans tree.
+ * 
+ * Authors: Marius Muja, mariusm@cs.ubc.ca
+ * 
+ * Version: 0.9
+ * 
+ * History:
+ * 
+ * License:
+ * 
+ *************************************************************************/
 module algo.KMeansTree;
 
 import util.defines;
@@ -16,6 +27,12 @@ import util.Heap;
 
 import tango.math.Math;
 
+/**
+ * Hierarchical kmeans index
+ * 
+ * Contains a tree constructed through a hierarchical kmeans clustering 
+ * and other information for indexing a set of points for nearest-neighbor matching.
+ */
 class KMeansTree(T) : NNIndex
 {
 	
@@ -25,15 +42,14 @@ class KMeansTree(T) : NNIndex
 	alias Heap!(BranchSt) BranchHeap;
 
 
+	// index parameters
 	public uint branching;
-	private uint numTrees_;
 	private uint max_iter;
 	private string centersAlgorithm;
 	
 	private T[][] vecs;
 	private int flength;
 	private BranchHeap heap;	
-	private int checkID = -1;
 	
 	struct KMeansNodeSt	{
 		float[] pivot;
@@ -48,39 +64,36 @@ class KMeansTree(T) : NNIndex
 	alias KMeansNodeSt* KMeansNode;
 	
 
-	private KMeansNode root[];
+	private KMeansNode root;
 	private int[] indices;
 	
-	
-	alias T[][] delegate(int k, T[][] vecs, int[] indices) centersAlgDelegate;
-	centersAlgDelegate[string] centerAlgs;
-	
-	
 	private	PooledAllocator pool;
-	
-	private this()
-	{	
-		pool = new PooledAllocator();
 		
-		heap = new BranchHeap(512);
-		initCentersAlgorithms();
+	alias T[][] function(int k, T[][] vecs, int[] indices) centersAlgFunction;
+	static centersAlgFunction[string] centerAlgs;
+	static this() {
+		centerAlgs["random"] = &chooseCentersRandom;
+		centerAlgs["gonzales"] = &chooseCentersGonzales;		
 	}
+	
+	
+	
+	
+	
 	
 	public this(Dataset!(T) inputData, Params params)
 	{
 		pool = new PooledAllocator();
 	
+		// get algorithm parameters
 		this.branching = params["branching"].get!(uint);
-		this.numTrees_ = params["trees"].get!(uint);
 		this.max_iter = params["max-iterations"].get!(uint);
 		centersAlgorithm = params["centers-algorithm"].get!(string);
 		
 		this.vecs = inputData.vecs;
 		this.flength = inputData.cols;
 		
-		heap = new BranchHeap(inputData.rows);
-		
-		initCentersAlgorithms();
+		heap = new BranchHeap(inputData.rows);	
 	}
 	
 	
@@ -94,27 +107,20 @@ class KMeansTree(T) : NNIndex
 		delete pool;
 	}
 
-	private void initCentersAlgorithms()
-	{
-		centerAlgs["random"] = &chooseCentersRandom;
-		centerAlgs["gonzales"] = &chooseCentersGonzales;
-	}
-
-
 
 	public int size() 
 	{
 		return vecs.length;
 	}
 	
-	public int length() 
+	public int veclen() 
 	{
 		return flength;
 	}
 	
 	public int numTrees()
 	{
-		return numTrees_;
+		return 1;
 	}
 	
 	public int usedMemory()
@@ -122,87 +128,103 @@ class KMeansTree(T) : NNIndex
 		return  pool.usedMemory+pool.wastedMemory;
 	}
 
-	private int[] getBranchingFactors()	
+
+
+	private static T[][] chooseCentersRandom(int k, T[][] vecs, int[] indices)
 	{
-		bool isPrime(int num)
-		{
-			if (num<2) {
-				return false;
-			}
-			else if (num==2) {
-				return true;
-			} else {
-				if (num%2==0) {
-					return false;
+		DistinctRandom r = new DistinctRandom(indices.length);
+		
+		static T[][] centers;
+		if (centers is null || centers.length!=k) centers = new T[][k];
+		int index;
+		for (index=0;index<k;++index) {
+			bool duplicate = true;
+			int rnd;
+			while (duplicate) {
+				duplicate = false;
+				rnd = r.nextRandom();
+				if (rnd==-1) {
+					return centers[0..index-1];
 				}
-				for (int i=3;i*i<=num;i+=2) {
-					if (num%i==0) {
-						return false;
+				
+				centers[index] = vecs[indices[rnd]];
+				
+				for (int j=0;j<index;++j) {
+					if (squaredDist(centers[index],centers[j])<1e-9) {
+						duplicate = true;
 					}
 				}
 			}
-			return true;
-		}
-
-		int[] branchings;// = new int[numTrees];
-		
-		int below = (numTrees-1)/2;
-		int crt_branching = branching-1;
-		int tries = 0;
-/+		while (crt_branching>=2 && tries<below) {
-			if (isPrime(crt_branching)) {
-				branchings ~= crt_branching;
-				tries++;
-			}
-			crt_branching--;
-		}+/
-		branchings ~= branching;
-		int above = numTrees-1-tries;
-		crt_branching = branching+1;
-		tries = 0;
-		while (tries<above) {
-			if (isPrime(crt_branching)) {
-				branchings ~= crt_branching;
-				tries++;
-			}
-			crt_branching++;
 		}
 		
-		return branchings;
+		return centers[0..index];
 	}
+
+	private static T[][] chooseCentersGonzales(int k, T[][] vecs, int[] indices)
+	{
+		int n = indices.length;
+		
+		static T[][] centers;
+		if (centers is null) centers = new T[][k];
+		
+		int rand = cast(int) (drand48() * n);  
+		assert(rand >=0 && rand < n);
+		
+		centers[0] = vecs[indices[rand]];
+		
+		int index;
+		for (index=1; index<k; ++index) {
+			
+			int best_index = -1;
+			float best_val = 0;
+			for (int j=0;j<n;++j) {
+				float dist = squaredDist(centers[0],vecs[indices[j]]);
+				for (int i=1;i<index;++i) {
+						float tmp_dist = squaredDist(centers[i],vecs[indices[j]]);
+					if (tmp_dist<dist) {
+						dist = tmp_dist;
+					}
+				}
+				if (dist>best_val) {
+					best_val = dist;
+					best_index = j;
+				}
+			}
+			if (best_index!=-1) {
+				centers[index] = vecs[indices[best_index]];
+			} 
+			else {
+				break;
+			}
+		}
+		return centers[0..index];
+	}
+
 
 
 	public void buildIndex() 
 	{	
-	
-		int branchings[] = getBranchingFactors();
-		
-		root = new KMeansNode[numTrees];
 		indices = new int[vecs.length];
 		for (int i=0;i<vecs.length;++i) {
 			indices[i] = i;
 		}
 		
-		foreach (index,branchingValue; branchings) {
-			root[index] = pool.allocate!(KMeansNodeSt);
-			computeNodeStatistics(root[index], indices);
-			computeClustering(root[index], indices, branchingValue);
+		root = pool.allocate!(KMeansNodeSt);
+		computeNodeStatistics(root, indices);
+		computeClustering(root, indices, branching);
+		
+		debug {
+			int[] cs = clusterSizes();		
+			withOpenFile("cluster_sizes.txt",(FormatOutput output) {
+				foreach(c;cs) {
+					output.formatln("{}",c);
+				}
+			});
 		}
-		
-		int[] cs = clusterSizes();
-		
-		withOpenFile("cluster_sizes.txt",(FormatOutput output) {
-			foreach(c;cs) {
-				output.formatln("{}",c);
-			}
-		});
-
 	}
 	
 
-	
-	
-	void computeNodeStatistics(KMeansNode node, int[] indices) {
+	private void computeNodeStatistics(KMeansNode node, int[] indices) {
 	
 		float radius = 0;
 		float variance = 0;
@@ -229,11 +251,9 @@ class KMeansTree(T) : NNIndex
 			}
 		}
 		
-		
 		node.variance = variance;
 		node.radius = radius;
 		node.pivot = mean;
-		
 	}
 	
 	
@@ -305,9 +325,7 @@ class KMeansTree(T) : NNIndex
 			// compute the new clusters
 			foreach (i,index; indices) {
  				centers[belongs_to[i]].add(vecs[index]);
-/+				auto vecs_i = vecs[index]; 
-				foreach (k, inout value; centers[belongs_to[i]]) 
-				 	value += vecs_i[k];+/
+
 			}
 						
 			foreach (j,center;centers) {
@@ -399,93 +417,21 @@ class KMeansTree(T) : NNIndex
 	
 	
 	
-	private T[][] chooseCentersRandom(int k, T[][] vecs, int[] indices)
-	{
-		DistinctRandom r = new DistinctRandom(indices.length);
-		
-		static T[][] centers;
-		if (centers is null || centers.length!=k) centers = new T[][k];
-		int index;
-		for (index=0;index<k;++index) {
-			bool duplicate = true;
-			int rnd;
-			while (duplicate) {
-				duplicate = false;
-				rnd = r.nextRandom();
-				if (rnd==-1) {
-					return centers[0..index-1];
-				}
-				
-				centers[index] = vecs[indices[rnd]];
-				
-				for (int j=0;j<index;++j) {
-					if (squaredDist(centers[index],centers[j])<1e-9) {
-						duplicate = true;
-					}
-				}
-			}
-		}
-		
-		return centers[0..index];
-	}
-
-	private T[][] chooseCentersGonzales(int k, T[][] vecs, int[] indices)
-	{
-		int n = indices.length;
-		
-		static T[][] centers;
-		if (centers is null) centers = new T[][k];
-		
-		int rand = cast(int) (drand48() * n);  
-		assert(rand >=0 && rand < n);
-		
-		centers[0] = vecs[indices[rand]];
-		
-		int index;
-		for (index=1; index<k; ++index) {
-			
-			int best_index = -1;
-			float best_val = 0;
-			for (int j=0;j<n;++j) {
-				float dist = squaredDist(centers[0],vecs[indices[j]]);
-				for (int i=1;i<index;++i) {
-						float tmp_dist = squaredDist(centers[i],vecs[indices[j]]);
-					if (tmp_dist<dist) {
-						dist = tmp_dist;
-					}
-				}
-				if (dist>best_val) {
-					best_val = dist;
-					best_index = j;
-				}
-			}
-			if (best_index!=-1) {
-				centers[index] = vecs[indices[best_index]];
-			} 
-			else {
-				break;
-			}
-		}
-		return centers[0..index];
-	}
 	
 	
 	void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
 		if (maxCheck==-1) {
-			findExactNN(root[0], result, vec);
+			findExactNN(root, result, vec);
 		}
 		else {
-			checkID -= 1;
 			heap.init();			
 			
-			for (int i=0;i<numTrees;++i) {
-				findNN(root[i], result, vec);
-			}
+			findNN(root, result, vec);
 			
 			int checks = 0;			
 			BranchSt branch;
-			while ((++checks<maxCheck || !result.full) && heap.popMin(branch)) {
+			while (heap.popMin(branch) && (++checks<maxCheck || !result.full)) {
 				KMeansNode node = branch.node;			
 				findNN(node, result, vec);
 			}
@@ -520,12 +466,7 @@ class KMeansTree(T) : NNIndex
 				throw new Exception("Reached empty cluster. This shouldn't happen.\n");
 			}
 			
-			for (int i=0;i<node.indices.length;++i) {
-				
-//  				if (points[i].checkID == checkID) {
-// 					return;
-// 				}
-// 				points[i].checkID = checkID;
+			for (int i=0;i<node.indices.length;++i) {		
 				result.addPoint(vecs[node.indices[i]], node.indices[i]);
 			}	
 		} 
@@ -607,7 +548,6 @@ class KMeansTree(T) : NNIndex
 
 			for (int i=0; i<nc; ++i) {
  				findExactNN(node.childs[sort_indices[i]],result,vec);
-// 				childs[i].findExactNN(result,vec);
 			}
 		}		
 	}
@@ -654,7 +594,7 @@ class KMeansTree(T) : NNIndex
 	}
 	
 	
-	private int[] clusterSizes()
+	debug private int[] clusterSizes()
 	{
 		static int cluster_sizes[100_000];
 		int cnt = 0;
@@ -672,44 +612,16 @@ class KMeansTree(T) : NNIndex
 			}
 		}
 	
-	
-		testTreeNode(root[0]);
+		testTreeNode(root);
 		
 		return cluster_sizes[0..cnt];
 	}	
 	
-	private T[][] getClusterPoints(KMeansNode node)
-	{
-		void getClusterPoints_Helper(KMeansNode node, inout T[][] points, inout int size) 
-		{
-			if (node.childs.length == 0) {			
-				for (int i=0;i<node.indices.length;++i) {
-					points[size++] =  vecs[node.indices[i]];
-				}
-			}
-			else {
-				for (int i=0;i<node.childs.length;++i) {
-					getClusterPoints_Helper(node.childs[i],points,size);
-				}
-			}
-		}
-	
-	
-		static T[][] points;
-		if (points==null) {
-			points = new T[][vecs.length];
-		}
-		int size = 0;
-		getClusterPoints_Helper(node,points,size);
-		
-		return points[0..size];
-	}
-	
 
-	float[][] getClusterCenters(int numClusters) 
+	public float[][] getClusterCenters(int numClusters) 
 	{
 		float variance;
-		KMeansNode[] clusters = getMinVarianceClusters(root[0], numClusters, variance);
+		KMeansNode[] clusters = getMinVarianceClusters(root, numClusters, variance);
 
 		float[][] centers = new float[][clusters.length];
 		

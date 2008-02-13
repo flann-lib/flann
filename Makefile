@@ -72,6 +72,10 @@ clean:
 	-(cd src/bindings/matlab; make clean)
 	-(cd src/bindings/c; make clean)
 
+deapclean: clean
+	rm -rf ${OBJ_DIR}
+	rm -rf ${LIB_OBJ_DIR}
+
 rebuild: clean all
 
 matlab_bindings: library

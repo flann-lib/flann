@@ -46,7 +46,7 @@ class KDTree(T) : NNIndex{
 	 * compute the mean and variance at each level when building a tree.
 	 * A value of 100 seems to perform as well as using all values.
 	 */
-	const int SAMPLE_MEAN = 100;
+	private const int SAMPLE_MEAN = 100;
 	
 	/**
 	 * Top random dimensions to consider
@@ -55,7 +55,7 @@ class KDTree(T) : NNIndex{
 	 * selected at random from among the top RAND_DIM dimensions with the
 	 * highest variance.  A value of 5 works well.
 	 */
-	const int RAND_DIM=5;
+	private const int RAND_DIM=5;
 	
 	
 	/**
@@ -67,21 +67,6 @@ class KDTree(T) : NNIndex{
 	 * Number of neighbors checked in one lookup phase
 	 */
 	private int checkCount;
-
-	/**
-	 * The dataset containing the vectors.
-	 */
-	private T[][] vecs;
-
-	/**
-	 * Number of vectors stored in this index.
-	 */
-	private int vcount;
-	
-	/**
-	 * Length of each vector.
-	 */
-	private int veclen;
 	
 	/**
 	 *  Array of indices to vecs.  When doing lookup, 
@@ -93,7 +78,11 @@ class KDTree(T) : NNIndex{
 	 * An unique ID for each lookup.
 	 */
 	private int checkID;
-	
+
+	/**
+	 * The dataset used by this index
+	 */
+	Dataset!(T) dataset;
 
 	/**
 	 * Array of k-d trees used to find neighbors.
@@ -155,21 +144,20 @@ class KDTree(T) : NNIndex{
 	 */
 	public this(Dataset!(T) inputData, Params params)
 	{
+		dataset = inputData;
+
 		pool = new PooledAllocator();
 	
 		// get the parameters
 		numTrees_ = params["trees"].get!(uint);
-		
-		vcount = inputData.rows;
-		veclen = inputData.cols;
-		vecs = inputData.vecs;
+	
 		trees = pool.allocate!(Tree[])(numTrees_);
-		heap = new Heap!(BranchSt)(vecs.length);
+		heap = new Heap!(BranchSt)(size);
 		checkID = -1000;
 			
 		// Create a permutable array of indices to the input vectors.
-		vind = allocate!(int[])(vcount);
-		for (int i = 0; i < vcount; i++) {
+		vind = allocate!(int[])(size);
+		for (int i = 0; i < size; i++) {
 			vind[i] = i;
 		}
 	}
@@ -197,16 +185,14 @@ class KDTree(T) : NNIndex{
 		/* Construct the randomized trees. */
 		for (int i = 0; i < numTrees_; i++) {
 			/* Randomize the order of vectors to allow for unbiased sampling. */
-			for (int j = 0; j < vcount; j++) {
-				int rand = cast(int) (drand48() * vcount);  
-				assert(rand >=0 && rand < vcount);
+			for (int j = 0; j < size; j++) {
+				int rand = cast(int) (drand48() * size);  
+				assert(rand >=0 && rand < size);
 				swap(vind[j], vind[rand]);
 			}
 			trees[i] = null;
-			divideTree(&trees[i], 0, vcount - 1);
+			divideTree(&trees[i], 0, size - 1);
 		}
-		
-		//Logger.log(Logger.INFO,"Mean cluster variance for %d top level clusters: %f\n",20,meanClusterVariance(20));
 	}
 	
 	/**
@@ -215,16 +201,16 @@ class KDTree(T) : NNIndex{
 	 */
 	public int size() 
 	{
-		return vcount;
+		return dataset.rows;
 	}
 	
 	/**
 	 * 
 	 * Returns: length of each vector(point) in the index
 	 */
-	public int length()
+	public int veclen()
 	{
-		return veclen;
+		return dataset.cols;
 	}
 	
 	/**
@@ -246,15 +232,30 @@ class KDTree(T) : NNIndex{
 		return  pool.usedMemory+pool.wastedMemory+vind.length*int.sizeof;
 	}
 	
-	/* Create a tree node that subdivides the list of vecs from vind[first]
-		to vind[last].  The routine is called recursively on each sublist.
-		Place a pointer to this new tree node in the location pTree. 
-	*/
+	/**
+	 * 
+	 * Returns: vectors in the dataset
+	 */
+	private T[][] vecs()
+	{
+		return dataset.vecs;
+	}
+	
+	
+	/**
+	 * Create a tree node that subdivides the list of vecs from vind[first]
+	 * to vind[last].  The routine is called recursively on each sublist.
+	 * Place a pointer to this new tree node in the location pTree.
+	 * 
+	 * Params: pTree = the new node to create
+	 * 			first = index of the first vector
+	 * 			last = index of the last vector
+	 */
 	private void divideTree(Tree* pTree, int first, int last)
 	{
 		Tree node;
 	
-		node = pool.allocate!(TreeSt);//allocate!(TreeSt)();
+		node = pool.allocate!(TreeSt); // allocate memory
 		*pTree = node;
 	
 		/* If only one exemplar remains, then make this a leaf node. */
@@ -268,17 +269,15 @@ class KDTree(T) : NNIndex{
 	}
 	
 	
-	/* Choose which feature to use in order to subdivide this set of vectors.
-		Make a random choice among those with the highest variance, and use
-		its variance as the threshold value.
-	*/
+	
+	
+	/**
+	 * Choose which feature to use in order to subdivide this set of vectors.
+	 * Make a random choice among those with the highest variance, and use
+	 * its variance as the threshold value.
+	 */
 	private void chooseDivision(Tree node, int first, int last)
-	{
-// 		scope float[] mean = new float[veclen];
-// 		scope float[] var = new float[veclen];
-/+		float[] mean = (cast(float*)alloca(veclen*float.sizeof))[0..veclen];
-		float[] var = (cast(float*)alloca(veclen*float.sizeof))[0..veclen];+/
-		
+	{		
 		float[] mean =  allocate!(float[])(veclen);
 		scope(exit) free(mean);
 		float[] var =  allocate!(float[])(veclen);
@@ -314,9 +313,10 @@ class KDTree(T) : NNIndex{
 	}
 	
 	
-	/* Select the top RAND_DIM largest values from v and return the index of
-		one of these selected at random.
-	*/
+	/**
+	 * Select the top RAND_DIM largest values from v and return the index of
+	 * one of these selected at random.
+	 */
 	private int selectDivision(float[] v)
 	{
 		int num = 0;
@@ -347,8 +347,9 @@ class KDTree(T) : NNIndex{
 	}
 	
 	
-	/* subdivide the list of exemplars using the feature and division
-		value given in this node.  Call divideTree recursively on each list.
+	/**
+	 *  Subdivide the list of exemplars using the feature and division
+	 *  value given in this node.  Call divideTree recursively on each list.
 	*/
 	private void subdivide(Tree node, int first, int last)
 	{	
@@ -382,22 +383,30 @@ class KDTree(T) : NNIndex{
 	}
 	
 	
-	/*----------------------- Nearest Neighbor Lookup ------------------------*/
-	
-	
-	/* Find set of numNN nearest neighbors to vec, and place their indices
-		(location in original vector given to BuildIndex) in result.
-	*/
+
+	/** 
+	 * Find set of nearest neighbors to vec. Their indices are stored inside
+	 * the result object. 
+	 * 
+	 * Params:
+	 *     result = the result object in which the indices of the nearest-neighbors are stored 
+	 *     vec = the vector for which to search the nearest neighbors
+	 *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
+	 */
 	public void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
 		if (maxCheck==-1) {
-			GetExactNeighbors(result, vec);
+			getExactNeighbors(result, vec);
 		} else {
-			GetNeighbors(result, vec, maxCheck);
+			getNeighbors(result, vec, maxCheck);
 		}
 	}
 	
-	private void GetExactNeighbors(ResultSet result, float[] vec)
+	/**
+	 * Performs an exact nearest neighbor search. The exact search performs a full
+	 * traversal of the tree.  
+	 */
+	private void getExactNeighbors(ResultSet result, float[] vec)
 	{
 		checkID -= 1;  /* Set a different unique ID for each search. */
 	
@@ -405,49 +414,50 @@ class KDTree(T) : NNIndex{
 			logger.info("Doesn't make any sense to use more than one tree for exact search");
 		}
 		if (numTrees_>0) {
-			SearchLevelExact(result, vec, trees[0], 0.0);		
+			searchLevelExact(result, vec, trees[0], 0.0);		
 		}		
 		assert(result.full);
 	}
 	
-	private void GetNeighbors(ResultSet result, float[] vec, int maxCheck)
+	/**
+	 * Performs the approximate nearest-neighbor search. The search is approximate 
+	 * because the tree traversal is abandoned after a given number of descends in
+	 * the tree. 
+	 */
+	private void getNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
 		int i;
 		BranchSt branch;
-	
+		
 		checkCount = 0;
 		heap.init();
 		checkID -= 1;  /* Set a different unique ID for each search. */
 	
 		/* Search once through each tree down to root. */
 		for (i = 0; i < numTrees_; ++i) {
-			SearchLevel(result, vec, trees[i], 0.0, maxCheck);
+			searchLevel(result, vec, trees[i], 0.0, maxCheck);
 		}
 	
 		/* Keep searching other branches from heap until finished. */
-		while ( heap.popMin(branch) 
-			&& (checkCount++ < maxCheck || !result.full )) {
-			SearchLevel(result, vec, branch.node,
-					branch.mindistsq, maxCheck);
+		while ( heap.popMin(branch) && (checkCount++ < maxCheck || !result.full )) {
+			searchLevel(result, vec, branch.node,branch.mindistsq, maxCheck);
 		}
 		
 		assert(result.full);
 	}
 		
-	/* Search starting from a given node of the tree.  Based on any mismatches at
-		higher levels, all exemplars below this level must have a distance of
-		at least "mindistsq". 
+	/**
+	 *  Search starting from a given node of the tree.  Based on any mismatches at
+	 *  higher levels, all exemplars below this level must have a distance of
+	 *  at least "mindistsq". 
 	*/
-	private void SearchLevel(ResultSet result, float[] vec, 
-			Tree node, float mindistsq, int maxCheck)
+	private void searchLevel(ResultSet result, float[] vec, Tree node, float mindistsq, int maxCheck)
 	{
 		float val, diff;
 		Tree bestChild, otherChild;
 	
 		/* If this is a leaf node, then do check and return. */
 		if (node.child1 == null  &&  node.child2 == null) {
-		
-		//	checkCount += 1;
 		
 			/* Do not check same node more than once when searching multiple trees.
 				Once a vector is checked, we set its location in vind to the
@@ -481,10 +491,13 @@ class KDTree(T) : NNIndex{
 		}
 	
 		/* Call recursively to search next level down. */
-		SearchLevel(result, vec, bestChild, mindistsq, maxCheck);
+		searchLevel(result, vec, bestChild, mindistsq, maxCheck);
 	}
 	
-	private void SearchLevelExact(ResultSet result, float[] vec, Tree node, float mindistsq)
+	/**
+	 * Performs an exact search in the tree starting from a node.
+	 */
+	private void searchLevelExact(ResultSet result, float[] vec, Tree node, float mindistsq)
 	{
 		float val, diff;
 		Tree bestChild, otherChild;
@@ -513,74 +526,10 @@ class KDTree(T) : NNIndex{
 	
 	
 		/* Call recursively to search next level down. */
-		SearchLevelExact(result, vec, bestChild, mindistsq);
-		SearchLevelExact(result, vec, otherChild, mindistsq+diff * diff);
+		searchLevelExact(result, vec, bestChild, mindistsq);
+		searchLevelExact(result, vec, otherChild, mindistsq+diff * diff);
 	}
 	
-	
-	
-	T[][] getClusterPoints(Tree node)
-	{
-		void getClusterPoints_Helper(Tree node, inout T[][] points, inout int size) 
-		{
-			if (node.child1 == null && node.child2 == null) {
-				points[size++] = vecs[node.divfeat];
-			}
-			else {
-				getClusterPoints_Helper(node.child1,points,size);
-				getClusterPoints_Helper(node.child2,points,size);
-			}
-		}
-		
-		static T[][] points;
-		if (points==null) {
-			points = new T[][vcount];
-		}
-		int size = 0;
-		getClusterPoints_Helper(node,points,size);
-		
-		return points[0..size];
-	}
-	
-	
-	
-	private float meanClusterVariance(int numClusters)
-	{
-		Queue!(Tree) q = new Queue!(Tree)(numClusters);
-		
-		q.push(trees[0]);
-
-		while(!q.full) {
-			Tree t;
-			q.pop(t);
-			if (t.child1==null && t.child2==null) {
-				q.push(t);
-			}
-			else {
-				q.push(t.child1);
-				q.push(t.child2);
-			}
-		}
-			
-		float variances[] = new float[q.size];
-		int clusterSize[] = new int[q.size];
-		
-		for (int i=0;i<q.size;++i) {
-			T[][] clusterPoints = getClusterPoints(q[i]);
-			variances[i] = computeVariance(clusterPoints);
-			clusterSize[i] = clusterPoints.length;
-		}
-		
-		float meanVariance = 0;
-		int sum = 0;
-		for (int i=0;i<variances.length;++i) {
-			meanVariance += variances[i]*clusterSize[i];
-			sum += clusterSize[i];
-		}
-		meanVariance/=sum;
-		
-		return meanVariance;		
-	}
 }
 
 mixin AlgorithmRegistry!(KDTree!(float),float);
