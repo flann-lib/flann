@@ -61,15 +61,29 @@ After downloading and unpacking the following files and directories should be pr
 
 \end{itemize}
 
-
-\section{Using FANN command line application}
-
-\section{Using FANN library}
-
 \section{Using FANN from MATLAB}
 
-The FANN library can be used from MATLAB through the following wrapper functions: \texttt{fann\_build\_index}, \texttt{fann\_search} and \texttt{fann\_free\_index}. The \texttt{fann\_build\_index} function creates a search index from the dataset points, \texttt{fann\_search} uses this index to perform nearest-neighbor searches and \texttt{fann\_free\_index} deletes the index and releases the memory it uses. These functions are described in detail in the following sections together with examples of how they may be used:
+The FANN library can be used from MATLAB through the following wrapper functions: \texttt{fann\_build\_index}, \texttt{fann\_search} and \texttt{fann\_free\_index}. The \texttt{fann\_build\_index} function creates a search index from the dataset points, \texttt{fann\_search} uses this index to perform nearest-neighbor searches and \texttt{fann\_free\_index} deletes the index and releases the memory it uses.
 
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+
+>> dataset = single(rand(128,10000));
+>> testset = single(rand(128,1000));
+>> result = fann_search(dataset,testset,5,struct('checks',128,
+'algorithm','kmeans','branching',64,'iterations',3));
+>> size(result)
+
+ans =
+
+           5        1000
+
+\end{Verbatim}
+
+
+
+
+
+The following sections describe in more detail the FANN matlab wrapper functions, together with examples of how they may be used.
 
 \paragraph{fann\_build\_index} 
 
@@ -209,7 +223,7 @@ ans =
 
 >> index = fann_build_index(dataset,struct('algorithm','kdtree','trees',8));
 
->> result = fann_search(index,testset,5,{'checks',128});
+>> result = fann_search(index,testset,5,struct('checks',128));
 >> size(result)
 
 ans =
@@ -240,8 +254,8 @@ ans =
 
          128        1000
 
->> result = fann_search(dataset,testset,5,{'checks',128,'algorithm','kmeans',
-'branching',64,'iterations',5});
+>> result = fann_search(dataset,testset,5,struct('checks',128,'algorithm','kmeans',
+'branching',64,'iterations',5));
 >> size(result)
 
 ans =
@@ -249,6 +263,16 @@ ans =
            5        1000
 
 \end{Verbatim}
+
+\section{Using FANN library}
+
+
+
+
+\section{Using FANN command line application}
+
+
+
 
 
 

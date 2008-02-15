@@ -85,8 +85,10 @@ test_c_bindings: library
 	(cd src/bindings/c; make)
 
 program:
+	@if [ ! -d ${BUILD_DIR} ] ; then mkdir ${BUILD_DIR}; fi
 	${BIN_DIR}/build -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${TARGET} ${DFLAGS} ${LIBS}
 
 library:
+	@if [ ! -d ${BUILD_DIR} ] ; then mkdir ${BUILD_DIR}; fi
 	 ${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
 
