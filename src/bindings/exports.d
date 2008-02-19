@@ -9,6 +9,7 @@ import util.Utils;
 import nn.Autotune;
 
 import util.Logger;
+import tango.stdc.stdio;
 
 extern(C):
 
@@ -32,11 +33,13 @@ alias int NN_INDEX;
 Object nn_ids[64];
 Object features[64];
 int nn_ids_count;
+private static bool initialized;
 
 static this()
 {
 	GC.disable(); // disable garbage collector and do manual memory allocation
 	
+	initialized = false;
 	nn_ids_count = 0;
 }
 
@@ -109,14 +112,22 @@ void rt_term();
 
 void nn_init()
 {
-	rt_init();
-	
-	initLogger();
+// 	printf("dcode: nn_init()\n");
+	if (!initialized) {
+// 		printf("doing initialization\n");
+		rt_init();
+		initLogger();
+		initialized = true;
+	}
 }
 
 void nn_term()
 {
-	rt_term();
+// 	printf("dcode: nn_term()\n");
+	if (initialized) {
+		rt_term();
+		initialized = false;
+	}
 }
 
 
@@ -134,149 +145,182 @@ private Dataset!(T) makeFeatures(T)(T* dataset, int count, int length)
 
 NN_INDEX build_index(float* dataset, int count, int length, float target_precision, Parameters* parameters)
 {	
-	auto inputData = makeFeatures(dataset,count,length);
-	
-	
-	NNIndex index;
-	if (target_precision < 0) {
-		Params params = parametersToParams(*parameters);
-		char[] algorithm = params["algorithm"].get!(char[]);		
-		index = indexRegistry!(float)[algorithm](inputData, params);
-		index.buildIndex();
-	}
-	else {
-		Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
-		char[] algorithm = params["algorithm"].get!(char[]);		
-		index = indexRegistry!(float)[algorithm](inputData, params);
-		index.buildIndex();
-		params["checks"] = estimateSearchParams(index,inputData,target_precision);
+	try {
+		nn_init();
+		auto inputData = makeFeatures(dataset,count,length);
 		
-		*parameters = paramsToParameters(params);
-	}
-	
-	
-	NN_INDEX indexID = nn_ids_count++;
-	nn_ids[indexID] = index;
-	features[indexID] = inputData;
 		
+		NNIndex index;
+		if (target_precision < 0) {
+			Params params = parametersToParams(*parameters);
+			char[] algorithm = params["algorithm"].get!(char[]);		
+			index = indexRegistry!(float)[algorithm](inputData, params);
+			index.buildIndex();
+		}
+		else {
+			Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
+			char[] algorithm = params["algorithm"].get!(char[]);		
+			index = indexRegistry!(float)[algorithm](inputData, params);
+			index.buildIndex();
+			params["checks"] = estimateSearchParams(index,inputData,target_precision);
+			
+			*parameters = paramsToParameters(params);
+		}
+		
+		
+		NN_INDEX indexID = nn_ids_count++;
+		nn_ids[indexID] = index;
+		features[indexID] = inputData;
+		return indexID;
+	}
+	catch (Exception e) {
+		logger.error("Caught exception: "~e.toString());
+		return -1;
+	}
 /+	GC.setAttr(nn_ids.ptr,GC.BlkAttr.NO_SCAN);
 	GC.collect();+/
-	return indexID;
 }
 
 
 void find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters)
 {
-	auto inputData = makeFeatures(dataset,count,length);
-	
-	NNIndex index;
-	if (target_precision < 0) {
-		Params params = parametersToParams(*parameters);
-		char[] algorithm = params["algorithm"].get!(char[]);		
-		index = indexRegistry!(float)[algorithm](inputData, params);
-		index.buildIndex();
-	}
-	else {	
-		Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
-		char[] algorithm = params["algorithm"].get!(char[]);		
-		index = indexRegistry!(float)[algorithm](inputData, params);
-		index.buildIndex();
-		params["checks"] = estimateSearchParams(index,inputData,target_precision);
+	try {
+		nn_init();
+		auto inputData = makeFeatures(dataset,count,length);
 		
-		*parameters = paramsToParameters(params);
-	}
-	
-	int skipMatches = 0;
-	ResultSet resultSet = new ResultSet(nn+skipMatches);
-	
-	int resultIndex = 0;
-	for (int i = 0; i < tcount; i++) {
-		resultSet.init(testset[0..length]);
-
-		index.findNeighbors(resultSet,testset[0..length], parameters.checks);			
+		NNIndex index;
+		if (target_precision < 0) {
+			Params params = parametersToParams(*parameters);
+			char[] algorithm = params["algorithm"].get!(char[]);		
+			index = indexRegistry!(float)[algorithm](inputData, params);
+			index.buildIndex();
+		}
+		else {	
+			Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
+			char[] algorithm = params["algorithm"].get!(char[]);		
+			index = indexRegistry!(float)[algorithm](inputData, params);
+			index.buildIndex();
+			params["checks"] = estimateSearchParams(index,inputData,target_precision);
+			
+			*parameters = paramsToParameters(params);
+		}
 		
-		int[] neighbors = resultSet.getNeighbors();
-		result[resultIndex..resultIndex+nn] = neighbors[skipMatches..$];
+		int skipMatches = 0;
+		ResultSet resultSet = new ResultSet(nn+skipMatches);
 		
-		resultIndex += nn;
-		testset += length;
-	}
+		int resultIndex = 0;
+		for (int i = 0; i < tcount; i++) {
+			resultSet.init(testset[0..length]);
 	
-	delete resultSet;
-	delete index;
-	delete inputData;
-	GC.collect();
+			index.findNeighbors(resultSet,testset[0..length], parameters.checks);			
+			
+			int[] neighbors = resultSet.getNeighbors();
+			result[resultIndex..resultIndex+nn] = neighbors[skipMatches..$];
+			
+			resultIndex += nn;
+			testset += length;
+		}
+		
+		delete resultSet;
+		delete index;
+		delete inputData;
+	}
+	catch(Exception e) {
+		logger.error("Caught exception: "~e.toString());
+	}
+// 	GC.collect();
 }
 
 void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks)
 {
-	if (index_id < nn_ids_count) {
-		Object indexObj = nn_ids[index_id];
-		if (indexObj !is null) {
-			NNIndex index = cast(NNIndex) indexObj;
-			int length = index.veclen;
-			
-			int skipMatches = 0;
-			ResultSet resultSet = new ResultSet(nn+skipMatches);
-			
-			int resultIndex = 0;
-			for (int i = 0; i < tcount; i++) {
-				resultSet.init(testset[0..length]);
-						
-				index.findNeighbors(resultSet,testset[0..length], checks);
+	try {
+		nn_init();
+		if (index_id < nn_ids_count) {
+			Object indexObj = nn_ids[index_id];
+			if (indexObj !is null) {
+				NNIndex index = cast(NNIndex) indexObj;
+				int length = index.veclen;
 				
-				int[] neighbors = resultSet.getNeighbors();
-				result[resultIndex..resultIndex+nn] = neighbors[skipMatches..$];
+				int skipMatches = 0;
+				ResultSet resultSet = new ResultSet(nn+skipMatches);
 				
-				resultIndex += nn;
-				testset += length;
+				int resultIndex = 0;
+				for (int i = 0; i < tcount; i++) {
+					resultSet.init(testset[0..length]);
+							
+					index.findNeighbors(resultSet,testset[0..length], checks);
+					
+					int[] neighbors = resultSet.getNeighbors();
+					result[resultIndex..resultIndex+nn] = neighbors[skipMatches..$];
+					
+					resultIndex += nn;
+					testset += length;
+				}
+				delete resultSet;
 			}
-			delete resultSet;
-		}
+			else {
+				throw new Exception("Invalid index ID");
+			}
+		} 
 		else {
 			throw new Exception("Invalid index ID");
-		}
-	} 
-	else {
-		throw new Exception("Invalid index ID");
+		}	
 	}
+	catch(Exception e) {
+		logger.error("Caught exception: "~e.toString());
+	}
+	
 // 	GC.collect();
 }
 
 void free_index(NN_INDEX index_id)
 {
-	if (index_id < nn_ids_count) {
-		Object index = nn_ids[index_id];
-		Object inputData = features[index_id];
-		nn_ids[index_id] = null;
-		features[index_id] = null;
-		delete index;
-		delete inputData;
+	try {
+		nn_init();
+		if (index_id < nn_ids_count) {
+			Object index = nn_ids[index_id];
+			Object inputData = features[index_id];
+			nn_ids[index_id] = null;
+			features[index_id] = null;
+			delete index;
+			delete inputData;
+		}
 	}
-	GC.collect();
+	catch(Exception e) {
+		logger.error("Caught exception: "~e.toString());
+	}
+// 	GC.collect();
 }
 
 int compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, Parameters* parameters)
 {
-	auto inputData = makeFeatures(dataset,count,length);
-	
-	Params params = parametersToParams(*parameters);
-	char[] algorithm = params["algorithm"].get!(char[]);		
-	NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
-	index.buildIndex();
-	
-	float[][] centers = index.getClusterCenters(clusters);
-	
-	int clusterNum = centers.length;
-	
-	foreach(c;centers) {
-		result[0..length] = c;
-		result+=length;
+	try {
+		nn_init();
+		auto inputData = makeFeatures(dataset,count,length);
+
+		Params params = parametersToParams(*parameters);
+		char[] algorithm = params["algorithm"].get!(char[]);		
+		algorithm = "kmeans";
+		logger.info(sprint("Algorithm={}",algorithm));
+		NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
+		index.buildIndex();
+
+		float[][] centers = index.getClusterCenters(clusters);
+
+		int clusterNum = centers.length;
+
+		foreach(c;centers) {
+			result[0..length] = c;
+			result+=length;
+		}
+
+		delete index;
+		delete centers;
+// 		GC.collect();
+
+		return clusterNum;
+	} catch (Exception e) {
+		logger.error("Caught exception: "~e.toString());
+		return -1;
 	}
-	
-	delete index;
-	delete centers;
-	GC.collect();
-	
-	return clusterNum;
 }

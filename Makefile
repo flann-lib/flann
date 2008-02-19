@@ -55,8 +55,8 @@ BIN_DIR = ${CRT_DIR}/bin
 MAIN_FILE=${SRC_DIR}/main.d
 LIB_FILE=${SRC_DIR}/bindings/exports.d
 
-TARGET = ${BUILD_DIR}/fann
-LIB_TARGET = ${BUILD_DIR}/libfann.a
+TARGET = ${BUILD_DIR}/bin/fann
+LIB_TARGET = ${BUILD_DIR}/lib/libfann.a
 
 
 LDPATH=${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2
@@ -85,10 +85,10 @@ test_c_bindings: library
 	(cd src/bindings/c; make)
 
 program:
-	@if [ ! -d ${BUILD_DIR} ] ; then mkdir ${BUILD_DIR}; fi
+	mkdir -p ${BUILD_DIR}/bin
 	${BIN_DIR}/build -oq${OBJ_DIR} ${MAIN_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${TARGET} ${DFLAGS} ${LIBS}
 
 library:
-	@if [ ! -d ${BUILD_DIR} ] ; then mkdir ${BUILD_DIR}; fi
-	 ${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
+	mkdir -p ${BUILD_DIR}/lib
+	${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
 

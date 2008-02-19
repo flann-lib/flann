@@ -63,36 +63,54 @@ After downloading and unpacking the following files and directories should be pr
 
 \section{Using FANN from MATLAB}
 
-The FANN library can be used from MATLAB through the following wrapper functions: \texttt{fann\_build\_index}, \texttt{fann\_search} and \texttt{fann\_free\_index}. The \texttt{fann\_build\_index} function creates a search index from the dataset points, \texttt{fann\_search} uses this index to perform nearest-neighbor searches and \texttt{fann\_free\_index} deletes the index and releases the memory it uses.
-
+Here is a short example of a piece of MATLAB code using the FANN library:
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
 
 >> dataset = single(rand(128,10000));
 >> testset = single(rand(128,1000));
->> result = fann_search(dataset,testset,5,struct('checks',128,
-'algorithm','kmeans','branching',64,'iterations',3));
+>> result = fann_search(dataset,testset,5,struct('algorithm','kdtree','trees',4));
 >> size(result)
 
 ans =
 
            5        1000
-
 \end{Verbatim}
 
-
-
-
+The FANN library can be used from MATLAB through the following wrapper functions: \texttt{fann\_build\_index}, \texttt{fann\_search} and \texttt{fann\_free\_index}. The \texttt{fann\_build\_index} function creates a search index from the dataset points, \texttt{fann\_search} uses this index to perform nearest-neighbor searches and \texttt{fann\_free\_index} deletes the index and releases the memory it uses.
 
 The following sections describe in more detail the FANN matlab wrapper functions, together with examples of how they may be used.
 
 \paragraph{fann\_build\_index} 
 
 This function creates a search index from the initial dataset of points, index later used for fast nearest-neighbor searches in the dataset.
+
+\begin{Verbatim}
+[index, parameters, speedup] = fann_build_index(dataset, precision, 
+			build_time_factor, memory_factor);
+\end{Verbatim}
+
+The arguments passed to the \texttt{fann\_build\_index} function have the following meaning:
+\begin{itemize}
+
+\item \texttt{dataset} - is a $d \times n$ matrix containing $n$ $d$-dimensional points
+
+\item \texttt{precision} - is a number between 0 and 100 specifying the percentage of the approximate nearest-neighbor searches that return the exact nearest-neighbor. Using a higher value for this parameter gives more accurate results, but the searching takes longer. The optimum value usually depends on the application.
+
+\item \texttt{build\_time\_factor} - specifies the importance of the index build time reported to the nearest-neighbor search time. In some applications it's acceptable for the index build step to take a long time if the subsequent searches in the index can be performed very fast. In other applications it's required that the index be build as fast as possible even if that leads to slightly longer search times. (Default value: 0.1)
+
+\item \texttt{memory\_factor} - is used to specify the tradeoff between time (index build time and search time) and memory used by the index.
+\end{itemize}
+
+This function returns the newly created \texttt{index}, the \texttt{parameters} used for creating the index and the \texttt{speedup} over linear search achieved when searching the index. The parameters are automatically estimated in such a way that the total cost (search time, index build time and used memory) is optimized. 
+
+Because the parameter estimation step is usualy costly, it is possible to skip this step and reuse the already computed parameters the next time an index is created from similar data points (comming from the same distribution). To reuse the computed index parameters (or to specify them manually) the \texttt{fann\_build\_index} function has to be called in the following manner:
+
+
 \begin{Verbatim}
 index = fann_build_index(dataset,parameters);
 \end{Verbatim}
 
-The \texttt{dataset} is a $d \times n$ matrix containing $n$ $d$-dimensional points. The \texttt{parameters} argument is a matlab structure containing the following parameters required for the index creation:
+ The \texttt{parameters} argument is a matlab structure containing the following parameters which are required during index creation:
 \begin{itemize}
 	\item \texttt{parameters.algorithm} - the algorithm to use for building the index. The possible values are: \texttt{'linear'}, \texttt{'kdtree'}, \texttt{'kmeans'} and \texttt{'composite'}. The \texttt{'linear'} option does not create any index, it uses brute-force search in the original dataset points, \texttt{'kdtree'} creates one or more randomized kd-trees, \texttt{'kmeans'} creates a hierarchical kmeans clustering tree and \texttt{'composite'} is a mix of both kdtree and kmeans trees.
 	
@@ -103,23 +121,7 @@ The \texttt{dataset} is a $d \times n$ matrix containing $n$ $d$-dimensional poi
 	\item \texttt{params.iterations} - the maximum number of iterations to use in the kmeans clustering stage when building the kmeans tree. A value of -1 used here means that the kmeans clustering should be performed until convergence. This parameter is required only when the algorithm used is \texttt{'kmeans'}.
 \end{itemize}
 
-The above parameters have a big impact on the performance of the new search index (nearest-neighbor search time) and on the time and memory required to build the index. The optimum parameter values depend on the dataset characteristics (number of dimensions, distribution of points in the dataset) and on the application domain (desired precision for the approximate nearest neighbor searches). In order to simplify the process of selecting good parameters when a new index is created, the FANN library can automatically determine the optimum (or near-optimum) parameters to 
-be used in each case. In order for the parameter estimation feature to be used, the index has to be created in the following manner:
-\begin{Verbatim}
-[index, parameters] = fann_build_index(dataset, precision, 
-			build_time_factor, memory_factor);
-\end{Verbatim}
-The arguments used in this case have the following meaning:
-\begin{itemize}
-\item \texttt{precision} - is a number between 0 and 100 specifying the percentage of the approximate nearest-neighbor searches that return the exact nearest-neighbor. Using a higher value for this parameter gives more accurate results, but the searching takes longer. The optimum value usually depends on the application.
-
-\item \texttt{build\_time\_factor} - specifies the importance of the index build time reported to the nearest-neighbor search time. In some applications it's acceptable for the index build step to take a long time if the subsequent searches in the index can be performed very fast. In other applications it's required that the index be build as fast as possible even if that leads to slightly longer search times. (Default value: 0.1)
-
-\item \texttt{memory\_factor} - is used to specify the tradeoff between time (index build time and search time) and memory used by the index.
-\end{itemize}
-
-When computing the optimum parameters, the \texttt{fann\_build\_index} returns them together with the index. This way the next time an index is created from similar data points (comming from the same distribution), the previously computed parameters can be used, allowing us to skip over the parameter estimation step which is usually costly.
-
+The above parameters have a big impact on the performance of the new search index (nearest-neighbor search time) and on the time and memory required to build the index. The optimum parameter values depend on the dataset characteristics (number of dimensions, distribution of points in the dataset) and on the application domain (desired precision for the approximate nearest neighbor searches).
 
 
 \paragraph{fann\_search}
@@ -266,6 +268,97 @@ ans =
 
 \section{Using FANN library}
 
+A small C++ program that uses the FANN library could look like this:
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+// file fann_example.cc
+
+#include "fann.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+
+// Function that reads a dataset of points from a file
+float* read_points(char* filename, int *rows, int *cols);
+
+
+int main(int argc, char** argv)
+{
+    int rows,cols;
+    int t_rows, t_cols;
+
+    // read dataset points from file dataset.dat
+    float* dataset = read_points("dataset.dat", &rows, &cols);
+    float* testset = read_points("testset.dat", &t_rows, &t_cols);
+
+    // dataset and testset points should have the same number of dimensions
+    assert(cols==t_cols);
+
+    int nn = 3;     // number of nearest-neighbors
+
+    // allocate memory for the nearest-neighbors 
+    int* result = new int[t_rows*nn];
+
+    nn_init();  // initialize the FANN library
+
+    Parameters p;   // index parameters are stored here
+
+    // create the index
+    NN_INDEX index_id = build_index(dataset, rows, cols, 90, &p);
+
+    // compute the nearest-neighbors
+    find_nearest_neighbors_index(index_id, testset, t_rows, result, nn, p.checks);
+
+    // delete the index and free the allocated memory
+    free_index(index_id);
+
+    delete dataset;
+    delete testset;
+    delete result;
+
+    return 0;
+}
+
+\end{Verbatim}
+
+As it can be seen in the above example, FANN can be easily used in C/C++ programs. In order todo that the library header file \texttt{fann.h} (located in the \texttt{build/include} directory) must be included. Also the compiler must be told where to look for that file, by adding the \texttt{build/include} directory to the compiler include path (all the paths in this document are specified relative to the library main directory, if the C/C++ program is located somethere else, the paths must adjusted accordingly). The directory can be added to the compiler include path using the \texttt{-I} compiler flag (on most Unix/Linux systems). When linking the C/C++ application the \texttt{libfann.a} library must be linked in. This is done using the \texttt{-l} compiler flag followed by the library name (\texttt{-lfann}) and by specifying the library search path (\texttt{build/lib}) with the \texttt{-L} flag. The command needed to compile the above example will be:
+\begin{Verbatim}[fontsize=\footnotesize]
+g++ fann_example.cc -I build/include -L build/lib -o fann_example -lfann
+\end{Verbatim}
+
+The following sections describe the C bindings offered by the FANN library:
+
+\paragraph{nn\_init}
+This function performs various initializations needed by the library. It must be called once (and only once) before any other library function is called.
+\begin{Verbatim}[fontsize=\footnotesize]
+void nn_init();
+\end{Verbatim}
+
+
+\paragraph{nn\_term}
+% This is the pair of nn\_init and runs finalization 
+\begin{Verbatim}[fontsize=\footnotesize]
+void nn_term();
+\end{Verbatim}
+
+
+
+\begin{Verbatim}[fontsize=\footnotesize]
+
+void nn_init();
+
+void nn_term();
+
+NN_INDEX build_index(float* dataset, int rows, int cols, float target_precision, Parameters* parameters);
+
+void find_nearest_neighbors(float* dataset, int rows, int cols, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters);
+
+void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks);
+
+void free_index(NN_INDEX index_id);
+
+int compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, Parameters* parameters);
+\end{Verbatim}
 
 
 

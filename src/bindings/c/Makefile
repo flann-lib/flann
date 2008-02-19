@@ -6,6 +6,8 @@ SOURCES=$(wildcard *.c)
 PROGS=$(patsubst %.c,%,${SOURCES})
 
 all: ${PROGS}
+	mkdir -p ${BUILD_DIR}/include
+	cp fann.h ${BUILD_DIR}/include
 
 clean:
 	rm ${PROGS}

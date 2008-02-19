@@ -1,3 +1,18 @@
+/************************************************************************
+ * Profiling functionality.
+ *
+ * This module contains classes and helper functions used throughout
+ * the application to measure execution times.  
+ * 
+ * Authors: Marius Muja, mariusm@cs.ubc.ca
+ * 
+ * Version: 0.9
+ * 
+ * History:
+ * 
+ * License:
+ * 
+ *************************************************************************/
 module util.Profile;
 
 version (Posix) {
@@ -17,6 +32,19 @@ else {
 	import tango.stdc.time;
 }
 
+/**
+ * A start-stop timer class.
+ * 
+ * Can be used to time portions of code in a similar way to 
+ * how a start-stop timer is used:
+ * ---
+ * auto timer = new StartStopTimer()
+ * timer.start()
+ * ...
+ * timer.stop()
+ * float duration = timer.value;
+ * ---
+ */
 class StartStopTimer
 {
 	private:
@@ -28,8 +56,14 @@ class StartStopTimer
 		long startTime;
 	}
 
+	/**
+	 * Value of the timer.
+	 */
 	public double value;
 	
+	/**
+	 * Constructor.
+	 */
 	public this() {
 		value = 0;
 		version (Posix) {
@@ -37,6 +71,9 @@ class StartStopTimer
 		}
 	}
 	
+	/**
+	 * Starts the timer.
+	 */
 	public void start() {
 		version(Posix) {
 			times(&startTime);
@@ -46,6 +83,9 @@ class StartStopTimer
 		}
 	}
 	
+	/**
+	 * Stops the timer ans updates timer value.
+	 */
 	public void stop() {
 		version (Posix) {
 			tms stopTime;
@@ -57,12 +97,29 @@ class StartStopTimer
 		}
 	}
 	
+	/**
+	 * Resets the timer value to 0.
+	 */
 	public void reset() {
 		value = 0;
 	}
 
 }
 
+/**
+ * Helper function used to profile short pieces of code
+ * Params:
+ *     action = a delegate containing the code to be profiled
+ * Returns: the execution time of the delegate
+ * ---
+ * float duration = profille(
+ * {
+ * 		// some code here
+ * 		...
+ * }
+ * );
+ * ---
+ */
 float profile( void delegate() action)
 {
 	scope StartStopTimer t = new StartStopTimer();

@@ -160,12 +160,19 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 	float time;
 	
 	p2 = search(c2,time);
+	
+	if (p2>precision) {
+		static if (withOutput) logger.info("Got as close as I can");
+		checks = c2;
+		return time;
+	}
+
 	while (p2<precision) {
 		c1 = c2;
 		p1 = p2;
 		c2 *=2;
 		p2 = search(c2,time);
-	}
+	}	
 	
 	int cx;
 	float realPrecision;

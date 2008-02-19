@@ -430,7 +430,7 @@ class KDTree(T) : NNIndex{
 		BranchSt branch;
 		
 		checkCount = 0;
-		heap.init();
+		heap.clear();
 		checkID -= 1;  /* Set a different unique ID for each search. */
 	
 		/* Search once through each tree down to root. */

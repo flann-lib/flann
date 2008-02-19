@@ -1,3 +1,5 @@
+
+
 module algo.all;
 
 public import algo.NNIndex;

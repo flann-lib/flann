@@ -1,7 +1,3 @@
-/*
-Project: nn
-*/
-
 /**
  * Parses UNIX/GNU-ish command lines in a extensible object-oriented
  * manner.

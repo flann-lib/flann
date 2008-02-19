@@ -1,24 +1,55 @@
+/************************************************************************
+ * Memory allocation routines.
+ *
+ * This module contains routines for performing custom memory allocation.
+ * 
+ * Authors: Marius Muja, mariusm@cs.ubc.ca
+ * 
+ * Version: 0.9
+ * 
+ * History:
+ * 
+ * License:
+ * 
+ *************************************************************************/
 module util.Allocator;
 
 import tango.stdc.stdlib;
 
-
-
 /**
-	Helper functions for allocating memory
-*/
+ * Allocates (using C's malloc) a generic type T.
+ * 
+ * Params:
+ *     count = number of instances to allocate. 
+ * Returns: pointer (of type T*) to memory buffer
+ */
 public T* allocate(T)(int count = 1) 
 {
 	T* mem = cast(T*) tango.stdc.stdlib.malloc(T.sizeof*count);
 	return mem;
 }
 
+/**
+ * Allocates (using C's malloc) a one dimensional array.
+ * Params:
+ *     count = array size
+ * Returns: new array
+ */
 public T[] allocate(T : T[])(int count) 
 {
 	T* mem = cast(T*) tango.stdc.stdlib.malloc(count*T.sizeof);		
 	return mem[0..count];
 }
 
+/**
+ * Allocates (using C's malloc) a two dimensional array.
+ * 
+ * Params:
+ *     rows = rows in the new array
+ *     cols = cols in the new array, if cols==-1 then this function 
+ *     		allocates a one dimensional array of empty arrays   
+ * Returns: the new two dimensional array
+ */
 public T[][] allocate(T : T[][])(int rows, int cols = -1) 
 {
 	if (cols == -1) {
@@ -40,6 +71,9 @@ public T[][] allocate(T : T[][])(int rows, int cols = -1)
 	}
 }
 
+/**
+ * Template to check is a type is an array.
+ */
 private template isArray(T)
 {
     static if( is( T U : U[] ) )
@@ -48,6 +82,11 @@ private template isArray(T)
         const isArray = false;
 }
 
+/**
+ * Frees allocated memory.
+ * Params:
+ *     ptr = variable to free.
+ */
 public void free(T)(T ptr)
 {
 	static if ( isArray!(T) ) {
@@ -60,10 +99,10 @@ public void free(T)(T ptr)
 
 
 
-/** 
-	Template containing the operators for custom allocation using a pool of memory.
-	Using this type of allocation is very efficient for small objects.
-	This template should be 'mixed-in' any object that is desired to be pool-allocated.
+/**
+ * Template containing the operators for custom allocation using a pool of memory.
+ * Using this type of allocation is very efficient for small objects.
+ * This template should be 'mixed-in' any object that is desired to be pool-allocated.
 */
 template PooledAllocated()
 {
@@ -100,12 +139,6 @@ template PooledAllocated()
  * is no need to track down all the objects to free them.
  * 
  */
-
-
-/* The memory allocated by this class is not handled by the garbage collector. Be 
-carefull not to store in this memory pointers to memory handled by the gc.
-*/
-
 class PooledAllocator 
 {			
 	/* We maintain memory alignment to word boundaries by requiring that all
@@ -138,17 +171,17 @@ class PooledAllocator
 	}
 	
 	/**
-		Destructor. Frees all the memory belonging to this pool.
-	*/
+	 * Destructor. Frees all the memory allocated in this pool.
+	 */
 	public ~this()
 	{
 		free();
 	}	
 		
 	/**
-		Returns a pointer to a piece of new memory of the given size in bytes
-		allocated from the pool.
-	*/
+	 * Returns a pointer to a piece of new memory of the given size in bytes
+	 * allocated from the pool.
+	 */
 	public void* malloc(int size)
 	{
 		int blocksize;
@@ -195,9 +228,9 @@ class PooledAllocator
 		return rloc;
 	}
 	
-	/*
-		Free all storage that was previously allocated to this pool.
-	*/
+	/**
+	 * Free all storage that was previously allocated to this pool.
+	 */
 	public void free()
 	{
 		void *prev;
@@ -209,19 +242,41 @@ class PooledAllocator
 		}
 	}
 	
+	
+	/**
+	 * Allocates (using this pool) a generic type T.
+	 * 
+	 * Params:
+	 *     count = number of instances to allocate. 
+	 * Returns: pointer (of type T*) to memory buffer
+	 */
 	public T* allocate(T)(int count = 1) 
 	{
 		T* mem = cast(T*) this.malloc(T.sizeof*count);
 		return mem;
 	}
-	
-	
+
+	/**
+	 * Allocates (using this pool) a one dimensional array.
+	 * Params:
+	 *     count = array size
+	 * Returns: new array
+	 */
 	public T[] allocate(T : T[])(int count) 
 	{
 		T* mem = cast(T*) this.malloc(count*T.sizeof);		
 		return mem[0..count];
 	}
 	
+	/**
+	 * Allocates (using this pool) a two dimensional array.
+	 * 
+	 * Params:
+	 *     rows = rows in the new array
+	 *     cols = cols in the new array, if cols==-1 then this function 
+	 *     		allocates a one dimensional array of empty arrays   
+	 * Returns: the new two dimensional array
+	 */	
 	public T[][] allocate(T : T[][])(int rows, int cols = -1) 
 	{
 		if (cols == -1) {

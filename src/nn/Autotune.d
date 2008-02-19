@@ -5,8 +5,6 @@
 module nn.Autotune;
 
 import tango.math.Math;
-import tango.io.Stdout;
-import tango.core.Memory;
 
 import dataset.Dataset;
 import algo.all;
@@ -19,16 +17,13 @@ import util.Utils;
 
 
 
-float optimizeSimpleDownhill(T)(ref T[][] params, float delegate(T[]) func)
+private float optimizeSimplexDownhill(T)(T[][] params, float delegate(T[]) func, float[] vals)
 {
-			int n = params.length-1;
+	const int MAX_ITERATIONS = 10;
+	int n = params.length-1;
 	
 	assert(n>0);
 	assert(params[0].length==n);
-	
-	// evaluate function in all the points
-	// and order values and parameter in increasing order
-	float[] vals = new float[n+1];
 	
 	void addValue(float val, int pos, T[] p) {
 		vals[pos] = val;
@@ -44,16 +39,30 @@ float optimizeSimpleDownhill(T)(ref T[][] params, float delegate(T[]) func)
 		}
 	}
 	
-	for (int i=0;i<n+1;++i) {
-		float val = func(params[i]);
-		addValue(val,i, params[i]);
+	bool allocatedVals = false;
+	if (vals is null) {
+		// evaluate function in all the points
+		// and order values and parameter in increasing order
+		vals = new float[n+1];
+		allocatedVals = true;
+	
+		for (int i=0;i<n+1;++i) {
+			float val = func(params[i]);
+			addValue(val,i, params[i]);
+		}
 	}
 	
 	T[] p_o = new T[n];
 	T[] p_r = new T[n];
 	T[] p_e = new T[n];
 	
+	
+	int iterations = 0;
+	
 	while (true) {
+	
+		if (iterations++ > MAX_ITERATIONS) break;
+	
 		debug logger.info(sprint("Current params: {}",params));
 		debug logger.info(sprint("Current costs: {}",vals));
 		p_o[] = 0;
@@ -147,12 +156,12 @@ float optimizeSimpleDownhill(T)(ref T[][] params, float delegate(T[]) func)
 	delete p_r;
 	delete p_o;
 	delete p_e;
-	delete vals;
+	if (allocatedVals) delete vals;
 	
 	return bestVal;
 }
 
-float executeActions(int times, float delegate() action)
+private float executeActions(int times, float delegate() action)
 {
 	float sum = 0;
 	for (int i=0;i<times;++i) {
@@ -170,7 +179,6 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 	int testSampleSize = MIN(sampleSize/10, 1000);
 	Dataset!(float) testDataset = new Dataset!(float)();
 	testDataset.init(sampledDataset.sample(testSampleSize,true));
-	
 	logger.info(sprint("Sampled dataset size: {}",sampledDataset.rows));
 	logger.info(sprint("Test dataset size: {}",testDataset.rows));
  	
@@ -179,20 +187,31 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
  	testDataset.computeGT(sampledDataset,1,0);
 	
 	
+	// Start parameter autotune process
 	logger.info("Autotuning parameters...");
 	
-	const int REPEAT = 1;
+	
+	struct CostData {
+		float timeCost;
+		float memoryCost;
+		float cost;
+		int[] params;
+	}
+
+	
+	const int REPEATS = 1;
+	
 	
 	Params kmeansParams;
 	kmeansParams["algorithm"] = "kmeans";
 	kmeansParams["trees"] = 1u;
 	kmeansParams["centers-algorithm"] = "random";
 
-	float evaluate_kmeans(int[] p) {
+
+
+	CostData evaluate_kmeans(int[] p) {
 	
-		if (p[0]<1 || p[1]<2) {
-			return float.max;
-		}
+		CostData cost;
 	
 		kmeansParams["max-iterations"] = p[0];
 		kmeansParams["branching"] = p[1];
@@ -205,31 +224,105 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		KMeansTree!(T) kmeans = new KMeansTree!(T)(sampledDataset,kmeansParams);
 		
 		float buildTime = profile({kmeans.buildIndex();});	
-		float searchTime = executeActions(REPEAT, {return testNNIndexPrecision!(T,true,false)(kmeans, sampledDataset, testDataset, desiredPrecision, checks, nn);});
+		float searchTime = executeActions(REPEATS, {return testNNIndexPrecision!(T,true,false)(kmeans, sampledDataset, testDataset, desiredPrecision, checks, nn);});
 		float datasetMemory = sampledDataset.rows*sampledDataset.cols*T.sizeof;
-		logger.info(sprint("datasetMemory={}",datasetMemory));
-		float memoryIndex = (kmeans.usedMemory+datasetMemory)/datasetMemory;
-		logger.info(sprint("memoryIndex={}",memoryIndex));
-		logger.info(sprint("memoryFactor={}",memoryFactor));
-		float cost = searchTime+buildTime*buildTimeFactor+memoryFactor*memoryIndex;
-		
-		logger.info(sprint("buildTime: {}, searchTime: {}, cost: {}",buildTime, searchTime, cost));
-	
+		cost.memoryCost = (kmeans.usedMemory+datasetMemory)/datasetMemory;
+		cost.timeCost = buildTime*buildTimeFactor+searchTime;	
 		delete kmeans;
 		
 		return cost;
 	}
 	
 	
+	
+	int[] maxIterations = [ 1, 3, 5, 7];
+	int[] branchingFactors = [ 32, 64, 128, 256 ];
+	
+	int[][] kmeans_params = new int[][](maxIterations.length*branchingFactors.length,2);
+	CostData[] kmeansCosts = new CostData[maxIterations.length*branchingFactors.length];
+	
+	
+	// evaluate kmeans for all parameter combinations
+	int cnt = 0;
+	foreach (iterations;maxIterations) {
+		foreach (branching;branchingFactors) {
+			kmeans_params[cnt][0] = iterations;
+			kmeans_params[cnt][1] = branching;
+			kmeansCosts[cnt] = evaluate_kmeans(kmeans_params[cnt]);
+			
+			int k = cnt;
+			while (k>0 && kmeansCosts[k].timeCost < kmeansCosts[k-1].timeCost) {
+				swap(kmeansCosts[k],kmeansCosts[k-1]);
+				swap(kmeans_params[k],kmeans_params[k-1]);
+				k--;
+			}
+			
+			cnt++;
+		}
+	}
+	
+//	float optKMeansTimeCost = kmeansCosts[0].timeCost;
+	float optKMeansTimeCost = 1;
+	
+	
+	for (int i=0;i<cnt;++i) {
+		kmeansCosts[i].cost = kmeansCosts[i].timeCost/optKMeansTimeCost +
+							memoryFactor * kmeansCosts[i].memoryCost;
+		
+		logger.info(sprint("Kmeans Cost: {}",kmeansCosts[i].cost));
+		int k = i;
+		while (k>0 && kmeansCosts[k].cost < kmeansCosts[k-1].cost) {
+			swap(kmeansCosts[k],kmeansCosts[k-1]);
+			swap(kmeans_params[k],kmeans_params[k-1]);
+			k--;
+		}		
+	}
+	
+	
+	float compute_kmeans_cost(int[] params) 
+	{
+		if (params[0]<1 || params[1]<2) {
+			return float.max;
+		}
+		CostData c = evaluate_kmeans(params);
+		return c.timeCost/optKMeansTimeCost + memoryFactor * c.memoryCost;
+	}
+	
+	Params bestParams;
+	float bestCost = float.max;
+	
+	
+	// optimize for kmeans
+	
+	float costs[3];
+	for (int i=0;i<3;++i) {
+		costs[i] = kmeansCosts[i].cost;
+	}
+	
+ 	float kmeansCost = optimizeSimplexDownhill!(int)(kmeans_params[0..3], &compute_kmeans_cost, costs);
+	logger.info(sprint("Best params: {}", kmeans_params[0]));
+	kmeansParams["max-iterations"] = kmeans_params[0][0];
+	kmeansParams["branching"] = kmeans_params[0][1];
+	
+	if (kmeansCost<bestCost) {
+		bestParams = kmeansParams;
+		bestCost = kmeansCost;
+	}
+	
+	
+	delete kmeans_params;
+	delete kmeansCosts;
+	
+	
+	
+	
 	Params kdtreeParams;
 	kdtreeParams["algorithm"] = "kdtree";
 	
-	float evaluate_kdtree(int[] p) {
+	CostData evaluate_kdtree(int[] p) {
 	
-		if (p[0]<1) {
-			return float.max;
-		}
-	
+		CostData cost;
+		
 		kdtreeParams["trees"] = p[0];
 		int checks;
 		const int nn = 1;
@@ -239,223 +332,103 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		KDTree!(T) kdtree = new KDTree!(T)(sampledDataset,kdtreeParams);
 		
 		float buildTime = profile({kdtree.buildIndex();});
-		float searchTime = executeActions( REPEAT, { 
+		float searchTime = executeActions( REPEATS, { 
 						return testNNIndexPrecision!(T,true,false)(kdtree, sampledDataset, testDataset, desiredPrecision, checks, nn);
 						} );
 		float datasetMemory = sampledDataset.rows*sampledDataset.cols*T.sizeof;
-		float memoryIndex = (kdtree.usedMemory+datasetMemory)/datasetMemory;
-		float cost = searchTime+buildTime*buildTimeFactor+memoryFactor*memoryIndex;
+		cost.memoryCost = (kdtree.usedMemory+datasetMemory)/datasetMemory;
+		cost.timeCost = buildTime*buildTimeFactor+searchTime;	
 				
-		logger.info(sprint("buildTime: {}, searchTime: {}, cost: {}",buildTime, searchTime, cost));
-	
+				
 		delete kdtree;
 		
 		return cost;
 	}
 	
-	Params bestParams;
-	float bestCost = float.max;
 	
 	
-	// optimize for kmeans
 	
-	int[][] kmeans_params = [ [1, 8], [1, 64], [7, 64]];
-	float kmeansCost = optimizeSimpleDownhill(kmeans_params, &evaluate_kmeans);
-	logger.info(sprint("Best params: {}", kmeans_params[0]));
-	kmeansParams["max-iterations"] = kmeans_params[0][0];
-	kmeansParams["branching"] = kmeans_params[0][1];
-	
-	if (kmeansCost<bestCost) {
-		bestParams = kmeansParams;
-		bestCost = kmeansCost;
-	}
+	uint[] testTrees = [ 1, 5, 10, 16, 32];
 
-	int[][] kdtree_params = [ [4], [8] ];
-	float kdtreeCost = optimizeSimpleDownhill(kdtree_params, &evaluate_kdtree);
-	logger.info(sprint("Best KDTree params: {}", kdtree_params[0]));
+	int[][] kdtree_params = new int[][](testTrees.length,1);
+	CostData[] kdtreeCosts = new CostData[testTrees.length];
+	
+	
+	// evaluate kdtree for all parameter combinations
+	cnt = 0;
+	foreach (trees;testTrees) {
+		kdtree_params[cnt][0] = trees;
+		kdtreeCosts[cnt] = evaluate_kdtree(kdtree_params[cnt]);
+		
+		int k = cnt;
+		while (k>0 && kdtreeCosts[k].timeCost < kdtreeCosts[k-1].timeCost) {
+			swap(kdtreeCosts[k],kdtreeCosts[k-1]);
+			swap(kdtree_params[k],kdtree_params[k-1]);
+			k--;
+		}
+		
+		cnt++;
+	}
+	
+//	float optKDtreeTimeCost = kdtreeCosts[0].timeCost;
+	float optKDtreeTimeCost = 1;
+	
+	for (int i=0;i<cnt;++i) {
+		kdtreeCosts[i].cost = kdtreeCosts[i].timeCost/optKDtreeTimeCost +
+							memoryFactor * kdtreeCosts[i].memoryCost;
+		
+		logger.info(sprint("kdtree Cost: {}",kdtreeCosts[i].cost));
+		int k = i;
+		while (k>0 && kdtreeCosts[k].cost < kdtreeCosts[k-1].cost) {
+			swap(kdtreeCosts[k],kdtreeCosts[k-1]);
+			swap(kdtree_params[k],kdtree_params[k-1]);
+			k--;
+		}		
+	}
+	
+	
+	float compute_kdtree_cost(int[] params) 
+	{
+		if (params[0]<1) {
+			return float.max;
+		}
+		CostData c = evaluate_kdtree(params);
+		return c.timeCost/optKDtreeTimeCost + memoryFactor * c.memoryCost;
+	}
+	
+	
+	// optimize for kdtree
+	
+	float kdtre_costs[2];
+	for (int i=0;i<2;++i) {
+		kdtre_costs[i] = kdtreeCosts[i].cost;
+	}
+	
+ 	float kdtreeCost = optimizeSimplexDownhill!(int)(kdtree_params[0..2], &compute_kdtree_cost, kdtre_costs);
+	logger.info(sprint("Best params: {}", kdtree_params[0]));
 	kdtreeParams["trees"] = kdtree_params[0][0];
 	
 	if (kdtreeCost<bestCost) {
 		bestParams = kdtreeParams;
 		bestCost = kdtreeCost;
 	}
-
+	
+	delete kdtreeCosts;
+	delete kdtree_params;
+	
 	return bestParams;
 }
 
-
-
-
-
-
-
-
-
-Params estimateBuildIndexParams_(T)(Dataset!(T) inputDataset, float desiredPrecision, float indexFactor = 0, float samplePercentage = 10)
-{	
-	// subsample datasets
-	int sampleSize = rndint(samplePercentage*inputDataset.rows);
-	Dataset!(T) sampledDataset = inputDataset.sample(sampleSize, false);
-	
-	int testSampleSize = MIN(sampleSize/10, 1000);
-	Dataset!(float) testDataset = new Dataset!(float)();
-	testDataset.init(sampledDataset.sample(testSampleSize,true));
-	
-	logger.info(sprint("Sampled dataset size: {}",sampledDataset.count));
-	logger.info(sprint("Test dataset size: {}",testDataset.count));
- 	
- 	
- 	logger.info("Computing ground truth: ");
- 	testDataset.computeGT(sampledDataset,1,0);
-	
-	
-	logger.info("Autotuning parameters...");
-	
-	
-	const int REPEAT = 1;
-		
-	int checks;
-	const int nn = 1;
-version (kmeans_autotune) {		
-	Params kmeansParams;
-	float kmeansCost = float.max;
-	// search best kmeans params
-	{
-		uint[] testIterations = [ 1, 3, 5, 7];
-		uint[] branchingFactors = [ 32, 64, 128, 256 ];
-		
-		Params params;
-		params["algorithm"] = "kmeans";
-		params["trees"] = 1u;
-		params["centers-algorithm"] = "random";
-		foreach (maxIterations;testIterations) {
-			params["max-iterations"] = maxIterations;
-			foreach (branchingFactor;branchingFactors) {
-				params["branching"] = branchingFactor;
-				
-				KMeansTree!(T) kmeans = new KMeansTree!(T)(sampledDataset,params);
-				
-				float buildTime = profile({kmeans.buildIndex();});	
-				float searchTime = mean( doSearch( REPEAT, { 
-							return testNNIndexPrecision!(T,true,false)(kmeans, sampledDataset, testDataset, desiredPrecision, checks, nn);
-							} ) );
-				float cost = buildTime*indexFactor+searchTime;
-				
-				Stdout.formatln("buildTime: {}, searchTime: {}, cost: {}",buildTime, searchTime, cost);			
-				
-				if (cost<kmeansCost) {
-					copy(kmeansParams,params);
-					kmeansCost = cost;
-					
-				}
-				logger.info("Best KMeans bf: "~kmeansParams["branching"]);	
-				
-				GC.collect();
-			}
-		}
-// 		Logger.log(Logger.INFO,"Best KMeans params: ",kmeansParams,"\n");
-//		Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");
-	}
-}
-version (kdtree_autotune) {		
-	Params kdtreeParams;
-	float kdtreeCost = float.max;
-	// search best kdtree params
-	{
-		uint[] testTrees = [ 1, 5, 10, 16, 32];
-			
-		Params params;
-		params["algorithm"] = "kdtree";
-
-		foreach (trees;testTrees) {
-			params["trees"] = trees;
-			
-			KDTree!(T) kdtree = new KDTree!(T)(sampledDataset,params);
-			
-			float buildTime = profile({kdtree.buildIndex();});
-				float searchTime = mean( doSearch( REPEAT, { 
-							return testNNIndexPrecision!(T,true,false)(kdtree, sampledDataset, testDataset, desiredPrecision, checks, nn);
-							} ) );
-			float cost = buildTime*indexFactor+searchTime;
-			
-				Stdout.formatln("buildTime: {}, searchTime: {}, cost: {}",buildTime, searchTime, cost);			
-// 				Logger.log(Logger.INFO,params);
-			
-			if (cost<kdtreeCost) {
-				copy(kdtreeParams,params);
-				kdtreeCost = cost;
-			}
-			
-			GC.collect();
-		}
-//  		Logger.log(Logger.INFO,"Best kdtree params: ",kdtreeParams,"\n");
-	}
-}
-
-	Params compositeParams;
-	float compositeCost = float.max;
-	// search best kmeans params
-	{
-/+		uint[] testIterations = [ 1, 3, 5, 7];
-		uint[] branchingFactors = [ 32, 64, 128, 256 ];
-		uint[] testTrees = [ 1, 5, 10, 16, 32];+/
-		uint[] testIterations = [ 1, 3];
-		uint[] branchingFactors = [ 32, 64 ];
-		uint[] testTrees = [ 4, 8 ];
-		
-		Params params;
-		params["algorithm"] = "composite";
-		params["centers-algorithm"] = "random";
-		foreach (maxIterations;testIterations) {
-			params["max-iterations"] = maxIterations;
-			foreach (branchingFactor;branchingFactors) {
-				params["branching"] = branchingFactor;
-				foreach (trees;testTrees) {
-					params["trees"] = trees;
-						
-					logger.info(sprint("Trying iterations:{}, branching:{}, trees:{}",maxIterations,branchingFactor, trees));	
-					
-					CompositeTree!(T) composite = new CompositeTree!(T)(sampledDataset,params);
-					
-					float buildTime = profile({composite.buildIndex();});	
-					float searchTime = mean( doSearch( REPEAT, { 
-								return testNNIndexPrecision!(T,true,false)(composite, sampledDataset, testDataset, desiredPrecision, checks, nn);
-								} ) );
-					float cost = buildTime*indexFactor+searchTime;
-									
-					if (cost<compositeCost) {
-						copy(compositeParams,params);
-						compositeCost = cost;
-						
-					}
-					
-					GC.collect();
-				}
-			}
-		}
-// 		Logger.log(Logger.INFO,"Best KMeans params: ",kmeansParams,"\n");
-//		Logger.log(Logger.INFO,"Best KMeans bf: ",kmeansParams["branching"],"\n");
-	}
-
-
-/+	if (kmeansCost<kdtreeCost) {
-		return kmeansParams;
-	} else {
-		return kdtreeParams;
-	}+/
-	
-	logger.info(sprint("Params chosen: {}",compositeParams));
-	
-	return compositeParams;
-}
 
 
 int estimateSearchParams(T)(NNIndex index, Dataset!(T) inputDataset, float desiredPrecision)
 {
 	const int nn = 1;
 	const int SAMPLE_COUNT = 500;
+	
+	int samples = min(inputDataset.rows/10, SAMPLE_COUNT);
 	Dataset!(float) testDataset = new Dataset!(float)();
-	testDataset.init(inputDataset.sample(SAMPLE_COUNT,false));
+	testDataset.init(inputDataset.sample(samples,false));
 	logger.info("Computing ground truth");
 	testDataset.computeGT(inputDataset,1,1);
 	

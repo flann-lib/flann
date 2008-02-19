@@ -76,8 +76,8 @@ int main(int argc, char** argv)
   	nn_init();
    	
 	printf("Computing index and optimum parameters.\n");
-   int index_id = build_index(dataset, rows, cols, 90, &p);
-   find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks);
+//   int index_id = build_index(dataset, rows, cols, 90, &p);
+//  find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks);
    
    write_dat_file("results.dat",result, tcount, nn);
    
