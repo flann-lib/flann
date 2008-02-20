@@ -60,7 +60,33 @@ class ComputeNNCommand : IndexCommand
 
 		
 		if (outputFile != "") {
-			computeNearestNeighbors(outputFile, index, testData, nn, checks, skipMatches);
+		
+			withOpenFile(outputFile, (FormatOutput writer) {
+				logger.info("Searching...");
+			
+				ResultSet resultSet = new ResultSet(nn+skipMatches);
+				
+				logger.info(sprint("nn: {}",nn));
+			
+				showProgressBar(testData.rows, 70, (Ticker tick){
+					for (int i = 0; i < testData.rows; i++) {
+						tick();
+						
+						resultSet.init(testData.vecs[i]);
+				
+						index.findNeighbors(resultSet,testData.vecs[i], checks);			
+						
+						int[] neighbors = resultSet.getNeighbors();
+						neighbors = neighbors[skipMatches..$];
+						
+						foreach(j,neighbor;neighbors) {
+							if (j!=0) writer(" ");
+							writer(neighbor);
+						}
+						writer("\n");
+					}
+				});
+			});
 		}
 	}
 	

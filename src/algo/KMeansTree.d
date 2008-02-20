@@ -90,7 +90,11 @@ class KMeansTree(T) : NNIndex
 		if (branching<2) {
 			throw new Exception("Branching factor must be at least 2");
 		}
-		this.max_iter = params["max-iterations"].get!(uint);
+		int iterations = params["max-iterations"].get!(int);
+		if (iterations<0) {
+			iterations = int.max;
+		}
+		this.max_iter = iterations;
 		
 		string centersAlgorithm = params["centers-algorithm"].get!(string);
 		if (centersAlgorithm in centerAlgs) {

@@ -16,6 +16,8 @@ struct Parameters {
 	int trees;
 	int branching;
 	int iterations;
+	float target_precision;
+	float speedup;
 };
 
 
@@ -29,9 +31,9 @@ void nn_init();
 
 void nn_term();
 
-NN_INDEX build_index(float* dataset, int rows, int cols, float target_precision, Parameters* parameters);
+NN_INDEX build_index(float* dataset, int rows, int cols, Parameters* parameters);
 
-void find_nearest_neighbors(float* dataset, int rows, int cols, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters);
+void find_nearest_neighbors(float* dataset, int rows, int cols, float* testset, int tcount, int* result, int nn, Parameters* parameters);
 
 void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks);
 

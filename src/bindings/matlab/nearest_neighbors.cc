@@ -70,8 +70,10 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 			mexErrMsgTxt("Target precision must be between 0 and 100");
 		}
 		
+		p.target_precision = pp[0];
+
 		/* pp contains desired precision */
-		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, pp[0], &p);
+		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p);
 	}
 	else {
 		/* pp contains index & search parameters */
@@ -80,7 +82,9 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
-		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, -1, &p);			
+		p.target_precision = -1;
+		
+		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p);			
 	}	
 	
 	/* Allocate memory for Output Matrix */ 
@@ -93,7 +97,7 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	}
 	free(result);
 	
-	if (nOutArray == 2) {
+	if (nOutArray > 1) {
 		OutArray[1] = mxCreateDoubleMatrix(1, 5, mxREAL);
 		double* pParams = mxGetPr(OutArray[1]);
 		
@@ -164,7 +168,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	}
 
 	/* Check the number of output arguments */ 
-	if (nOutArray != 1 && nOutArray != 2) {
+	if (nOutArray == 0 || nOutArray > 3) {
 		mexErrMsgTxt("Incorrect number of outputs.");
 	}
 		
@@ -187,15 +191,17 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	double* pp = mxGetPr(pMat);
 
 	NN_INDEX indexID;
-		Parameters p;
+	Parameters p;
 	if (pSize==1) {
 		float target_precision = pp[0];
 		if (target_precision>100 || target_precision<0) {
 			mexErrMsgTxt("Target precision must be between 0 and 100");
 		}
 		
+		p.target_precision = pp[0];
+		
 		/* pp contains desired precision */
-		indexID = build_index(dataset,dcount,length, pp[0], &p);
+		indexID = build_index(dataset,dcount,length,&p);
 	}
 	else {
 		/* pp contains index & search parameters */
@@ -204,7 +210,9 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
-		indexID = build_index(dataset,dcount,length, -1, &p);		
+		p.target_precision = -1;
+		
+		indexID = build_index(dataset,dcount,length, &p);		
 	}	
 
 		
@@ -215,7 +223,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	double* pOut = mxGetPr(OutArray[0]);
 	pOut[0] = indexID;
 
-	if (nOutArray == 2) {
+	if (nOutArray > 1) {
 		OutArray[1] = mxCreateDoubleMatrix(1, 5, mxREAL);
 		double* pParams = mxGetPr(OutArray[1]);
 		
@@ -224,6 +232,13 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		pParams[2] = p.trees;
 		pParams[3] = p.branching;
 		pParams[4] = p.iterations;
+	}
+	if (nOutArray > 2) {
+		OutArray[2] = mxCreateDoubleMatrix(1, 1, mxREAL);
+		double* pSpeedup = mxGetPr(OutArray[2]);
+		
+		*pSpeedup = p.speedup;
+		
 	}
 
 }

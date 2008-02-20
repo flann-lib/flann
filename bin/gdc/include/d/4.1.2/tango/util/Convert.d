@@ -193,7 +193,7 @@ typedef int Missing;
  * So, how is this module structured?
  *
  * Firstly, we need a bunch of support code.  The first block of this contains
- * some CTFE functions for string manipulation (to cut down on the number of
+	 * some CTFE functions for string manipulation (to cut down on the number of
  * template symbols we generate.)
  *
  * The next contains a boat-load of templates.  Most of these are trait
@@ -846,9 +846,9 @@ D toReal(D,S)(S value)
     /+static if( is( S == bool ) )
         return (value ? 1.0 : 0.0);
 
-    else+/ static if( isIntegerType!(S) )
+    else+/ static if( isIntegerType!(S) || isRealType!(S))
         return cast(D) value;
-
+	
     /+else static if( isCharType!(S) )
         return cast(D) to!(uint)(value);+/
 

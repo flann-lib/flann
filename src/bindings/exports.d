@@ -26,6 +26,8 @@ struct Parameters {
 	int trees;
 	int branching;
 	int iterations;
+	float target_precision;
+	float speedup;
 };
 
 alias int NN_INDEX;
@@ -63,6 +65,8 @@ private {
 		p["max-iterations"] = parameters.iterations;
 		p["branching"] = parameters.branching;
 		p["centers-algorithm"] = "random";
+		p["target-precision"] = parameters.target_precision;
+		p["speedup"] = parameters.speedup;
 		foreach (mapping; algoMappings) {
 			if (mapping.algo == parameters.algo) {
 				p["algorithm"] = mapping.algoName;
@@ -96,6 +100,16 @@ private {
 			p.branching = params["branching"].get!(int);
 		} catch (Exception e) {
 			p.branching = 32;
+		}
+		try {
+  			p.target_precision = params["target-precision"].get!(float);
+		} catch (Exception e) {
+			p.target_precision = -1;
+		}
+		try {
+ 			p.speedup = params["speedup"].get!(float);
+		} catch (Exception e) {
+			p.speedup = -1;
 		}
 		foreach (mapping; algoMappings) {
 			if (mapping.algoName == params["algorithm"] ) {
@@ -143,12 +157,17 @@ private Dataset!(T) makeFeatures(T)(T* dataset, int count, int length)
 	return inputData;
 }
 
-NN_INDEX build_index(float* dataset, int count, int length, float target_precision, Parameters* parameters)
+NN_INDEX build_index(float* dataset, int rows, int cols, Parameters* parameters)
 {	
 	try {
 		nn_init();
-		auto inputData = makeFeatures(dataset,count,length);
+		auto inputData = makeFeatures(dataset,rows,cols);
 		
+		if (parameters is null) {
+			throw new Exception("The parameters agument must be non-null");
+		}
+		
+		float target_precision = parameters.target_precision;
 		
 		NNIndex index;
 		if (target_precision < 0) {
@@ -162,9 +181,10 @@ NN_INDEX build_index(float* dataset, int count, int length, float target_precisi
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
-			params["checks"] = estimateSearchParams(index,inputData,target_precision);
+			estimateSearchParams(index,inputData,target_precision,params);
 			
 			*parameters = paramsToParameters(params);
+			parameters.target_precision = target_precision;
 		}
 		
 		
@@ -182,7 +202,7 @@ NN_INDEX build_index(float* dataset, int count, int length, float target_precisi
 }
 
 
-void find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters)
+int find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters)
 {
 	try {
 		nn_init();
@@ -200,8 +220,7 @@ void find_nearest_neighbors(float* dataset, int count, int length, float* testse
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
-			params["checks"] = estimateSearchParams(index,inputData,target_precision);
-			
+			estimateSearchParams(index,inputData,target_precision,params);
 			*parameters = paramsToParameters(params);
 		}
 		
@@ -224,14 +243,17 @@ void find_nearest_neighbors(float* dataset, int count, int length, float* testse
 		delete resultSet;
 		delete index;
 		delete inputData;
+		
+		return 0;
 	}
 	catch(Exception e) {
 		logger.error("Caught exception: "~e.toString());
+		return -1;
 	}
 // 	GC.collect();
 }
 
-void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks)
+int find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks)
 {
 	try {
 		nn_init();
@@ -264,10 +286,12 @@ void find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount,
 		} 
 		else {
 			throw new Exception("Invalid index ID");
-		}	
+		}
+		return 0;
 	}
 	catch(Exception e) {
 		logger.error("Caught exception: "~e.toString());
+		return -1;
 	}
 	
 // 	GC.collect();

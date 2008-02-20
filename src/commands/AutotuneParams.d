@@ -75,10 +75,7 @@ class AutotuneParams : DefaultCommand
 		logger.info(sprint("Time to build {} tree{} for {} vectors: {} seconds",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime));
 		
-		uint checks = estimateSearchParams!(T)(index, inputData, precision);
-
-		params["checks"] = checks;
-
+		estimateSearchParams!(T)(index, inputData, precision, params);
 		
 		if (paramsFile == "") {
 			paramsFile = inputFile~".params";

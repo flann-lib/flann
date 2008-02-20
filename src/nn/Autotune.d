@@ -261,8 +261,10 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		}
 	}
 	
-//	float optKMeansTimeCost = kmeansCosts[0].timeCost;
-	float optKMeansTimeCost = 1;
+	float optKMeansTimeCost = kmeansCosts[0].timeCost;
+	if (optKMeansTimeCost<1e-6) {
+		optKMeansTimeCost = 1;
+	}
 	
 	
 	for (int i=0;i<cnt;++i) {
@@ -370,8 +372,10 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		cnt++;
 	}
 	
-//	float optKDtreeTimeCost = kdtreeCosts[0].timeCost;
-	float optKDtreeTimeCost = 1;
+	float optKDtreeTimeCost = kdtreeCosts[0].timeCost;
+	if (optKDtreeTimeCost<1e-6) {
+		optKDtreeTimeCost = 1;
+	}
 	
 	for (int i=0;i<cnt;++i) {
 		kdtreeCosts[i].cost = kdtreeCosts[i].timeCost/optKDtreeTimeCost +
@@ -421,7 +425,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 
 
 
-int estimateSearchParams(T)(NNIndex index, Dataset!(T) inputDataset, float desiredPrecision)
+void estimateSearchParams(T)(NNIndex index, Dataset!(T) inputDataset, float desiredPrecision, Params searchParams)
 {
 	const int nn = 1;
 	const int SAMPLE_COUNT = 500;
@@ -430,13 +434,14 @@ int estimateSearchParams(T)(NNIndex index, Dataset!(T) inputDataset, float desir
 	Dataset!(float) testDataset = new Dataset!(float)();
 	testDataset.init(inputDataset.sample(samples,false));
 	logger.info("Computing ground truth");
-	testDataset.computeGT(inputDataset,1,1);
+	
+	float linear = profile({testDataset.computeGT(inputDataset,1,1);});
 	
 	int checks;
 	logger.info("Estimating number of checks");
-	testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
+	float searchTime = testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
 	
 	logger.info(sprint("Required number of checks: {} ",checks));;
-	
-	return checks;
+	searchParams["checks"] = checks;
+	searchParams["speedup"] = (linear/searchTime);
 }

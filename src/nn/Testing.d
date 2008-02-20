@@ -137,6 +137,7 @@ float testNNIndex(T, bool withOutput, bool withReporting)
 }
 
 
+
 float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0, char[] approxMatch = "")
 {	
@@ -174,6 +175,7 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 		p2 = search(c2,time);
 	}	
 	
+	// TODO: detect infinite loop here
 	int cx;
 	float realPrecision;
 	if (abs(p2-precision)>SEARCH_EPS) {
