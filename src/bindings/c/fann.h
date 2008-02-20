@@ -11,7 +11,7 @@ enum Algorithm {
 };
 
 struct Parameters {
-	Algorithm algo;
+	Algorithm algorithm;
 	int checks;
 	int trees;
 	int branching;

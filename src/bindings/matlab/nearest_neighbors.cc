@@ -78,7 +78,7 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	else {
 		/* pp contains index & search parameters */
 		p.checks=(int)pp[0];
-		p.algo = (Algorithm)pp[1];
+		p.algorithm = (Algorithm)pp[1];
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
@@ -102,7 +102,7 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 		double* pParams = mxGetPr(OutArray[1]);
 		
 		pParams[0] = p.checks;
-		pParams[1] = p.algo;
+		pParams[1] = p.algorithm;
 		pParams[2] = p.trees;
 		pParams[3] = p.branching;
 		pParams[4] = p.iterations;
@@ -206,7 +206,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	else {
 		/* pp contains index & search parameters */
 		p.checks=(int)pp[0];
-		p.algo = (Algorithm)pp[1];
+		p.algorithm = (Algorithm)pp[1];
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
@@ -228,7 +228,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		double* pParams = mxGetPr(OutArray[1]);
 		
 		pParams[0] = p.checks;
-		pParams[1] = p.algo;
+		pParams[1] = p.algorithm;
 		pParams[2] = p.trees;
 		pParams[3] = p.branching;
 		pParams[4] = p.iterations;

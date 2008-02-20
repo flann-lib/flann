@@ -1,13 +1,9 @@
 module commands.ComputeNNCommand;
 
-// import std.string;
-import tango.text.convert.Sprint;
-
 import commands.GenericCommand;
 import commands.IndexCommand;
 import util.Logger;
 import util.Utils;
-import nn.ComputeNN;
 import dataset.Dataset;
 import algo.NNIndex;
 import output.Console;

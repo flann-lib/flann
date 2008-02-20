@@ -1,7 +1,5 @@
 module algo.dist;
 
-import tango.io.Console;
-	
 /* Return the squared distance between two vectors. 
 	This is highly optimized, with loop unrolling, as it is one
 	of the most expensive inner loops of recognition.
@@ -80,9 +78,6 @@ version (SSE2)  public float squaredDistSSE2(ubyte[] a, ubyte[] b)
    int veclen = a.length;
    ubyte* va = a.ptr;
    ubyte* vb = b.ptr;
-	
-	Cout("in dist function \n");
-
 
    asm {   
       mov int ptr EAX, veclen ;

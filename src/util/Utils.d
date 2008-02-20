@@ -20,18 +20,13 @@ import util.Logger;
 import util.defines;
 
 
-template MAX(T) {
-	T MAX(T x, T y) { return x > y ? x : y; }
+T MAX(T)(T x, T y) { 
+	return x > y ? x : y; 
 }
 
-template MIN(T) {
-	T MIN(T x, T y) { return x < y ? x : y; }
+T MIN(T)(T x, T y) { 
+	return x < y ? x : y; 
 }
-
-template ABS(T) {
-	T ABS(T x) { return x < 0 ? -x : x; }
-}
-
 
 void swap(T) (ref T a, ref T b) {
      T t = a;
@@ -201,27 +196,6 @@ void add(T,U)(T[] a, U[] b) {
 		value += b[index];
 	}
 }
-
-
-/* This record represents a branch point when finding neighbors in
-	the tree.  It contains a record of the minimum distance to the query
-	point, as well as the node at which the search resumes.
-*/
-struct BranchStruct(T) {
-	T node;           /* Tree node at which search resumes */
-	float mindistsq;     /* Minimum distance to query for all nodes below. */
-	
-	int opCmp(BranchStruct!(T) rhs) 
-	{ 
-		if (mindistsq < rhs.mindistsq) {
-			return -1;
-		} if (mindistsq > rhs.mindistsq) {
-			return 1;
-		} else {
-			return 0;
-		}
-	}
-}; 
 
 
 
@@ -426,7 +400,7 @@ void copyParams(T,U)(ref T a,U b,string[] params)
 
 
 
-
+/+
 class Queue(T) 
 {
 	T[] storage;
@@ -546,7 +520,7 @@ unittest
 	
 	Logger.log(Logger.INFO,"Queue unittest passed");
 }
-
++/
 
 
 import algo.dist;

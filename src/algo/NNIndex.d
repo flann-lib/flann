@@ -31,6 +31,29 @@ template AlgorithmRegistry(alias ALG,T)
 
 
 
+/* This record represents a branch point when finding neighbors in
+	the tree.  It contains a record of the minimum distance to the query
+	point, as well as the node at which the search resumes.
+*/
+struct BranchStruct(T) {
+	T node;           /* Tree node at which search resumes */
+	float mindistsq;     /* Minimum distance to query for all nodes below. */
+	
+	int opCmp(BranchStruct!(T) rhs) 
+	{ 
+		if (mindistsq < rhs.mindistsq) {
+			return -1;
+		} if (mindistsq > rhs.mindistsq) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+}; 
+
+
+
+
 
 
 class ResultSet 

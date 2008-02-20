@@ -2,11 +2,11 @@
 LIBS=-lfann -lgphobos -lm -lpthread
 LIB_DIRS=-L../../.. -L../../../bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2/ 
 
-SOURCES=$(wildcard *.c)
+SOURCES=fann_test.c test_clusters.c
 PROGS=$(patsubst %.c,%,${SOURCES})
 
 all: ${PROGS}
-	mkdir -p ${BUILD_DIR}/include
+	@mkdir -p ${BUILD_DIR}/include
 	cp fann.h ${BUILD_DIR}/include
 
 clean:
