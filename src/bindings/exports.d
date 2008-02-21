@@ -236,11 +236,13 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, Parameters* parame
 }
 
 
-int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters)
+int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, Parameters* parameters)
 {
 	try {
 		fann_init();
 		auto inputData = makeFeatures(dataset,count,length);
+
+		float target_precision = parameters.target_precision;
 		
 		NNIndex index;
 		if (target_precision < 0) {
