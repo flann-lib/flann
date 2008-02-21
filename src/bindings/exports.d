@@ -1,6 +1,10 @@
 module bindings.exports;
 
 import tango.core.Memory;
+import tango.util.log.Log;
+import tango.util.log.ConsoleAppender;
+import tango.util.log.FileAppender;
+import tango.stdc.stringz;	
 
 import algo.all;
 import dataset.Dataset;
@@ -13,15 +17,21 @@ import tango.stdc.stdio;
 
 extern(C):
 
-enum Algorithm {
-	LINEAR=0,
-	KDTREE,
-	KMEANS,
-	COMPOSITE
-};
+const int LINEAR 	= 0;
+const int KDTREE 	= 1;
+const int KMEANS 	= 2;
+const int COMPOSITE = 3;
+
+
+const int LOG_NONE	= 0;
+const int LOG_FATAL	= 1;
+const int LOG_ERROR	= 2;
+const int LOG_WARN	= 3;
+const int LOG_INFO	= 4;
+
 
 struct Parameters {
-	Algorithm algo;
+	int algorithm;
 	int checks;
 	int trees;
 	int branching;
@@ -46,16 +56,7 @@ static this()
 }
 
 private {
-	struct AlgoMapping {
-		Algorithm algo;
-		char[] algoName;
-	};
-	AlgoMapping[] algoMappings = [ 
-		{Algorithm.LINEAR, "linear"},
-		{Algorithm.KMEANS, "kmeans"},
-		{Algorithm.KDTREE, "kdtree"},
-		{Algorithm.COMPOSITE, "composite"}
-	];
+	char[][] algos = [ "linear","kmeans", "kdtree", "composite" ];
 
 	Params parametersToParams(Parameters parameters)
 	{
@@ -67,11 +68,9 @@ private {
 		p["centers-algorithm"] = "random";
 		p["target-precision"] = parameters.target_precision;
 		p["speedup"] = parameters.speedup;
-		foreach (mapping; algoMappings) {
-			if (mapping.algo == parameters.algo) {
-				p["algorithm"] = mapping.algoName;
-				break;
-			}
+		
+		if (parameters.algorithm >=0 && parameters.algorithm<algos.length) {
+			p["algorithm"] = algos[parameters.algorithm];
 		}
 		
 		return p;
@@ -111,9 +110,9 @@ private {
 		} catch (Exception e) {
 			p.speedup = -1;
 		}
-		foreach (mapping; algoMappings) {
-			if (mapping.algoName == params["algorithm"] ) {
-				p.algo = mapping.algo;
+		foreach (algo_id,algo; algos) {
+			if (algo == params["algorithm"] ) {
+				p.algorithm = algo_id;
 				break;
 			}
 		}
@@ -124,7 +123,7 @@ private {
 void rt_init();
 void rt_term();
 
-void nn_init()
+void fann_init()
 {
 // 	printf("dcode: nn_init()\n");
 	if (!initialized) {
@@ -135,12 +134,47 @@ void nn_init()
 	}
 }
 
-void nn_term()
+void fann_term()
 {
 // 	printf("dcode: nn_term()\n");
 	if (initialized) {
 		rt_term();
 		initialized = false;
+	}
+}
+
+
+void fann_log_verbosity(int level)
+{
+	Logger.Level logLevel = Logger.Level.Trace;
+	switch (level) {
+		case LOG_NONE:
+			logLevel = Logger.Level.None;
+			break;
+		case LOG_FATAL:
+			logLevel = Logger.Level.Fatal;
+			break;
+		case LOG_ERROR:
+			logLevel = Logger.Level.Error;
+			break;
+		case LOG_WARN:
+			logLevel = Logger.Level.Warn;
+			break;
+		case LOG_INFO:
+			logLevel = Logger.Level.Info;
+			break;
+	}
+	logger.setLevel(logLevel);
+}
+
+void fann_log_destination(char* destination)
+{
+	logger.clearAppenders();
+
+	if (destination is null) {
+		logger.addAppender(new ConsoleAppender());
+	} else {
+		logger.addAppender(new FileAppender(fromUtf8z(destination)));
 	}
 }
 
@@ -157,10 +191,10 @@ private Dataset!(T) makeFeatures(T)(T* dataset, int count, int length)
 	return inputData;
 }
 
-NN_INDEX build_index(float* dataset, int rows, int cols, Parameters* parameters)
+NN_INDEX fann_build_index(float* dataset, int rows, int cols, Parameters* parameters)
 {	
 	try {
-		nn_init();
+		fann_init();
 		auto inputData = makeFeatures(dataset,rows,cols);
 		
 		if (parameters is null) {
@@ -202,10 +236,10 @@ NN_INDEX build_index(float* dataset, int rows, int cols, Parameters* parameters)
 }
 
 
-int find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters)
+int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, float target_precision, Parameters* parameters)
 {
 	try {
-		nn_init();
+		fann_init();
 		auto inputData = makeFeatures(dataset,count,length);
 		
 		NNIndex index;
@@ -253,10 +287,10 @@ int find_nearest_neighbors(float* dataset, int count, int length, float* testset
 // 	GC.collect();
 }
 
-int find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks)
+int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks)
 {
 	try {
-		nn_init();
+		fann_init();
 		if (index_id < nn_ids_count) {
 			Object indexObj = nn_ids[index_id];
 			if (indexObj !is null) {
@@ -297,10 +331,10 @@ int find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, 
 // 	GC.collect();
 }
 
-void free_index(NN_INDEX index_id)
+void fann_free_index(NN_INDEX index_id)
 {
 	try {
-		nn_init();
+		fann_init();
 		if (index_id < nn_ids_count) {
 			Object index = nn_ids[index_id];
 			Object inputData = features[index_id];
@@ -316,10 +350,10 @@ void free_index(NN_INDEX index_id)
 // 	GC.collect();
 }
 
-int compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, Parameters* parameters)
+int fann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, Parameters* parameters)
 {
 	try {
-		nn_init();
+		fann_init();
 		auto inputData = makeFeatures(dataset,count,length);
 
 		Params params = parametersToParams(*parameters);

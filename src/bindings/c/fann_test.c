@@ -60,27 +60,32 @@ int main(int argc, char** argv)
 {
 	int rows = 9000;
 	int cols = 128;
-   
-   int tcount = 1000;
 	
-   printf("Reading input data file.\n");
-   float* dataset = read_dat_file("features.dat", rows, cols);
-   printf("Reading test data file.\n");
-   float* testset = read_dat_file("test.dat", tcount, cols);
+	int tcount = 1000;
+	
+	printf("Reading input data file.\n");
+	float* dataset = read_dat_file("features.dat", rows, cols);
+	printf("Reading test data file.\n");
+	float* testset = read_dat_file("test.dat", tcount, cols);
 	
 	Parameters p;
 		
 	int nn = 3;
-   int* result = (int*) malloc(tcount*nn*sizeof(int));
+	int* result = (int*) malloc(tcount*nn*sizeof(int));
 	
-  	nn_init();
-   	
+	fann_init();
+	
+	fann_log_verbosity(LOG_INFO);
+	fann_log_destination("log.txt");
+	
+	p.target_precision = 90;
+	
 	printf("Computing index and optimum parameters.\n");
-//   int index_id = build_index(dataset, rows, cols, 90, &p);
-//  find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks);
-   
-   write_dat_file("results.dat",result, tcount, nn);
-   
+	int index_id = fann_build_index(dataset, rows, cols, &p);
+	fann_find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks);
+	
+	write_dat_file("results.dat",result, tcount, nn);
+	
 	free(dataset);
 	free(result);
 	

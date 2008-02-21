@@ -64,9 +64,9 @@ class ComputeNNCommand : IndexCommand
 				
 				logger.info(sprint("nn: {}",nn));
 			
-				showProgressBar(testData.rows, 70, (Ticker tick){
+// 				showProgressBar(testData.rows, 70, (Ticker tick){
 					for (int i = 0; i < testData.rows; i++) {
-						tick();
+// 						tick();
 						
 						resultSet.init(testData.vecs[i]);
 				
@@ -81,7 +81,7 @@ class ComputeNNCommand : IndexCommand
 						}
 						writer("\n");
 					}
-				});
+// 				});
 			});
 		}
 	}

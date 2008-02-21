@@ -40,12 +40,6 @@ class ConsoleWriter {
 	}
 }
 
-
-
-
-
-typedef void delegate() Ticker;
-
 void showOperation(string message, void delegate() action)
 {
 	logger.info(message~"... ");
@@ -54,6 +48,7 @@ void showOperation(string message, void delegate() action)
 }
 
 
+typedef void delegate() Ticker;
 
 void showProgressBar(int maxValue, int maxWidth, void delegate(Ticker ticker) action)
 {
@@ -67,7 +62,7 @@ void showProgressBar(int maxValue, int maxWidth, void delegate(Ticker ticker) ac
 		}
 		
 		if (crtValue==maxValue) {
-			console("\x08\x08\x08\x08\x08\x08=====]\n");
+				console("\x08\x08\x08\x08\x08\x08=====]\n");
 			crtValue++;
 		}
 		else if (crtValue<maxValue) {
@@ -82,42 +77,7 @@ void showProgressBar(int maxValue, int maxWidth, void delegate(Ticker ticker) ac
 		}
 	}
 
-	console("[      ");
+	console("[      ");	
 	
 	action(&tick);
-}
-
-void showProgressBarStep(int maxValue, int maxWidth, void delegate(int index) action)
-{
-	int crtValue = 0;
-	int crtWidth = 0;
-
-	void tick()
-	{
-		if (crtValue<=maxValue) {
-			crtValue++;
-		}
-		
-		if (crtValue==maxValue) {
-			console("\x08\x08\x08\x08\x08\x08=====]\n");
-			crtValue++;
-		}
-		else if (crtValue<maxValue) {
-			int newWidth = (crtValue*maxWidth)/maxValue;
-			if (newWidth!=crtWidth) {
-				
-				int percent = (100*crtValue)/maxValue;
-			
-				console("\x08\x08\x08\x08\x08\x08=({}%)>",percent);
-				crtWidth++;
-			}
-		}
-	}
-
-	console("[      ");
-	
-	for (int index=0;index<maxValue;++index) {
-		action(index);
-		tick();
-	}
 }

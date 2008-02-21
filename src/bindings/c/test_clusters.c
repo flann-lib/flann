@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 	
 	Parameters p;
 	p.checks=32;
-	p.algo = KMEANS;
+	p.algorithm = KMEANS;
 	p.trees=1;
 	p.branching=32;
 	p.iterations=7;
@@ -78,10 +78,10 @@ int main(int argc, char** argv)
 	
 	float* clusters = (float*) malloc(cluster_count*cols*sizeof(float));
 	
-   	nn_init();
+   	fann_init();
    	
 	printf("Computing clusters.\n");
-   	int c_count = compute_cluster_centers(dataset,rows, cols, cluster_count, clusters, &p);
+   	int c_count = fann_compute_cluster_centers(dataset,rows, cols, cluster_count, clusters, &p);
 	
 	printf("Writing clusters to dat file.\n");
 	write_dat_file("clusters.dat",clusters, c_count, cols);

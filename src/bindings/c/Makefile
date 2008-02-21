@@ -1,6 +1,6 @@
 
 LIBS=-lfann -lgphobos -lm -lpthread
-LIB_DIRS=-L../../.. -L../../../bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2/ 
+LIB_DIRS=-L${BUILD_DIR}/lib -L../../../bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2/ 
 
 SOURCES=fann_test.c test_clusters.c
 PROGS=$(patsubst %.c,%,${SOURCES})

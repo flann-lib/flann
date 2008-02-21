@@ -28,13 +28,14 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		ulong fileSize = FilePath(file).fileSize;
 		int count = fileSize / (veclen*U.sizeof);
 		
-		logger.info(sprint("Reading {} features: ",count));
+		logger.info(sprint("Reading {} features from file {}: ",count,file));
 				
 		withOpenFile(file, (FileInput stream) {
 			Reader read = new Reader(new NativeProtocol(stream,false));
 			
 			vecs = allocate!(T[][])(count,veclen);
-			scope U[] buffer = new U[veclen];
+			U[] buffer = new U[veclen];
+			scope(exit) delete buffer;
 			
 			for (int i=0;i<count;++i) {
 				read(buffer);

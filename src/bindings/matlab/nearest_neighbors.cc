@@ -73,18 +73,18 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 		p.target_precision = pp[0];
 
 		/* pp contains desired precision */
-		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p);
+		fann_find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p);
 	}
 	else {
 		/* pp contains index & search parameters */
 		p.checks=(int)pp[0];
-		p.algorithm = (Algorithm)pp[1];
+		p.algorithm = (int)pp[1];
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
 		p.target_precision = -1;
 		
-		find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p);			
+		fann_find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p);			
 	}	
 	
 	/* Allocate memory for Output Matrix */ 
@@ -122,7 +122,7 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	}
 		
 	const mxArray* indexMat = InArray[0];
-	NN_INDEX indexID = (NN_INDEX) *mxGetPr(indexMat);
+	FANN_INDEX indexID = (FANN_INDEX) *mxGetPr(indexMat);
 	
 	const mxArray* testsetMat = InArray[1];
 	
@@ -147,7 +147,7 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	int ppSize = mxGetN(pMat)*mxGetM(pMat);
 	double* pp = mxGetPr(pMat);
 
-	find_nearest_neighbors_index(indexID,testset, tcount, result, nn, (int)pp[0]);
+	fann_find_nearest_neighbors_index(indexID,testset, tcount, result, nn, (int)pp[0]);
 		
 	/* Allocate memory for Output Matrix */ 
 	OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL);	
@@ -190,7 +190,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	}
 	double* pp = mxGetPr(pMat);
 
-	NN_INDEX indexID;
+	FANN_INDEX indexID;
 	Parameters p;
 	if (pSize==1) {
 		float target_precision = pp[0];
@@ -201,18 +201,18 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		p.target_precision = pp[0];
 		
 		/* pp contains desired precision */
-		indexID = build_index(dataset,dcount,length,&p);
+		indexID = fann_build_index(dataset,dcount,length,&p);
 	}
 	else {
 		/* pp contains index & search parameters */
 		p.checks=(int)pp[0];
-		p.algorithm = (Algorithm)pp[1];
+		p.algorithm = (int)pp[1];
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
 		p.target_precision = -1;
 		
-		indexID = build_index(dataset,dcount,length, &p);		
+		indexID = fann_build_index(dataset,dcount,length, &p);		
 	}	
 
 		
@@ -250,14 +250,14 @@ static void _free_index(int nOutArray, mxArray *OutArray[], int nInArray, const 
 		mexErrMsgTxt("Expecting a single scalar argument: the index ID");
 	}
 	double* indexPtr = mxGetPr(InArray[0]);
-	free_index((NN_INDEX)indexPtr[0]);
+	fann_free_index((FANN_INDEX)indexPtr[0]);
 }
 
 void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
 {
 	static int started = 0;
 	if (!started) {
-   		nn_init();
+   		fann_init();
    		started = 1;
    	}
 	

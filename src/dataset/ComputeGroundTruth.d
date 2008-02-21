@@ -54,12 +54,12 @@ public int[][] computeGroundTruth(T,U)(Dataset!(T) inputData, Dataset!(U) testDa
 {
 	int[][] matches = allocate!(int[][])(testData.rows,nn);
 
-	showProgressBar(testData.rows, 70, (Ticker tick) {
+// 	showProgressBar(testData.rows, 70, (Ticker tick) {
 		for (int i=0;i<testData.rows;++i) {
 			findNearest(inputData.vecs, testData.vecs[i], matches[i], skip);
-			tick();
+// 			tick();
 		}
-	});
+// 	});
 	
 	return matches;
 }

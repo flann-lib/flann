@@ -4,7 +4,9 @@ import commands.GenericCommand;
 import commands.DefaultCommand;
 
 import util.Logger;
-import dataset.DatasetGenerator;
+import util.Utils;
+import util.Random;
+import output.Console;
 
 
 static this() {
@@ -31,7 +33,33 @@ class GenerateRandomCommand : DefaultCommand
 	void execute() 
 	{
 		if (length>0 && count>0) {
-			generateRandomDataset(file,count,length);
+			logger.info(sprint("Generating random dataset with {} features of {} dimension(s).",count,length));	
+			
+			char[] bin_file = file~".bin";
+			withOpenFile(file, (FormatOutput print) {
+				print("BINARY").newline;
+				print(bin_file).newline;
+				print(length).newline;
+				print("float").newline;
+			});
+			
+			float[]
+			
+			buffer = new float[length];
+			scope(exit) delete buffer;
+			
+			withOpenFile(bin_file, (FileOutput stream) {
+// 				showProgressBar(count, 70, (Ticker tick) {
+		
+					for (int i=0;i<count;++i) {
+						for (int j=0;j<length;++j) {
+							buffer[j] = cast(float) drand48();
+						}
+						stream.write((cast(void*)buffer.ptr)[0..float.sizeof*length]);
+// 						tick();
+					}
+// 				});
+			});		
 		}
 		else {
 			throw new Exception("Dataset size and feature size must be strictly positive.");

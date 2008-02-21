@@ -101,7 +101,7 @@ class DatFormatHandler(T) : FormatHandler!(T)
 			foreach (vec;vecs) {
 				foreach (i,elem;vec) {
 					if (i!=0) write(" ");
-					write.format("{}",elem);
+					write.format("{:e10}",elem);
 				}
 				write.newline;
 			}

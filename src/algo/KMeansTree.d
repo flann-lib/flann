@@ -606,7 +606,7 @@ class KMeansTree(T) : NNIndex
 
 		float[][] centers = new float[][clusterCount];
 		
-		logger.info(sprint("Mean cluster variance for {} top level clusters: {}",clusterCount,variance));
+		logger.info(sprint("Mean cluster variance for {} top level clusters: {:e10}",clusterCount,variance));
 		
  		for (int i=0;i<clusterCount;++i) {
 			centers[i] = clusters[i].pivot;
