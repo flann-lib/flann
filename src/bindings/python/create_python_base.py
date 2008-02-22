@@ -209,6 +209,7 @@ def createPythonBase(*args):
     ##########################################################################################
     # We're ready to go!!!
 
+    fci.customize.add_extra_compile_arg('-g')
     fci.compile()
     chmod('fann_python_base.so', 420)  # oct 644
     
