@@ -86,8 +86,7 @@ def createPythonBase(*args):
     for d in getIncludeDirs():
         fci.customize.add_include_dir(d)
     for l in getLibs():
-        fci.customize.add_library(l)
-    
+        fci.customize.add_library(l)    
     fci.customize.add_extra_compile_arg('-Wno-unused-variable')
     fci.customize.add_extra_compile_arg('-Wno-deprecated')
     
@@ -148,7 +147,7 @@ def createPythonBase(*args):
 
     params_set_code = \
     ("Parameters params;\n"
-     + ''.join(['params.%s = %s;  printf("%s = %s\\n", %s);\n'
+     + ''.join(['params.%s = %s; // printf("%s = %s\\n", %s);\n'
                 % (n, n,n,'%f','float(' + n + ')')
                 for n in get_param_struct_name_list()]))
 

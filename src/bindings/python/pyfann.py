@@ -5,9 +5,9 @@ import sys
 try:
     import fann_python_base as fann
 except ImportError, ie:
-    sys.stderr.write('\nError importing required fann_python_base module \n')
+    sys.stderr.write('\n\nError importing required fann_python_base module \n')
     sys.stderr.write('and/or fann_index_type.\n')
-    sys.stderr.write('Please create them by executing create_python_base.py.\n')
+    sys.stderr.write('Please create them by executing create_python_base.py.\n\n')
     raise ie
 
 from index_type import index_type
@@ -103,6 +103,8 @@ class FANN:
         querypts = self.__ensure2dArray(querypts)
 
         npts, dim = pts.shape
+
+        # It could be that querypts is only a single pt
         nqpts = querypts.shape[0]
 
         assert(querypts.shape[1] == dim)
@@ -156,10 +158,12 @@ class FANN:
             self.__curindex_data = pts_flat
             self.__curindex_data_shape = pts.shape
 
+
     def nn_index(self, querypts, num_neighbors = 1, **kwargs):
         """
-        For each point in querypts, returns the num_neighbors nearest
-        points in the index built by calling build_index.
+        For each point in querypts, (which may be a single point), it
+        returns the num_neighbors nearest points in the index built by
+        calling build_index.
 
         If num_neighbors > 1, the result is a 2d array of indices of
         size len(querypts) x num_neighbors; otherwise, the result is a
@@ -167,11 +171,17 @@ class FANN:
         """
 
         if self.__curindex == None:
-            raise Exception("build_index(...) method not called first or current index deleted.")
+            raise FANNException("build_index(...) method not called first or current index deleted.")
+
+
+        npts, dim = self.__curindex_data_shape
+
+
+        if querypts.size == dim:
+            querypts.reshape(1, dim)
 
         querypts = self.__ensure2dArray(querypts)
 
-        npts, dim = self.__curindex_data_shape
         nqpts = querypts.shape[0]
 
         assert(querypts.shape[1] == dim)
