@@ -174,9 +174,15 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 {	
 	// subsample datasets
 	int sampleSize = rndint(samplePercentage*inputDataset.rows);
-	Dataset!(T) sampledDataset = inputDataset.sample(sampleSize, false);
-	
 	int testSampleSize = MIN(sampleSize/10, 1000);
+	
+	if (testSampleSize<1) {
+		Params p;
+		p["algorithm"] = "linear";
+		return p;
+	}
+	
+	Dataset!(T) sampledDataset = inputDataset.sample(sampleSize, false);	
 	Dataset!(float) testDataset = new Dataset!(float)();
 	testDataset.init(sampledDataset.sample(testSampleSize,true));
 	logger.info(sprint("Sampled dataset size: {}",sampledDataset.rows));
@@ -431,17 +437,19 @@ void estimateSearchParams(T)(NNIndex index, Dataset!(T) inputDataset, float desi
 	const int SAMPLE_COUNT = 500;
 	
 	int samples = min(inputDataset.rows/10, SAMPLE_COUNT);
-	Dataset!(float) testDataset = new Dataset!(float)();
-	testDataset.init(inputDataset.sample(samples,false));
-	logger.info("Computing ground truth");
-	
-	float linear = profile({testDataset.computeGT(inputDataset,1,1);});
-	
-	int checks;
-	logger.info("Estimating number of checks");
-	float searchTime = testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
-	
-	logger.info(sprint("Required number of checks: {} ",checks));;
-	searchParams["checks"] = checks;
-	searchParams["speedup"] = (linear/searchTime);
+	if (samples>0) {
+		Dataset!(float) testDataset = new Dataset!(float)();
+		testDataset.init(inputDataset.sample(samples,false));
+		logger.info("Computing ground truth");
+		
+		float linear = profile({testDataset.computeGT(inputDataset,1,1);});
+		
+		int checks;
+		logger.info("Estimating number of checks");
+		float searchTime = testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
+		
+		logger.info(sprint("Required number of checks: {} ",checks));;
+		searchParams["checks"] = checks;
+		searchParams["speedup"] = (linear/searchTime);
+	}
 }

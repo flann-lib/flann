@@ -55,6 +55,8 @@ int countCorrectMatches(int[] neighbors, int[] groundTruth, char[] approxMatch)
 	return count;
 }
 
+
+// TODO: fix distance computation
 float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 {
 	int n = neighbors.length;
