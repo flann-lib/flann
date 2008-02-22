@@ -164,6 +164,8 @@ void fann_term()
 
 void fann_log_verbosity(int level)
 {
+	fann_init();
+	
 	Logger.Level logLevel = Logger.Level.Trace;
 	switch (level) {
 		case LOG_NONE:
@@ -187,6 +189,8 @@ void fann_log_verbosity(int level)
 
 void fann_log_destination(char* destination)
 {
+	fann_init();
+
 	logger.clearAppenders();
 
 	if (destination is null) {
