@@ -120,12 +120,24 @@ class StartStopTimer
  * );
  * ---
  */
-float profile( void delegate() action)
+float profile( void delegate() action, float minTime = -1)
 {
 	scope StartStopTimer t = new StartStopTimer();
-	t.start;
-	action();
-	t.stop;
-	return t.value;
+	
+	if (minTime < 0) {
+		t.start();
+		action();
+		t.stop();
+		return t.value;
+	} else {
+		int count = 0;
+		while (t.value<minTime) {
+			t.start();
+			action();
+			t.stop();
+			count++;
+		}
+		return t.value/count;
+	}
 }
 

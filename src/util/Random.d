@@ -17,7 +17,7 @@ module util.Random;
 import tango.stdc.time;
 
 import util.Utils;
-
+import util.Logger;
 
 /**
  * Declaration for random functions from C world.
@@ -97,7 +97,7 @@ class DistinctRandom
 	 */
 	public int nextRandom() {
 		if (counter==vals.length) {
-			throw new Exception("Out of distinct random numbers. Re-init number generator.");
+			return -1;
 		} else {
 			return vals[counter++];
 		}

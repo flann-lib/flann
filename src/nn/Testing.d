@@ -75,10 +75,11 @@ float search(int checks, out float time, char[] approxMatch = "")
 		throw new Exception("Ground truth is not computed for as many neighbors as requested");
 	}
 	
-	int correct = 0;
-	float distR = 0;
-	
+	int correct;
+	float distR;
 	time = profile( {
+		correct = 0;
+		distR = 0;
 		for (int i = 0; i < testData.rows; i++) {
 			auto target = testData.vecs[i];
 			resultSet.init(target);
@@ -93,7 +94,7 @@ float search(int checks, out float time, char[] approxMatch = "")
 			}
 			distR += computeDistanceRaport(target,neighbors,testData.match[i]);
 		}
-	});
+	},0.2);
 	
 	float performance = 100*cast(float)correct/(nn*testData.rows);
 	

@@ -8,7 +8,8 @@ const int KDTREE 	= 1;
 const int KMEANS 	= 2;
 const int COMPOSITE = 3;
 
-
+const int CENTERS_RANDOM = 0;
+const int CENTERS_GONZALES = 1;
 
 const int LOG_NONE	= 0;
 const int LOG_FATAL	= 1;
@@ -23,9 +24,11 @@ struct Parameters {
 	int trees;
 	int branching;
 	int iterations;
+	int centers_algorithm;
 	float target_precision;
 	float speedup;
 };
+
 
 
 

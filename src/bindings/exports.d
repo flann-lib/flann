@@ -22,6 +22,8 @@ const int KDTREE 	= 1;
 const int KMEANS 	= 2;
 const int COMPOSITE = 3;
 
+const int CENTERS_RANDOM = 0;
+const int CENTERS_GONZALES = 1;
 
 const int LOG_NONE	= 0;
 const int LOG_FATAL	= 1;
@@ -36,6 +38,7 @@ struct Parameters {
 	int trees;
 	int branching;
 	int iterations;
+	int centers_algorithm;
 	float target_precision;
 	float speedup;
 };
@@ -57,7 +60,8 @@ static this()
 
 private {
 	char[][] algos = [ "linear","kmeans", "kdtree", "composite" ];
-
+	char[][] centers_algos = [ "random", "gonzales" ];
+	
 	Params parametersToParams(Parameters parameters)
 	{
 		Params p;
@@ -65,9 +69,15 @@ private {
 		p["trees"] = parameters.trees;
 		p["max-iterations"] = parameters.iterations;
 		p["branching"] = parameters.branching;
-		p["centers-algorithm"] = "random";
 		p["target-precision"] = parameters.target_precision;
 		p["speedup"] = parameters.speedup;
+		
+		if (parameters.centers_algorithm >=0 && parameters.centers_algorithm<centers_algos.length) {
+			p["centers-algorithm"] = centers_algos[parameters.centers_algorithm];
+		}
+		else {
+			p["centers-algorithm"] = "random";
+		}
 		
 		if (parameters.algorithm >=0 && parameters.algorithm<algos.length) {
 			p["algorithm"] = algos[parameters.algorithm];
@@ -109,6 +119,14 @@ private {
  			p.speedup = params["speedup"].get!(float);
 		} catch (Exception e) {
 			p.speedup = -1;
+		}
+		foreach (algo_id,algo; centers_algos) {
+			try {
+				if (algo == params["centers-algorithm"] ) {
+					p.centers_algorithm = algo_id;
+					break;
+				}
+			} catch (Exception e) {}
 		}
 		foreach (algo_id,algo; algos) {
 			if (algo == params["algorithm"] ) {
