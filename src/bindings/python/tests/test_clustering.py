@@ -48,15 +48,18 @@ class Test_PyFANN_clustering(unittest.TestCase):
         """
         seed(0)
         x = rand(N, dim)
-        centroids = self.nn.kmeans(x, N)
+        xc = concatenate(tuple([x for i in xrange(dup)]))
 
-        x = concatenate(tuple([x for i in xrange(dup)]))
+        if dup > 1:
+            xc += randn(xc.shape[0], xc.shape[1])*0.0001/dim
 
-        dists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids])
+        centroids = self.nn.kmeans(xc, N)
+
+        mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
         
-        def isclose(a,b): return(abs(a-b) < 0.0000001)
-
-        self.assert_(all([isclose(d, 0) for d in dists.min(0)]))
+        for m in mindists:
+            self.assertAlmostEqual(m, 0.0, 2)
+        
         
 if __name__ == '__main__':
     unittest.main()
