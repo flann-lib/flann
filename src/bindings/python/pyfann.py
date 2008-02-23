@@ -47,13 +47,12 @@ class FANN:
         self.__idx_lock = threading.Lock()
         
         # Set param dict
-
         self.__initial_param_dict = {}
         self.__params_lock = threading.Lock()
         dp = dict(params.get_param_args())
         dp.update(kwargs)
         self.setParamDefault(**dp)
-        
+
     def __del__(self):
         self.delete_index()            
 
@@ -73,6 +72,23 @@ class FANN:
             params.process_param_dict(self.__processed_param_dict)
             self.__default_arg_list = [self.__processed_param_dict[n] 
                                        for n, v in params.get_param_args()]
+
+#     def setVerbosity(self, level):
+#         """ 
+#         Sets the verbosity level printed to stdout.  Note that this is
+#         a global setting; all instances of FANN will be
+#         affected. 
+
+#         Possible values are:
+
+#         LOG_NONE:  0
+#         LOG_FATAL: 1
+#         LOG_ERROR: 2
+#         LOG_WARN:  3
+#         LOG_INFO:  4
+#         """
+#         with self.__nn_lock:
+#             fann.set_verbosity(level)
 
     def getAlgorithmList(self):
         """

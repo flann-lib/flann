@@ -12,7 +12,8 @@ param_args = [('algorithm', "default"),
               ('branching', 32),
               ('iterations', 5),
               ('target_precision', -1.),
-              ('centers_algorithm', "random")]
+              ('centers_algorithm', "random"),
+              ('speedup', -1)]
 
 def get_param_args():
     return param_args

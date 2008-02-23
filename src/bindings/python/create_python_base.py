@@ -162,6 +162,11 @@ def createPythonBase(*args):
     #################################################################################
     # Functions that do the actual interfacing. 
 
+#     addFunc('set_verbosity', 
+#             r'fann_log_verbosity(level);\n',
+#             ('level', int(0)))
+
+
     addFunc('make_index',
             params_set_code + 
             r"""
@@ -214,6 +219,7 @@ def createPythonBase(*args):
             ('result', empty(1, dtype=float32)),
             *get_param_compile_args())
 
+    
 
     ##########################################################################################
     # We're ready to go!!!
