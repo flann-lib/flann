@@ -11,16 +11,12 @@ except ImportError, ie:
     raise ie
 
 from index_type import index_type
-
+from pyfann_exceptions import *
 
 import threading
 from numpy import float32, float64, int32, matrix, array, empty
-from define_params import *
+import pyfann_parameters as params
 from copy import copy
-
-class FANNException(Exception):
-    def __init__(self, *args):
-        Exception.__init__(self, *args)
 
 class FANN:
     """
@@ -50,25 +46,33 @@ class FANN:
         self.__curindex_data_shape = None
         self.__idx_lock = threading.Lock()
         
+        # Set param dict
+
+        self.__initial_param_dict = {}
         self.__params_lock = threading.Lock()
-        self.__param_dict = dict(get_param_args())
-
-        self.setParamDefaults(**kwargs)
-
+        dp = dict(params.get_param_args())
+        dp.update(kwargs)
+        self.setParamDefault(**dp)
+        
     def __del__(self):
         self.delete_index()            
 
     ################################################################################
     # Bookkeeping type functions
 
-    def setParamDefaults(self, **kwargs):
+    def setParamDefault(self, **kwargs):
         """
         Takes a set of keyword arguments and updates the default
         parameter set.  Throws an exception if a kwyword is not a
         possible parameter.
         """
+        
         with self.__params_lock:
-            self.__update_param_dict(self.__param_dict, kwargs)
+            self.__update_param_dict(self.__initial_param_dict, kwargs)
+            self.__processed_param_dict = copy(self.__initial_param_dict)
+            params.process_param_dict(self.__processed_param_dict)
+            self.__default_arg_list = [self.__processed_param_dict[n] 
+                                       for n, v in params.get_param_args()]
 
     def getAlgorithmList(self):
         """
@@ -139,7 +143,7 @@ class FANN:
 
         pts is a 2d numpy array or matrix. All the computation is done
         in float32 type, but pts may be any type that is convertable
-        to float32.
+        to float32. 
         """
 
         pts = self.__ensure2dArray(pts)
@@ -173,9 +177,7 @@ class FANN:
         if self.__curindex == None:
             raise FANNException("build_index(...) method not called first or current index deleted.")
 
-
         npts, dim = self.__curindex_data_shape
-
 
         if querypts.size == dim:
             querypts.reshape(1, dim)
@@ -222,7 +224,8 @@ class FANN:
     ##########################################################################################
     # Clustering functions
 
-    def kmeans(self, pts, num_clusters, max_iterations = None, dtype = None):
+    def kmeans(self, pts, num_clusters, centers_init = "random", 
+               max_iterations = None, dtype = None):
         """
         Runs kmeans on pts with num_clusters centroids.  Returns a
         numpy array of size num_clusters x dim.  
@@ -243,9 +246,10 @@ class FANN:
             else:
                 return dtype.type(mean(pts, 0).reshape(1, pts.shape[1]))
 
-        return self.hierarchical_kmeans(pts, int(num_clusters), 1, max_iterations, dtype)
+        return self.hierarchical_kmeans(pts, int(num_clusters), 1, centers_init, max_iterations, dtype)
         
-    def hierarchical_kmeans(self, pts, branch_size, num_branches, max_iterations = None, dtype = None):
+    def hierarchical_kmeans(self, pts, branch_size, num_branches, centers_init = "random",
+                            max_iterations = None, dtype = None):
         """
         Clusters the data by using multiple runs of kmeans to
         recursively partition the dataset.  The number of resulting
@@ -280,15 +284,14 @@ class FANN:
 
         result = empty(num_clusters * dim, dtype=float32)
         
-        params = self.__get_param_arg_list({"iterations"     : int(max_iterations),
-                                            "algorithm"      : 'kmeans',
-                                            "branching"      : int(branch_size)})
+        params = self.__get_param_arg_list({"iterations"       : int(max_iterations),
+                                            "algorithm"        : 'kmeans',
+                                            "centers_algorithm": centers_init,
+                                            "branching"        : int(branch_size)})
 
         with self.__nn_lock:
             numclusters = fann.run_kmeans(pts_flat, npts, dim,
-                                          num_clusters,
-                                          result,
-                                          *params)
+                                          num_clusters, result, *params)
             
             if numclusters <= 0:
                 raise FANNException('Error occured during clustering procedure.')
@@ -303,41 +306,35 @@ class FANN:
     ##########################################################################################
     # internal bookkeeping functions
 
-    def __get_algo_num(self, name):
-        d = get_algorithm_enum_dict()
+    def __get_params(self, newargs = {}):
+        if len(newargs) == 0:
+            return self.__default_arg_list
+        else:
+            params.process_param_dict(newargs)
+            pd = self.__update_param_dict(self.__getProcessedDefaults(), newargs)
+            return [(n, pd[n]) for n, v in params.get_param_args()]
 
-        try:
-            return d[name]
-        except KeyError:
-            raise KeyError('%s not a valid algorithm name' % str(name))
-
-    def __get_params(self, newargs):
-        pd = self.__update_param_dict(self.getDefaults(), newargs)
-
-        if type(pd["algorithm"]) == str:
-            pd["algorithm"] = self.__get_algo_num(pd["algorithm"])
-
-        pd["target_precision"] = float(pd["target_precision"])
-        
-        return [(n, pd[n]) for n, v in get_param_args()]
-
-    def __get_param_arg_list(self, newargs):
+    def __get_param_arg_list(self, newargs = {}):
         return [v for n,v in self.__get_params(newargs)]
 
-    def __print_param_arg_list(self, newargs):
+    def __print_param_arg_list(self, newargs = {}):
         print 'params: ', self.__get_params(newargs)
         
     def __get_one_param(self, newargs, pname):
+        params.process_param_dict(newargs)
+        
         try:
             return newargs[pname]
         except KeyError:
-            with self.__params_lock:
-                return self.__param_dict[pname]
+            return self.__getProcessedDefaults()[pname]
+
+    def __getProcessedDefaults(self):
+        with self.__params_lock:
+            return self.__processed_param_dict
 
     def __update_param_dict(self, pd, newargs):
-        
         for k, v in dict(newargs).iteritems():
-            if k not in self.__param_dict:
+            if k not in params.get_param_struct_name_list():
                 raise KeyError('%s not a possible parameter.' % k)
             else:
                 pd[k] = v

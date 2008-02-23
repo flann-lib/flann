@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
-# This script uses weave to create the code bindings that
+DEBUG = True;
 
+# This script uses weave to create the code bindings that
 import sys
 from index_type import index_type
 
@@ -28,7 +29,7 @@ from os import *
 from os.path import *
 
 # This contains the program defaults; centralized to make adding features easier
-from define_params import *
+from pyfann_parameters import *
 
 # remove the old bindings so it recompiles if needed
 
@@ -60,6 +61,11 @@ def getLibs():
 # The main execution starts here
 
 def createPythonBase(*args):
+
+    if DEBUG == True:
+        dbcomment = ''
+    else:
+        dbcomment = '//'
 
     # Make sure we are in the correct directory
     cwd = getcwd()
@@ -147,8 +153,8 @@ def createPythonBase(*args):
 
     params_set_code = \
     ("Parameters params;\n"
-     + ''.join(['params.%s = %s; // printf("%s = %s\\n", %s);\n'
-                % (n, n,n,'%f','float(' + n + ')')
+     + ''.join(['params.%s = %s; %s printf("%s = %s\\n", %s);\n'
+                % (n, n, dbcomment, n,'%f','float(' + n + ')')
                 for n in get_param_struct_name_list()]))
 
     param_ptr_code = r"(&params)"
@@ -159,12 +165,13 @@ def createPythonBase(*args):
     addFunc('make_index',
             params_set_code + 
             r"""
+            %s printf("npts = %%d, dim = %%d", npts, dim);
             return_val = fann_build_index(dataset, npts, dim, %s);
-            """ % param_ptr_code,
+            """ % (dbcomment, param_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
-            *get_param_args())
+            *get_param_compile_args())
 
     addFunc('del_index', r"fann_free_index(FANN_INDEX(i));", ('i', int(0)))
             
@@ -180,9 +187,10 @@ def createPythonBase(*args):
     addFunc('find_nn',
             params_set_code + 
             r"""
+            %s printf("npts = %%d, dim = %%d, tcount = %%d", npts, dim, tcount);
             fann_find_nearest_neighbors(dataset, npts, dim, testset, tcount,
             (int*)result, num_neighbors, %s);
-            """ % param_ptr_code,
+            """ % (dbcomment, param_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
@@ -190,20 +198,21 @@ def createPythonBase(*args):
             ('tcount', int(0)),
             ('result', empty(1, dtype=index_type )),
             ('num_neighbors', int(0)),
-            *get_param_args())
+            *get_param_compile_args())
 
     addFunc('run_kmeans',
             params_set_code + 
             r"""
             // A few commands to make sure we set the parameters correctly.
+            %s printf("npts = %%d, dim = %%d, num_clusters = %%d", npts, dim, num_clusters);
             return_val = fann_compute_cluster_centers(dataset, npts, dim, num_clusters, (float*)result, %s);
-            """ % param_ptr_code,
+            """ % (dbcomment, param_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
             ('num_clusters', int(0)),
             ('result', empty(1, dtype=float32)),
-            *get_param_args())
+            *get_param_compile_args())
 
 
     ##########################################################################################

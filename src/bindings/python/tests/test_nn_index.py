@@ -17,7 +17,7 @@ class Test_PyFANN_nn_index(unittest.TestCase):
 
     def testnn_index_random_permute(self):
 
-        numtests = 50
+        numtests = 500
         dim = 10
         N = 100
 
