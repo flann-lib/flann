@@ -7,6 +7,7 @@ from numpy import *
 from numpy.random import *
 import unittest
 
+
 class Test_PyFANN_nn(unittest.TestCase):
 
     def setUp(self):
