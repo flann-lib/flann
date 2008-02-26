@@ -166,7 +166,7 @@ void fann_term()
 }
 
 
-private void fann_log_verbosity(int level)
+void fann_log_verbosity(int level)
 {
 	fann_init();
 	
@@ -191,7 +191,7 @@ private void fann_log_verbosity(int level)
 	logger.setLevel(logLevel);
 }
 
-private void fann_log_destination(char* destination)
+void fann_log_destination(char* destination)
 {
 	fann_init();
 
@@ -229,8 +229,8 @@ private void initFANNParameters(FANNParameters* p)
 NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FANNParameters* fann_params)
 {	
 	try {
-		initFANNParameters(fann_params);
 		fann_init();
+		initFANNParameters(fann_params);
 		
 		if (nn_ids_count==nn_ids.length) {
 			// extended indices and features arrays
@@ -289,8 +289,9 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FANNParameters* fann_params)
 {
 	try {
-		initFANNParameters(fann_params);
 		fann_init();
+		initFANNParameters(fann_params);
+		
 		auto inputData = makeFeatures(dataset,count,length);
 
 		float target_precision = index_params.target_precision;
@@ -343,8 +344,9 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks, FANNParameters* fann_params)
 {
 	try {
-		initFANNParameters(fann_params);
 		fann_init();
+		initFANNParameters(fann_params);
+		
 		if (index_id < nn_ids_count) {
 			Object indexObj = nn_ids[index_id];
 			if (indexObj !is null) {
@@ -388,8 +390,9 @@ int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tco
 void fann_free_index(NN_INDEX index_id, FANNParameters* fann_params)
 {
 	try {
-		initFANNParameters(fann_params);
 		fann_init();
+		initFANNParameters(fann_params);
+		
 		if (index_id < nn_ids_count) {
 			Object index = nn_ids[index_id];
 			Object inputData = features[index_id];
@@ -408,8 +411,8 @@ void fann_free_index(NN_INDEX index_id, FANNParameters* fann_params)
 int fann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, IndexParameters* index_params, FANNParameters* fann_params)
 {
 	try {
-		initFANNParameters(fann_params);
 		fann_init();
+		initFANNParameters(fann_params);
 		
 		auto inputData = makeFeatures(dataset,count,length);
 

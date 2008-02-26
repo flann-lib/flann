@@ -45,6 +45,10 @@ void fann_init();
 
 void fann_term();
 
+void fann_log_verbosity(int level);
+
+void fann_log_destination(char* destination);
+
 FANN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FANNParameters* fann_params);
 
 int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FANNParameters* fann_params);
