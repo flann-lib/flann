@@ -320,8 +320,8 @@ class KMeansTree(T) : NNIndex
 				dcenters[i][] = 0.0;
 			}
 			foreach (i,index; indices) {
-				T[] vec = vecs[index];
-				double[] center = dcenters[belongs_to[i]];
+				auto vec = vecs[index];
+				auto center = dcenters[belongs_to[i]];
 				for (int k=0;k<vec.length;++k) {
 					center[k] += vec[k];
  				}
