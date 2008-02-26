@@ -164,7 +164,8 @@ class KMeansTree(T) : NNIndex
 				centers[index] = vecs[indices[rnd]];
 				
 				for (int j=0;j<index;++j) {
-					if (squaredDist(centers[index],centers[j])<1e-9) {
+					float sq = squaredDist(centers[index],centers[j]);
+					if (sq<1e-16) {
 						duplicate = true;
 					}
 				}
@@ -262,7 +263,7 @@ class KMeansTree(T) : NNIndex
 	}
 	
 	
-	
+	// TODO: for 1-sized clusters don't store a cluster center (it's the same as the single cluster point)
 	private void computeClustering(KMeansNode node, int[] indices, int branching)
 	{
 		int n = indices.length;
@@ -284,6 +285,8 @@ class KMeansTree(T) : NNIndex
 		}
 		
  		float[][] centers = pool.allocate!(float[][])(branching,flength);
+ 		double[][] dcenters = pool.allocate!(double[][])(branching,flength);
+		
 		//float[][] centers = new float[][](nc,flength);
 		mat_copy(centers,initial_centers);
 		
@@ -305,33 +308,31 @@ class KMeansTree(T) : NNIndex
 			}
 			count[belongs_to[i]]++;
 		}
-
-		
 		
 		bool converged = false;
-		
-		int iteration = 0;
-		
+		int iteration = 0;		
 		while (!converged && iteration<max_iter) {
 			converged = true;
 			iteration++;
 			
+			// compute the new cluster centers
 			for (int i=0;i<branching;++i) {
-				centers[i][] = 0.0;				
+				dcenters[i][] = 0.0;
 			}
-		
-			// compute the new clusters
 			foreach (i,index; indices) {
- 				centers[belongs_to[i]].add(vecs[index]);
-
+				T[] vec = vecs[index];
+				double[] center = dcenters[belongs_to[i]];
+				for (int k=0;k<vec.length;++k) {
+					center[k] += vec[k];
+ 				}
 			}
-						
-			foreach (j,center;centers) {
-				foreach(inout value;center) {
-					value /= count[j];
+			foreach (i,center;dcenters) {
+				foreach(ref value;center) {
+					value /= count[i];
 				}
 			}
 			
+			mat_copy(centers,dcenters);
 			
 			radiuses[] = 0;
 			// reassign points to clusters
@@ -349,6 +350,7 @@ class KMeansTree(T) : NNIndex
 					radiuses[new_centroid] = sq_dist;
 				}
 				if (new_centroid != belongs_to[i]) {
+					//logger.warn(sprint("Moving center form {} to {} for point {}",new_centroid,belongs_to[i],indices[i]));
 					count[belongs_to[i]]--;
 					count[new_centroid]++;
 					belongs_to[i] = new_centroid;

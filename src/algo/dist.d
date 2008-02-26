@@ -6,7 +6,6 @@ module algo.dist;
 */
 public float squaredDist(T,U)(T[] a, U[] b) 
 {
-	
 	float distsq = 0.0;
 	float diff0, diff1, diff2, diff3;
 	T* v1 = a.ptr;
@@ -32,6 +31,7 @@ public float squaredDist(T,U)(T[] a, U[] b)
 	}
 	return distsq;
 }
+
 
 public float squaredDist(T)(T[] a) 
 {
