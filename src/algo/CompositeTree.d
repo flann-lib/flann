@@ -19,17 +19,11 @@ class CompositeTree(T) : NNIndex
 	
 	private KMeansTree!(T) kmeans;
 	private KDTree!(T) kdtree;
-	
-	
-	public uint branching;
-	private uint numTrees_;
-	private uint max_iter;
-	private string centersAlgorithm;
-	
+		
 	private T[][] vecs;
 	private int flength;
 	
-	
+	private int numTrees_;	
 
 	private this()
 	{
@@ -37,18 +31,12 @@ class CompositeTree(T) : NNIndex
 	
 	public this(Dataset!(T) inputData, Params params)
 	{
-		this.branching = params["branching"].get!(uint);
-		this.numTrees_ = params["trees"].get!(uint);
-		this.max_iter = params["max-iterations"].get!(uint);
-		centersAlgorithm = params["centers-algorithm"].get!(string);
-		numTrees_ = params["trees"].get!(uint);
-
 		this.vecs = inputData.vecs;
 		this.flength = inputData.cols;
 		
+		numTrees_ = params["trees"].get!(int);
 		
 		kdtree = new KDTree!(T)(inputData,params);
-		params["trees"] = 1u;
 		kmeans = new KMeansTree!(T)(inputData,params);
 	}
 

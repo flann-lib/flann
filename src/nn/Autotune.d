@@ -211,7 +211,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 	Params kmeansParams;
 	kmeansParams["algorithm"] = "kmeans";
 	kmeansParams["trees"] = 1u;
-	kmeansParams["centers-algorithm"] = "random";
+	kmeansParams["centers-init"] = "random";
 
 	CostData evaluate_kmeans(int[] p) 
 	{

@@ -11,9 +11,9 @@ import dataset.Dataset;
 import util.Allocator;
 import util.Utils;
 import nn.Autotune;
-
 import util.Logger;
-import tango.stdc.stdio;
+import util.Random;
+
 
 extern(C):
 
@@ -32,21 +32,26 @@ const int LOG_WARN	= 3;
 const int LOG_INFO	= 4;
 
 
-struct Parameters {
+struct IndexParameters {
 	int algorithm;
 	int checks;
 	int trees;
 	int branching;
 	int iterations;
-	int centers_algorithm;
+	int centers_init;
 	float target_precision;
-	float speedup;
+};
+
+struct FANNParameters {
+	int log_level;
+	char* log_destination;
+	long random_seed;
 };
 
 alias int NN_INDEX;
 
-Object nn_ids[64];
-Object features[64];
+Object nn_ids[];
+Object features[];
 int nn_ids_count;
 private static bool initialized;
 
@@ -59,10 +64,10 @@ static this()
 }
 
 private {
-	char[][] algos = [ "linear","kmeans", "kdtree", "composite" ];
+	char[][] algos = [ "linear","kdtree", "kmeans", "composite" ];
 	char[][] centers_algos = [ "random", "gonzales" ];
 	
-	Params parametersToParams(Parameters parameters)
+	Params parametersToParams(IndexParameters parameters)
 	{
 		Params p;
 		p["checks"] = parameters.checks;
@@ -70,13 +75,12 @@ private {
 		p["max-iterations"] = parameters.iterations;
 		p["branching"] = parameters.branching;
 		p["target-precision"] = parameters.target_precision;
-		p["speedup"] = parameters.speedup;
 		
-		if (parameters.centers_algorithm >=0 && parameters.centers_algorithm<centers_algos.length) {
-			p["centers-algorithm"] = centers_algos[parameters.centers_algorithm];
+		if (parameters.centers_init >=0 && parameters.centers_init<centers_algos.length) {
+			p["centers-init"] = centers_algos[parameters.centers_init];
 		}
 		else {
-			p["centers-algorithm"] = "random";
+			p["centers-init"] = "random";
 		}
 		
 		if (parameters.algorithm >=0 && parameters.algorithm<algos.length) {
@@ -86,9 +90,9 @@ private {
 		return p;
 	}
 	
-	Parameters paramsToParameters(Params params)
+	IndexParameters paramsToParameters(Params params)
 	{
-		Parameters p;
+		IndexParameters p;
 		
 		try {
 			p.checks = params["checks"].get!(int);
@@ -98,7 +102,7 @@ private {
 		try {
 			p.trees = params["trees"].get!(int);
 		} catch (Exception e) {
-			p.trees = 1;
+			p.trees = -1;
 		}
 		try {
 			p.iterations = params["max-iterations"].get!(int);
@@ -108,22 +112,17 @@ private {
 		try {
 			p.branching = params["branching"].get!(int);
 		} catch (Exception e) {
-			p.branching = 32;
+			p.branching = -1;
 		}
 		try {
   			p.target_precision = params["target-precision"].get!(float);
 		} catch (Exception e) {
 			p.target_precision = -1;
 		}
-		try {
- 			p.speedup = params["speedup"].get!(float);
-		} catch (Exception e) {
-			p.speedup = -1;
-		}
 		foreach (algo_id,algo; centers_algos) {
 			try {
-				if (algo == params["centers-algorithm"] ) {
-					p.centers_algorithm = algo_id;
+				if (algo == params["centers-init"] ) {
+					p.centers_init = algo_id;
 					break;
 				}
 			} catch (Exception e) {}
@@ -143,26 +142,31 @@ void rt_term();
 
 void fann_init()
 {
-// 	printf("dcode: nn_init()\n");
 	if (!initialized) {
-// 		printf("doing initialization\n");
 		rt_init();
 		initLogger();
+		
+		nn_ids = new Object[64];
+		features = new Object[64];
+		
 		initialized = true;
 	}
 }
 
 void fann_term()
 {
-// 	printf("dcode: nn_term()\n");
 	if (initialized) {
 		rt_term();
+		
+		delete nn_ids;
+		delete features;	
+		
 		initialized = false;
 	}
 }
 
 
-void fann_log_verbosity(int level)
+private void fann_log_verbosity(int level)
 {
 	fann_init();
 	
@@ -187,7 +191,7 @@ void fann_log_verbosity(int level)
 	logger.setLevel(logLevel);
 }
 
-void fann_log_destination(char* destination)
+private void fann_log_destination(char* destination)
 {
 	fann_init();
 
@@ -213,21 +217,44 @@ private Dataset!(T) makeFeatures(T)(T* dataset, int count, int length)
 	return inputData;
 }
 
-NN_INDEX fann_build_index(float* dataset, int rows, int cols, Parameters* parameters)
+private void initFANNParameters(FANNParameters* p)
+{
+	if (p !is null) {
+		fann_log_verbosity(p.log_level);
+		fann_log_destination(p.log_destination);
+		srand48(p.random_seed);
+	}
+}
+
+NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FANNParameters* fann_params)
 {	
 	try {
+		initFANNParameters(fann_params);
 		fann_init();
-		auto inputData = makeFeatures(dataset,rows,cols);
 		
-		if (parameters is null) {
-			throw new Exception("The parameters agument must be non-null");
+		if (nn_ids_count==nn_ids.length) {
+			// extended indices and features arrays
+			Object[] tmp = new Object[2*nn_ids_count];
+			tmp[0..nn_ids_count] = nn_ids;
+			delete nn_ids;
+			nn_ids = tmp;
+			tmp = new Object[2*nn_ids_count];
+			tmp[0..nn_ids_count] = features;
+			delete features;
+			features = tmp;
 		}
 		
-		float target_precision = parameters.target_precision;
+		auto inputData = makeFeatures(dataset,rows,cols);
+		
+		if (index_params is null) {
+			throw new Exception("The index_params agument must be non-null");
+		}
+		
+		float target_precision = index_params.target_precision;
 		
 		NNIndex index;
 		if (target_precision < 0) {
-			Params params = parametersToParams(*parameters);
+			Params params = parametersToParams(*index_params);
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
@@ -239,8 +266,9 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, Parameters* parame
 			index.buildIndex();
 			estimateSearchParams(index,inputData,target_precision,params);
 			
-			*parameters = paramsToParameters(params);
-			parameters.target_precision = target_precision;
+			*index_params = paramsToParameters(params);
+			index_params.target_precision = target_precision;
+			*speedup = params["speedup"].get!(float);
 		}
 		
 		
@@ -258,17 +286,18 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, Parameters* parame
 }
 
 
-int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, Parameters* parameters)
+int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FANNParameters* fann_params)
 {
 	try {
+		initFANNParameters(fann_params);
 		fann_init();
 		auto inputData = makeFeatures(dataset,count,length);
 
-		float target_precision = parameters.target_precision;
+		float target_precision = index_params.target_precision;
 		
 		NNIndex index;
 		if (target_precision < 0) {
-			Params params = parametersToParams(*parameters);
+			Params params = parametersToParams(*index_params);
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
@@ -279,7 +308,7 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
 			estimateSearchParams(index,inputData,target_precision,params);
-			*parameters = paramsToParameters(params);
+			*index_params = paramsToParameters(params);
 		}
 		
 		int skipMatches = 0;
@@ -289,7 +318,7 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 		for (int i = 0; i < tcount; i++) {
 			resultSet.init(testset[0..length]);
 	
-			index.findNeighbors(resultSet,testset[0..length], parameters.checks);			
+			index.findNeighbors(resultSet,testset[0..length], index_params.checks);			
 			
 			int[] neighbors = resultSet.getNeighbors();
 			result[resultIndex..resultIndex+nn] = neighbors[skipMatches..$];
@@ -311,9 +340,10 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 // 	GC.collect();
 }
 
-int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks)
+int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks, FANNParameters* fann_params)
 {
 	try {
+		initFANNParameters(fann_params);
 		fann_init();
 		if (index_id < nn_ids_count) {
 			Object indexObj = nn_ids[index_id];
@@ -355,9 +385,10 @@ int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tco
 // 	GC.collect();
 }
 
-void fann_free_index(NN_INDEX index_id)
+void fann_free_index(NN_INDEX index_id, FANNParameters* fann_params)
 {
 	try {
+		initFANNParameters(fann_params);
 		fann_init();
 		if (index_id < nn_ids_count) {
 			Object index = nn_ids[index_id];
@@ -374,13 +405,15 @@ void fann_free_index(NN_INDEX index_id)
 // 	GC.collect();
 }
 
-int fann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, Parameters* parameters)
+int fann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, IndexParameters* index_params, FANNParameters* fann_params)
 {
 	try {
+		initFANNParameters(fann_params);
 		fann_init();
+		
 		auto inputData = makeFeatures(dataset,count,length);
 
-		Params params = parametersToParams(*parameters);
+		Params params = parametersToParams(*index_params);
 		char[] algorithm = params["algorithm"].get!(char[]);		
 		algorithm = "kmeans";
 		logger.info(sprint("Algorithm={}",algorithm));

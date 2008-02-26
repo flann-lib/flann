@@ -96,9 +96,9 @@ class KMeansTree(T) : NNIndex
 		}
 		this.max_iter = iterations;
 		
-		string centersAlgorithm = params["centers-algorithm"].get!(string);
-		if (centersAlgorithm in centerAlgs) {
-			chooseCenters = centerAlgs[centersAlgorithm];
+		string centersInit = params["centers-init"].get!(string);
+		if (centersInit in centerAlgs) {
+			chooseCenters = centerAlgs[centersInit];
 		}
 		else {
 			throw new Exception("Unknown algorithm for choosing initial centers.");
@@ -180,7 +180,7 @@ class KMeansTree(T) : NNIndex
 		int n = indices.length;
 		
 		static T[][] centers;
-		if (centers is null) centers = new T[][k];
+		if (centers is null || centers.length!=k) centers = new T[][k];
 		
 		int rand = cast(int) (drand48() * n);  
 		assert(rand >=0 && rand < n);
@@ -350,7 +350,6 @@ class KMeansTree(T) : NNIndex
 					radiuses[new_centroid] = sq_dist;
 				}
 				if (new_centroid != belongs_to[i]) {
-					//logger.warn(sprint("Moving center form {} to {} for point {}",new_centroid,belongs_to[i],indices[i]));
 					count[belongs_to[i]]--;
 					count[new_centroid]++;
 					belongs_to[i] = new_centroid;

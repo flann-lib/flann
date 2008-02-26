@@ -18,18 +18,21 @@ const int LOG_WARN	= 3;
 const int LOG_INFO	= 4;
 
 
-struct Parameters {
+struct IndexParameters {
 	int algorithm;
 	int checks;
 	int trees;
 	int branching;
 	int iterations;
-	int centers_algorithm;
+	int centers_init;
 	float target_precision;
-	float speedup;
 };
 
-
+struct FANNParameters {
+	int log_level;
+	char* log_destination;
+	long random_seed;
+};
 
 
 typedef int FANN_INDEX;
@@ -42,19 +45,15 @@ void fann_init();
 
 void fann_term();
 
-void fann_log_verbosity(int level);
+FANN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FANNParameters* fann_params);
 
-void fann_log_destination(char* destination);
+int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FANNParameters* fann_params);
 
-FANN_INDEX fann_build_index(float* dataset, int rows, int cols, Parameters* parameters);
+int fann_find_nearest_neighbors_index(FANN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks, FANNParameters* fann_params);
 
-void fann_find_nearest_neighbors(float* dataset, int rows, int cols, float* testset, int tcount, int* result, int nn, Parameters* parameters);
+void fann_free_index(FANN_INDEX index_id, FANNParameters* fann_params);
 
-void fann_find_nearest_neighbors_index(FANN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks);
-
-void fann_free_index(FANN_INDEX index_id);
-
-int fann_compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, Parameters* parameters);
+int fann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, IndexParameters* index_params, FANNParameters* fann_params);
 
 #ifdef __cplusplus
 }
