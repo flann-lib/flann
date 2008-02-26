@@ -152,9 +152,9 @@ def getKMeansObjective(data=None, centers=None, distance2_matrix=None, labels=No
             if centers.dtype == float64:
                 return __uc.kmeansobj_direct_double_double(data, centers)
             else:
-                return __uc.kmeansobj_direct_double_double(data, float32(centers))
+                return __uc.kmeansobj_direct_double_float(data, float32(centers))
         else:
-            return __uc.kmeansobj_direct_double_double(float32(data), float32(centers))
+            return __uc.kmeansobj_direct_float_float(float32(data), float32(centers))
     else:
         raise TypeError("kMeansObjective(): insufficient parameters to calculate objective value.")
 

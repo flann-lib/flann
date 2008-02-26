@@ -5,9 +5,8 @@ import sys
 try:
     import fann_python_base as fann
 except ImportError, ie:
-    sys.stderr.write('\n\nError importing required fann_python_base module \n')
-    sys.stderr.write('and/or fann_index_type.\n')
-    sys.stderr.write('Please create them by executing create_python_base.py.\n\n')
+    sys.stderr.write('\n\nError importing required fann_python_base module. \n')
+    sys.stderr.write('Please create it by executing create_python_base.py.\n\n')
     raise ie
 
 from index_type import index_type
@@ -241,7 +240,7 @@ class FANN:
     # Clustering functions
 
     def kmeans(self, pts, num_clusters, centers_init = "random", 
-               max_iterations = None, dtype = None):
+               max_iterations = None, best_of_n = 1, dtype = None):
         """
         Runs kmeans on pts with num_clusters centroids.  Returns a
         numpy array of size num_clusters x dim.  
@@ -252,7 +251,13 @@ class FANN:
 
         If dtype is None (the default), the array returned is the same
         type as pts.  Otherwise, the returned array is of type dtype.  
+
+        If more accuracy is desired, you may optionally set best_of_n
+        to n > 1.  In this case, it performs k-means n times and
+        returns the result with the best value of the objective
+        function.
         """
+        
         if int(num_clusters) != num_clusters or num_clusters < 1:
             raise FANNException('num_clusters must be an integer >= 1')
         
@@ -262,10 +267,11 @@ class FANN:
             else:
                 return dtype.type(mean(pts, 0).reshape(1, pts.shape[1]))
 
-        return self.hierarchical_kmeans(pts, int(num_clusters), 1, centers_init, max_iterations, dtype)
+        return self.hierarchical_kmeans(pts, int(num_clusters), 1, centers_init, 
+                                        max_iterations, best_of_n, dtype)
         
     def hierarchical_kmeans(self, pts, branch_size, num_branches, centers_init = "random",
-                            max_iterations = None, dtype = None):
+                            max_iterations = None, best_of_n = 1, dtype = None):
         """
         Clusters the data by using multiple runs of kmeans to
         recursively partition the dataset.  The number of resulting
@@ -277,23 +283,43 @@ class FANN:
 
         If dtype is None (the default), the array returned is the same
         type as pts.  Otherwise, the returned array is of type dtype.  
+
+        If more accuracy is desired, you may optionally set best_of_n
+        to n > 1.  In this case, it performs k-means n times and
+        returns the result with the best value of the objective
+        function.
         """
         
+        # First verify the paremeters are sensible.
+
         if int(branch_size) != branch_size or branch_size < 2:
             raise FANNException('branch_size must be an integer >= 2.')
+
+        branch_size = int(branch_size)
 
         if int(num_branches) != num_branches or num_branches < 1:
             raise FANNException('num_branches must be an integer >= 1.')
 
+        num_branches = int(num_branches)
+
+        if int(best_of_n) != best_of_n or best_of_n < 1:
+            raise FANNException('best_of_n must be an integer >= 1.')
+        
+        best_of_n = int(best_of_n)
+
+        if max_iterations == None: 
+            max_iterations = -1
+        else:
+            max_iterations = int(max_iterations)
+
+        
+        # Now do the calculations
+            
         pts = self.__ensure2dArray(pts)
         npts, dim = pts.shape
         
         pts_flat = self.__getFlattenedArray(pts)
         
-        if max_iterations == None: 
-            max_iterations = -1
-        else:
-            max_iterations = int(max_iterations)
         
         
         num_clusters = (branch_size-1)*num_branches+1;
@@ -308,12 +334,38 @@ class FANN:
         with self.__nn_lock:
             numclusters = fann.run_kmeans(pts_flat, npts, dim,
                                           num_clusters, result, *params)
-            
-            if numclusters <= 0:
-                raise FANNException('Error occured during clustering procedure.')
 
-            sys.stdout.flush()
+        if numclusters <= 0:
+            raise FANNException('Error occured during clustering procedure.')
 
+        
+        if best_of_n > 1:
+            from utils import getKMeansObjective as __kmobj
+
+            result_best = result
+            objval_best = __kmobj(pts_flat.reshape( (npts, dim) ),  
+                                  result.reshape( (num_clusters, dim) ) )
+
+            result_contender = empty(num_clusters * dim, dtype=float32)
+
+            for i in xrange(best_of_n - 1):
+                with self.__nn_lock:
+                    numclusters = fann.run_kmeans(pts_flat, npts, dim,
+                                                  num_clusters, result_contender, *params)
+                if numclusters <= 0:
+                    raise FANNException('Error occured during clustering procedure.')
+                
+                objval_contender = __kmobj(pts_flat.reshape( (npts, dim) ), 
+                                           result_contender.reshape( (num_clusters, dim) ) )
+
+                if objval_contender < objval_best:
+                    objval_best = objval_contender
+                    r = result_best
+                    result_best = result_contender
+                    result_contender = r
+                    
+            result = result_best
+        
         if dtype == None:
             return pts.dtype.type(result.reshape( (num_clusters, dim) ) )
         else:
