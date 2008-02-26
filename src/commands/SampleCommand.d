@@ -46,7 +46,7 @@ class SampleCommand : DefaultCommand
 			showOperation("Saving new dataset to file "~saveFile, {sampledDataset.writeToFile(saveFile, format);});
 		}
 		else {
-			throw new Exception("A positive number of features must be sampled.");
+			throw new FANNException("A positive number of features must be sampled.");
 		}
 	}
 	

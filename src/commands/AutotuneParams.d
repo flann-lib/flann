@@ -60,7 +60,7 @@ class AutotuneParams : DefaultCommand
 			});
 		}	
 		if (inputData is null) {
-			throw new Exception("No input data given.");
+			throw new FANNException("No input data given.");
 		}
 				
 		Params params = estimateBuildIndexParams!(T)(inputData, precision, indexFactor, memoryFactor, samplePercentage);

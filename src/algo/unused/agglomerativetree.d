@@ -227,7 +227,7 @@ class AgglomerativeTree : NNIndex{
 	private void removePoint(TreeNode v) 
 	{
 		if (!kdtree.RemoveElement(v.kd_ind)) {
-			throw new Exception("Element not found");
+			throw new FANNException("Element not found");
 		}
 		
 		setNode(rmap[v.kd_ind], nodes[--pcount]);		

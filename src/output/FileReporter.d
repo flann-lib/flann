@@ -10,7 +10,7 @@ static this()
 	Registry.register("file_reporter",function Object(TypeInfo[] arguments, va_list argptr)
 	{
 		if (arguments.length!=1 && typeid(char[])!=arguments[0]) {
-			throw new Exception("Expected 1 argument of type char[]");
+			throw new FANNException("Expected 1 argument of type char[]");
 		}
 		
 		return new FileReporter(va_arg!(char[])(argptr));

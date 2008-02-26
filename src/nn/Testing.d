@@ -72,7 +72,7 @@ float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 float search(int checks, out float time, char[] approxMatch = "") 
 {
 	if (testData.match[0].length<nn) {
-		throw new Exception("Ground truth is not computed for as many neighbors as requested");
+		throw new FANNException("Ground truth is not computed for as many neighbors as requested");
 	}
 	
 	int correct;

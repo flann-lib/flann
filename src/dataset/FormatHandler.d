@@ -1,5 +1,7 @@
 module dataset.FormatHandler;
 
+import util.defines;
+
 abstract class FormatHandler(T)
 {
 	public FormatHandler next;
@@ -21,7 +23,7 @@ abstract class FormatHandler(T)
 			if (next) {
 				return next.read(file);
 			} else {
-				throw new Exception("Format not recognized for file: "~file);
+				throw new FANNException("Format not recognized for file: "~file);
 			}
 		}
 	}
@@ -34,7 +36,7 @@ abstract class FormatHandler(T)
 			if (next) {
 				next.write(file,vecs,format);
 			} else {
-				throw new Exception("No such format: "~format);
+				throw new FANNException("No such format: "~format);
 			}
 		}
 	}

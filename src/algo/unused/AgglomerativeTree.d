@@ -275,7 +275,7 @@ class AgglomerativeExTree : NNIndex {
 					bestNode = nodes[i];
 				}
 			} else {
-				throw new Exception("Equal!!!\n");
+				throw new FANNException("Equal!!!\n");
 			}
 			
 		}

@@ -67,7 +67,7 @@ class RunTestCommand : IndexCommand
 			});
 		}
 		if (testData is null) {
-			throw new Exception("No test data given.");
+			throw new FANNException("No test data given.");
 		}
 		
 		if (matchFile != "") {
@@ -75,7 +75,7 @@ class RunTestCommand : IndexCommand
 		}
 		
 		if (testData.match is null) {
-			throw new Exception("There are no correct matches to compare to, aborting test phase.");
+			throw new FANNException("There are no correct matches to compare to, aborting test phase.");
 		}
 		report("test_count", testData.rows);
 		report("nn", nn);

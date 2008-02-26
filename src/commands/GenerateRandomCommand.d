@@ -62,7 +62,7 @@ class GenerateRandomCommand : DefaultCommand
 			});		
 		}
 		else {
-			throw new Exception("Dataset size and feature size must be strictly positive.");
+			throw new FANNException("Dataset size and feature size must be strictly positive.");
 		}
 	}
 	
