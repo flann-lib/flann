@@ -22,7 +22,7 @@ class IndexCommand : DefaultCommand
 	uint trees;
 	uint branching;
 	bool byteFeatures;
-	string centersAlgorithm;
+	string centersInit;
 	int maxIter;
 	
 	
@@ -47,7 +47,7 @@ class IndexCommand : DefaultCommand
 		register(trees,"r","trees", 1,"Number of parallel trees to use (where available, for example kdtree).");
 		register(branching,"b","branching", 2,"Branching factor (where applicable, for example kmeans) (default: 2).");
 		register(byteFeatures,"B","byte-features", null ,"Use byte-sized feature elements.");
-		register(centersAlgorithm,"C","centers-algorithm", "random","Algorithm to choose cluster centers for kmeans (default: random).");
+		register(centersInit,"C","centers-init", "random","Hot to choose the initial cluster centers for kmeans (random, gonzales) (default: random).");
 		register(maxIter,"M","max-iterations", int.max,"Max iterations to perform for kmeans (default: until convergence).");		
  		
  		description = "Index the input dataset.";
@@ -88,7 +88,7 @@ class IndexCommand : DefaultCommand
 		} else {
 			params["trees"] = trees;
 			params["branching"] = branching;
-			params["centers-algorithm"] = centersAlgorithm;
+			params["centers-init"] = centersInit;
 			params["max-iterations"] = maxIter;
 			params["algorithm"] = algorithm;
 		}

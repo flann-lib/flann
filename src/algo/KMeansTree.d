@@ -96,9 +96,9 @@ class KMeansTree(T) : NNIndex
 		}
 		this.max_iter = iterations;
 		
-		string centersAlgorithm = params["centers-algorithm"].get!(string);
-		if (centersAlgorithm in centerAlgs) {
-			chooseCenters = centerAlgs[centersAlgorithm];
+		string centersInit = params["centers-init"].get!(string);
+		if (centersInit in centerAlgs) {
+			chooseCenters = centerAlgs[centersInit];
 		}
 		else {
 			throw new Exception("Unknown algorithm for choosing initial centers.");
@@ -179,7 +179,7 @@ class KMeansTree(T) : NNIndex
 		int n = indices.length;
 		
 		static T[][] centers;
-		if (centers is null) centers = new T[][k];
+		if (centers is null || centers.length!=k) centers = new T[][k];
 		
 		int rand = cast(int) (drand48() * n);  
 		assert(rand >=0 && rand < n);
@@ -265,6 +265,7 @@ class KMeansTree(T) : NNIndex
 	
 	private void computeClustering(KMeansNode node, int[] indices, int branching)
 	{
+		logger.warn(sprint("Entering computeClustering, size={}",indices.length));
 		int n = indices.length;
 		node.size = n;
 		
@@ -315,7 +316,7 @@ class KMeansTree(T) : NNIndex
 		while (!converged && iteration<max_iter) {
 			converged = true;
 			iteration++;
-			
+						
 			for (int i=0;i<branching;++i) {
 				centers[i][] = 0.0;				
 			}
@@ -361,6 +362,7 @@ class KMeansTree(T) : NNIndex
 				// if one cluster converges to an empty cluster,
 				// move an element into that cluster
 				if (count[i]==0) {
+					logger.warn("Moving element");
 					int j = (i+1)%branching;
 					while (count[j]<=1) {
 						j = (j+1)%branching;
