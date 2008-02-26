@@ -15,13 +15,26 @@ param_args = [('algorithm', "default"),
               ('centers_algorithm', "random"),
               ('speedup', -1)]
 
+########################################
+# dictionaries for the string parameters
+
+algorithm_dict = {"linear"    : 0,
+                  "kdtree"    : 1,
+                  "kmeans"    : 2,
+                  "composite" : 3,
+                  "default"   : 1}
+
+centers_init_dict = {"random" : 0,
+                     "gonzales" : 1,
+                     "default" : 0}
+
+
 def get_param_args():
     return param_args
 
 def get_param_compile_args():
     return [(k, process_param_dict({k:v})[k]) 
             for k,v in param_args]
-
 
 def get_param_struct_name_list():
     return [k for k,v in get_param_args()]
@@ -34,19 +47,6 @@ def __make_type_translation_table():
 
     return dict(filter(lambda (k,t): t != str, 
                        [(k, TypeKey(v)) for k, v in get_param_args()]))
-
-########################################
-# Algorithm dictionaries
-
-algorithm_dict = {"linear"    : 0,
-                  "kdtree"    : 1,
-                  "kmeans"    : 2,
-                  "composite" : 3,
-                  "default"   : 1}
-
-centers_init_dict = {"random" : 0,
-                     "gonzales" : 1,
-                     "default" : 0}
 
 ########################################
 # Centers algorithm.

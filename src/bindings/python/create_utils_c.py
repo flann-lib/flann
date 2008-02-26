@@ -17,8 +17,10 @@ def createUtilsC():
 
     utils_c_ext.customize.add_header('<stdio.h>')
 
-    utils_c_ext.customize.add_extra_compile_arg('-g')
-    utils_c_ext.customize.add_extra_compile_arg('--debug')
+    #utils_c_ext.customize.add_extra_compile_arg('-g')
+    #utils_c_ext.customize.add_extra_compile_arg('--debug')
+
+    utils_c_ext.customize.add_extra_compile_arg('-O3')
 
     # A helper function to make the code more concise
     def addFunc(name, code, *varlist):

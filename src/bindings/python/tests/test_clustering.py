@@ -2,8 +2,9 @@
 import sys
 from os.path import *
 from pyfann import *
+from pyfann.utils import *
 import os
-from index_type import index_type
+from pyfann.index_type import index_type
 from copy import copy
 from numpy import *
 from numpy.random import *
@@ -56,10 +57,20 @@ class Test_PyFANN_clustering(unittest.TestCase):
         mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
         for m in mindists: self.assertAlmostEqual(m, 0.0, 2)
 
-        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "Gonzales")
-        mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
-        for m in mindists: self.assertAlmostEqual(m, 0.0, 2)
+#        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "Gonzales")
+#        mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
+#        for m in mindists: self.assertAlmostEqual(m, 0.0, 2)
         
+
+    def testbest_of_n(self):
+        data = rand(1000,2) # Random, so we can get a lot of local minima
+
+        cl1 = self.nn.kmeans(data, 50)
+        cl2 = self.nn.kmeans(data, 50, best_of_n = 100)
+
+        self.assert_(getKMeansObjective(data, cl1) >= getKMeansObjective(data, cl2))
+
+
         
 if __name__ == '__main__':
     unittest.main()
