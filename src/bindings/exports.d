@@ -247,7 +247,7 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 		auto inputData = makeFeatures(dataset,rows,cols);
 		
 		if (index_params is null) {
-			throw new Exception("The index_params agument must be non-null");
+			throw new FANNException("The index_params agument must be non-null");
 		}
 		
 		float target_precision = index_params.target_precision;
@@ -268,7 +268,9 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 			
 			*index_params = paramsToParameters(params);
 			index_params.target_precision = target_precision;
-			*speedup = params["speedup"].get!(float);
+			if (speedup !is null) {
+				*speedup = params["speedup"].get!(float);
+			}
 		}
 		
 		
@@ -371,11 +373,11 @@ int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tco
 				delete resultSet;
 			}
 			else {
-				throw new Exception("Invalid index ID");
+				throw new FANNException("Invalid index ID");
 			}
 		} 
 		else {
-			throw new Exception("Invalid index ID");
+			throw new FANNException("Invalid index ID");
 		}
 		return 0;
 	}

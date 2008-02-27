@@ -5,3 +5,15 @@ module util.defines;
  * working with strings.
  */
 alias char[] string;
+
+
+/**
+ * Exception type used thoughout FANN library
+ */ 
+class FANNException : Exception
+{
+	this(char[] message) {
+		super(message);
+	}
+}
+

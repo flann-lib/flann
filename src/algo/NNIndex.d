@@ -7,7 +7,7 @@ module algo.NNIndex;
 import dataset.Dataset;
 import algo.dist;
 import util.Utils;
-import util.Heap;
+import util.defines;
 
 
 template IndexConstructor(T) {
@@ -171,6 +171,6 @@ abstract class NNIndex
  	int usedMemory();
  	
  	float[][] getClusterCenters(int number) {
- 		throw new Exception("Not implemented");
+ 		throw new FANNException("Not implemented");
  	} 	
 }

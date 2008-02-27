@@ -71,7 +71,7 @@ class IndexCommand : DefaultCommand
 		
 	
 		if (inputData!(T) is null) {
-			throw new Exception("No input data given.");
+			throw new FANNException("No input data given.");
 		}
 				
 		if (maxIter==-1) {
@@ -106,7 +106,7 @@ class IndexCommand : DefaultCommand
 			foreach (algo,val; indexRegistry!(T)) {
 				logger.error(sprint("\t{}",algo));
 			}			
-			throw new Exception("Algorithm not found...bailing out...\n");
+			throw new FANNException("Algorithm not found...bailing out...\n");
 		}
 
 		logger.info(sprint("Algorithm: {}",algorithm));

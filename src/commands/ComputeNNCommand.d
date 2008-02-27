@@ -51,7 +51,7 @@ class ComputeNNCommand : IndexCommand
 			});
 		}
 		if (testData is null) {
-			throw new Exception("No test data given.");
+			throw new FANNException("No test data given.");
 		}
 
 		

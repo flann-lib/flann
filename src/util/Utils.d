@@ -38,7 +38,6 @@ void swap(T) (ref T a, ref T b) {
 
 
 
-
 import tango.text.convert.Sprint;
 
 public Sprint!(char) sprint;
@@ -108,7 +107,7 @@ class ScanReader
 			tmp = streamIterator.next;
 		}
 		if (tmp is null) {
-			throw new Exception("Reading past the end of file");
+			throw new FANNException("Reading past the end of file");
 		}
 		
 		return tmp;
@@ -212,7 +211,7 @@ struct Params
 	Variant opIndex(string index) 
 	{
 		if (!(index in data)) {
-			throw new Exception("Cannot find param index:"~index);
+			throw new FANNException("Cannot find param index:"~index);
 		}
 		return data[index];
 	}
