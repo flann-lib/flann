@@ -13,7 +13,7 @@ import util.Utils;
 import nn.Autotune;
 import util.Logger;
 import util.Random;
-
+import util.defines;
 
 extern(C):
 
