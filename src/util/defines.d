@@ -8,7 +8,7 @@ alias char[] string;
 
 
 /**
- * Exception type used thoughout FANN library
+ * Exception type used thoughout the FANN library
  */ 
 class FANNException : Exception
 {

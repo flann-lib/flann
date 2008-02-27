@@ -61,14 +61,15 @@ class StartStopTimer
 	 */
 	public double value;
 	
+	
 	/**
 	 * Constructor.
 	 */
 	public this() {
-		value = 0;
 		version (Posix) {
 			clk_tck = sysconf(_SC_CLK_TCK);
 		}
+		reset();
 	}
 	
 	/**
@@ -90,7 +91,7 @@ class StartStopTimer
 		version (Posix) {
 			tms stopTime;
 			times(&stopTime);
-			value += (cast(typeof(value))(stopTime.tms_utime-startTime.tms_utime))/clk_tck;
+			value += (cast(typeof(value))(stopTime.tms_utime+stopTime.tms_stime-(startTime.tms_utime+startTime.tms_stime)))/clk_tck;
 		}
 		else {
 			value += (cast(typeof(value)) clock() - startTime) / CLOCKS_PER_SEC;
@@ -110,6 +111,12 @@ class StartStopTimer
  * Helper function used to profile short pieces of code
  * Params:
  *     action = a delegate containing the code to be profiled
+ *	   minTime = minimum time the delegate execution should take. If
+ *			the delegate executes faster it is executed again util the minTime
+ *			duration is exceeded. This is needed in order to get a reliable time 
+ *			measurement for the routines that take very little time to execute,
+ *			but it requires that the delegate execution produces no side-effects
+ *			(so that it can be executed multiple times).
  * Returns: the execution time of the delegate
  * ---
  * float duration = profille(
