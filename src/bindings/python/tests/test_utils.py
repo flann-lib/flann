@@ -39,7 +39,6 @@ class Test_PyFANN_utils(unittest.TestCase):
         dm = ut.getDistanceMatrix(data, centers)
 
         labels2 = ut.getLabels(distance_matrix = dm)
-
         labels3 = ut.getLabels(data, centers, dm)
 
         self.assert_(all(labels1 == labels2))

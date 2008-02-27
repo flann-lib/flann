@@ -30,7 +30,7 @@ class FANN:
     All the computation is done in float32 type, but the imput arrays
     may hold any type that is convertable to float32.
     """
-    # This should ensure thread safety; the main thing is the 
+    # This should ensure thread safety.
     __nn_lock = threading.Lock()
 
     def __init__(self, **kwargs):
@@ -72,22 +72,8 @@ class FANN:
             self.__default_arg_list = [self.__processed_param_dict[n] 
                                        for n, v in params.get_param_args()]
 
-#     def setVerbosity(self, level):
-#         """ 
-#         Sets the verbosity level printed to stdout.  Note that this is
-#         a global setting; all instances of FANN will be
-#         affected. 
-
-#         Possible values are:
-
-#         LOG_NONE:  0
-#         LOG_FATAL: 1
-#         LOG_ERROR: 2
-#         LOG_WARN:  3
-#         LOG_INFO:  4
-#         """
-#         with self.__nn_lock:
-#             fann.set_verbosity(level)
+            self.__default_fann_arg_list = [self.__processed_param_dict[n]
+                                            for n, v in params.get_fann_param_args()]
 
     def getAlgorithmList(self):
         """
@@ -101,6 +87,7 @@ class FANN:
         Returns a copy of the dictionary of the current default
         arguments.
         """
+
         with self.__params_lock:
             return copy(self.__param_dict)
 
@@ -164,18 +151,22 @@ class FANN:
         pts = self.__ensure2dArray(pts)
         npts, dim = pts.shape
         pts_flat = self.__getFlattenedArray(pts)
+        
         params = self.__get_param_arg_list(kwargs)
+        fann_params = self.__get_fann_param_arg_list(kwargs)
 
         with self.__idx_lock:
             if self.__curindex != None:
                 with self.__nn_lock:
-                    fann.del_index(self.__curindex)
+                    fann.del_index(self.__curindex, *fann_params)
             
             with self.__nn_lock:
-                self.__curindex = fann.make_index(pts_flat, npts, dim, *params)
+                self.__curindex, speedup = fann.make_index(pts_flat, npts, dim, *params)
 
             self.__curindex_data = pts_flat
             self.__curindex_data_shape = pts.shape
+        
+        return speedup
 
 
     def nn_index(self, querypts, num_neighbors = 1, **kwargs):
@@ -209,29 +200,33 @@ class FANN:
         result = empty(nqpts * num_neighbors, dtype=index_type)
 
         checks = self.__get_one_param(kwargs, "checks")
+        fann_params = self.__get_fann_param_arg_list(kwargs)
 
         with self.__nn_lock:
             fann.find_nn_index(self.__curindex, 
                         querypts_flat, nqpts,
                         result, num_neighbors,
-                        checks)
+                        checks, *fann_params)
 
         if num_neighbors == 1:
             return result
         else:
             return result.reshape( (nqpts, num_neighbors) )
 
-    def delete_index(self):
+    def delete_index(self, **kwargs):
         """
         Deletes the current index and all the data associated with it.
         Useful for freeing up some memory, but not necessary to call
         otherwise.
         """
+
+        fann_params = self.__get_fann_param_arg_list(kwargs)
         
         with self.__idx_lock:
             if self.__curindex != None:
                 with self.__nn_lock:
-                    fann.del_index(self.__curindex)
+                    fann.del_index(self.__curindex, *fann_params)
+
                 self.__curindex = None
                 self.__curindex_data = None
                 self.__curindex_data_shape = None
@@ -240,7 +235,7 @@ class FANN:
     # Clustering functions
 
     def kmeans(self, pts, num_clusters, centers_init = "random", 
-               max_iterations = None, best_of_n = 1, dtype = None):
+               max_iterations = None, best_of_n = 1, dtype = None, **kwargs):
         """
         Runs kmeans on pts with num_clusters centroids.  Returns a
         numpy array of size num_clusters x dim.  
@@ -267,11 +262,11 @@ class FANN:
             else:
                 return dtype.type(mean(pts, 0).reshape(1, pts.shape[1]))
 
-        return self.hierarchical_kmeans(pts, int(num_clusters), 1, centers_init, 
-                                        max_iterations, best_of_n, dtype)
+        return self.hierarchical_kmeans(pts, int(num_clusters), 1, 
+                                        max_iterations, best_of_n, dtype, **kwargs)
         
-    def hierarchical_kmeans(self, pts, branch_size, num_branches, centers_init = "random",
-                            max_iterations = None, best_of_n = 1, dtype = None):
+    def hierarchical_kmeans(self, pts, branch_size, num_branches, 
+                            max_iterations = None, best_of_n = 1, dtype = None, **kwargs):
         """
         Clusters the data by using multiple runs of kmeans to
         recursively partition the dataset.  The number of resulting
@@ -320,15 +315,12 @@ class FANN:
         
         pts_flat = self.__getFlattenedArray(pts)
         
-        
-        
         num_clusters = (branch_size-1)*num_branches+1;
 
         result = empty(num_clusters * dim, dtype=float32)
         
         params = self.__get_param_arg_list({"iterations"       : int(max_iterations),
                                             "algorithm"        : 'kmeans',
-                                            "centers_algorithm": centers_init,
                                             "branching"        : int(branch_size)})
 
         with self.__nn_lock:
@@ -346,7 +338,7 @@ class FANN:
             objval_best = __kmobj(pts_flat.reshape( (npts, dim) ),  
                                   result.reshape( (num_clusters, dim) ) )
 
-            result_contender = empty(num_clusters * dim, dtype=float32)
+            result_contender = empty(num_clusters *dim, dtype=float32)
 
             for i in xrange(best_of_n - 1):
                 with self.__nn_lock:
@@ -375,15 +367,31 @@ class FANN:
     # internal bookkeeping functions
 
     def __get_params(self, newargs = {}):
+        params.process_param_dict(newargs)
+        pd = self.__update_param_dict(self.__getProcessedDefaults(), newargs)
+        return [(n, pd[n]) for n, v in params.get_param_args()]
+
+    def __get_fann_params(self, newargs = {}):
         if len(newargs) == 0:
-            return self.__default_arg_list
+            return self.__default_fann_arg_list
         else:
             params.process_param_dict(newargs)
             pd = self.__update_param_dict(self.__getProcessedDefaults(), newargs)
-            return [(n, pd[n]) for n, v in params.get_param_args()]
+            
+            return [(n, pd[n]) for n, v in 
+                    params.get_fann_param_args()]
 
     def __get_param_arg_list(self, newargs = {}):
-        return [v for n,v in self.__get_params(newargs)]
+        if len(newargs) == 0:
+            return self.__default_arg_list
+        else:
+            return [v for n,v in self.__get_params(newargs)]
+
+    def __get_fann_param_arg_list(self, newargs = {}):
+        if len(newargs) == 0:
+            return self.__default_fann_arg_list
+        else:
+            return [v for n,v in self.__get_fann_params(newargs)]
 
     def __print_param_arg_list(self, newargs = {}):
         print 'params: ', self.__get_params(newargs)

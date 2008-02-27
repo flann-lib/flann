@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-DEBUG = True;
+DEBUG = False
 
 # This script uses weave to create the code bindings that
 import sys
@@ -151,51 +151,80 @@ def createPythonBase(*args):
     # Ways to streamline the handling of optional parameters
     # Have to treat algorithm as special, since it's an enum.
 
-    params_set_code = \
-    ("Parameters params;\n"
-     + ''.join(['params.%s = %s; %s printf("%s = %s\\n", %s);\n'
-                % (n, n, dbcomment, n,'%f','float(' + n + ')')
-                for n in get_param_struct_name_list()]))
+    fannparam_set_code = \
+        ("FANNParameters fannparams;\n"
+         + ''.join(['fannparams.%s = %s; %s printf("%s = %s\\n", %s);\n'
+                    % (n, n, dbcomment, n,'%f','float(' + n + ')')
+                    for n in get_fann_param_struct_name_list()])
+#          + r"""
+#          if(log_destination.size() == 0) fannparams.log_destination = NULL;
+#          else fannparams.log_destination = log_destination.c_str();
+#          """
+         + r"fannparams.log_destination = NULL;"
+         )
 
-    param_ptr_code = r"(&params)"
+    fannparam_ptr_code = r"&fannparams"
+
+    idxparam_set_code = \
+        ("IndexParameters idxparams;\n"
+         + ''.join(['idxparams.%s = %s; %s printf("%s = %s\\n", %s);\n'
+                    % (n, n, dbcomment, n,'%f','float(' + n + ')')
+                    for n in get_index_param_struct_name_list()])
+          )
+    
+    idxparam_ptr_code = r"&idxparams"
+
+    param_set_code = fannparam_set_code + idxparam_set_code
 
     #################################################################################
     # Functions that do the actual interfacing. 
 
-#     addFunc('set_verbosity', 
-#             r'fann_log_verbosity(level);\n',
-#             ('level', int(0)))
-
-
     addFunc('make_index',
-            params_set_code + 
+            param_set_code + 
             r"""
             %s printf("npts = %%d, dim = %%d", npts, dim);
-            return_val = fann_build_index(dataset, npts, dim, %s);
-            """ % (dbcomment, param_ptr_code),
+            float speedup = 1;
+
+            py::tuple result(2);
+            result[0] = fann_build_index(dataset, npts, dim, &speedup, %s, %s);
+            result[1] = speedup;
+
+            return_val = result;
+            """ % (dbcomment, idxparam_ptr_code, fannparam_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
             *get_param_compile_args())
 
-    addFunc('del_index', r"fann_free_index(FANN_INDEX(i));", ('i', int(0)))
+    addFunc('del_index', 
+            fannparam_set_code + 
+            r"""
+            fann_free_index(FANN_INDEX(i), %s);
+            """ % fannparam_ptr_code, 
+            ('i', int(0)), 
+            *get_fann_param_compile_args())
             
     addFunc('find_nn_index',
-            r'fann_find_nearest_neighbors_index(FANN_INDEX(nn_index), testset, tcount, (int*)result, num_neighbors, checks);',
+            fannparam_set_code + 
+            r"""fann_find_nearest_neighbors_index(FANN_INDEX(nn_index), testset, tcount,
+            (int*)result, num_neighbors, checks, %s);
+            """ % fannparam_ptr_code,
             ('nn_index', int(0)),
             ('testset', empty(1, dtype=float32)),
             ('tcount', int(0)),
             ('result', empty(1, dtype=index_type)),
             ('num_neighbors', int(0)),
-            ('checks', int(0)))
+            ('checks', int(0)),
+            *get_fann_param_compile_args())
+            
 
     addFunc('find_nn',
-            params_set_code + 
+            param_set_code + 
             r"""
             %s printf("npts = %%d, dim = %%d, tcount = %%d", npts, dim, tcount);
             fann_find_nearest_neighbors(dataset, npts, dim, testset, tcount,
-            (int*)result, num_neighbors, %s);
-            """ % (dbcomment, param_ptr_code),
+            (int*)result, num_neighbors, %s, %s);
+            """ % (dbcomment,  idxparam_ptr_code, fannparam_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
@@ -206,12 +235,12 @@ def createPythonBase(*args):
             *get_param_compile_args())
 
     addFunc('run_kmeans',
-            params_set_code + 
+            param_set_code + 
             r"""
             // A few commands to make sure we set the parameters correctly.
             %s printf("npts = %%d, dim = %%d, num_clusters = %%d", npts, dim, num_clusters);
-            return_val = fann_compute_cluster_centers(dataset, npts, dim, num_clusters, (float*)result, %s);
-            """ % (dbcomment, param_ptr_code),
+            return_val = fann_compute_cluster_centers(dataset, npts, dim, num_clusters, (float*)result, %s, %s);
+            """ % (dbcomment,  idxparam_ptr_code, fannparam_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
@@ -224,7 +253,11 @@ def createPythonBase(*args):
     ##########################################################################################
     # We're ready to go!!!
 
-    fci.customize.add_extra_compile_arg('-g')
+    if DEBUG:
+        fci.customize.add_extra_compile_arg('-g')
+    else:
+        fci.customize.add_extra_compile_arg('-O3')
+
     fci.compile()
     chmod('fann_python_base.so', 420)  # oct 644
     

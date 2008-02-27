@@ -37,10 +37,10 @@ class Test_PyFANN_clustering(unittest.TestCase):
         self.__nd_random_clustering_test(3,3, 1000)
 
     def test10d_large(self):
-        self.__nd_random_clustering_test(10,50, 100)
+        self.__nd_random_clustering_test(10,2,10)
 
     def test500d(self):
-        self.__nd_random_clustering_test(500,10, 25)
+        self.__nd_random_clustering_test(500,2, 10)
 
     def __nd_random_clustering_test(self, dim, N, dup=1):
         """
@@ -51,15 +51,15 @@ class Test_PyFANN_clustering(unittest.TestCase):
         x = rand(N, dim)
         xc = concatenate(tuple([x for i in xrange(dup)]))
 
-        if dup > 1: xc += randn(xc.shape[0], xc.shape[1])*0.00001/dim
+        if dup > 1: xc += randn(xc.shape[0], xc.shape[1])*0.000001/dim
 
-        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "random")
+        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "random", random_seed=3)
         mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
-        for m in mindists: self.assertAlmostEqual(m, 0.0, 2)
+        for m in mindists: self.assertAlmostEqual(m, 0.0, 1)
 
-        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "gonzales")
+        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "gonzales", random_seed=2)
         mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
-        for m in mindists: self.assertAlmostEqual(m, 0.0, 2)
+        for m in mindists: self.assertAlmostEqual(m, 0.0, 1)
         
 
     def testbest_of_n(self):
