@@ -437,12 +437,12 @@ class FANN:
     def __getFlattenedArray(self, X):
 
         if X.dtype == float32:
-            X_flat = X.flatten()
+            X_flat = X.ravel()
         elif X.dtype == float64:
             X_flat = empty( X.size, dtype = float32)
             fann.flatten_double2float(X, X_flat)
         else:
-            X_flat = float32(X.flatten())
+            X_flat = float32(X.ravel())
 
         return X_flat
         
