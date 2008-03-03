@@ -5,7 +5,7 @@ features are planned.
 """
 
 import numpy, sys
-from numpy import int32, float32, float64, bool_
+from numpy import int32, float32, float64, bool_, zeros
 
 try:
     import utils_c as __uc
