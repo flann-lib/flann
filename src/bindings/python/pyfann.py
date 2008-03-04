@@ -235,7 +235,9 @@ class FANN:
     # Clustering functions
 
     def kmeans(self, pts, num_clusters, centers_init = "random", 
-               max_iterations = None, best_of_n = 1, dtype = None, **kwargs):
+               max_iterations = None, best_of_n = 1, 
+               ensure_none_empty = False, max_retries = 100,
+               dtype = None, **kwargs):
         """
         Runs kmeans on pts with num_clusters centroids.  Returns a
         numpy array of size num_clusters x dim.  
@@ -251,6 +253,12 @@ class FANN:
         to n > 1.  In this case, it performs k-means n times and
         returns the result with the best value of the objective
         function.
+        
+        Additionally, specifying ensure_none_empty to True rejects a
+        clustering if any of the centroids have no associated points
+        and retries up to max_retries times.  These rejected
+        clusterings do not count towards the best_of_n count.
+        If max_retries is exceeded, a FANNException is raised.
         """
         
         if int(num_clusters) != num_clusters or num_clusters < 1:
@@ -263,10 +271,14 @@ class FANN:
                 return dtype.type(mean(pts, 0).reshape(1, pts.shape[1]))
 
         return self.hierarchical_kmeans(pts, int(num_clusters), 1, 
-                                        max_iterations, best_of_n, dtype, **kwargs)
+                                        max_iterations, best_of_n, 
+                                        ensure_none_empty, max_retries,
+                                        dtype, **kwargs)
         
     def hierarchical_kmeans(self, pts, branch_size, num_branches, 
-                            max_iterations = None, best_of_n = 1, dtype = None, **kwargs):
+                            max_iterations = None, best_of_n = 1, 
+                            ensure_none_empty = False, max_retries = 100,
+                            dtype = None, **kwargs):
         """
         Clusters the data by using multiple runs of kmeans to
         recursively partition the dataset.  The number of resulting
@@ -283,6 +295,12 @@ class FANN:
         to n > 1.  In this case, it performs k-means n times and
         returns the result with the best value of the objective
         function.
+
+        Additionally, specifying ensure_none_empty to True rejects a
+        clustering if any of the centroids have no associated points
+        and retries up to max_retries times.  These rejected
+        clusterings do not count towards the best_of_n count.
+        If max_retries is exceeded, a FANNException is raised.
         """
         
         # First verify the paremeters are sensible.
@@ -323,14 +341,33 @@ class FANN:
                                             "algorithm"        : 'kmeans',
                                             "branching"        : int(branch_size)})
 
-        with self.__nn_lock:
-            numclusters = fann.run_kmeans(pts_flat, npts, dim,
-                                          num_clusters, result, *params)
+        pts_basis = pts_flat.reshape( (npts, dim) )
 
-        if numclusters <= 0:
-            raise FANNException('Error occured during clustering procedure.')
+        def __RunKMeans(result_buf):
+            
+            if ensure_none_empty:
+                from utils import hasEmptyCluster as __hasEmpty
 
-        
+                for i in xrange(max_retries):
+                    with self.__nn_lock:
+                        numclusters = fann.run_kmeans(pts_flat, npts, dim,
+                                                      num_clusters, result_buf, *params)
+                    if numclusters <= 0:
+                        raise FANNException('Error occured during clustering procedure.')
+                    
+                    if not __hasEmpty(pts_basis, result_buf.reshape( (num_clusters, dim) ) ):
+                        return
+
+                raise FANNException('Finding cluster with no empty centroids: maximum number of tries exceeded.')
+            else:
+                with self.__nn_lock:
+                    numclusters = fann.run_kmeans(pts_flat, npts, dim,
+                                                  num_clusters, result_buf, *params)
+                if numclusters <= 0:
+                    raise FANNException('Error occured during clustering procedure.')
+                
+        __RunKMeans(result)
+
         if best_of_n > 1:
             from utils import getKMeansObjective as __kmobj
 
@@ -341,11 +378,7 @@ class FANN:
             result_contender = empty(num_clusters *dim, dtype=float32)
 
             for i in xrange(best_of_n - 1):
-                with self.__nn_lock:
-                    numclusters = fann.run_kmeans(pts_flat, npts, dim,
-                                                  num_clusters, result_contender, *params)
-                if numclusters <= 0:
-                    raise FANNException('Error occured during clustering procedure.')
+                __RunKMeans(result_contender)
                 
                 objval_contender = __kmobj(pts_flat.reshape( (npts, dim) ), 
                                            result_contender.reshape( (num_clusters, dim) ) )

@@ -5,7 +5,7 @@ features are planned.
 """
 
 import numpy, sys
-from numpy import int32, float32, float64, bool_
+from numpy import int32, float32, float64, uint32, bool_
 
 try:
     import utils_c as __uc
@@ -103,7 +103,7 @@ def getLabels(data=None, centers=None, distance_matrix = None):
             if centers.dtype == float64:
                 __uc.labels_direct_double_double(data, centers, labels)
             else:
-                __uc.labels_direct_double_double(data, float32(centers), labels)
+                __uc.labels_direct_double_float(data, float32(centers), labels)
         else:
             __uc.labels_direct_float_float(float32(data), float32(centers), labels)
             
@@ -159,15 +159,15 @@ def getKMeansObjective(data=None, centers=None, distance2_matrix=None, labels=No
         raise TypeError("kMeansObjective(): insufficient parameters to calculate objective value.")
 
 
-def assignmentMatrix(data = None, centers = None, distance_matrix = None, labels = None, dtype = bool_):
+def assignmentMatrix(data = None, centers = None, distance_matrix = None, labels = None, K = None, dtype = bool_):
     """
     Returns a binary 0-1 N x K assignment matrix of type dtype (default = bool_).
     
     The assignment matrix can be calculated by three methods (from
     slowest to fastest): data and centers together, by
-    distance2_matrix alone, by labels alone, or by distance2_matrix
+    distance2_matrix alone, by labels along, by labels and K, or by distance2_matrix
     and labels together.  The fastest one possible is chosen.  If only
-    labels is given, K is chosen to be the maximum value of labels.
+    labels is given, K is chosen to be the maximum value of labels + 1.
     
     """
 
@@ -184,9 +184,9 @@ def assignmentMatrix(data = None, centers = None, distance_matrix = None, labels
         K = distance_matrix.shape[1]
     elif centers != None:
         K = centers.shape[0]
-    else:
-        K = labels.max()
-
+    elif K == None:
+        K = labels.max() + 1
+    
     am = numpy.zeros( (len(labels), K), dtype = dtype)
 
     if dtype == bool_:
@@ -201,6 +201,104 @@ def assignmentMatrix(data = None, centers = None, distance_matrix = None, labels
         am = dtype.type(am_buf)
         
     return am
-                      
 
- 
+def getClusterSizes(data = None, centers = None, distance_matrix = None, labels = None, K = None):
+    """
+    Returns an array of length K that gives the size of the clusters.
+    The method can calculate this with any of the following
+    combinations of imputs, from slowest to fastest: data and centers,
+    distance_matrix, distance_matrix and labels, by labels along, or
+    by labels and K together.  The function chooses the fastest
+    possible.  If only labels is given, K is calculated to be the
+    maximum value of labels + 1.  If K is given, it is up to the user to
+    ensure that max(labels) < K.
+    """
+
+    if distance_matrix != None:
+        distance_matrix = __ensure2dArray(distance_matrix)
+        K = distance_matrix.shape[1]
+    elif centers != None:
+        K = centers.shape[0]
+    elif labels != None and K == None:
+        K = labels.max() + 1
+
+    counts = numpy.empty(K, dtype=uint32)
+
+    if labels != None:
+        __uc.cluster_sizes_labels(labels, counts)
+
+    elif distance_matrix != None:
+        __ensure2dArray(distance_matrix)
+        
+        if distance_matrix.dtype == float64:
+            __uc.cluster_sizes_dists_double(distance_matrix, counts)
+        else:
+            __uc.cluster_sizes_dists_float(float32(distance_matrix), counts)
+
+    elif centers != None and data != None:
+        __ensure2dArray(centers)
+        __ensure2dArray(data)
+
+        if data.dtype == float64:
+            if centers.dtype == float64:
+                __uc.cluster_sizes_direct_double_double(data, centers, counts)
+            else:
+                __uc.cluster_sizes_direct_double_float(data, float32(centers), counts)
+        else:
+            __uc.cluster_sizes_direct_float_float(float32(data), float32(centers), counts)
+    else:
+        raise TypeError("getClusterSizes(): insufficient parameters to calculate counts.")
+    
+    return counts
+                          
+def hasEmptyCluster(data = None, centers = None, distance_matrix = None, 
+                    labels = None, K = None, cluster_sizes = None):
+    """
+    Returns true if the clustering has one or more centroids with no
+    points assigned to them.  The method can calculate this with any
+    of the following combinations of imputs, from slowest to fastest:
+    data and centers, distance_matrix, labels alone, distance_matrix
+    and labels, labels and K, and cluster_sizes.  The function chooses
+    the fastest possible.  If only labels is given, K is set to be the
+    maximum of labels + 1.  Note that if K is given, it is up to the
+    user to ensure that max(labels) < K.  
+    """
+
+    if distance_matrix != None:
+        distance_matrix = __ensure2dArray(distance_matrix)
+        K = distance_matrix.shape[1]
+    elif centers != None:
+        centers = __ensure2dArray(centers)
+        K = centers.shape[0]
+    elif labels != None and K == None:
+        K = labels.max() + 1
+
+    if cluster_sizes != None:
+        return __uc.cluster_completeness_counts(cluster_sizes)
+
+    elif labels != None:
+        assert( int(K) == K)
+
+        return __uc.cluster_completeness_labels(labels, K)
+
+    elif distance_matrix != None:
+        if distance_matrix.dtype == float64:
+            return __uc.cluster_completeness_dists_double(distance_matrix)
+        else:
+            return __uc.cluster_completeness_dists_float(float32(distance_matrix))
+
+    elif centers != None and data != None:
+        centers = __ensure2dArray(centers)
+        data = __ensure2dArray(data)
+
+        if data.dtype == float64:
+            if centers.dtype == float64:
+                return __uc.cluster_completeness_direct_double_double(data, centers)
+            else:
+                return __uc.cluster_completeness_direct_double_float(data, float32(centers))
+        else:
+            return __uc.cluster_completeness_direct_float_float(float32(data), float32(centers))
+    else:
+        raise TypeError("hasEmptyClusters(): insufficient parameters to calculate.")
+    
+    

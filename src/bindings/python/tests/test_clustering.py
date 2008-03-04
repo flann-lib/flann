@@ -70,6 +70,13 @@ class Test_PyFANN_clustering(unittest.TestCase):
 
         self.assert_(getKMeansObjective(data, cl1) >= getKMeansObjective(data, cl2))
 
+    def testensure_none_empty(self):
+
+        for i in xrange(100):
+            data = rand(1000,2) # Random, so we can get a lot of local minima
+            cl2 = self.nn.kmeans(data, 50, ensure_none_empty = True)
+            self.assert_(hasEmptyCluster(data, cl2) == False)
+
 
         
 if __name__ == '__main__':
