@@ -5,7 +5,7 @@ features are planned.
 """
 
 import numpy, sys
-from numpy import int32, float32, float64, bool_, zeros
+from numpy import int32, float32, float64, bool_
 
 try:
     import utils_c as __uc
@@ -187,7 +187,7 @@ def assignmentMatrix(data = None, centers = None, distance_matrix = None, labels
     else:
         K = labels.max()
 
-    am = zeros(length(labels), K, dtype = dtype)
+    am = numpy.zeros( (len(labels), K), dtype = dtype)
 
     if dtype == bool_:
         __uc.assignment_matrix_bool(labels, am)

@@ -292,10 +292,7 @@ def createUtilsC():
     // Takes the label list and fills the absolute assignment matrix assignment_matrix
 
     for(int i = 0; i < Nlabels[0]; ++i)
-    {
-      printf("At i = %d", i); fflush(stdout);  
       ASSIGNMENT_MATRIX2(i,LABELS1(i)) = 1;
-    }
     """
 
     addFunc('assignment_matrix_double', calccode_assignment_matrix,
