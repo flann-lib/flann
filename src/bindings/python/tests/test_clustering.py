@@ -8,7 +8,7 @@ from pyfann.index_type import index_type
 from copy import copy
 from numpy import *
 from numpy.random import *
-import unittest
+import unittest, time
 
 class Test_PyFANN_clustering(unittest.TestCase):
 
@@ -77,6 +77,56 @@ class Test_PyFANN_clustering(unittest.TestCase):
             cl2 = self.nn.kmeans(data, 50, ensure_none_empty = True)
             self.assert_(hasEmptyCluster(data, cl2) == False)
 
+    def testrandomnumber_same(self):
+        
+        data = rand(1000,2) # Random, so we can get a lot of local minima
+
+        rnseed = int(time.time())
+        cl1 = self.nn.kmeans(data, 50, random_seed = rnseed)
+        cl2 = self.nn.kmeans(data, 50, random_seed = rnseed)
+
+        self.assert_(all(cl1 == cl2))
+
+        cl1 = self.nn.kmeans(data, 50, random_seed = rnseed, best_of_n = 20)
+        cl2 = self.nn.kmeans(data, 50, random_seed = rnseed, best_of_n = 20)
+
+        self.assert_(all(cl1 == cl2))
+
+        cl1 = self.nn.kmeans(data, 50, random_seed = rnseed, ensure_none_empty = True)
+        cl2 = self.nn.kmeans(data, 50, random_seed = rnseed, ensure_none_empty = True)
+
+        self.assert_(all(cl1 == cl2))
+
+        cl1 = self.nn.kmeans(data, 50, random_seed = rnseed, best_of_n = 20, ensure_none_empty = True)
+        cl2 = self.nn.kmeans(data, 50, random_seed = rnseed, best_of_n = 20, ensure_none_empty = True)
+
+        self.assert_(all(cl1 == cl2))
+
+    def testrandnumber_different(self):
+        
+        data = rand(1000,2) # Random, so we can get a lot of local minima
+
+        rnseed = int(time.time())
+        cl1 = self.nn.kmeans(data, 50)
+        cl2 = self.nn.kmeans(data, 50)
+
+        self.assert_(any(cl1 != cl2))
+
+        cl1 = self.nn.kmeans(data, 50, best_of_n = 20)
+        cl2 = self.nn.kmeans(data, 50, best_of_n = 20)
+
+        self.assert_(any(cl1 != cl2))
+
+        cl1 = self.nn.kmeans(data, 50, ensure_none_empty = True)
+        cl2 = self.nn.kmeans(data, 50, ensure_none_empty = True)
+
+        self.assert_(any(cl1 != cl2))
+
+        cl1 = self.nn.kmeans(data, 50, best_of_n = 20, ensure_none_empty = True)
+        cl2 = self.nn.kmeans(data, 50, best_of_n = 20, ensure_none_empty = True)
+
+        self.assert_(any(cl1 != cl2))
+        
 
         
 if __name__ == '__main__':
