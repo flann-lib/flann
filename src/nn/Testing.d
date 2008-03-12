@@ -257,55 +257,63 @@ float testNNIndexPrecisions(T, bool withOutput, bool withReporting)
 	static if (withReporting) {
 		report("checks", c2)
 			("match", cast(double)p2)
-			("search_time", cast(double)time).flush;
+			("search_time", cast(double)time);
 	}
 	
 	
 	// if precision for 1 run down the tree is already
 	// better then some of the requested precisions, then
 	// skip those
-	while (precisions[pindex]<p2) {
+	while (precisions[pindex]<p2 && pindex<precisions.length) {
 		pindex++;
 	}
-	precision = precisions[pindex];
 	
-	while (p2<precision) {
-		c1 = c2;
-		p1 = p2;
-		c2 *=2;
-		p2 = search(c2,time);
+	if (pindex==precisions.length) {
+		static if (withOutput) logger.info("Got as close as I can");
+		report.flush();
+		return time;
 	}
+	
 	
 	
 	for (int i=pindex;i<precisions.length;++i) {
 	
 		precision = precisions[i];
+		while (p2<precision) {
+			c1 = c2;
+			p1 = p2;
+			c2 *=2;
+			p2 = search(c2,time);
+			if (maxTime> 0 && time > maxTime && p2<precision) return time;
+		}
 		
 		int cx;
 		float realPrecision;
 		if (abs(p2-precision)>SEARCH_EPS) {
 			static if (withOutput) logger.info("Start linear estimation");
-			// after we got to values in the vecibity of the desired precision
+			// after we got to values in the vecinity of the desired precision
 			// use linear approximation get a better estimation
 				
-			cx = rndint(c1+(precision-p1)*(c2-c1)/(p2-p1));
+			cx = (c1+c2)/2;
 			realPrecision = search(cx,time);
 			while (abs(realPrecision-precision)>SEARCH_EPS) {
-				if (p2!=realPrecision) {
-					c1 = c2; p1 = p2;
+				
+				if (realPrecision<precision) {
+					c1 = cx;
 				}
-				c2 = cx; p2 = realPrecision;
-				cx = rndint(c1+(precision-p1)*(c2-c1)/(p2-p1));
-				if (c2==cx) {
-					cx += precision>realPrecision?1:-1;
+				else {
+					c2 = cx;
 				}
+				cx = (c1+c2)/2;
 				if (cx==c1) {
 					static if (withOutput) logger.info("Got as close as I can");
 					break;
 				}
 				realPrecision = search(cx,time);
-				if (maxTime> 0 && time > maxTime) break;
 			}
+			
+			c2 = cx;
+			p2 = realPrecision;
 			
 		} else {
 			static if (withOutput) logger.info("No need for linear estimation");
@@ -318,7 +326,6 @@ float testNNIndexPrecisions(T, bool withOutput, bool withReporting)
 				("match", cast(double)realPrecision)
 				("search_time", cast(double)time).flush;
 		}
-		if (maxTime> 0 && time > maxTime) break;
 	}
 	return time;
 }

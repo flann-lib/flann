@@ -1,8 +1,5 @@
 # ------------------ Compilation options ------------------------
 
-HAS_SQLITE = 1
-
-
 include Makefile.platform
 
 ifdef UNIT_TEST
@@ -35,12 +32,7 @@ INCLUDES = -Iinclude
 LIBS =
 LLIBS = ${LIBS} -llc -llgphobos -llm -llpthread -llgcc_s
 
-LIB_DFLAGS := -C-q,-fPIC -lib ${DFLAGS} 
-
-ifeq ($(HAS_SQLITE),1)
-	DFLAGS := ${DFLAGS} -version=hasSqlite
-	LIBS := ${LIBS} -llsqlite3 -lldl
-endif
+LIB_DFLAGS := -lib ${DFLAGS} 
 
 # --------------------- Dirs  ----------------------------
 CRT_DIR = $(shell pwd)
