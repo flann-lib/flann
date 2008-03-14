@@ -374,7 +374,7 @@ class FANN:
                         numclusters = fann.run_kmeans(pts_flat, npts, dim,
                                                       num_clusters, result_buf, *params)
                     if numclusters <= 0:
-                        raise FANNException('Error occured during clustering procedure.')
+                        raise FANNException('Error occured during clustering procedure, code = %d' % numclusters)
                     
                     if not __hasEmpty(pts_basis, result_buf.reshape( (num_clusters, dim) ) ):
                         return
