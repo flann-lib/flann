@@ -17,7 +17,7 @@ version( Tango )
 
     import tango.core.Exception : TracedException;
     import tango.core.Vararg : va_list;
-    import tango.text.convert.Float;
+	import tango.text.convert.Float;
     import tango.text.convert.Integer;
     import tango.text.convert.Layout : Layout, ArgList;
     import tango.text.convert.Utf;
@@ -503,6 +503,7 @@ struct Variant
             return value.arr;
     }
 
+	
     alias toStringImpl toString;
 
     public char[] toStringImpl()
@@ -527,7 +528,11 @@ struct Variant
         }	
         else if (type is typeid(float))
         {
-        	return .toString(value._float);
+        	return .toString(value._float,10,2);
+        }
+        else if (type is typeid(double))
+        {
+        	return .toString(value._double,10,2);
         }
         // Everything else
         else
@@ -548,6 +553,8 @@ struct Variant
             }
         }
     }
+
+    
 }
 
 version( Tango )

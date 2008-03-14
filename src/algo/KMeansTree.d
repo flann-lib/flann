@@ -66,6 +66,7 @@ class KMeansTree(T) : NNIndex
 	private int[] indices;
 	
 	private	PooledAllocator pool;
+	private int memoryCounter;
 		
 	alias T[][] function(int k, T[][] vecs, int[] indices) centersAlgFunction;
 	static centersAlgFunction[string] centerAlgs;
@@ -84,6 +85,7 @@ class KMeansTree(T) : NNIndex
 	public this(Dataset!(T) inputData, Params params)
 	{
 		pool = new PooledAllocator();
+		memoryCounter = 0;
 	
 		// get algorithm parameters
 		this.branching = params["branching"].get!(uint);		
@@ -113,11 +115,19 @@ class KMeansTree(T) : NNIndex
 	
 	public ~this()
 	{
-		debug {
-			logger.info(sprint("KMeansTree used memory: {} KB", pool.usedMemory/1000));
-			logger.info(sprint("KMeansTree wasted memory: {} KB", pool.wastedMemory/1000));
-			logger.info(sprint("KMeansTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
+		void free_centers(KMeansNode node) {
+ 			free(node.pivot);
+			if (node.childs.length!=0) {
+				foreach (child;node.childs) {
+					free_centers(child);
+				}
+			}
 		}
+ 		debug {
+			logger.info(sprint("KMeansTree used memory: {} KB", (pool.usedMemory+memoryCounter)/1000));
+			logger.info(sprint("KMeansTree wasted memory: {} KB", pool.wastedMemory/1000));
+			logger.info(sprint("KMeansTree total memory: {} KB", (memoryCounter+pool.usedMemory+pool.wastedMemory)/1000));
+ 		}
 		delete pool;
 	}
 
@@ -139,7 +149,7 @@ class KMeansTree(T) : NNIndex
 	
 	public int usedMemory()
 	{
-		return  pool.usedMemory+pool.wastedMemory;
+		return  pool.usedMemory+pool.wastedMemory+memoryCounter;
 	}
 
 
@@ -234,7 +244,8 @@ class KMeansTree(T) : NNIndex
 	
 		float radius = 0;
 		float variance = 0;
-		float[] mean = pool.allocate!(float[])(flength);
+		float[] mean = allocate!(float[])(flength);
+		memoryCounter += flength*float.sizeof;
 		
 		mean[] = 0;
 		
@@ -284,11 +295,9 @@ class KMeansTree(T) : NNIndex
 			return;
 		}
 		
- 		float[][] centers = pool.allocate!(float[][])(branching,flength);
- 		double[][] dcenters = pool.allocate!(double[][])(branching,flength);
+ 		double[][] dcenters = allocate!(double[][])(branching,flength);
 		
-		//float[][] centers = new float[][](nc,flength);
-		mat_copy(centers,initial_centers);
+		mat_copy(dcenters,initial_centers);
 		
 	 	float[] radiuses = new float[branching];
 		int[] count = new int[branching];
@@ -297,10 +306,10 @@ class KMeansTree(T) : NNIndex
 		int[] belongs_to = new int[n];
 		for (int i=0;i<n;++i) {
 
-			float sq_dist = squaredDist(vecs[indices[i]],centers[0]); 
+			float sq_dist = squaredDist(vecs[indices[i]],dcenters[0]); 
 			belongs_to[i] = 0;
 			for (int j=1;j<branching;++j) {
-				float new_sq_dist = squaredDist(vecs[indices[i]],centers[j]);
+				float new_sq_dist = squaredDist(vecs[indices[i]],dcenters[j]);
 				if (sq_dist>new_sq_dist) {
 					belongs_to[i] = j;
 					sq_dist = new_sq_dist;
@@ -331,16 +340,14 @@ class KMeansTree(T) : NNIndex
 					value /= count[i];
 				}
 			}
-			
-			mat_copy(centers,dcenters);
-			
+						
 			radiuses[] = 0;
 			// reassign points to clusters
 			for (int i=0;i<n;++i) {
-				float sq_dist = squaredDist(vecs[indices[i]],centers[0]); 
+				float sq_dist = squaredDist(vecs[indices[i]],dcenters[0]); 
 				int new_centroid = 0;
 				for (int j=1;j<branching;++j) {
-					float new_sq_dist = squaredDist(vecs[indices[i]],centers[j]);
+					float new_sq_dist = squaredDist(vecs[indices[i]],dcenters[j]);
 					if (sq_dist>new_sq_dist) {
 						new_centroid = j;
 						sq_dist = new_sq_dist;
@@ -381,6 +388,14 @@ class KMeansTree(T) : NNIndex
 
 		}
 	
+ 		float[][] centers = new float[][branching];
+ 		foreach (ref c;centers) {
+ 			c = allocate!(float[])(flength);
+ 			memoryCounter += flength*float.sizeof;
+ 		}	
+//  		pool.allocate!(float[][])(branching,flength);
+ 		mat_copy(centers,dcenters);
+		free(dcenters);
 	
 		// compute kmeans clustering for each of the resulting clusters
 		node.childs = pool.allocate!(KMeansNode[])(branching);
@@ -409,9 +424,10 @@ class KMeansTree(T) : NNIndex
 			start=end;
 		}
 		
+		delete centers;
 		delete radiuses;
 		delete count;
-		delete belongs_to;		
+		delete belongs_to;
 	}
 	
 	

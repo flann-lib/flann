@@ -102,7 +102,7 @@ class DatFormatHandler(T) : FormatHandler!(T)
 				foreach (i,elem;vec) {
 					if (i!=0) write(" ");
 					if (is (T==float)) {
-						write.format("{:e10}",elem);
+						write.format("{:g}",elem);
 					} else {
 						write.format("{}",elem);
 					}

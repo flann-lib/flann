@@ -4,7 +4,9 @@ import tango.core.Memory;
 import tango.util.log.Log;
 import tango.util.log.ConsoleAppender;
 import tango.util.log.FileAppender;
-import tango.stdc.stringz;	
+import tango.stdc.stringz;
+import tango.stdc.stdio;
+
 
 import algo.all;
 import dataset.Dataset;
@@ -14,6 +16,8 @@ import nn.Autotune;
 import util.Logger;
 import util.Random;
 import util.defines;
+import util.Profile;
+
 
 extern(C):
 
@@ -169,7 +173,6 @@ void fann_term()
 void fann_log_verbosity(int level)
 {
 	fann_init();
-	
 	Logger.Level logLevel = Logger.Level.Trace;
 	switch (level) {
 		case LOG_NONE:
@@ -220,7 +223,7 @@ private Dataset!(T) makeFeatures(T)(T* dataset, int count, int length)
 private void initFANNParameters(FANNParameters* p)
 {
 	if (p !is null) {
-		fann_log_verbosity(p.log_level);
+ 		fann_log_verbosity(p.log_level);
 		fann_log_destination(p.log_destination);
 		srand48(p.random_seed);
 	}
@@ -231,6 +234,9 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 	try {
 		fann_init();
 		initFANNParameters(fann_params);
+		
+		StartStopTimer t = new StartStopTimer();
+		
 		
 		if (nn_ids_count==nn_ids.length) {
 			// extended indices and features arrays
@@ -257,7 +263,9 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 			Params params = parametersToParams(*index_params);
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
+			t.start();
 			index.buildIndex();
+			t.stop();
 		}
 		else {
 			Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
@@ -273,7 +281,7 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 			}
 		}
 		
-		
+		logger.info(sprint("Time: {}",t.value));
 		NN_INDEX indexID = nn_ids_count++;
 		nn_ids[indexID] = index;
 		features[indexID] = inputData;
@@ -297,10 +305,11 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 		auto inputData = makeFeatures(dataset,count,length);
 
 		float target_precision = index_params.target_precision;
-		
+				
 		NNIndex index;
 		if (target_precision < 0) {
 			Params params = parametersToParams(*index_params);
+			logger.info(sprint("Building index using params: {}",params));
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
@@ -313,7 +322,9 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 			estimateSearchParams(index,inputData,target_precision,params);
 			*index_params = paramsToParameters(params);
 		}
+		logger.info("Index created.");
 		
+		logger.info("Searching for nearest neighbors.");
 		int skipMatches = 0;
 		ResultSet resultSet = new ResultSet(nn+skipMatches);
 		

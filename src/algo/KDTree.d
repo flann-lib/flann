@@ -445,7 +445,8 @@ class KDTree(T) : NNIndex{
 		
 		assert(result.full);
 	}
-		
+	
+
 	/**
 	 *  Search starting from a given node of the tree.  Based on any mismatches at
 	 *  higher levels, all exemplars below this level must have a distance of

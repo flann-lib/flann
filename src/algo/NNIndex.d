@@ -150,6 +150,16 @@ abstract class NNIndex
 	*/
 	void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck);
 	
+	
+	/**
+	 * Compute the number of checks required to reach a certain precison,
+	 * for the given test set with teh given precision.
+	 */ 
+	int[] findCheckForPrecision(float[][] vecs, int[][] groundTruth, float[] precisions)
+ 	{
+ 		throw new FANNException("Not implemented");
+ 	} 	
+	
 	/**
 		Number of features in this index.
 	*/
@@ -170,7 +180,8 @@ abstract class NNIndex
 	*/
  	int usedMemory();
  	
- 	float[][] getClusterCenters(int number) {
+ 	float[][] getClusterCenters(int number) 
+ 	{
  		throw new FANNException("Not implemented");
  	} 	
 }

@@ -118,6 +118,7 @@ class IndexCommand : DefaultCommand
 		});
 		
 		report("cluster_time", indexTime);
+		report("index_memory", index.usedMemory);
 		
 		logger.info(sprint("Time to build {} tree{} for {} vectors: {} seconds",
 			index.numTrees, index.numTrees == 1 ? "" : "s", index.size, indexTime));

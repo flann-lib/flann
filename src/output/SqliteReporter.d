@@ -1,13 +1,8 @@
 module output.SqliteReporter;
 
-// import std.stdio;
 import tango.io.Stdout;
 import tango.util.Convert : to;
-import tango.core.Thread;
-import dbi.sqlite.SqliteDatabase;
-import dbi.Row;
-import dbi.DBIException;
-import dbi.ErrorCode;
+import tango.sys.Process;
 
 import output.ResultReporter;
 import util.Utils;
@@ -28,22 +23,18 @@ static this()
 
 class SqliteReporter : ReportBackend
 {
-	SqliteDatabase db;
-	int run;
+	char[] database;
+	Process p;
 	
 	public this(char[] database) 
 	{
-		db = new SqliteDatabase();
-		db.connect(database);
-		
-		Row row = db.queryFetchOne("SELECT MAX(run) as max_run FROM results");
-		run = to!(int)(row["max_run"]);
-		run++;
+		this.database = database;
+		p = new Process();
 	}
 	
-	public ~this() 
+	public ~this()
 	{
-		db.close();
+		delete p;
 	}
 	
 	public void flush(OrderedParams values) 
@@ -54,31 +45,23 @@ class SqliteReporter : ReportBackend
 			fields ~= (name~",");
 			if (value.isA!(string)) {
 				vals ~= ("'"~value.toString()~"',");
-			}// 		this.database = database;
-
+			}
 			else {
+				
 				vals ~= (value.toString()~",");
 			}
 		}
 		
 		
-		string query = "INSERT INTO results(run,"~fields[0..$-1]~") VALUES ("~to!(char[])(run)~","~vals[0..$-1]~")";
+		string query = "INSERT INTO results("~fields[0..$-1]~") VALUES ("~vals[0..$-1]~")";
   		Stdout(query).newline;
-  		
-  		int retries = 0;
-  		bool success = false;
-  		while (retries<3 && !success) {
-			try {
-				db.execute(query);
-				success = true;
-			} catch(DBIException e) {
-				logger.error("Error inserting into database");
-				logger.error("SQL: "~e.getSql);
-				logger.error("Error code: "~dbi.ErrorCode.toString(e.getErrorCode));
-				logger.error(sprint("Specific code: {}",e.getSpecificCode));
-			}
-			retries++;
-			Thread.sleep(1);
-		}	
+  		try {
+	  		p.execute("sqlite3 " ~ database ~ " \"" ~ query ~ "\"",null);
+	  	}
+		catch (ProcessCreateException e)
+		{
+			logger.error("Process execution failed: " ~ e.toString);
+		}
+  	
 	}
 }

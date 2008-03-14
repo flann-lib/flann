@@ -172,6 +172,8 @@ private float executeActions(int times, float delegate() action)
 
 
 struct CostData {
+	float searchTimeCost;
+	float buildTimeCost;
 	float timeCost;
 	float memoryCost;
 	float cost;
@@ -229,6 +231,8 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		float searchTime = executeActions(REPEATS, {return testNNIndexPrecision!(T,true,false)(kmeans, sampledDataset, testDataset, desiredPrecision, checks, nn);});
 		float datasetMemory = sampledDataset.rows*sampledDataset.cols*T.sizeof;
 		cost.memoryCost = (kmeans.usedMemory+datasetMemory)/datasetMemory;
+		cost.searchTimeCost = searchTime;
+		cost.buildTimeCost = buildTime;
 		cost.timeCost = buildTime*buildTimeFactor+searchTime;
 		logger.info(sprint("KMeansTree buildTime={:f3}, searchTime={:f3}, timeCost={:f3}",buildTime, searchTime, cost.timeCost));
 		
@@ -253,6 +257,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 			kmeansCosts[cnt] = evaluate_kmeans(kmeans_params[cnt]);
 			
 			int k = cnt;
+			// order by time cost
 			while (k>0 && kmeansCosts[k].timeCost < kmeansCosts[k-1].timeCost) {
 				swap(kmeansCosts[k],kmeansCosts[k-1]);
 				swap(kmeans_params[k],kmeans_params[k-1]);
@@ -285,6 +290,8 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 						} );
 		float datasetMemory = sampledDataset.rows*sampledDataset.cols*T.sizeof;
 		cost.memoryCost = (kdtree.usedMemory+datasetMemory)/datasetMemory;
+		cost.searchTimeCost = searchTime;
+		cost.buildTimeCost = buildTime;
 		cost.timeCost = buildTime*buildTimeFactor+searchTime;	
 		logger.info(sprint("KDTree buildTime={:f3}, searchTime={:f3}, timeCost={:f3}",buildTime, searchTime, cost.timeCost));
 				
@@ -306,6 +313,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		kdtreeCosts[cnt] = evaluate_kdtree(kdtree_params[cnt]);
 		
 		int k = cnt;
+		// order by time cost
 		while (k>0 && kdtreeCosts[k].timeCost < kdtreeCosts[k-1].timeCost) {
 			swap(kdtreeCosts[k],kdtreeCosts[k-1]);
 			swap(kdtree_params[k],kdtree_params[k-1]);
@@ -317,6 +325,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 	
 	
 	
+	// get the optimum time cost
 	float optTimeCost = min(kmeansCosts[0].timeCost, kdtreeCosts[0].timeCost);
 	
 	if (optTimeCost<1e-6) {
@@ -338,7 +347,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		}
 	}
 	for (int i=0;i<kmeansCosts.length;++i) {
-		logger.info(sprint("Time cost={:f3}, memory cost={:f3}, Kmeans Cost={:f3}",kmeansCosts[i].timeCost,kmeansCosts[i].memoryCost,kmeansCosts[i].cost));
+		logger.info(sprint("KMeans, branching={}, iterations={}, time_cost={:f3} (build={}, search={}), memory_cost={:f3}, cost={:f3}", kmeans_params[i][1],kmeans_params[i][0],kmeansCosts[i].timeCost,kmeansCosts[i].buildTimeCost, kmeansCosts[i].searchTimeCost,kmeansCosts[i].memoryCost,kmeansCosts[i].cost));
 	}	
 	
 /+	float compute_kmeans_cost(int[] params) 
@@ -383,7 +392,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		}		
 	}
 	for (int i=0;i<kdtreeCosts.length;++i) {
-		logger.info(sprint("Time cost={:f3}, memory cost={:f3}, KDTree Cost={:f3}",kdtreeCosts[i].timeCost,kdtreeCosts[i].memoryCost,kdtreeCosts[i].cost));
+		logger.info(sprint("kd-tree, trees={}, time_cost={:f3} (build={}, search={}), memory_cost={:f3}, cost={:f3}",kdtree_params[i][0],kdtreeCosts[i].timeCost,kdtreeCosts[i].buildTimeCost, kdtreeCosts[i].searchTimeCost,kdtreeCosts[i].memoryCost,kdtreeCosts[i].cost));
 	}	
 	
 	
@@ -415,6 +424,8 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		bestParams = kdtreeParams;
 		bestCost = kdtreeCost;
 	}
+	
+	logger.info(sprint("Best params: {}",bestParams));
 	
 	return bestParams;
 }
