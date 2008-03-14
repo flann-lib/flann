@@ -56,7 +56,7 @@ if __name__ == '__main__':
     print 'Profiling Memory usage for pyfann; CTRL-C to stop.'
     print 'Increasing total process memory, relative to the python memory, '
     print 'implies a memory leak in the external libs.'
-    print 'Increasing python memory implies a memory leak in the 
+    print 'Increasing python memory implies a memory leak in the python code.'
     
     h = hpy()
 
@@ -65,11 +65,13 @@ if __name__ == '__main__':
 
         print 'Python: %s;    Process Total: %s' % (s[:s.find('\n')], memory())
         
-        X = rand(100000, 2)
+        X1 = rand(50000, 2)
+        X2 = rand(50000, 2)
         pf = FANN()
-        cl = pf.kmeans(X, 20)
-        del X
-        del cl
+        nnlist = pf.nn(X1, X2)
+        del X1
+        del X2
+        del nnlist
         del pf
         gc.collect()
         
