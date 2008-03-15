@@ -58,7 +58,22 @@ class Test_PyFANN_utils(unittest.TestCase):
         findlabels = ut.getLabels(distance_matrix = dm)
 
         self.assert_(all(setlabels == findlabels))
-        
+    
+    def test03b_assignmentMatrix(self):
+        K = 50
+        nP = 1000
+        data    = float64(rand(nP, 10))
+        centers = float64(rand(K, 10))
+        dm = ut.getDistance2Matrix(data, centers) + 1
+        l = ut.getLabels(distance_matrix = dm)
+        absa = ut.assignmentMatrix(data, centers)
+
+        self.assert_(all(absa.shape == (nP, K)))
+        self.assert_(all(absa == ut.assignmentMatrix(distance_matrix = dm)))
+        self.assert_(all(absa == ut.assignmentMatrix(distance_matrix = dm, labels = l)))
+        self.assert_(all(absa == ut.assignmentMatrix(labels = l)))
+        self.assert_(all(absa == ut.assignmentMatrix(labels = l, K = K)))
+
     def test04_kMeansObjective(self):
         data    = float64(rand(5000, 10))
         centers = float64(rand(50, 10))
@@ -102,7 +117,7 @@ class Test_PyFANN_utils(unittest.TestCase):
         findlabels = ut.getLabels(distance_matrix = dm)
 
         self.assert_(all(setlabels == findlabels))
-        
+    
     def test04b_kMeansObjective(self):
         data    = float64(rand(5000, 10))
         centers = float32(rand(50, 10))
