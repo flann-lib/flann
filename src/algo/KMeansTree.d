@@ -123,6 +123,8 @@ class KMeansTree(T) : NNIndex
 				}
 			}
 		}
+		
+		free_centers(root);
  		debug {
 			logger.info(sprint("KMeansTree used memory: {} KB", (pool.usedMemory+memoryCounter)/1000));
 			logger.info(sprint("KMeansTree wasted memory: {} KB", pool.wastedMemory/1000));

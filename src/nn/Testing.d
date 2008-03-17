@@ -33,29 +33,6 @@ int countCorrectMatches(int[] neighbors, int[] groundTruth)
 	return count;
 }
 
-int countCorrectMatches(int[] neighbors, int[] groundTruth, char[] approxMatch)
-{
-	int n = neighbors.length;	
-	
-	
-	int count = 0;
-	auto writer = new FormatOutput(new FileOutput(approxMatch,FileOutput.WriteAppending));
-	scope (exit) writer.close();
-		foreach(m;neighbors) {
-			for (int i=0;i<n;++i) {
-				if (groundTruth[i]==m) {
-					count++;
-					break;
-				}
-				else {
-					writer.formatln("{}",groundTruth[i]);
-				}
-			}
-		}
-	return count;
-}
-
-
 // TODO: fix distance computation
 float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 {
@@ -63,13 +40,20 @@ float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 	
 	float ret = 0;
 	foreach(i,m;neighbors) {
-		ret += squaredDist(target,vecs[m])/squaredDist(target,vecs[groundTruth[i]]);
+		float den = squaredDist(target,vecs[groundTruth[i]]);
+		float num = squaredDist(target,vecs[m]);
 		
+		if (den==0 && num==0) {
+			ret += 1;
+		} else {
+			ret += num/den;
+		}
 	}
+	
 	return ret;
 }
 
-float search(int checks, out float time, char[] approxMatch = "") 
+float search(int checks, out float time) 
 {
 	if (testData.match[0].length<nn) {
 		throw new FANNException("Ground truth is not computed for as many neighbors as requested");
@@ -87,14 +71,11 @@ float search(int checks, out float time, char[] approxMatch = "")
 			int[] neighbors = resultSet.getNeighbors();
 			neighbors = neighbors[skipMatches..$];
 					
-			if (approxMatch == "") {
-				correct += countCorrectMatches(neighbors,testData.match[i]);
-			} else {
-				correct += countCorrectMatches(neighbors,testData.match[i],approxMatch);
-			}
+			correct += countCorrectMatches(neighbors,testData.match[i]);
 			distR += computeDistanceRaport(target,neighbors,testData.match[i]);
 		}
 	},0.2);
+	
 	
 	float performance = 100*cast(float)correct/(nn*testData.rows);
 	
@@ -140,9 +121,8 @@ float testNNIndex(T, bool withOutput, bool withReporting)
 }
 
 
-
 float testNNIndexPrecision(T, bool withOutput, bool withReporting)
-						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0, char[] approxMatch = "")
+						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
 {	
 	T[][] vecs = inputData.vecs;
 	
@@ -183,20 +163,20 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 	float realPrecision;
 	if (abs(p2-precision)>SEARCH_EPS) {
 		static if (withOutput) logger.info("Start linear estimation");
-		// after we got to values in the vecibity of the desired precision
+		// after we got to values in the vecinity of the desired precision
 		// use linear approximation get a better estimation
 			
-		cx = rndint(c1+(precision-p1)*(c2-c1)/(p2-p1));
+		cx = (c1+c2)/2;
 		realPrecision = search(cx,time);
 		while (abs(realPrecision-precision)>SEARCH_EPS) {
-			if (p2!=realPrecision) {
-				c1 = c2; p1 = p2;
+			
+			if (realPrecision<precision) {
+				c1 = cx;
 			}
-			c2 = cx; p2 = realPrecision;
-			cx = rndint(c1+(precision-p1)*(c2-c1)/(p2-p1));
-			if (c2==cx) {
-				cx += precision>realPrecision?1:-1;
+			else {
+				c2 = cx;
 			}
+			cx = (c1+c2)/2;
 			if (cx==c1) {
 				static if (withOutput) logger.info("Got as close as I can");
 				break;
@@ -204,15 +184,14 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 			realPrecision = search(cx,time);
 		}
 		
+		c2 = cx;
+		p2 = realPrecision;
+		
 	} else {
 		static if (withOutput) logger.info("No need for linear estimation");
 		cx = c2;
 		realPrecision = p2;
 	}
-	if (approxMatch != "") {
-		realPrecision = search(cx,time,approxMatch);
-	}
-	
 	
 	static if (withReporting) {
 		report("checks", cx)

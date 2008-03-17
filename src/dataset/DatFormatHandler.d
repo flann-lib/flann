@@ -97,6 +97,42 @@ class DatFormatHandler(T) : FormatHandler!(T)
 		
 	protected final void writeValues(char[] file, T[][] vecs)
 	{
+	
+	/+		withOpenFile(file, (FormatOutput write) {
+	
+			char[100] buffer;
+			char* p = buffer.ptr;
+			
+			uint sink(char[] s)
+			{
+				int len = s.length;
+				if (len >= (buffer.ptr + buffer.length) - p)	{
+					write(buffer[0..p-buffer.ptr]);
+					p = buffer.ptr;
+				}
+				p [0..len] = s;
+				p += len;
+				return len;
+			}
+			
+			auto formater = new Layout!(char);
+			foreach (vec;vecs) {
+				foreach (i,elem;vec) {
+					if (i!=0) formater(&sink," ");
+					if (is (T==float)) {
+						formater(&sink,"{:g}",elem);
+					} else {
+						formater(&sink,"{}",elem);
+					}
+				}
+				formater(&sink,"\n");
+			}
+			// flush the buffer
+			write(buffer[0..p-buffer.ptr]);
+			logger.info(buffer[0..p-buffer.ptr]);
+		});+/
+
+	
 		withOpenFile(file, (FormatOutput write) {
 			foreach (vec;vecs) {
 				foreach (i,elem;vec) {

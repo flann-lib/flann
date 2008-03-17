@@ -148,9 +148,14 @@ void withOpenFile(string file, void delegate(ScanReader) action, char[] delimite
 
 void withOpenFile(string file, void delegate(FormatOutput) action) 
 {
-	auto stream = new FormatOutput(new FileOutput(file));
-	scope (exit) stream.close();
+	auto stream = new FormatOutput(new BufferOutput( new FileOutput(file)));
+ 	scope (exit) {
+ 		stream.flush();
+ 		stream.close();
+ 	}
 	action(stream);
+/+	stream.flush();
+	stream.close();+/
 }
 
 

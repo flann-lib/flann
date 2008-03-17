@@ -160,11 +160,11 @@ void fann_init()
 void fann_term()
 {
 	if (initialized) {
-		rt_term();
 		
 		delete nn_ids;
 		delete features;	
-		
+
+		rt_term();
 		initialized = false;
 	}
 }
@@ -418,7 +418,7 @@ void fann_free_index(NN_INDEX index_id, FANNParameters* fann_params)
 	catch(Exception e) {
 		logger.error("Caught exception: "~e.toString());
 	}
-// 	GC.collect();
+//  	GC.collect();
 }
 
 int fann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, IndexParameters* index_params, FANNParameters* fann_params)

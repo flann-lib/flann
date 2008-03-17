@@ -35,6 +35,7 @@ extern (C) {
  */
 static this() {
 	srand48(time(null));
+// 	srand48(0);
 }
 
 /**

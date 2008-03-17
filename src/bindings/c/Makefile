@@ -13,4 +13,4 @@ clean:
 	rm ${PROGS}
 
 % : %.c
-	g++ $< -o $@ ${LIB_DIRS} ${LIBS}
+	g++ -g $< -o $@ ${LIB_DIRS} ${LIBS}
