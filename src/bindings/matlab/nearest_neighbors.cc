@@ -1,8 +1,6 @@
 /*********************************************************************
-	Module: simulator.c (A MATLAB C module that performs an RPC call)
-	Author: Marius Muja (2007)
-	Input: a real matrix
-	Output: a real row vector
+	Module: FANN Matlab MEX interface
+	Author: Marius Muja (2008)
 ***********************************************************************/
 
 #include "mex.h"

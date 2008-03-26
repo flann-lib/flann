@@ -141,8 +141,9 @@ private {
 	}
 }
 
-void rt_init();
-void rt_term();
+bool rt_init( void delegate( Exception ) dg = null );
+bool rt_term( void delegate( Exception ) dg = null ); 
+
 
 void fann_init()
 {
@@ -207,19 +208,6 @@ void fann_log_destination(char* destination)
 	}
 }
 
-
-private Dataset!(T) makeFeatures(T)(T* dataset, int count, int length)
-{
-	T[][] vecs = allocate!(T[][])(count);
-	for (int i=0;i<count;++i) {
-		vecs[i] = dataset[0..length];
-		dataset += length;
-	}
-	auto inputData = new Dataset!(T)(vecs);
-	
-	return inputData;
-}
-
 private void initFANNParameters(FANNParameters* p)
 {
 	if (p !is null) {
@@ -250,7 +238,7 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 			features = tmp;
 		}
 		
-		auto inputData = makeFeatures(dataset,rows,cols);
+		auto inputData = new Dataset!(float)(dataset,rows,cols);
 		
 		if (index_params is null) {
 			throw new FANNException("The index_params agument must be non-null");
@@ -302,7 +290,7 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 		fann_init();
 		initFANNParameters(fann_params);
 		
-		auto inputData = makeFeatures(dataset,count,length);
+		auto inputData = new Dataset!(float)(dataset,count,length);
 
 		float target_precision = index_params.target_precision;
 				
@@ -312,7 +300,7 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 			logger.info(sprint("Building index using params: {}",params));
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
-			index.buildIndex();
+ 			index.buildIndex();
 		}
 		else {	
 			Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
@@ -427,13 +415,14 @@ int fann_compute_cluster_centers(float* dataset, int count, int length, int clus
 		fann_init();
 		initFANNParameters(fann_params);
 		
-		auto inputData = makeFeatures(dataset,count,length);
+		auto inputData = new Dataset!(float)(dataset,count,length);
+		scope(exit) delete inputData;
 
 		Params params = parametersToParams(*index_params);
 		char[] algorithm = params["algorithm"].get!(char[]);		
-		algorithm = "kmeans";
 		logger.info(sprint("Algorithm={}",algorithm));
 		NNIndex index = indexRegistry!(float)[algorithm](inputData, params);
+		scope(exit) delete index;
 		index.buildIndex();
 
 		float[][] centers = index.getClusterCenters(clusters);
@@ -445,7 +434,6 @@ int fann_compute_cluster_centers(float* dataset, int count, int length, int clus
 			result+=length;
 		}
 
-		delete index;
 		delete centers;
 // 		GC.collect();
 

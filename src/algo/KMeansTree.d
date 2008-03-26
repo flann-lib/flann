@@ -84,7 +84,7 @@ class KMeansTree(T) : NNIndex
 	
 	public this(Dataset!(T) inputData, Params params)
 	{
-		pool = new PooledAllocator();
+ 		pool = new PooledAllocator();
 		memoryCounter = 0;
 	
 		// get algorithm parameters
@@ -109,7 +109,10 @@ class KMeansTree(T) : NNIndex
 		this.vecs = inputData.vecs;
 		this.flength = inputData.cols;
 		
-		heap = new BranchHeap(inputData.rows);	
+ 		heap = new BranchHeap(inputData.rows);	
+		
+		root = null;
+
 	}
 	
 	
@@ -124,13 +127,17 @@ class KMeansTree(T) : NNIndex
 			}
 		}
 		
-		free_centers(root);
+		if (root !is null) {
+			free_centers(root);
+		}
  		debug {
 			logger.info(sprint("KMeansTree used memory: {} KB", (pool.usedMemory+memoryCounter)/1000));
 			logger.info(sprint("KMeansTree wasted memory: {} KB", pool.wastedMemory/1000));
 			logger.info(sprint("KMeansTree total memory: {} KB", (memoryCounter+pool.usedMemory+pool.wastedMemory)/1000));
  		}
 		delete pool;
+		delete heap;
+		delete indices;
 	}
 
 
@@ -159,6 +166,7 @@ class KMeansTree(T) : NNIndex
 	private static T[][] chooseCentersRandom(int k, T[][] vecs, int[] indices)
 	{
 		DistinctRandom r = new DistinctRandom(indices.length);
+		scope(exit) delete r;
 		
 		static T[][] centers;
 		if (centers is null || centers.length!=k) centers = new T[][k];

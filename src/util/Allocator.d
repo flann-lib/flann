@@ -177,7 +177,13 @@ class PooledAllocator
 	 */
 	public ~this()
 	{
-		free();
+		void *prev;
+	
+		while (base != null) {
+			prev = *(cast(void **) base);  /* Get pointer to prev block. */
+			tango.stdc.stdlib.free(base);
+			base = prev;
+		}
 	}	
 		
 	/**
@@ -229,21 +235,6 @@ class PooledAllocator
 		
 		return rloc;
 	}
-	
-	/**
-	 * Free all storage that was previously allocated to this pool.
-	 */
-	public void free()
-	{
-		void *prev;
-	
-		while (base != null) {
-			prev = *(cast(void **) base);  /* Get pointer to prev block. */
-			tango.stdc.stdlib.free(base);
-			base = prev;
-		}
-	}
-	
 	
 	/**
 	 * Allocates (using this pool) a generic type T.

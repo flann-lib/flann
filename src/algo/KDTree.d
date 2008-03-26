@@ -173,6 +173,7 @@ class KDTree(T) : NNIndex{
 			logger.info(sprint("KDTree total memory: {} KB", pool.usedMemory/1000+pool.wastedMemory/1000));
 		}
 		free(vind);
+		delete heap;
 		delete pool;
 	}
 	

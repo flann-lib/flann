@@ -40,7 +40,7 @@ void main(char[][] args)
 		execute_command("help",args[0..1]);
 	}
 	
-	GC.collect();
+// 	GC.collect();
 	return 0;	
 }
 

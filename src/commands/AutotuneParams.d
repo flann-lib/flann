@@ -82,6 +82,8 @@ class AutotuneParams : DefaultCommand
 		}
 		
 		params.save(paramsFile);
+		
+		delete index;
 	}
 	
 	void execute() 

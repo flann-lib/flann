@@ -50,6 +50,15 @@ class Dataset(T = float) {
 		vecs = dataset;
 	}
 	
+	public this(T* dataset, int rows, int cols)
+	{
+		vecs = allocate!(T[][])(rows);
+		for (int i=0;i<rows;++i) {
+			vecs[i] = dataset[0..cols];
+			dataset += cols;
+		}
+	}
+	
 	public ~this()
 	{
 		if (match !is null) {

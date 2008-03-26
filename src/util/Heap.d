@@ -40,6 +40,16 @@ class Heap(T) {
 		heap = new T[size+1];  // heap uses 1-based indexing
 		count = 0;
 	}
+	
+	
+	/**
+	 * Destructor.
+	 * 
+	 */
+	public ~this()
+	{
+		delete heap;
+	}
 
 	/**
 	 * 
