@@ -8,7 +8,6 @@ import util.Utils;
 import util.Allocator;
 import util.defines;
 import util.Logger;
-import output.Console;
 
 
 class BinaryFormatHandler(T) : FormatHandler!(T)

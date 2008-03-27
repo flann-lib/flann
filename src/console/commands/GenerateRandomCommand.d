@@ -1,12 +1,11 @@
-module commands.GenerateRandomCommand;
+module console.commands.GenerateRandomCommand;
 
-import commands.GenericCommand;
-import commands.DefaultCommand;
+import console.commands.GenericCommand;
+import console.commands.DefaultCommand;
 
 import util.Logger;
 import util.Utils;
 import util.Random;
-import output.Console;
 
 
 static this() {

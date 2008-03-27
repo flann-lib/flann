@@ -1,11 +1,10 @@
-module commands.SampleCommand;
+module console.commands.SampleCommand;
 
 import tango.text.convert.Sprint;
 
-import commands.GenericCommand;
-import commands.DefaultCommand;
+import console.commands.GenericCommand;
+import console.commands.DefaultCommand;
 import dataset.Dataset;
-import output.Console;
 import util.Logger;
 import util.Utils;
 
@@ -40,10 +39,15 @@ class SampleCommand : DefaultCommand
 	{
 		if (count>0) {
 			auto dataset = new Dataset!(T)();
-			showOperation("Reading features from input file "~file, {dataset.readFromFile(file);});
+			logger.info("Reading features from input file "~file);
+			dataset.readFromFile(file);
+			
 			Dataset!(T) sampledDataset; 
-			showOperation(sprint("Sampling {} features",count), {sampledDataset = dataset.sample(count);});
-			showOperation("Saving new dataset to file "~saveFile, {sampledDataset.writeToFile(saveFile, format);});
+			logger.info(sprint("Sampling {} features",count));
+			sampledDataset = dataset.sample(count);
+			
+			logger.info("Saving new dataset to file "~saveFile);
+			sampledDataset.writeToFile(saveFile, format);
 		}
 		else {
 			throw new FANNException("A positive number of features must be sampled.");

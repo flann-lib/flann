@@ -24,10 +24,6 @@ class CompositeTree(T) : NNIndex
 	private int flength;
 	
 	private int numTrees_;	
-
-	private this()
-	{
-	}
 	
 	public this(Dataset!(T) inputData, Params params)
 	{
@@ -38,6 +34,12 @@ class CompositeTree(T) : NNIndex
 		
 		kdtree = new KDTree!(T)(inputData,params);
 		kmeans = new KMeansTree!(T)(inputData,params);
+	}
+	
+	public ~this()
+	{
+		delete kdtree;
+		delete kmeans;
 	}
 
 

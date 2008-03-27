@@ -8,7 +8,7 @@ module main;
 
 import tango.core.Memory : GC;
 
-import commands.all;
+import console.commands.all;
 
 debug {
 import jive.stacktrace;

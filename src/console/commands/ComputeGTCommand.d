@@ -1,7 +1,7 @@
-module commands.ComputeGTCommand;
+module console.commands.ComputeGTCommand;
 
-import commands.GenericCommand;
-import commands.DefaultCommand;
+import console.commands.GenericCommand;
+import console.commands.DefaultCommand;
 import dataset.ComputeGroundTruth;
 import util.Logger;
 import util.defines;

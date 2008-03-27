@@ -1,6 +1,6 @@
-module output.FileReporter;
+module console.report.FileReporter;
 
-import output.ResultReporter;
+import console.report.ResultReporter;
 
 import util.Utils;
 import util.Registry;

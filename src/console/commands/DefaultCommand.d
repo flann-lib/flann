@@ -1,12 +1,12 @@
-module commands.DefaultCommand;
+module console.commands.DefaultCommand;
 
 // import std.string;
 import tango.core.Array : find;
 import tango.text.Util : split,trim;
 import tango.util.log.Log;
 
-import commands.GenericCommand;
-import output.Report;
+import console.commands.GenericCommand;
+import console.report.Report;
 import util.defines;
 import util.Registry;
 

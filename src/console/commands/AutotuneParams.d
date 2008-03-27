@@ -1,12 +1,11 @@
-module commands.AutotuneParams;
+module console.commands.AutotuneParams;
 
-import commands.GenericCommand;
-import commands.DefaultCommand;
+import console.commands.GenericCommand;
+import console.commands.DefaultCommand;
 import nn.Autotune;
 import nn.Testing;
 import dataset.Dataset;
 import algo.NNIndex;
-import output.Console;
 import util.Logger;
 import util.Utils;
 import util.Profile;
@@ -54,10 +53,9 @@ class AutotuneParams : DefaultCommand
 		
 		// read input data		
 		if (inputFile != "") {
-			showOperation( "Reading input data from "~inputFile, {
-				inputData = new Dataset!(T)();
-				inputData.readFromFile(inputFile);
-			});
+			logger.info( "Reading input data from "~inputFile);
+			inputData = new Dataset!(T)();
+			inputData.readFromFile(inputFile);
 		}	
 		if (inputData is null) {
 			throw new FANNException("No input data given.");
@@ -84,6 +82,7 @@ class AutotuneParams : DefaultCommand
 		params.save(paramsFile);
 		
 		delete index;
+		delete inputData;
 	}
 	
 	void execute() 

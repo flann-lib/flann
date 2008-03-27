@@ -1,16 +1,15 @@
-module commands.RunTestCommand;
+module console.commands.RunTestCommand;
 
 import tango.text.Util : split;
 import tango.util.Convert;
 import tango.time.WallClock;
 
-import commands.GenericCommand;
-import commands.IndexCommand;
+import console.commands.GenericCommand;
+import console.commands.IndexCommand;
 import nn.Testing;
 import dataset.Dataset;
 import algo.NNIndex;
-import output.Console;
-import output.Report;
+import console.report.Report;
 import util.Logger;
 import util.Utils;
 import util.Profile;
@@ -61,10 +60,9 @@ class RunTestCommand : IndexCommand
 		}
 		else +/
 		if (testFile != "") {
-			showOperation("Reading test data from "~testFile,{
-				testData = new Dataset!(float)();
-				testData.readFromFile(testFile);
-			});
+			logger.info("Reading test data from "~testFile);
+			testData = new Dataset!(float)();
+			testData.readFromFile(testFile);
 		}
 		if (testData is null) {
 			throw new FANNException("No test data given.");

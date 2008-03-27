@@ -1,2 +1,0 @@
-
-DFLAGS := -C-q,-march=k8

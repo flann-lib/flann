@@ -6,8 +6,7 @@ import algo.NNIndex;
 import dataset.Dataset;
 import util.Logger;
 import util.Profile;
-import output.Console;
-import output.Report;
+import console.report.Report;
 import algo.dist;
 import util.Utils;
 

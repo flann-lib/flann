@@ -8,7 +8,6 @@ import tango.io.Console;
 import tango.core.Vararg;
 import tango.text.convert.Layout;
 
-import util.Logger;
 import util.defines;
 
 
@@ -38,13 +37,6 @@ class ConsoleWriter {
 		
 		return this;
 	}
-}
-
-void showOperation(string message, void delegate() action)
-{
-	logger.info(message~"... ");
-	action();
-	logger.info("done");
 }
 
 

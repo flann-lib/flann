@@ -1,11 +1,10 @@
-module commands.IndexCommand;
+module console.commands.IndexCommand;
 
-import commands.GenericCommand;
-import commands.DefaultCommand;
+import console.commands.GenericCommand;
+import console.commands.DefaultCommand;
 import dataset.Dataset;
 import algo.all;
-import output.Console;
-import output.Report;
+import console.report.Report;
 import util.Logger;
 import util.Utils;
 import util.Profile;	
@@ -59,10 +58,9 @@ class IndexCommand : DefaultCommand
 		report("byte_features", byteFeatures?1:0);
 		
 		if (inputFile != "") {
-			showOperation( "Reading input data from "~inputFile, {
-				inputData!(T) = new Dataset!(T)();
-				inputData!(T).readFromFile(inputFile);
-			});
+			logger.info( "Reading input data from "~inputFile);
+			inputData!(T) = new Dataset!(T)();
+			inputData!(T).readFromFile(inputFile);
 		
 			report("dataset", inputFile);
 			report("input_count", inputData!(T).rows);

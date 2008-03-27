@@ -1,4 +1,4 @@
-module commands.GenericCommand;
+module console.commands.GenericCommand;
 
 import tango.io.Stdout;
 

@@ -5,7 +5,6 @@ Project: nn
 module dataset.ComputeGroundTruth;
 
 import algo.dist;
-import output.Console;
 import dataset.Dataset;
 import util.defines;
 import util.Logger;
@@ -83,37 +82,32 @@ void compute_gt(T)(string featuresFile, string testFile, string matchFile, int n
 	Dataset!(T) inputData;
 	Dataset!(T) testData;
 	
-	showOperation("Reading input data from "~featuresFile, {
-		inputData = new Dataset!(T)();
-		inputData.readFromFile(featuresFile);
-	});
+	logger.info("Reading input data from "~featuresFile);
+	inputData = new Dataset!(T)();
+	inputData.readFromFile(featuresFile);
 	
 	auto path = new FilePath(testFile);
 	if (path.exists() && !path.isFolder()) {
-		showOperation("Reading test data from "~testFile, {
-			testData = new Dataset!(T)();
-			testData.readFromFile(testFile);
-		});
+		logger.info("Reading test data from "~testFile);
+		testData = new Dataset!(T)();
+		testData.readFromFile(testFile);
 	} 
 	else {
-		showOperation("Sampling test data from input data and writing to "~testFile, {
-			testData = inputData.sample(1000);
-			testData.writeToFile(testFile);
-		});
-		showOperation("Writing input data to "~("new_"~featuresFile), {
-			inputData.writeToFile("new_"~featuresFile);
-		});
+		logger.info("Sampling test data from input data and writing to ");
+		testData = inputData.sample(1000);
+		testData.writeToFile(testFile);
+		
+		logger.info("Writing input data to "~("new_"~featuresFile));
+		inputData.writeToFile("new_"~featuresFile);
 	}
 
 	int matches[][];
-	showOperation("Computing ground truth", {
-		matches = computeGroundTruth(inputData, testData, nn, skip);
-	});
+	logger.info("Computing ground truth");
+	matches = computeGroundTruth(inputData, testData, nn, skip);
 
-	showOperation("Writing matches to "~matchFile, {
+	logger.info("Writing matches to "~matchFile);
 //		Dataset!(int).handler.write(matchFile,matches,"dat");
-		writeMatches(matchFile,matches);
-	});
+	writeMatches(matchFile,matches);
 	free(matches);
 
 }

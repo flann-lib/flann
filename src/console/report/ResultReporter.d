@@ -1,5 +1,5 @@
 
-module output.ResultReporter;
+module console.report.ResultReporter;
 
 import tango.text.Util : trim,split;
 

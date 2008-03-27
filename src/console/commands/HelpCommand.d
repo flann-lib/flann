@@ -1,10 +1,10 @@
-module commands.HelpCommand;
+module console.commands.HelpCommand;
 
 // import std.string;
 import tango.io.Stdout;
 
-import commands.GenericCommand;
-import commands.DefaultCommand;
+import console.commands.GenericCommand;
+import console.commands.DefaultCommand;
 import util.Logger;
 import util.defines;
 

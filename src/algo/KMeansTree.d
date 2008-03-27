@@ -574,6 +574,7 @@ class KMeansTree(T) : NNIndex
 			for (int i=0; i<nc; ++i) {
  				findExactNN(node.childs[sort_indices[i]],result,vec);
 			}
+			delete sort_indices;
 		}		
 	}
 

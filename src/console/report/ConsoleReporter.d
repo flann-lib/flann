@@ -1,8 +1,8 @@
-module output.ConsoleReporter;
+module console.report.ConsoleReporter;
 
 import tango.io.Stdout;
 
-import output.ResultReporter;
+import console.report.ResultReporter;
 import util.defines;
 import util.Registry;
 import util.Utils;

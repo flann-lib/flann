@@ -7,7 +7,6 @@ import dataset.FormatHandler;
 import util.Utils;
 import util.Allocator;
 import util.defines;
-import output.Console;
 
 class DatFormatHandler(T) : FormatHandler!(T)
 {

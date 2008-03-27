@@ -1,13 +1,12 @@
-module commands.ComputeClustersCommand;
+module console.commands.ComputeClustersCommand;
 
 import tango.text.convert.Sprint;
 
-import commands.GenericCommand;
-import commands.IndexCommand;
+import console.commands.GenericCommand;
+import console.commands.IndexCommand;
 import nn.Testing;
 import dataset.Dataset;
 import algo.NNIndex;
-import output.Console;
 import util.Logger;
 import util.Utils;
 import util.Profile;
@@ -40,10 +39,9 @@ class ComputeClustersCommand : IndexCommand
 		if (clustersFile != "") {
 			float[][] centers = index.getClusterCenters(clusters);
 			
-			showOperation((new Sprint!(char)).format("Writing {} cluster centers to file {}... ",centers.length, clustersFile),{
-				Dataset!(float).handler.write(clustersFile,centers,"dat");
-				//writeToFile(centers, clustersFile);
-			});
+			logger.info(sprint("Writing {} cluster centers to file {}... ",centers.length, clustersFile));
+			Dataset!(float).handler.write(clustersFile,centers,"dat");
+			//writeToFile(centers, clustersFile);
 		}
 		
 		delete index;

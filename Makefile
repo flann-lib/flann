@@ -1,6 +1,5 @@
 # ------------------ Compilation options ------------------------
 
-include Makefile.platform
 
 ifdef UNIT_TEST
 	DFLAGS := ${DFLAGS} -unittest -debug 
@@ -17,13 +16,11 @@ ifndef PROFILE
 endif
 	
 ifeq ($(PROFILE),debug)
-#	DFLAGS := ${DFLAGS} -g -release -C-q,-msse2
-	#DFLAGS := ${DFLAGS} -g -debug -C-q,-msse2
 	DFLAGS := ${DFLAGS} -g -debug
 endif
 ifeq (${PROFILE},release)
 #	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
-	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe
+	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe -C-q,-march=k8
 endif
 
 
@@ -57,7 +54,7 @@ export PROFILE BUILD_DIR LDPATH
 
 .PHONY: clean all rebuild compile
 
-all: program library matlab_bindings test_c_bindings
+all: program library matlab_bindings
 
 clean:
 	rm -rf ${BUILD_DIR}/*

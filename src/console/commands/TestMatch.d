@@ -1,11 +1,10 @@
-module commands.TestMatch;
+module console.commands.TestMatch;
 
 import tango.text.convert.Sprint;
 
-import commands.GenericCommand;
-import commands.DefaultCommand;
+import console.commands.GenericCommand;
+import console.commands.DefaultCommand;
 import dataset.Dataset;
-import output.Console;
 import util.Logger;
 import util.Utils;
 

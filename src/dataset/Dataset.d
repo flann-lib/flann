@@ -5,7 +5,6 @@ Project: nn
 module dataset.Dataset;
 
 import util.defines;
-import output.Console;
 import dataset.ComputeGroundTruth;
 import dataset.FormatHandler;
 import dataset.DatFormatHandler;

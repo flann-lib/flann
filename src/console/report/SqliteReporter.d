@@ -1,10 +1,10 @@
-module output.SqliteReporter;
+module console.report.SqliteReporter;
 
 import tango.io.Stdout;
 import tango.util.Convert : to;
 import tango.sys.Process;
 
-import output.ResultReporter;
+import console.report.ResultReporter;
 import util.Utils;
 import util.Logger;
 import util.Registry;

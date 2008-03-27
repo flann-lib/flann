@@ -1,9 +1,11 @@
 module algo.dist;
 
-/* Return the squared distance between two vectors. 
-	This is highly optimized, with loop unrolling, as it is one
-	of the most expensive inner loops of recognition.
-*/
+/**
+ *  Compute the squared distance between two vectors. 
+ *
+ *	This is highly optimized, with loop unrolling, as it is one
+ *	of the most expensive inner loops.
+ */
 public double squaredDist(T,U)(T[] a, U[] b) 
 {
 	double distsq = 0.0;
@@ -32,7 +34,10 @@ public double squaredDist(T,U)(T[] a, U[] b)
 	return distsq;
 }
 
-
+/**
+ *  Compute the squared distance between one vector and the origin.
+ *
+ */
 public double squaredDist(T)(T[] a) 
 {
 	
@@ -62,7 +67,7 @@ public double squaredDist(T)(T[] a)
 
 
 
-
+/+
 /**
  * Computes the squared L2 distance between two uc vectors using SSE2 instructions.
  * Gives an ~2.5x speed improvement over standard.
@@ -141,3 +146,4 @@ version (SSE2)  public float squaredDistSSE2(ubyte[] a, ubyte[] b)
 
   	return sum_sqr;
 }
++/

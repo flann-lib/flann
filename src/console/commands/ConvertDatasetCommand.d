@@ -1,11 +1,10 @@
-module commands.ConvertDatasetCommand;
+module console.commands.ConvertDatasetCommand;
 
-import commands.DefaultCommand;
-import commands.GenericCommand;
+import console.commands.DefaultCommand;
+import console.commands.GenericCommand;
 import util.defines;
-import output.Console;
 import dataset.Dataset;
-
+import util.Logger;
 
 static this() {
  	register_command!(ConvertDatasetCommand);
@@ -37,12 +36,11 @@ class ConvertDatasetCommand : DefaultCommand
 	void executeWithType(T)()
 	{
 		Dataset!(T) inputData = new Dataset!(T)();
-		showOperation("Reading input file "~inputFile, {
-			inputData.readFromFile(inputFile);
-		});
-		showOperation("Writing file "~outputFile, {
-			inputData.writeToFile(outputFile,outputFormat);
-		});
+		logger.info("Reading input file "~inputFile);
+		inputData.readFromFile(inputFile);
+		
+		logger.info("Writing file "~outputFile);
+		inputData.writeToFile(outputFile,outputFormat);
 
 	}
 	

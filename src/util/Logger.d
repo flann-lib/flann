@@ -41,4 +41,3 @@ void initLogger()
 {
 	logger.addAppender(new ConsoleAppender());
 }
-

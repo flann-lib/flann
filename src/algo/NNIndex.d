@@ -77,6 +77,12 @@ class ResultSet
 		init(target);
 	}
 	
+	public ~this()
+	{
+		delete indices;
+		delete dists;
+	}
+	
 	public void init(float[] target) 
 	{
 		this.target = target;
