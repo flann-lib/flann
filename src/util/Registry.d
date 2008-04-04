@@ -112,7 +112,7 @@ final class Registry {
 			return cast(T)creators[name](_arguments,_argptr);
 		}
 		else {
-			throw new FANNException("Cannot find creator for object: "~name);
+			throw new FLANNException("Cannot find creator for object: "~name);
 		}
 	}
 }

@@ -11,7 +11,7 @@ import algo.dist;
 import util.Utils;
 
 
-const float SEARCH_EPS = 0.10;
+const float SEARCH_EPS = 0.001;
 
 template search(bool withOutput) {
 
@@ -32,7 +32,7 @@ int countCorrectMatches(int[] neighbors, int[] groundTruth)
 	return count;
 }
 
-// TODO: fix distance computation
+
 float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 {
 	int n = neighbors.length;
@@ -55,7 +55,7 @@ float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 float search(int checks, out float time) 
 {
 	if (testData.match[0].length<nn) {
-		throw new FANNException("Ground truth is not computed for as many neighbors as requested");
+		throw new FLANNException("Ground truth is not computed for as many neighbors as requested");
 	}
 	
 	int correct;
@@ -76,7 +76,7 @@ float search(int checks, out float time)
 	},0.2);
 	
 	
-	float performance = 100*cast(float)correct/(nn*testData.rows);
+	float performance = cast(float)correct/(nn*testData.rows);
 	
 	static if (withOutput) {
 		logger.info(sprint("{,8}{,10:d2}{,12:d3}{,12:d3}{,12:d3}",
@@ -336,7 +336,7 @@ float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
 		
 		for (int i=0;i<count;++i) {
 			float c = log(checks[i]);
-			float p = 100 - precision[i];
+			float p = 1 - precision[i];
 			A[1][1] += c*c;
 			A[0][1] -= c;
 			b[0] += c*p;
@@ -351,7 +351,7 @@ float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
 		x[0] = (A[0][0]*b[0]+A[0][1]*b[1])/d;
 		x[1] = (A[1][0]*b[0]+A[1][1]*b[1])/d;
 		
-		float cx = exp((100-desiredPrecision-x[1])/x[0]);
+		float cx = exp((1-desiredPrecision-x[1])/x[0]);
 		
 		return rndint(cx);
 	}

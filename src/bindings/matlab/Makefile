@@ -34,9 +34,9 @@ all: ${BUILD_DIR}/matlab/nearest_neighbors.mexglx
 .phony: all clean
 
 
-${BUILD_DIR}/matlab/nearest_neighbors.mexglx : ${SRC_DIR}/nearest_neighbors.cc Makefile ${BUILD_DIR}/lib/libfann.a
+${BUILD_DIR}/matlab/nearest_neighbors.mexglx : ${SRC_DIR}/nearest_neighbors.cc Makefile ${LIB_TARGET}
 	@mkdir -p ${BUILD_DIR}/matlab
-	${MEX} ${INCLUDES} ${CFLAGS} $< -o $@ -L${BUILD_DIR}/lib -L${LDPATH} -lfann -lgphobos -lm -lpthread
+	${MEX} ${INCLUDES} ${CFLAGS} $< -o $@ -L${BUILD_DIR}/lib -L${LDPATH} -lflann -lgphobos -lm -lpthread
 	cp ${SRC_DIR}/*.m ${BUILD_DIR}/matlab
 
 

@@ -214,7 +214,7 @@ class PooledAllocator
 			// use the standard C malloc to allocate memory
 			void* m = tango.stdc.stdlib.malloc(blocksize);
 			if (!m) {
-				throw new FANNException("Failed to allocate memory.");
+				throw new FLANNException("Failed to allocate memory.");
 			}
 			
 			/* Fill first word of new block with pointer to previous block. */

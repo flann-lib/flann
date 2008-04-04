@@ -14,7 +14,7 @@ static this()
 	Registry.register("sqlite_reporter",function Object(TypeInfo[] arguments, va_list argptr)
 	{
 		if (arguments.length!=1 && typeid(char[])!=arguments[0]) {
-			throw new FANNException("Expected 1 argument of type char[]");
+			throw new FLANNException("Expected 1 argument of type char[]");
 		}
 			
 		return new SqliteReporter(va_arg!(char[])(argptr));

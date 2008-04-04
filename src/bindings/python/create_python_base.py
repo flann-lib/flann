@@ -29,7 +29,7 @@ from os import *
 from os.path import *
 
 # This contains the program defaults; centralized to make adding features easier
-from pyfann_parameters import *
+from pyflann_parameters import *
 
 # remove the old bindings so it recompiles if needed
 
@@ -54,7 +54,7 @@ def getLibDirs():
             join(basedir, 'bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2')]
 
 def getLibs():
-    return ['fann', 'gphobos']
+    return ['flann', 'gphobos']
 
 
 ###################################################################################
@@ -75,16 +75,16 @@ def createPythonBase(*args):
     chdir(abspath(join(basedir, 'src/bindings/python/')))
 
     try:
-        remove("fann_python_base.cpp")
+        remove("flann_python_base.cpp")
     except OSError:
         pass
 
     print "Creating extension module."
 
-    fci = ext_tools.ext_module('fann_python_base')
+    fci = ext_tools.ext_module('flann_python_base')
 
     # Add in the required headers
-    fci.customize.add_header('\"fann.h\"')
+    fci.customize.add_header('\"flann.h\"')
     fci.customize.add_header('<stdio.h>')
 
     for d in getLibDirs():
@@ -151,19 +151,19 @@ def createPythonBase(*args):
     # Ways to streamline the handling of optional parameters
     # Have to treat algorithm as special, since it's an enum.
 
-    fannparam_set_code = \
-        ("FANNParameters fannparams;\n"
-         + ''.join(['fannparams.%s = %s; %s printf("%s = %s\\n", %s);\n'
+    flannparam_set_code = \
+        ("FLANNParameters flannparams;\n"
+         + ''.join(['flannparams.%s = %s; %s printf("%s = %s\\n", %s);\n'
                     % (n, n, dbcomment, n,'%f','float(' + n + ')')
-                    for n in get_fann_param_struct_name_list()])
+                    for n in get_flann_param_struct_name_list()])
 #          + r"""
-#          if(log_destination.size() == 0) fannparams.log_destination = NULL;
-#          else fannparams.log_destination = log_destination.c_str();
+#          if(log_destination.size() == 0) flannparams.log_destination = NULL;
+#          else flannparams.log_destination = log_destination.c_str();
 #          """
-         + r"fannparams.log_destination = NULL;"
+         + r"flannparams.log_destination = NULL;"
          )
 
-    fannparam_ptr_code = r"&fannparams"
+    flannparam_ptr_code = r"&flannparams"
 
     idxparam_set_code = \
         ("IndexParameters idxparams;\n"
@@ -174,7 +174,7 @@ def createPythonBase(*args):
     
     idxparam_ptr_code = r"&idxparams"
 
-    param_set_code = fannparam_set_code + idxparam_set_code
+    param_set_code = flannparam_set_code + idxparam_set_code
 
     #################################################################################
     # Functions that do the actual interfacing. 
@@ -186,45 +186,45 @@ def createPythonBase(*args):
             float speedup = 1;
 
             py::tuple result(2);
-            result[0] = fann_build_index(dataset, npts, dim, &speedup, %s, %s);
+            result[0] = flann_build_index(dataset, npts, dim, &speedup, %s, %s);
             result[1] = speedup;
 
             return_val = result;
-            """ % (dbcomment, idxparam_ptr_code, fannparam_ptr_code),
+            """ % (dbcomment, idxparam_ptr_code, flannparam_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
             *get_param_compile_args())
 
     addFunc('del_index', 
-            fannparam_set_code + 
+            flannparam_set_code + 
             r"""
-            fann_free_index(FANN_INDEX(i), %s);
-            """ % fannparam_ptr_code, 
+            flann_free_index(FLANN_INDEX(i), %s);
+            """ % flannparam_ptr_code, 
             ('i', int(0)), 
-            *get_fann_param_compile_args())
+            *get_flann_param_compile_args())
             
     addFunc('find_nn_index',
-            fannparam_set_code + 
-            r"""fann_find_nearest_neighbors_index(FANN_INDEX(nn_index), testset, tcount,
+            flannparam_set_code + 
+            r"""flann_find_nearest_neighbors_index(FLANN_INDEX(nn_index), testset, tcount,
             (int*)result, num_neighbors, checks, %s);
-            """ % fannparam_ptr_code,
+            """ % flannparam_ptr_code,
             ('nn_index', int(0)),
             ('testset', empty(1, dtype=float32)),
             ('tcount', int(0)),
             ('result', empty(1, dtype=index_type)),
             ('num_neighbors', int(0)),
             ('checks', int(0)),
-            *get_fann_param_compile_args())
+            *get_flann_param_compile_args())
             
 
     addFunc('find_nn',
             param_set_code + 
             r"""
             %s printf("npts = %%d, dim = %%d, tcount = %%d", npts, dim, tcount);
-            fann_find_nearest_neighbors(dataset, npts, dim, testset, tcount,
+            flann_find_nearest_neighbors(dataset, npts, dim, testset, tcount,
             (int*)result, num_neighbors, %s, %s);
-            """ % (dbcomment,  idxparam_ptr_code, fannparam_ptr_code),
+            """ % (dbcomment,  idxparam_ptr_code, flannparam_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
@@ -239,8 +239,8 @@ def createPythonBase(*args):
             r"""
             // A few commands to make sure we set the parameters correctly.
             %s printf("npts = %%d, dim = %%d, num_clusters = %%d", npts, dim, num_clusters);
-            return_val = fann_compute_cluster_centers(dataset, npts, dim, num_clusters, (float*)result, %s, %s);
-            """ % (dbcomment,  idxparam_ptr_code, fannparam_ptr_code),
+            return_val = flann_compute_cluster_centers(dataset, npts, dim, num_clusters, (float*)result, %s, %s);
+            """ % (dbcomment,  idxparam_ptr_code, flannparam_ptr_code),
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),
@@ -259,13 +259,13 @@ def createPythonBase(*args):
         fci.customize.add_extra_compile_arg('-O3')
 
     fci.compile()
-    chmod('fann_python_base.so', 420)  # oct 644
+    chmod('flann_python_base.so', 420)  # oct 644
     
-    basemodule = join(cwd, 'fann_python_base.so')
+    basemodule = join(cwd, 'flann_python_base.so')
     
     chdir(cwd)
     
-    print '\nDone creating fann_python_base.\n'
+    print '\nDone creating flann_python_base.\n'
 
     return basemodule
     

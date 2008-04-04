@@ -2,16 +2,16 @@
 import sys
 from os.path import *
 import os
-from pyfann import *
+from pyflann import *
 from copy import copy
 from numpy import *
 from numpy.random import *
 import unittest
 
-class Test_PyFANN_nn(unittest.TestCase):
+class Test_PyFLANN_nn(unittest.TestCase):
 
     def setUp(self):
-        self.nn = FANN()
+        self.nn = FLANN()
 
     ################################################################################
     # The typical

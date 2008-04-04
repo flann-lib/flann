@@ -8,9 +8,9 @@ alias char[] string;
 
 
 /**
- * Exception type used thoughout the FANN library
+ * Exception type used thoughout the FLANN library
  */ 
-class FANNException : Exception
+class FLANNException : Exception
 {
 	this(char[] message) {
 		super(message);

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# This code compiles the utils_c module for the pyfann extension.
+# This code compiles the utils_c module for the pyflann extension.
 
 from numpy import *
 from scipy.weave import *

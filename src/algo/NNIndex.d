@@ -163,7 +163,7 @@ abstract class NNIndex
 	 */ 
 	int[] findCheckForPrecision(float[][] vecs, int[][] groundTruth, float[] precisions)
  	{
- 		throw new FANNException("Not implemented");
+ 		throw new FLANNException("Not implemented");
  	} 	
 	
 	/**
@@ -188,6 +188,6 @@ abstract class NNIndex
  	
  	float[][] getClusterCenters(int number) 
  	{
- 		throw new FANNException("Not implemented");
+ 		throw new FLANNException("Not implemented");
  	} 	
 }

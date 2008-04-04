@@ -3,22 +3,22 @@ from __future__ import with_statement
 import sys
 
 try:
-    import fann_python_base as fann
+    import flann_python_base as flann
 except ImportError, ie:
-    sys.stderr.write('\n\nError importing required fann_python_base module. \n')
+    sys.stderr.write('\n\nError importing required flann_python_base module. \n')
     sys.stderr.write('Please create it by executing create_python_base.py.\n\n')
     raise ie
 
 from index_type import index_type
-from pyfann_exceptions import *
+from pyflann_exceptions import *
 
 import threading
 from numpy import float32, float64, int32, matrix, array, empty
 import numpy.random as _rn
-import pyfann_parameters as params
+import pyflann_parameters as params
 from copy import copy
 
-class FANN:
+class FLANN:
     """
     This class defines a interface to Marius Muja's Fast Nearest
     Neighbor library.  The library uses one of several methods to both
@@ -37,12 +37,12 @@ class FANN:
     __rn_lock = threading.Lock()
     __rn_gen = _rn.RandomState()
     __rn_params_idx = params.get_param_struct_name_list().index('random_seed')
-    __rn_fannparams_idx = params.get_fann_param_struct_name_list().index('random_seed')
+    __rn_flannparams_idx = params.get_flann_param_struct_name_list().index('random_seed')
 
     def __init__(self, **kwargs):
         """
         Constructor for the class and returns a class that can bind to
-        the fann libraries.  Any keyword arguments passed to __init__
+        the flann libraries.  Any keyword arguments passed to __init__
         override the global defaults given.
         """
 
@@ -78,8 +78,8 @@ class FANN:
             self.__default_arg_list = [self.__processed_param_dict[n] 
                                        for n, v in params.get_param_args()]
 
-            self.__default_fann_arg_list = [self.__processed_param_dict[n]
-                                            for n, v in params.get_fann_param_args()]
+            self.__default_flann_arg_list = [self.__processed_param_dict[n]
+                                            for n, v in params.get_flann_param_args()]
 
     def getAlgorithmList(self):
         """
@@ -130,7 +130,7 @@ class FANN:
         params = self.__get_param_arg_list(kwargs)
 
         with self.__nn_lock:
-            fann.find_nn(pts_flat, npts, dim,
+            flann.find_nn(pts_flat, npts, dim,
                         querypts_flat, nqpts,
                         result, num_neighbors,
                         *params)
@@ -159,17 +159,17 @@ class FANN:
         pts_flat = self.__getFlattenedArray(pts)
         
         params = self.__get_param_arg_list(kwargs)
-        fann_params = self.__get_fann_param_arg_list(kwargs)
+        flann_params = self.__get_flann_param_arg_list(kwargs)
 
         kwargs['random_seed'] = self.__getRandomSeed(kwargs)
 
         with self.__idx_lock:
             if self.__curindex != None:
                 with self.__nn_lock:
-                    fann.del_index(self.__curindex, *fann_params)
+                    flann.del_index(self.__curindex, *flann_params)
             
             with self.__nn_lock:
-                self.__curindex, speedup = fann.make_index(pts_flat, npts, dim, *params)
+                self.__curindex, speedup = flann.make_index(pts_flat, npts, dim, *params)
 
             self.__curindex_data = pts_flat
             self.__curindex_data_shape = pts.shape
@@ -189,7 +189,7 @@ class FANN:
         """
 
         if self.__curindex == None:
-            raise FANNException("build_index(...) method not called first or current index deleted.")
+            raise FLANNException("build_index(...) method not called first or current index deleted.")
 
         npts, dim = self.__curindex_data_shape
 
@@ -208,13 +208,13 @@ class FANN:
         result = empty(nqpts * num_neighbors, dtype=index_type)
 
         checks = self.__get_one_param(kwargs, "checks")
-        fann_params = self.__get_fann_param_arg_list(kwargs)
+        flann_params = self.__get_flann_param_arg_list(kwargs)
 
         with self.__nn_lock:
-            fann.find_nn_index(self.__curindex, 
+            flann.find_nn_index(self.__curindex, 
                         querypts_flat, nqpts,
                         result, num_neighbors,
-                        checks, *fann_params)
+                        checks, *flann_params)
 
         if num_neighbors == 1:
             return result
@@ -228,12 +228,12 @@ class FANN:
         otherwise.
         """
 
-        fann_params = self.__get_fann_param_arg_list(kwargs)
+        flann_params = self.__get_flann_param_arg_list(kwargs)
         
         with self.__idx_lock:
             if self.__curindex != None:
                 with self.__nn_lock:
-                    fann.del_index(self.__curindex, *fann_params)
+                    flann.del_index(self.__curindex, *flann_params)
 
                 self.__curindex = None
                 self.__curindex_data = None
@@ -269,11 +269,11 @@ class FANN:
         clustering if any of the centroids have no associated points
         and retries up to max_retries times.  These rejected
         clusterings do not count towards the best_of_n count.
-        If max_retries is exceeded, a FANNException is raised.
+        If max_retries is exceeded, a FLANNException is raised.
         """
         
         if int(num_clusters) != num_clusters or num_clusters < 1:
-            raise FANNException('num_clusters must be an integer >= 1')
+            raise FLANNException('num_clusters must be an integer >= 1')
         
         if num_clusters == 1:
             if dtype == None or dtype == pts.dtype:
@@ -315,23 +315,23 @@ class FANN:
         clustering if any of the centroids have no associated points
         and retries up to max_retries times.  These rejected
         clusterings do not count towards the best_of_n count.
-        If max_retries is exceeded, a FANNException is raised.
+        If max_retries is exceeded, a FLANNException is raised.
         """
         
         # First verify the paremeters are sensible.
 
         if int(branch_size) != branch_size or branch_size < 2:
-            raise FANNException('branch_size must be an integer >= 2.')
+            raise FLANNException('branch_size must be an integer >= 2.')
 
         branch_size = int(branch_size)
 
         if int(num_branches) != num_branches or num_branches < 1:
-            raise FANNException('num_branches must be an integer >= 1.')
+            raise FLANNException('num_branches must be an integer >= 1.')
 
         num_branches = int(num_branches)
 
         if int(best_of_n) != best_of_n or best_of_n < 1:
-            raise FANNException('best_of_n must be an integer >= 1.')
+            raise FLANNException('best_of_n must be an integer >= 1.')
         
         best_of_n = int(best_of_n)
 
@@ -371,21 +371,21 @@ class FANN:
 
                 for i in xrange(max_retries):
                     with self.__nn_lock:
-                        numclusters = fann.run_kmeans(pts_flat, npts, dim,
+                        numclusters = flann.run_kmeans(pts_flat, npts, dim,
                                                       num_clusters, result_buf, *params)
                     if numclusters <= 0:
-                        raise FANNException('Error occured during clustering procedure, code = %d' % numclusters)
+                        raise FLANNException('Error occured during clustering procedure, code = %d' % numclusters)
                     
                     if not __hasEmpty(pts_basis, result_buf.reshape( (num_clusters, dim) ) ):
                         return
 
-                raise FANNException('Finding cluster with no empty centroids: maximum number of tries exceeded.')
+                raise FLANNException('Finding cluster with no empty centroids: maximum number of tries exceeded.')
             else:
                 with self.__nn_lock:
-                    numclusters = fann.run_kmeans(pts_flat, npts, dim,
+                    numclusters = flann.run_kmeans(pts_flat, npts, dim,
                                                   num_clusters, result_buf, *params)
                 if numclusters <= 0:
-                    raise FANNException('Error occured during clustering procedure.')
+                    raise FLANNException('Error occured during clustering procedure.')
                 
         __RunKMeans(result)
 
@@ -430,15 +430,15 @@ class FANN:
         pd = self.__update_param_dict(self.__getProcessedDefaults(), newargs)
         return [(n, pd[n]) for n, v in params.get_param_args()]
 
-    def __get_fann_params(self, newargs = {}):
+    def __get_flann_params(self, newargs = {}):
         if len(newargs) == 0:
-            return self.__default_fann_arg_list
+            return self.__default_flann_arg_list
         else:
             params.process_param_dict(newargs)
             pd = self.__update_param_dict(self.__getProcessedDefaults(), newargs)
             
             return [(n, pd[n]) for n, v in 
-                    params.get_fann_param_args()]
+                    params.get_flann_param_args()]
 
     def __get_param_arg_list(self, newargs = {}):
         if len(newargs) == 0:
@@ -446,11 +446,11 @@ class FANN:
         else:
             return [v for n,v in self.__get_params(newargs)]
 
-    def __get_fann_param_arg_list(self, newargs = {}):
+    def __get_flann_param_arg_list(self, newargs = {}):
         if len(newargs) == 0:
-            return self.__default_fann_arg_list
+            return self.__default_flann_arg_list
         else:
-            return [v for n,v in self.__get_fann_params(newargs)]
+            return [v for n,v in self.__get_flann_params(newargs)]
 
     def __print_param_arg_list(self, newargs = {}):
         print 'params: ', self.__get_params(newargs)
@@ -499,7 +499,7 @@ class FANN:
             X_flat = X.ravel()
         elif X.dtype == float64:
             X_flat = empty( X.size, dtype = float32)
-            fann.flatten_double2float(X, X_flat)
+            flann.flatten_double2float(X, X_flat)
         else:
             X_flat = float32(X.ravel())
 

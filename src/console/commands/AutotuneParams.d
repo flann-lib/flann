@@ -58,7 +58,7 @@ class AutotuneParams : DefaultCommand
 			inputData.readFromFile(inputFile);
 		}	
 		if (inputData is null) {
-			throw new FANNException("No input data given.");
+			throw new FLANNException("No input data given.");
 		}
 				
 		Params params = estimateBuildIndexParams!(T)(inputData, precision, indexFactor, memoryFactor, samplePercentage);

@@ -1,6 +1,6 @@
 	
 	
-#include "fann.h"
+#include "flann.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 	p.branching=32;
 	p.iterations=7;
 	
-	FANNParameters fp;
+	FLANNParameters fp;
 	fp.log_level = LOG_WARN;
 	fp.log_destination = NULL;
 
@@ -81,10 +81,10 @@ int main(int argc, char** argv)
 	
 	float* clusters = (float*) malloc(cluster_count*cols*sizeof(float));
 	
-   	fann_init();
+   	flann_init();
    	
 	printf("Computing clusters.\n");
-   	int c_count = fann_compute_cluster_centers(dataset,rows, cols, cluster_count, clusters, &p, &fp);
+   	int c_count = flann_compute_cluster_centers(dataset,rows, cols, cluster_count, clusters, &p, &fp);
 	
 	printf("Writing clusters to dat file.\n");
 	write_dat_file("clusters.dat",clusters, c_count, cols);

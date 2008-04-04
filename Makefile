@@ -44,8 +44,8 @@ BIN_DIR = ${CRT_DIR}/bin
 MAIN_FILE=${SRC_DIR}/main.d
 LIB_FILE=${SRC_DIR}/bindings/exports.d
 
-TARGET = ${BUILD_DIR}/bin/fann
-LIB_TARGET = ${BUILD_DIR}/lib/libfann.a
+TARGET = ${BUILD_DIR}/bin/flann
+export LIB_TARGET = ${BUILD_DIR}/lib/libflann.a
 
 
 LDPATH=${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2

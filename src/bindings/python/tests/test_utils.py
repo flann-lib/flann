@@ -1,15 +1,15 @@
 #!/usr/bin/python
 import sys
 from os.path import *
-import pyfann.utils as ut
+import pyflann.utils as ut
 import os
-from pyfann.index_type import index_type
+from pyflann.index_type import index_type
 from copy import copy
 from numpy import *
 from numpy.random import *
 import unittest
 
-class Test_PyFANN_utils(unittest.TestCase):
+class Test_PyFLANN_utils(unittest.TestCase):
 
     ################################################################################
 

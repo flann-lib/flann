@@ -183,7 +183,7 @@ struct CostData {
 const int REPEATS = 1;
 
 
-Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecision, float buildTimeFactor = 0.1, float memoryFactor = 0.1, float samplePercentage = 0.1)
+Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecision, float buildTimeFactor = 0.01, float memoryFactor = 0, float samplePercentage = 0.1)
 {	
 	// subsample datasets
 	int sampleSize = rndint(samplePercentage*inputDataset.rows);

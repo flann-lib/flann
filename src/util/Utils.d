@@ -107,7 +107,7 @@ class ScanReader
 			tmp = streamIterator.next;
 		}
 		if (tmp is null) {
-			throw new FANNException("Reading past the end of file");
+			throw new FLANNException("Reading past the end of file");
 		}
 		
 		return tmp;
@@ -216,7 +216,7 @@ struct Params
 	Variant opIndex(string index) 
 	{
 		if (!(index in data)) {
-			throw new FANNException("Cannot find param index:"~index);
+			throw new FLANNException("Cannot find param index:"~index);
 		}
 		return data[index];
 	}

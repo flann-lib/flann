@@ -4,7 +4,7 @@ their global defaults are.  Note that the type must be correct, as the
 type is used to create the c binding code.
 """
 
-from pyfann_exceptions import *
+from pyflann_exceptions import *
 
 __index_param_args =[('algorithm', "default"),
                      ('checks', 32),
@@ -14,10 +14,10 @@ __index_param_args =[('algorithm', "default"),
                      ('target_precision', -1.),
                      ('centers_init', "random")]  
 
-__fann_param_args = [('log_level', 'default'),
+__flann_param_args = [('log_level', 'default'),
                      ('random_seed', -1)]
 
-__param_args = __fann_param_args + __index_param_args
+__param_args = __flann_param_args + __index_param_args
 
 ########################################
 # dictionaries for the string parameters
@@ -39,8 +39,8 @@ __translation_dicts = {"algorithm"     : {"linear"    : 0,
 
 __translatable_set = frozenset(__translation_dicts.keys())
 
-def get_fann_param_args():
-    return __fann_param_args
+def get_flann_param_args():
+    return __flann_param_args
 
 def get_param_args():
     return __param_args
@@ -49,15 +49,15 @@ def get_param_compile_args():
     return [(k, process_param_dict({k:v})[k]) 
             for k,v in get_param_args()]
 
-def get_fann_param_compile_args():
+def get_flann_param_compile_args():
     return [(k, process_param_dict({k:v})[k]) 
-            for k,v in __fann_param_args]
+            for k,v in __flann_param_args]
 
 def get_param_struct_name_list():
     return [k for k,v in __param_args]
 
-def get_fann_param_struct_name_list():
-    return [k for k,v in __fann_param_args]
+def get_flann_param_struct_name_list():
+    return [k for k,v in __flann_param_args]
 
 def get_index_param_struct_name_list():
     return [k for k,v in __index_param_args]
@@ -68,7 +68,7 @@ def get_index_param_struct_name_list():
 def parameter_list():
     """
     Returns a list of all the possible parameters that can be passed
-    as key word arguments to the methods in FANN.
+    as key word arguments to the methods in FLANN.
     """
 
     return sorted([n for n, v in __param_args])
@@ -108,7 +108,7 @@ def __translate_strings(argdict):
             try: 
                 argdict[k] = __translation_dicts[k][val.lower()]
             except KeyError:
-                raise FANNException("\'%s\' not a valid value for \'%s\'\n" % (val, k) 
+                raise FLANNException("\'%s\' not a valid value for \'%s\'\n" % (val, k) 
                                     + "Possible string values are " 
                                     + ', '.join(sorted(__translation_dict[k].keys())))
 

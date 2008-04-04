@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 from os.path import *
-from pyfann import *
+from pyflann import *
 from guppy import hpy
 from numpy.random import rand
 
@@ -53,7 +53,7 @@ def stacksize(since=0.0):
 
 if __name__ == '__main__':
 
-    print 'Profiling Memory usage for pyfann; CTRL-C to stop.'
+    print 'Profiling Memory usage for pyflann; CTRL-C to stop.'
     print 'Increasing total process memory, relative to the python memory, '
     print 'implies a memory leak in the external libs.'
     print 'Increasing python memory implies a memory leak in the python code.'
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         
         X1 = rand(50000, 2)
         X2 = rand(50000, 2)
-        pf = FANN()
+        pf = FLANN()
         nnlist = pf.nn(X1, X2)
         del X1
         del X2

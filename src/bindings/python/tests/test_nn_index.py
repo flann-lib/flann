@@ -1,20 +1,20 @@
 #!/usr/bin/python
 
 # Now go to work
-from pyfann import *
+from pyflann import *
 from copy import copy
 from numpy import *
 from numpy.random import *
 import unittest
 
 
-class Test_PyFANN_nn(unittest.TestCase):
+class Test_PyFLANN_nn(unittest.TestCase):
 
     def setUp(self):
-        self.nn = FANN()
+        self.nn = FLANN()
 
 
-class Test_PyFANN_nn_index(unittest.TestCase):
+class Test_PyFLANN_nn_index(unittest.TestCase):
 
     def testnn_index_random_permute(self):
 
@@ -28,7 +28,7 @@ class Test_PyFANN_nn_index(unittest.TestCase):
         correct = empty(numtests, dtype=bool_)
         
         for i in permutation(numtests):
-            nns[i] = FANN()
+            nns[i] = FLANN()
             nns[i].build_index(x[i])
             
             # For kicks
@@ -50,16 +50,16 @@ class Test_PyFANN_nn_index(unittest.TestCase):
 
     def testnn_index_bad_index_call_noindex(self):
 
-        nn = FANN()
-        self.assertRaises(FANNException, lambda: nn.nn_index(rand(5,5)))
+        nn = FLANN()
+        self.assertRaises(FLANNException, lambda: nn.nn_index(rand(5,5)))
 
 
     def testnn_index_bad_index_call_delindex(self):
-        nn = FANN()
+        nn = FLANN()
         nn.build_index(rand(5,5))
         nn.delete_index()
         
-        self.assertRaises(FANNException, lambda: nn.nn_index(rand(5,5)))
+        self.assertRaises(FLANNException, lambda: nn.nn_index(rand(5,5)))
 
 
 if __name__ == '__main__':

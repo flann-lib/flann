@@ -1,19 +1,19 @@
 #!/usr/bin/python
 import sys
 from os.path import *
-from pyfann import *
-from pyfann.utils import *
+from pyflann import *
+from pyflann.utils import *
 import os
-from pyfann.index_type import index_type
+from pyflann.index_type import index_type
 from copy import copy
 from numpy import *
 from numpy.random import *
 import unittest, time
 
-class Test_PyFANN_clustering(unittest.TestCase):
+class Test_PyFLANN_clustering(unittest.TestCase):
 
     def setUp(self):
-        self.nn = FANN()
+        self.nn = FLANN()
 
     ################################################################################
 

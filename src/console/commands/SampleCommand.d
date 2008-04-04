@@ -50,7 +50,7 @@ class SampleCommand : DefaultCommand
 			sampledDataset.writeToFile(saveFile, format);
 		}
 		else {
-			throw new FANNException("A positive number of features must be sampled.");
+			throw new FLANNException("A positive number of features must be sampled.");
 		}
 	}
 	

@@ -90,7 +90,7 @@ class KMeansTree(T) : NNIndex
 		// get algorithm parameters
 		this.branching = params["branching"].get!(uint);		
 		if (branching<2) {
-			throw new FANNException("Branching factor must be at least 2");
+			throw new FLANNException("Branching factor must be at least 2");
 		}
 		int iterations = params["max-iterations"].get!(int);
 		if (iterations<0) {
@@ -103,7 +103,7 @@ class KMeansTree(T) : NNIndex
 			chooseCenters = centerAlgs[centersInit];
 		}
 		else {
-			throw new FANNException("Unknown algorithm for choosing initial centers.");
+			throw new FLANNException("Unknown algorithm for choosing initial centers.");
 		}
 		
 		this.vecs = inputData.vecs;
@@ -488,7 +488,7 @@ class KMeansTree(T) : NNIndex
 	
 		if (node.childs.length==0) {
 			if (node.indices.length==0) {
-				throw new FANNException("Reached empty cluster. This shouldn't happen.\n");
+				throw new FLANNException("Reached empty cluster. This shouldn't happen.\n");
 			}
 			
 			for (int i=0;i<node.indices.length;++i) {		
@@ -558,7 +558,7 @@ class KMeansTree(T) : NNIndex
 	
 		if (node.childs.length==0) {
 			if (node.indices.length==0) {
-				throw new FANNException("Reached empty cluster. This shouldn't happen.\n");
+				throw new FLANNException("Reached empty cluster. This shouldn't happen.\n");
 			}
 			
 			for (int i=0;i<node.indices.length;++i) {
@@ -623,7 +623,7 @@ class KMeansTree(T) : NNIndex
 	public float[][] getClusterCenters(int numClusters) 
 	{
 		if (numClusters<1) {
-			throw new FANNException("Number of clusters must be at least 1");
+			throw new FLANNException("Number of clusters must be at least 1");
 		}		
 
 		float variance;

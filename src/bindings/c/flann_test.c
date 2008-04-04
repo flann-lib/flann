@@ -1,6 +1,6 @@
 	
 	
-#include "fann.h"
+#include "flann.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,9 +73,9 @@ int main(int argc, char** argv)
 	int nn = 3;
 	int* result = (int*) malloc(tcount*nn*sizeof(int));
 	
-	fann_init();
+	flann_init();
 	
-	FANNParameters fp;
+	FLANNParameters fp;
 	fp.log_level = LOG_WARN;
 	fp.log_destination = NULL;
 	
@@ -83,8 +83,8 @@ int main(int argc, char** argv)
 	float speedup;
 	
 	printf("Computing index and optimum parameters.\n");
-	int index_id = fann_build_index(dataset, rows, cols, &speedup, &p, &fp);
-	fann_find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks, &fp);
+	int index_id = flann_build_index(dataset, rows, cols, &speedup, &p, &fp);
+	flann_find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks, &fp);
 	
 	write_dat_file("results.dat",result, tcount, nn);
 	

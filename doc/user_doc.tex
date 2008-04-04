@@ -11,7 +11,7 @@
 
 
 %opening
-\title{FANN - Fast Approximate Nearest Neighbors\\User Guide}
+\title{FLANN - Fast Approximate Nearest Neighbors\\User Guide}
 %\author{Marius Muja}
 
 \date{}
@@ -28,7 +28,7 @@ We can define the \emph{nearest neighbor search (NSS)} problem in the following 
 
 The problem of nearest neighbor search is one of major importance in a variety of applications such as image recognition, data compression, pattern recognition and classification, machine learning,  document retrieval systems, statistics and data analysis. However, solving this problem in high dimensional spaces seems to be a very difficult task and there is no algorithm that performs significantly better than the standard brute-force search. This has lead to an increasing interest in a class of algorithms that perform approximate nearest neighbor searches, which have proven to be a good-enough approximation in most practical applications and in most cases, orders of magnitude faster that the algorithms performing the exact searches.
 
-FANN (Fast Approximate Nearest Neighbors) is an application/library for performing fast approximate nearest neighbor searches. FANN is written in the D programming language (D is a C/C++ like language with a cleaner syntax, more features and just as fast as C/C++). FANN can be used in the following ways:
+FLANN (Fast Approximate Nearest Neighbors) is an application/library for performing fast approximate nearest neighbor searches. FLANN is written in the D programming language (D is a C/C++ like language with a cleaner syntax, more features and just as fast as C/C++). FLANN can be used in the following ways:
 \begin{itemize}
  \item As a standalone console application
 \item As a library that can be included in other programs. To make this easy for C/C++ programs, a set of C bindings are provided with the library.
@@ -36,9 +36,9 @@ FANN (Fast Approximate Nearest Neighbors) is an application/library for performi
 \end{itemize}
 
 
-\section{Getting and compiling FANN}
+\section{Getting and compiling FLANN}
 
-FANN can be downloaded from the following address:
+FLANN can be downloaded from the following address:
 \begin{center}
 \texttt{http://www.cs.ubc.ca/some/address/here}
 \end{center}
@@ -51,9 +51,9 @@ After downloading and unpacking the following files and directories should be pr
 \item \texttt{bin}: directory containg the gdc D compiler and build tools. Since not many system have the gdc compiler installed by default, it is distributed with the library.
 \item \texttt{build}: directory where the compiled application, library, C bindings and matlab wrapper functions are stored. It has the following subdirectories:
 \begin{itemize}
-\item \texttt{bin}: contains the command line application (\texttt{fann})
-\item \texttt{lib}: contains the compiled library (\texttt{libfann.a})
-\item \texttt{include}: contains the C bindings for the library (\texttt{fann.h})
+\item \texttt{bin}: contains the command line application (\texttt{flann})
+\item \texttt{lib}: contains the compiled library (\texttt{libflann.a})
+\item \texttt{include}: contains the C bindings for the library (\texttt{flann.h})
 \item \texttt{matlab}: contains the MATLAB wrapper functions and a MEX (Matlab EXecutable) file
 \end{itemize}
 
@@ -61,14 +61,14 @@ After downloading and unpacking the following files and directories should be pr
 
 \end{itemize}
 
-\section{Using FANN from MATLAB}
+\section{Using FLANN from MATLAB}
 
-Here is a short example of a piece of MATLAB code using the FANN library:
+Here is a short example of a piece of MATLAB code using the FLANN library:
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
 
 >> dataset = single(rand(128,10000));
 >> testset = single(rand(128,1000));
->> result = fann_search(dataset,testset,5,struct('algorithm','kdtree','trees',4));
+>> result = flann_search(dataset,testset,5,struct('algorithm','kdtree','trees',4));
 >> size(result)
 
 ans =
@@ -76,20 +76,20 @@ ans =
            5        1000
 \end{Verbatim}
 
-The FANN library can be used from MATLAB through the following wrapper functions: \texttt{fann\_build\_index}, \texttt{fann\_search} and \texttt{fann\_free\_index}. The \texttt{fann\_build\_index} function creates a search index from the dataset points, \texttt{fann\_search} uses this index to perform nearest-neighbor searches and \texttt{fann\_free\_index} deletes the index and releases the memory it uses.
+The FLANN library can be used from MATLAB through the following wrapper functions: \texttt{flann\_build\_index}, \texttt{flann\_search} and \texttt{flann\_free\_index}. The \texttt{flann\_build\_index} function creates a search index from the dataset points, \texttt{flann\_search} uses this index to perform nearest-neighbor searches and \texttt{flann\_free\_index} deletes the index and releases the memory it uses.
 
-The following sections describe in more detail the FANN matlab wrapper functions, together with examples of how they may be used.
+The following sections describe in more detail the FLANN matlab wrapper functions, together with examples of how they may be used.
 
-\paragraph{fann\_build\_index} 
+\paragraph{flann\_build\_index} 
 
 This function creates a search index from the initial dataset of points, index later used for fast nearest-neighbor searches in the dataset.
 
 \begin{Verbatim}
-[index, parameters, speedup] = fann_build_index(dataset, precision, 
+[index, parameters, speedup] = flann_build_index(dataset, precision, 
 			build_time_factor, memory_factor);
 \end{Verbatim}
 
-The arguments passed to the \texttt{fann\_build\_index} function have the following meaning:
+The arguments passed to the \texttt{flann\_build\_index} function have the following meaning:
 \begin{itemize}
 
 \item \texttt{dataset} - is a $d \times n$ matrix containing $n$ $d$-dimensional points
@@ -103,11 +103,11 @@ The arguments passed to the \texttt{fann\_build\_index} function have the follow
 
 This function returns the newly created \texttt{index}, the \texttt{parameters} used for creating the index and the \texttt{speedup} over linear search achieved when searching the index. The parameters are automatically estimated in such a way that the total cost (search time, index build time and used memory) is optimized. 
 
-Because the parameter estimation step is usualy costly, it is possible to skip this step and reuse the already computed parameters the next time an index is created from similar data points (comming from the same distribution). To reuse the computed index parameters (or to specify them manually) the \texttt{fann\_build\_index} function has to be called in the following manner:
+Because the parameter estimation step is usualy costly, it is possible to skip this step and reuse the already computed parameters the next time an index is created from similar data points (comming from the same distribution). To reuse the computed index parameters (or to specify them manually) the \texttt{flann\_build\_index} function has to be called in the following manner:
 
 
 \begin{Verbatim}
-index = fann_build_index(dataset,parameters);
+index = flann_build_index(dataset,parameters);
 \end{Verbatim}
 
  The \texttt{parameters} argument is a matlab structure containing the following parameters which are required during index creation:
@@ -124,30 +124,30 @@ index = fann_build_index(dataset,parameters);
 The above parameters have a big impact on the performance of the new search index (nearest-neighbor search time) and on the time and memory required to build the index. The optimum parameter values depend on the dataset characteristics (number of dimensions, distribution of points in the dataset) and on the application domain (desired precision for the approximate nearest neighbor searches).
 
 
-\paragraph{fann\_search}
+\paragraph{flann\_search}
 
 This function performs nearest-neighbor searchs using the index already created:
 \begin{Verbatim}
-result = fann_search(index, testset, k, parameters);
+result = flann_search(index, testset, k, parameters);
 \end{Verbatim}
 
 The arguments required by this function are:
 \begin{itemize}
- \item \texttt{index}- the index returned by the \texttt{fann\_build\_index} function
+ \item \texttt{index}- the index returned by the \texttt{flann\_build\_index} function
  \item \texttt{testset} - a $d \times m$ matrix containing $m$ test points whose k-nearest-neighbors need to be found
  \item \texttt{k} - the number of nearest neighbors to be returned for each point from \texttt{testset}
-\item \texttt{parameters} - structure containing the search parameters. Currently it has only one member, \texttt{parameters.checks}, denoting the number of times the tree(s) in the index should be recursively traversed. A higher value for this parameter would give better search precision, but also take more time. If the parameter estimation step was used when the index was created, the number of checks required to achieve the specified precision is also computed. In such case, the parameters structure returned by the \texttt{fann\_build\_index} function can be passed directly to the \texttt{fann\_search} function.
+\item \texttt{parameters} - structure containing the search parameters. Currently it has only one member, \texttt{parameters.checks}, denoting the number of times the tree(s) in the index should be recursively traversed. A higher value for this parameter would give better search precision, but also take more time. If the parameter estimation step was used when the index was created, the number of checks required to achieve the specified precision is also computed. In such case, the parameters structure returned by the \texttt{flann\_build\_index} function can be passed directly to the \texttt{flann\_search} function.
 \end{itemize}
 
 The function returns a matrix of size $k \times m$ in which each column contains the indexes (in the dataset matrix) of the $k$ nearest neighbors of the corresponding point from testset.
 
-For the case where a single search will be performed with each index, the \texttt{fann\_search} function accepts the dataset instead of the index as first argument, in which case the index is created searched and then deleted in one step.
+For the case where a single search will be performed with each index, the \texttt{flann\_search} function accepts the dataset instead of the index as first argument, in which case the index is created searched and then deleted in one step.
 \begin{Verbatim}
-result = fann_search(dataset, testset, k, parameters);
+result = flann_search(dataset, testset, k, parameters);
 \end{Verbatim}
 
 
-\paragraph{fann\_free\_index}
+\paragraph{flann\_free\_index}
 
 This function must be called to delete an index and release all the memory used by it.
 
@@ -175,7 +175,7 @@ ans =
 
          128        1000
 
->> [index, parameters] = fann_build_index(dataset, 90);
+>> [index, parameters] = flann_build_index(dataset, 90);
 >> parameters
 
 parameters = 
@@ -185,14 +185,14 @@ parameters =
      branching: 56
     iterations: 3
 
->> result = fann_search(index,testset,5,parameters);
+>> result = flann_search(index,testset,5,parameters);
 >> size(result)
 
 ans =
 
            5        1000
 
->> fann_free_index(index);
+>> flann_free_index(index);
 
 \end{Verbatim}
 
@@ -223,16 +223,16 @@ ans =
 
          128        1000
 
->> index = fann_build_index(dataset,struct('algorithm','kdtree','trees',8));
+>> index = flann_build_index(dataset,struct('algorithm','kdtree','trees',8));
 
->> result = fann_search(index,testset,5,struct('checks',128));
+>> result = flann_search(index,testset,5,struct('checks',128));
 >> size(result)
 
 ans =
 
            5        1000
 
->> fann_free_index(index);
+>> flann_free_index(index);
 
 \end{Verbatim}
 
@@ -256,7 +256,7 @@ ans =
 
          128        1000
 
->> result = fann_search(dataset,testset,5,struct('checks',128,'algorithm','kmeans',
+>> result = flann_search(dataset,testset,5,struct('checks',128,'algorithm','kmeans',
 'branching',64,'iterations',5));
 >> size(result)
 
@@ -266,14 +266,14 @@ ans =
 
 \end{Verbatim}
 
-\section{Using FANN library}
+\section{Using FLANN library}
 
-A small C++ program that uses the FANN library could look like this:
+A small C++ program that uses the FLANN library could look like this:
 
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-// file fann_example.cc
+// file flann_example.cc
 
-#include "fann.h"
+#include "flann.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -299,7 +299,7 @@ int main(int argc, char** argv)
     // allocate memory for the nearest-neighbors 
     int* result = new int[t_rows*nn];
 
-    nn_init();  // initialize the FANN library
+    nn_init();  // initialize the FLANN library
 
     Parameters p;   // index parameters are stored here
 
@@ -321,12 +321,12 @@ int main(int argc, char** argv)
 
 \end{Verbatim}
 
-As it can be seen in the above example, FANN can be easily used in C/C++ programs. In order todo that the library header file \texttt{fann.h} (located in the \texttt{build/include} directory) must be included. Also the compiler must be told where to look for that file, by adding the \texttt{build/include} directory to the compiler include path (all the paths in this document are specified relative to the library main directory, if the C/C++ program is located somethere else, the paths must adjusted accordingly). The directory can be added to the compiler include path using the \texttt{-I} compiler flag (on most Unix/Linux systems). When linking the C/C++ application the \texttt{libfann.a} library must be linked in. This is done using the \texttt{-l} compiler flag followed by the library name (\texttt{-lfann}) and by specifying the library search path (\texttt{build/lib}) with the \texttt{-L} flag. The command needed to compile the above example will be:
+As it can be seen in the above example, FLANN can be easily used in C/C++ programs. In order todo that the library header file \texttt{flann.h} (located in the \texttt{build/include} directory) must be included. Also the compiler must be told where to look for that file, by adding the \texttt{build/include} directory to the compiler include path (all the paths in this document are specified relative to the library main directory, if the C/C++ program is located somethere else, the paths must adjusted accordingly). The directory can be added to the compiler include path using the \texttt{-I} compiler flag (on most Unix/Linux systems). When linking the C/C++ application the \texttt{libflann.a} library must be linked in. This is done using the \texttt{-l} compiler flag followed by the library name (\texttt{-lflann}) and by specifying the library search path (\texttt{build/lib}) with the \texttt{-L} flag. The command needed to compile the above example will be:
 \begin{Verbatim}[fontsize=\footnotesize]
-g++ fann_example.cc -I build/include -L build/lib -o fann_example -lfann
+g++ flann_example.cc -I build/include -L build/lib -o flann_example -lflann
 \end{Verbatim}
 
-The following sections describe the C bindings offered by the FANN library:
+The following sections describe the C bindings offered by the FLANN library:
 
 \paragraph{nn\_init}
 This function performs various initializations needed by the library. It must be called once (and only once) before any other library function is called.
@@ -362,7 +362,7 @@ int compute_cluster_centers(float* dataset, int rows, int cols, int clusters, fl
 
 
 
-\section{Using FANN command line application}
+\section{Using FLANN command line application}
 
 
 

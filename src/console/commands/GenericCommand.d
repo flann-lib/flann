@@ -23,7 +23,7 @@ void register_command(alias Command)()
 void execute_command(string commandName, string[] args)
 {
 	if (!(commandName in commands)) {
-		throw new FANNException("Unknown command: "~commandName);
+		throw new FLANNException("Unknown command: "~commandName);
 	}
 	commands[commandName]().executeCommand(args);
 }

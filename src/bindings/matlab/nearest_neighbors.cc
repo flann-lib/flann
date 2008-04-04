@@ -1,10 +1,10 @@
 /*********************************************************************
-	Module: FANN Matlab MEX interface
+	Module: FLANN Matlab MEX interface
 	Author: Marius Muja (2008)
 ***********************************************************************/
 
 #include "mex.h"
-#include "fann.h"
+#include "flann.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -55,33 +55,29 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	const mxArray* pMat = InArray[3];
 
 	int pSize = mxGetN(pMat)*mxGetM(pMat);
-	if ( pSize>1 && pSize != 5) {
-		mexErrMsgTxt("Expecting params in the form: [checks algorithm_id trees branching max_iterations]");
-	}
 	
 	double* pp = mxGetPr(pMat);
 
 	IndexParameters p;
-	if (pSize==1) {
-		float target_precision = pp[0];
-		if (target_precision>100 || target_precision<0) {
-			mexErrMsgTxt("Target precision must be between 0 and 100");
+	if (*pp<0) {
+		p.target_precision = pp[1];
+		if (p.target_precision>1 || p.target_precision<0) {
+			mexErrMsgTxt("Target precision must be between 0 and 1");
 		}
-		
-		/* pp contains desired precision */
-		p.target_precision = pp[0];
+		p.build_weight = pp[2];
+		p.memory_weight = pp[3];
 	}
 	else {
 		/* pp contains index & search parameters */
-		p.checks=(int)pp[0];
+		p.checks = (int) pp[0];
 		p.algorithm = (int)pp[1];
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
-		p.target_precision = -1;
-	}
+		p.target_precision = -1;		
+	}	
 	/* do the search */
-	fann_find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p, NULL);
+	flann_find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p, NULL);
 	
 	/* Allocate memory for Output Matrix */ 
 	OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL);	
@@ -118,7 +114,7 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	}
 		
 	const mxArray* indexMat = InArray[0];
-	FANN_INDEX indexID = (FANN_INDEX) *mxGetPr(indexMat);
+	FLANN_INDEX indexID = (FLANN_INDEX) *mxGetPr(indexMat);
 	
 	const mxArray* testsetMat = InArray[1];
 	
@@ -143,7 +139,7 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	int ppSize = mxGetN(pMat)*mxGetM(pMat);
 	double* pp = mxGetPr(pMat);
 
-	fann_find_nearest_neighbors_index(indexID,testset, tcount, result, nn, (int)pp[0], NULL);
+	flann_find_nearest_neighbors_index(indexID,testset, tcount, result, nn, (int)pp[0], NULL);
 		
 	/* Allocate memory for Output Matrix */ 
 	OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL);	
@@ -181,25 +177,21 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	const mxArray* pMat = InArray[1];
 	int pSize = mxGetN(pMat)*mxGetM(pMat);
 	
-	if ( pSize>1 && pSize != 5) {
-		mexErrMsgTxt("Expecting params in the form: [checks algorithm_id trees branching max_iterations]");
-	}
 	double* pp = mxGetPr(pMat);
 
-	FANN_INDEX indexID;
+	FLANN_INDEX indexID;
 	IndexParameters p;
-	if (pSize==1) {
-		float target_precision = pp[0];
-		if (target_precision>100 || target_precision<0) {
-			mexErrMsgTxt("Target precision must be between 0 and 100");
+	if (*pp<0) {
+		p.target_precision = pp[1];
+		if (p.target_precision>1 || p.target_precision<0) {
+			mexErrMsgTxt("Target precision must be between 0 and 1");
 		}
-		
-		/* pp contains desired precision */
-		p.target_precision = pp[0];
+		p.build_weight = pp[2];
+		p.memory_weight = pp[3];
 	}
 	else {
 		/* pp contains index & search parameters */
-		p.checks=(int)pp[0];
+		p.checks = (int) pp[0];
 		p.algorithm = (int)pp[1];
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
@@ -207,9 +199,8 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		p.target_precision = -1;		
 	}	
 	
-	float speedup;
-	indexID = fann_build_index(dataset,dcount,length, &speedup, &p, NULL);
-
+	float speedup = -1;
+	indexID = flann_build_index(dataset,dcount,length, &speedup, &p, NULL);
 		
 	/* Allocate memory for Output Matrix */ 
 	OutArray[0] = mxCreateDoubleMatrix(1, 1, mxREAL);	
@@ -245,14 +236,14 @@ static void _free_index(int nOutArray, mxArray *OutArray[], int nInArray, const 
 		mexErrMsgTxt("Expecting a single scalar argument: the index ID");
 	}
 	double* indexPtr = mxGetPr(InArray[0]);
-	fann_free_index((FANN_INDEX)indexPtr[0], NULL);
+	flann_free_index((FLANN_INDEX)indexPtr[0], NULL);
 }
 
 void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
 {
 	static int started = 0;
 	if (!started) {
-   		fann_init();
+   		flann_init();
    		started = 1;
    	}
 	

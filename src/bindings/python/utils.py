@@ -1,5 +1,5 @@
 """
-This module provides some basic utilites to help with FANN.
+This module provides some basic utilites to help with FLANN.
 Currently, the utils focus on the clustering solutions, but more
 features are planned.
 """

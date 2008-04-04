@@ -44,15 +44,17 @@ struct IndexParameters {
 	int iterations;
 	int centers_init;
 	float target_precision;
+	float build_weight;
+	float memory_weight;
 };
 
-struct FANNParameters {
+struct FLANNParameters {
 	int log_level;
 	char* log_destination;
 	long random_seed;
 };
 
-alias int NN_INDEX;
+alias int FLANN_INDEX;
 
 Object nn_ids[];
 Object features[];
@@ -145,7 +147,7 @@ bool rt_init( void delegate( Exception ) dg = null );
 bool rt_term( void delegate( Exception ) dg = null ); 
 
 
-void fann_init()
+void flann_init(FLANNParameters* p = null)
 {
 	if (!initialized) {
 		rt_init();
@@ -156,9 +158,10 @@ void fann_init()
 		
 		initialized = true;
 	}
+	init_flann_parameters(p);
 }
 
-void fann_term()
+void flann_term()
 {
 	if (initialized) {
 		
@@ -170,10 +173,19 @@ void fann_term()
 	}
 }
 
-
-void fann_log_verbosity(int level)
+private void init_flann_parameters(FLANNParameters* p)
 {
-	fann_init();
+	if (p !is null) {
+ 		flann_log_verbosity(p.log_level);
+		flann_log_destination(p.log_destination);
+		srand48(p.random_seed);
+	}
+}
+
+
+void flann_log_verbosity(int level)
+{
+	flann_init();
 	Logger.Level logLevel = Logger.Level.Trace;
 	switch (level) {
 		case LOG_NONE:
@@ -195,9 +207,9 @@ void fann_log_verbosity(int level)
 	logger.setLevel(logLevel);
 }
 
-void fann_log_destination(char* destination)
+void flann_log_destination(char* destination)
 {
-	fann_init();
+	flann_init();
 
 	logger.clearAppenders();
 
@@ -208,20 +220,11 @@ void fann_log_destination(char* destination)
 	}
 }
 
-private void initFANNParameters(FANNParameters* p)
-{
-	if (p !is null) {
- 		fann_log_verbosity(p.log_level);
-		fann_log_destination(p.log_destination);
-		srand48(p.random_seed);
-	}
-}
 
-NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FANNParameters* fann_params)
+FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FLANNParameters* flann_params)
 {	
 	try {
-		fann_init();
-		initFANNParameters(fann_params);
+		flann_init(flann_params);
 		
 		StartStopTimer t = new StartStopTimer();
 		
@@ -241,7 +244,7 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 		auto inputData = new Dataset!(float)(dataset,rows,cols);
 		
 		if (index_params is null) {
-			throw new FANNException("The index_params agument must be non-null");
+			throw new FLANNException("The index_params agument must be non-null");
 		}
 		
 		float target_precision = index_params.target_precision;
@@ -256,7 +259,7 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 			t.stop();
 		}
 		else {
-			Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
+			Params params = estimateBuildIndexParams!(float)(inputData, target_precision, index_params.build_weight, index_params.memory_weight);
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
@@ -270,7 +273,7 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 		}
 		
 		logger.info(sprint("Time: {}",t.value));
-		NN_INDEX indexID = nn_ids_count++;
+		FLANN_INDEX indexID = nn_ids_count++;
 		nn_ids[indexID] = index;
 		features[indexID] = inputData;
 		return indexID;
@@ -284,11 +287,10 @@ NN_INDEX fann_build_index(float* dataset, int rows, int cols, float* speedup, In
 }
 
 
-int fann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FANNParameters* fann_params)
+int flann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FLANNParameters* flann_params)
 {
 	try {
-		fann_init();
-		initFANNParameters(fann_params);
+		flann_init(flann_params);
 		
 		auto inputData = new Dataset!(float)(dataset,count,length);
 
@@ -303,7 +305,7 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
  			index.buildIndex();
 		}
 		else {	
-			Params params = estimateBuildIndexParams!(float)(inputData, target_precision);
+			Params params = estimateBuildIndexParams!(float)(inputData, target_precision, index_params.build_weight, index_params.memory_weight);
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
@@ -342,11 +344,10 @@ int fann_find_nearest_neighbors(float* dataset, int count, int length, float* te
 // 	GC.collect();
 }
 
-int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks, FANNParameters* fann_params)
+int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks, FLANNParameters* flann_params)
 {
 	try {
-		fann_init();
-		initFANNParameters(fann_params);
+		flann_init(flann_params);
 		
 		if (index_id < nn_ids_count) {
 			Object indexObj = nn_ids[index_id];
@@ -372,11 +373,11 @@ int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tco
 				delete resultSet;
 			}
 			else {
-				throw new FANNException("Invalid index ID");
+				throw new FLANNException("Invalid index ID");
 			}
 		} 
 		else {
-			throw new FANNException("Invalid index ID");
+			throw new FLANNException("Invalid index ID");
 		}
 		return 0;
 	}
@@ -388,11 +389,10 @@ int fann_find_nearest_neighbors_index(NN_INDEX index_id, float* testset, int tco
 // 	GC.collect();
 }
 
-void fann_free_index(NN_INDEX index_id, FANNParameters* fann_params)
+void flann_free_index(FLANN_INDEX index_id, FLANNParameters* flann_params)
 {
 	try {
-		fann_init();
-		initFANNParameters(fann_params);
+		flann_init(flann_params);
 		
 		if (index_id < nn_ids_count) {
 			Object index = nn_ids[index_id];
@@ -409,11 +409,10 @@ void fann_free_index(NN_INDEX index_id, FANNParameters* fann_params)
 //  	GC.collect();
 }
 
-int fann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, IndexParameters* index_params, FANNParameters* fann_params)
+int flann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, IndexParameters* index_params, FLANNParameters* flann_params)
 {
 	try {
-		fann_init();
-		initFANNParameters(fann_params);
+		flann_init(flann_params);
 		
 		auto inputData = new Dataset!(float)(dataset,count,length);
 		scope(exit) delete inputData;

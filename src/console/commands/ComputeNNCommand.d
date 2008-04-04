@@ -49,7 +49,7 @@ class ComputeNNCommand : IndexCommand
 			testData.readFromFile(testFile);
 		}
 		if (testData is null) {
-			throw new FANNException("No test data given.");
+			throw new FLANNException("No test data given.");
 		}
 
 		

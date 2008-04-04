@@ -11,4 +11,4 @@ public import console.commands.ComputeNNCommand;
 public import console.commands.AutotuneParams;
 public import console.commands.SampleCommand;
 public import console.commands.ConvertDatasetCommand;
-// public import commands.TestMatch;
+public import console.commands.TestMatch;

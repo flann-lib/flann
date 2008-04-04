@@ -23,7 +23,7 @@ abstract class FormatHandler(T)
 			if (next) {
 				return next.read(file);
 			} else {
-				throw new FANNException("Format not recognized for file: "~file);
+				throw new FLANNException("Format not recognized for file: "~file);
 			}
 		}
 	}
@@ -36,7 +36,7 @@ abstract class FormatHandler(T)
 			if (next) {
 				next.write(file,vecs,format);
 			} else {
-				throw new FANNException("No such format: "~format);
+				throw new FLANNException("No such format: "~format);
 			}
 		}
 	}
