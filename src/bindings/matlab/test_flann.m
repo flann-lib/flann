@@ -99,10 +99,52 @@ ok = 1;
     end
     run_test('search with autotune',@test_autotune_search);
     
+    function test_index_kdtree_search
+        [index, search_params ] = flann_build_index(dataset, struct('algorithm','kdtree', 'trees',8,...
+                                                          'checks',64));                                             
+        result = flann_search(index, testset, 10, search_params);
+        n = size(match,2);      
+        precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
+        assert(precision>0.9);
+    end
+    run_test('index kd-tree search',@test_index_kdtree_search);
+    
+    function test_index_kmeans_search
+        [index, search_params ] = flann_build_index(dataset, struct('algorithm','kmeans',...
+                                                          'branching',32,...
+                                                          'iterations',3,...
+                                                          'checks',16));                                             
+        result = flann_search(index, testset, 10, search_params);
+        n = size(match,2);      
+        precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
+        assert(precision>0.9);
+    end
+    run_test('index kmeans search',@test_index_kmeans_search);
     
     
+   function test_index_composite_search
+        [index, search_params ] = flann_build_index(dataset,struct('algorithm','composite',...
+                                                          'branching',32,...
+                                                          'iterations',3,...
+                                                          'trees', 1,...
+                                                          'checks',16));                                             
+        result = flann_search(index, testset, 10, search_params);
+        n = size(match,2);      
+        precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
+        assert(precision>0.9);
+    end
+    run_test('index composite search',@test_index_composite_search);
     
-    
+   function test_index_autotune_search
+        [index, search_params, speedup ] = flann_build_index(dataset,struct('precision',0.95,...
+                                                          'build_weight',0.01,...
+                                                          'memory_weight',0));
+        result = flann_search(index, testset, 10, search_params);
+        n = size(match,2);      
+        precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
+        assert(precision>0.9);
+    end
+    run_test('index autotune search',@test_index_autotune_search);    
     
     status();
 end

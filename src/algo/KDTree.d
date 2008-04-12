@@ -7,11 +7,9 @@
  * Authors: David Lowe, initial implementation
  * 			Marius Muja, conversion to D and further changes
  * 
- * Version: 0.9
+ * Version: 1.0
  * 
- * History:
- * 
- * License:
+ * License: LGPL
  * 
  *************************************************************************/
 
@@ -69,7 +67,7 @@ class KDTree(T) : NNIndex{
 	private int checkCount;
 	
 	/**
-	 *  Array of indices to vecs.  When doing lookup, 
+	 *  Array of indices to vectors in the dataset.  When doing lookup, 
 	 *  this is used instead to mark checkID.
 	 */
 	private int[] vind;

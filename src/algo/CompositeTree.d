@@ -1,7 +1,3 @@
-/*
-Project: nn
-*/
-
 module algo.CompositeTree;
 
 import util.defines;

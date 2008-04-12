@@ -54,7 +54,7 @@ export PROFILE BUILD_DIR LDPATH
 
 .PHONY: clean all rebuild compile
 
-all: program library matlab_bindings
+all: program library matlab_bindings python_bindings
 
 clean:
 	rm -rf ${BUILD_DIR}/*
@@ -69,6 +69,9 @@ rebuild: clean all
 
 matlab_bindings: library
 	(cd src/bindings/matlab; make)
+
+python_bindings: library
+	cp -r src/bindings/python ${BUILD_DIR}
 
 test_c_bindings: library
 	(cd src/bindings/c; make)

@@ -1,3 +1,19 @@
+/************************************************************************
+ * Distance functions
+ *
+ * This module contains the distance computations used in the library.
+ * For now just the stantard euclidian distance (L_2 norm) is used.
+ * 
+ * Authors: Marius Muja, mariusm@cs.ubc.ca
+ * 
+ * Version: 1.0
+ * 
+ * History:
+ * 
+ * License: LGPL
+ * 
+ *************************************************************************/
+
 module algo.dist;
 
 /**

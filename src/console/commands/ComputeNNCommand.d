@@ -3,6 +3,7 @@ module console.commands.ComputeNNCommand;
 import console.commands.GenericCommand;
 import console.commands.IndexCommand;
 import util.Logger;
+import util.Profile;
 import util.Utils;
 import dataset.Dataset;
 import algo.NNIndex;
@@ -31,7 +32,8 @@ class ComputeNNCommand : IndexCommand
 		register(checks,"c","checks", 32,"Number of times to restart search (in best-bin-first manner).");
 		register(skipMatches,"K","skip-matches", 0u,"Skip the first NUM matches at test phase.");
  			
- 		description = super.description~" Save the cluster centers to a file.";
+ 		description = "Builds an index from a dataset and searches that index for the nearest
+neighbors of all the features in a testset.";
 	}
 	
 	void execute() 
@@ -54,33 +56,33 @@ class ComputeNNCommand : IndexCommand
 
 		
 		if (outputFile != "") {
+			float searchTime = 0;
 		
 			withOpenFile(outputFile, (FormatOutput writer) {
+			searchTime = profile({
 				logger.info("Searching...");
 			
 				ResultSet resultSet = new ResultSet(nn+skipMatches);
-				
-				logger.info(sprint("nn: {}",nn));
 			
-// 				showProgressBar(testData.rows, 70, (Ticker tick){
-					for (int i = 0; i < testData.rows; i++) {
-// 						tick();
-						
-						resultSet.init(testData.vecs[i]);
-				
-						index.findNeighbors(resultSet,testData.vecs[i], checks);			
-						
-						int[] neighbors = resultSet.getNeighbors();
-						neighbors = neighbors[skipMatches..$];
-						
-						foreach(j,neighbor;neighbors) {
-							if (j!=0) writer(" ");
-							writer(neighbor);
-						}
-						writer("\n");
+				for (int i = 0; i < testData.rows; i++) {
+					
+					resultSet.init(testData.vecs[i]);
+			
+					index.findNeighbors(resultSet,testData.vecs[i], checks);			
+					
+					int[] neighbors = resultSet.getNeighbors();
+					neighbors = neighbors[skipMatches..$];
+					
+					foreach(j,neighbor;neighbors) {
+						if (j!=0) writer(" ");
+						writer(neighbor);
 					}
-// 				});
+					writer("\n");
+				}
 			});
+			});
+			logger.info(sprint("Time to search {} vectors: {} seconds",testData.rows,searchTime));
+			logger.info("Wrote the nearest neighbors to "~outputFile);
 		}
 	}
 	

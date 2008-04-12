@@ -6,11 +6,11 @@
  * 
  * Authors: Marius Muja, mariusm@cs.ubc.ca
  * 
- * Version: 0.9
+ * Version: 1.0
  * 
  * History:
  * 
- * License:
+ * License: LGPL
  * 
  *************************************************************************/
 module algo.KMeansTree;
@@ -35,53 +35,125 @@ import tango.math.Math;
  */
 class KMeansTree(T) : NNIndex
 {
-	
+	/**
+	 * Index name.
+	 * 
+	 * Used by the AlgorithmRegistry template for registering a new algorithm with
+	 * the application. 
+	 */
 	static const NAME = "kmeans";
 
+	/**
+	 * Alias definition for a nicer syntax.
+	 */
 	alias BranchStruct!(KMeansNode) BranchSt;
-	alias Heap!(BranchSt) BranchHeap;
+	/** ditto */
+	alias Heap!(BranchSt) BranchHeap; 
 
 
-	// index parameters
+	/**
+	 * The branching factor used in the hierarchical k-means clustering
+	 */
 	public uint branching;
+	
+	/**
+	 * Maximum number of iterations to use when performing k-means 
+	 * clustering
+	 */
 	private uint max_iter;
 	
-	private T[][] vecs;
-	private int flength;
+	/**
+	 * The dataset used by this index
+	 */
+	Dataset!(T) dataset;
+	
+	/**
+	 * Priority queue storing intermediate branches in the best-bin-first search
+	 */
 	private BranchHeap heap;	
 	
+	/**
+	 * Struture representing a node in the hierarchical k-means tree. 
+	 */
 	struct KMeansNodeSt	{
+		/**
+		 * The cluster center.
+		 */
 		float[] pivot;
+		/**
+		 * The cluster radius.
+		 */
 		float radius;
+		/**
+		 * The cluster variance.
+		 */
 		float variance;
+		/**
+		 * The cluster size (number of points in the cluster)
+		 */
 		int size;
-		
+		/**
+		 * Child nodes (only for non-terminal nodes)
+		 */
 		KMeansNode[] childs;
+		/**
+		 * Node points (only for terminal nodes)
+		 */
 		int[] indices;
 	}
 	alias KMeansNodeSt* KMeansNode;
 	
 
+	/**
+	 * The root node in the tree.
+	 */
 	private KMeansNode root;
+	
+	/**
+	 *  Array of indices to vectors in the dataset. 
+	 */
 	private int[] indices;
 	
+	/**
+	 * Pooled memory allocator.
+	 * 
+	 * Using a pooled memory allocator is more efficient
+	 * than allocating memory directly when there is a large
+	 * number small of memory allocations.
+	 */
 	private	PooledAllocator pool;
+	
+	/**
+	 * Memory occupied by the index.
+	 */
 	private int memoryCounter;
-		
+	
 	alias T[][] function(int k, T[][] vecs, int[] indices) centersAlgFunction;
+	/**
+	 * Associative array with functions to use for choosing the cluster centers. 
+	 */
 	static centersAlgFunction[string] centerAlgs;
+	/**
+	 * Static initializer. Performs initialization befor the program starts.
+	 */
 	static this() {
 		centerAlgs["random"] = &chooseCentersRandom;
 		centerAlgs["gonzales"] = &chooseCentersGonzales;		
 	}
 	
+	/**
+	 * The function used for choosing the cluster centers. 
+	 */
 	private centersAlgFunction chooseCenters;
 	
 	
-	
-	
-	
-	
+	/**
+	 * Index constructor
+	 * 
+	 * Params:
+	 * 		inputData = dataset with the input features
+	 * 		params = parameters passed to the hierarchical k-means algorithm
+	 */
 	public this(Dataset!(T) inputData, Params params)
 	{
  		pool = new PooledAllocator();
@@ -106,16 +178,17 @@ class KMeansTree(T) : NNIndex
 			throw new FLANNException("Unknown algorithm for choosing initial centers.");
 		}
 		
-		this.vecs = inputData.vecs;
-		this.flength = inputData.cols;
-		
- 		heap = new BranchHeap(inputData.rows);	
-		
+		this.dataset = inputData;	
+ 		heap = new BranchHeap(inputData.rows);
 		root = null;
-
 	}
 	
 	
+	/**
+	 * Index destructor.
+	 * 
+	 * Release the memory used by the index.
+	 */
 	public ~this()
 	{
 		void free_centers(KMeansNode node) {
@@ -140,22 +213,37 @@ class KMeansTree(T) : NNIndex
 		delete indices;
 	}
 
-
+	/**
+	 * Size of the index
+	 * Returns: number of points in the index
+	 */	
 	public int size() 
 	{
 		return vecs.length;
 	}
 	
+	/**
+	 * 
+	 * Returns: length of each vector(point) in the index
+	 */
 	public int veclen() 
 	{
-		return flength;
+		return dataset.cols;
 	}
 	
+	/**
+	 * 
+	 * Returns: number of trees in the index
+	 */
 	public int numTrees()
 	{
 		return 1;
 	}
 	
+	/**
+	 * Computes the inde memory usage
+	 * Returns: memory used by the index
+	 */
 	public int usedMemory()
 	{
 		return  pool.usedMemory+pool.wastedMemory+memoryCounter;
@@ -163,6 +251,26 @@ class KMeansTree(T) : NNIndex
 
 
 
+	
+	/**
+	 * 
+	 * Returns: vectors in the dataset
+	 */
+	private T[][] vecs()
+	{
+		return dataset.vecs;
+	}
+	
+
+	/**
+	 * Chooses the initial centers in the k-means clustering in a random manner. 
+	 * 
+	 * Params:
+	 *     k = number of centers 
+	 *     vecs = the dataset of points
+	 *     indices = indices in the dataset
+	 * Returns:
+	 */
 	private static T[][] chooseCentersRandom(int k, T[][] vecs, int[] indices)
 	{
 		DistinctRandom r = new DistinctRandom(indices.length);
@@ -195,6 +303,16 @@ class KMeansTree(T) : NNIndex
 		return centers[0..index];
 	}
 
+	/**
+	 * Chooses the initial centers in the k-means using Gonzales' algorithm 
+	 * so that the centers are spaced apart from each other. 
+	 * 
+	 * Params:
+	 *     k = number of centers 
+	 *     vecs = the dataset of points
+	 *     indices = indices in the dataset
+	 * Returns:
+	 */
 	private static T[][] chooseCentersGonzales(int k, T[][] vecs, int[] indices)
 	{
 		int n = indices.length;
@@ -236,7 +354,9 @@ class KMeansTree(T) : NNIndex
 	}
 
 
-
+	/**
+	 * Builds the index
+	 */
 	public void buildIndex() 
 	{	
 		indices = new int[vecs.length];
@@ -250,12 +370,19 @@ class KMeansTree(T) : NNIndex
 	}
 	
 
+	/**
+	 * Computes the statistics of a node (mean, radius, variance).
+	 * 
+	 * Params:
+	 *     node = the node to use 
+	 *     indices = the indices of the points belonging to the node
+	 */
 	private void computeNodeStatistics(KMeansNode node, int[] indices) {
 	
 		float radius = 0;
 		float variance = 0;
-		float[] mean = allocate!(float[])(flength);
-		memoryCounter += flength*float.sizeof;
+		float[] mean = allocate!(float[])(veclen);
+		memoryCounter += veclen*float.sizeof;
 		
 		mean[] = 0;
 		
@@ -283,8 +410,18 @@ class KMeansTree(T) : NNIndex
 		node.pivot = mean;
 	}
 	
-	
-	// TODO: for 1-sized clusters don't store a cluster center (it's the same as the single cluster point)
+
+	/**
+	 * The method responsible with actually doing the recursive hierarchical
+	 * clustering
+	 * 
+	 * Params:
+	 *     node = the node to cluster 
+	 *     indices = indices of the points belonging to the current node
+	 *     branching = the branching factor to use in the clustering
+	 *     
+	 * TODO: for 1-sized clusters don't store a cluster center (it's the same as the single cluster point)
+	 */
 	private void computeClustering(KMeansNode node, int[] indices, int branching)
 	{
 		int n = indices.length;
@@ -305,7 +442,7 @@ class KMeansTree(T) : NNIndex
 			return;
 		}
 		
- 		double[][] dcenters = allocate!(double[][])(branching,flength);
+ 		double[][] dcenters = allocate!(double[][])(branching,veclen);
 		
 		mat_copy(dcenters,initial_centers);
 		
@@ -400,10 +537,10 @@ class KMeansTree(T) : NNIndex
 	
  		float[][] centers = new float[][branching];
  		foreach (ref c;centers) {
- 			c = allocate!(float[])(flength);
- 			memoryCounter += flength*float.sizeof;
+ 			c = allocate!(float[])(veclen);
+ 			memoryCounter += veclen*float.sizeof;
  		}	
-//  		pool.allocate!(float[][])(branching,flength);
+//  		pool.allocate!(float[][])(branching,veclen);
  		mat_copy(centers,dcenters);
 		free(dcenters);
 	
@@ -441,10 +578,16 @@ class KMeansTree(T) : NNIndex
 	}
 	
 	
-	
-	
-	
-	void findNeighbors(ResultSet result, float[] vec, int maxCheck)
+	/** 
+	 * Find set of nearest neighbors to vec. Their indices are stored inside
+	 * the result object. 
+	 * 
+	 * Params:
+	 *     result = the result object in which the indices of the nearest-neighbors are stored 
+	 *     vec = the vector for which to search the nearest neighbors
+	 *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
+	 */
+	public void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
 		if (maxCheck==-1) {
 			findExactNN(root, result, vec);
@@ -465,10 +608,9 @@ class KMeansTree(T) : NNIndex
 	}
 	
 	/**
-	----------------------------------------------------------------------
-		Approximate nearest neighbor search
-	----------------------------------------------------------------------
-	*/
+	 * Performs one descent in the hierarchical k-means tree. The branches not
+	 * visited are stored in a priority queue.
+	 */
 	private void findNN(KMeansNode node, ResultSet result, float[] vec)
 	{
 		// Ignore those clusters that are too far away
@@ -512,8 +654,14 @@ class KMeansTree(T) : NNIndex
 		}		
 	}
 	
-	
-	
+	/**
+	 * Helper function that computes the nearest childs of a node to a given query point.
+	 * Params:
+	 *     node = the node
+	 *     q = teh query point
+	 *     distances = array with the distances to each child node.
+	 * Returns:
+	 */	
 	private int getNearestCenter(KMeansNode node, float[] q, ref float[] distances)
 	{
 		int nc = node.childs.length;
@@ -532,12 +680,11 @@ class KMeansTree(T) : NNIndex
 	}
 	
 	
+
 	
 	/**
-	----------------------------------------------------------------------
-		Exact nearest neighbor search
-	----------------------------------------------------------------------
-	*/
+	 * Function the performs exact nearest neighbor search by traversing the entire tree. 
+	 */
 	private void findExactNN(KMeansNode node, ResultSet result, float[] vec)
 	{
 		// Ignore those clusters that are too far away
@@ -579,6 +726,11 @@ class KMeansTree(T) : NNIndex
 	}
 
 
+	/**
+	 * Helper function. 
+	 * 
+	 * I computes the order in which to traverse the child nodes of a particular node.
+	 */
 	private void getCenterOrdering(KMeansNode node, float[] q, ref int[] sort_indices)
 	{
 		int nc = node.childs.length;
@@ -602,9 +754,11 @@ class KMeansTree(T) : NNIndex
 		}		
 	}	
 	
-	/** Method that computes the distance from the query point q
-		from inside region with center c to the border between this 
-		region and the region with center p */
+	/** 
+	 * Method that computes the distance from the query point q
+	 * from inside region with center c to the border between this 
+	 * region and the region with center p 
+	 */
 	private float getDistanceToBorder(float[] p, float[] c, float[] q)
 	{		
 		float sum = 0;
@@ -620,6 +774,13 @@ class KMeansTree(T) : NNIndex
 	}
 	
 	
+	/**
+	 * Clustering function that takes a cut in the hierarchical k-means
+	 * tree and return the clusters centers of that clustering. 
+	 * Params:
+	 *     numClusters = number of clusters to have in the clustering computed
+	 * Returns: cluster centers
+	 */
 	public float[][] getClusterCenters(int numClusters) 
 	{
 		if (numClusters<1) {
@@ -644,6 +805,15 @@ class KMeansTree(T) : NNIndex
 	}
 	
 
+	/**
+	 * Helper function the descends in the hierarchical k-means tree by spliting those clusters that minimize
+	 * the overall variance of the clustering. 
+	 * Params:
+	 *     root = root node
+	 *     clusters = array with clusters centers (return value)
+	 *     varianceValue = variance of the clustering (return value)
+	 * Returns:
+	 */
 	private int getMinVarianceClusters(KMeansNode root, KMeansNode[] clusters, out float varianceValue)
 	{
 		int clusterCount = 1;

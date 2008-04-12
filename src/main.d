@@ -1,22 +1,33 @@
-
 /************************************************************************
-Project: nn
-Author: Marius Muja (2007)
-
-*************************************************************************/
+ * Fast Library for Approximate Nearest Neighbors
+ *
+ * File containing the entry point for the command line version
+ * of the FLANN library.
+ * 
+ * Authors: Marius Muja, mariusm@cs.ubc.ca
+ * 
+ * Version: 1.0
+ * 
+ * History:
+ * 
+ * License: LGPL
+ * 
+ *************************************************************************/
 module main;
 
 import tango.core.Memory : GC;
+debug {
+	import jive.stacktrace;
+}
 
 import console.commands.all;
 
-debug {
-import jive.stacktrace;
-}
 
-/** 
-	Program entry point 
-*/
+/**
+ * Program entry point
+ * Params:
+ *     args = array containing the program arguments
+ */
 void main(char[][] args)
 {
 	// don't use garbage collector... manage memory manually
@@ -40,7 +51,6 @@ void main(char[][] args)
 		execute_command("help",args[0..1]);
 	}
 	
-// 	GC.collect();
 	return 0;	
 }
 
