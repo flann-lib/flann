@@ -2,21 +2,16 @@ function [index, params, speedup] = flann_build_index(dataset, build_params)
 %FLANN_BUILD_INDEX  Builds an index for fast approximate nearest neighbors search
 %
 % [index, params, speedup] = flann_build_index(dataset, build_params) - Constructs the
-% index from the provided 'dataset' and computes the optimal parameters.
-% The optimal parameters are computed such that the searches performed with
-% this index return the nearest neighbors with a precision given by the
-% 'precision' argument (if features beeing searched have a similar
-% distribution to the features in the dataset)
-%
-% index = nn_build_index(dataset, params) - Constructs the index with the
-% parameters given in the 'params' structure. 
+% index from the provided 'dataset' and (optionally) computes the optimal parameters.
+
+% Marius Muja, January 2008
 
 
 if ~(isstruct(build_params)) 
 	error('The "build_params" argument should be a structure');
 end
 
-if isfield(build_params,'precision')
+if isfield(build_params,'target_precision')
 	build_weigh = 0.01;
 	if isfield(build_params,'build_weigh')
 		build_weigh = build_params.build_weigh;
@@ -25,7 +20,7 @@ if isfield(build_params,'precision')
 	if isfield(build_params,'memory_weigh')
 		memory_weigh = build_params.memory_weigh;
 	end
-    p = [-1 build_params.precision build_weigh memory_weigh];
+    p = [-1 build_params.target_precision build_weigh memory_weigh];
 elseif isfield(build_params,'algorithm')
 	if strcmp(build_params.algorithm,'kdtree') && ~isfield(build_params,'trees')
 		error('Missing "trees" parameter');

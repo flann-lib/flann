@@ -34,6 +34,8 @@ ok = 1;
     end
 
 
+    dataset = [];
+    testset = [];
     function test_load_data
         % load the datasets and testsets
         % use single precision for better memory efficiency
@@ -46,15 +48,13 @@ ok = 1;
     end
     run_test('Load data',@test_load_data);
     % variables form the test that we want in the outer scope
-    dataset;
-    testset;
 
+	match = [];
     function test_linear_search
         match = flann_search(dataset, testset, 10, struct('algorithm','linear'));
         assert(size(match,1) ==10 && size(match,2) == size(testset,2));
     end
     run_test('Linear search',@test_linear_search);
-    match;
 
     function test_kdtree_search
         result = flann_search(dataset, testset, 10, struct('algorithm','kdtree',...
@@ -90,7 +90,7 @@ ok = 1;
     run_test('composite search',@test_composite_search);
     
     function test_autotune_search
-        result = flann_search(dataset, testset, 10, struct('precision',0.95,...
+        result = flann_search(dataset, testset, 10, struct('target_precision',0.95,...
                                                           'build_weight',0.01,...
                                                           'memory_weight',0));
         n = size(match,2);
@@ -136,7 +136,7 @@ ok = 1;
     run_test('index composite search',@test_index_composite_search);
     
    function test_index_autotune_search
-        [index, search_params, speedup ] = flann_build_index(dataset,struct('precision',0.95,...
+        [index, search_params, speedup ] = flann_build_index(dataset,struct('target_precision',0.95,...
                                                           'build_weight',0.01,...
                                                           'memory_weight',0));
         result = flann_search(index, testset, 10, search_params);

@@ -4,7 +4,7 @@ ifndef BUILD_DIR
 endif
 
 LIBS=-lflann -lgphobos -lm -lpthread
-LIB_DIRS=-L${BUILD_DIR}/lib -L../../../bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2/ 
+LIB_DIRS=-L${BUILD_DIR}/lib
 
 SOURCES=flann_test.c test_clusters.c
 PROGS=$(patsubst %.c,%,${SOURCES})

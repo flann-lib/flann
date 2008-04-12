@@ -54,7 +54,7 @@ export PROFILE BUILD_DIR LDPATH
 
 .PHONY: clean all rebuild compile
 
-all: program library matlab_bindings python_bindings
+all: program library c_bindings matlab_bindings python_bindings 
 
 clean:
 	rm -rf ${BUILD_DIR}/*
@@ -73,7 +73,7 @@ matlab_bindings: library
 python_bindings: library
 	cp -r src/bindings/python ${BUILD_DIR}
 
-test_c_bindings: library
+c_bindings: library
 	(cd src/bindings/c; make)
 
 program:
@@ -83,4 +83,15 @@ program:
 library:
 	@mkdir -p ${BUILD_DIR}/lib
 	${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
+	cp ${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2/libgphobos.a ${BUILD_DIR}/lib
 
+dist:
+	@mkdir -p dist
+	cp -r build dist
+	cp -r src dist
+	mkdir -p dist/doc
+	cp doc/manual.pdf dist/doc
+	cp -r bin dist/bin
+	cp -r libs dist/libs
+	cp Makefile dist
+	cp README dist
