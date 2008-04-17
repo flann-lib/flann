@@ -1,0 +1,728 @@
+\documentclass[letter,10pt]{article}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{epsfig}
+\usepackage{url}
+\usepackage{fancyvrb}
+\usepackage{hyperref}
+
+
+%opening
+\title{FLANN - Fast Library for Approximate Nearest Neighbors\\[0.5cm] User
+Manual\\[1cm]}
+
+\author{Marius Muja, mariusm@cs.ubc.ca\\David Lowe, lowe@cs.ubc.ca}
+
+\date{\today}
+\begin{document}
+
+
+ \begin{titlepage}
+\vspace{10cm}
+\maketitle
+\thispagestyle{empty}
+ \end{titlepage}
+
+
+\section{Introduction}
+
+We can define the \emph{nearest neighbor search (NSS)} problem in the
+following way: given a set of points $P=p_1,p_2,\dots,p_n$ in a metric
+space $X$, these points must be preprocessed in such a way that given a new
+query point $q \in X$, finding the point in $P$ that is nearest to $q$ can
+be done quickly.
+
+The problem of nearest neighbor search is one of major importance in a
+variety of applications such as image recognition, data compression,
+pattern recognition and classification, machine learning,  document
+retrieval systems, statistics and data analysis. However, solving this
+problem in high dimensional spaces seems to be a very difficult task and
+there is no algorithm that performs significantly better than the standard
+brute-force search. This has lead to an increasing interest in a class of
+algorithms that perform approximate nearest neighbor searches, which have
+proven to be a good-enough approximation in most practical applications and
+in most cases, orders of magnitude faster that the algorithms performing
+the exact searches.
+
+FLANN (Fast Library for Approximate Nearest Neighbors) is a library for
+performing fast approximate nearest neighbor searches. FLANN is written in
+the D programming language (D is a C/C++ like language with a cleaner
+syntax, more features and that compiles to native code achieving the same
+ performnace as C/C++). FLANN can be easily used in many contexts
+through the C, MATLAB and Python bindings provided with the library. It
+can also be used as a standalone console application.
+
+
+
+\subsection{Quick Start}
+\label{sec:quickstart}
+
+
+This section contains small examples of how to use the FLANN library from
+different programming languages (C/C++, MATLAB and Python) and from the
+command line.
+
+\begin{itemize}
+
+\item \textbf{C/C++}
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+// file flann_example.cc
+
+#include "flann.h"
+#include <stdio.h>
+#include <assert.h>
+
+// Function that reads a dataset
+float* read_points(char* filename, int *rows, int *cols);
+
+int main(int argc, char** argv)
+{
+   int rows,cols;
+   int t_rows, t_cols;
+   float speedup;
+
+   // read dataset points from file dataset.dat
+   float* dataset = read_points("dataset.dat", &rows, &cols);
+   float* testset = read_points("testset.dat", &t_rows, &t_cols);
+
+   // points in dataset and testset should have the same dimensionality
+   assert(cols==t_cols);
+
+   // number of nearest neighbors to search
+   int nn = 3;
+   // allocate memory for the nearest-neighbors
+   int* result = new int[t_rows*nn];
+   // initialize the FLANN library
+   flann_init();  
+   // index parameters are stored here
+   IndexParameters p;
+   // want 90% target precision
+   // the rest of the parameters are automatically computed
+   p.target_precision = 0.9;  
+   // compute the 3 nearest-neighbors of each point in the testset
+   flann_find_nearest_neighbors(dataset, rows, cols, testset, t_rows,
+result, nn, &p, NULL);
+
+   // ...
+
+   delete dataset;
+   delete testset;
+   delete result;
+
+   return 0;
+}
+
+\end{Verbatim}
+
+
+
+\item \textbf{MATLAB}
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+% create random dataset and test set
+dataset = single(rand(128,10000));
+testset = single(rand(128,1000));
+
+% define index and search parameters
+params.algorithm = 'kdtree';
+params.trees = 8;
+params.checks = 64;
+
+% perform the nearest-neighbor search
+result = flann_search(dataset,testset,5,params);
+\end{Verbatim}
+
+\item \textbf{Python}
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+from pyflann import *
+from numpy import *
+from numpy.random import *
+
+dataset = rand(10000, 128)
+testset = rand(10000, 128)
+
+flann = FLANN()
+result = flann.nn(dataset,testset,5,algorithm="kmeans",
+               branching=32, iterations=7, checks=16);
+\end{Verbatim}
+
+\item \textbf{Command line application}
+
+
+
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+$ flann compute_nn --input-file=dataset.dat --test-file=testset.dat 
+--algorithm=kdtree --trees=8 --checks=64 --nn=5 --output-file=nn.dat
+Info  log - Reading input data from dataset.dat
+Info  log - Algorithm: kdtree
+Info  log - Building index...
+Info  log - Time to build 8 trees for 10000 vectors: 0.57 seconds
+Info  log - Reading test data from testset.dat...
+Info  log - Searching...
+Info  log - Time to search 1000 vectors: 0.07 seconds
+Info  log - Wrote the nearest neighbors to nn.dat
+\end{Verbatim}
+
+\end{itemize}
+
+
+
+\section{Getting and compiling FLANN}
+
+FLANN can be downloaded from the following address:
+\begin{center}
+\texttt{http://www.cs.ubc.ca/$\sim$mariusm/flann}
+\end{center}
+
+After downloading and unpacking, the following files and directories should
+be present:
+\begin{itemize}
+\item \texttt{Makefile}: makefile used to compile the application/library.
+\item \texttt{src}: directory containg the source files
+\item \texttt{doc}: directory containg this documentation
+\item \texttt{bin}: directory containg the gdc D compiler and build tools.
+Since not many system have the gdc compiler installed by default, it is
+distributed with the library.
+\item \texttt{build}: directory where the compiled application, library, C
+bindings and matlab wrapper functions are stored. It has the following
+subdirectories:
+\begin{itemize}
+\item \texttt{bin}: contains the command line application (\texttt{flann})
+\item \texttt{lib}: contains the compiled library (\texttt{libflann.a})
+\item \texttt{include}: contains the C bindings for the library (\texttt{flann.h})
+\item \texttt{matlab}: contains the MATLAB wrapper functions and a MEX (Matlab EXecutable) file
+\item \texttt{python}: contains the python bindings
+\end{itemize}
+
+\end{itemize}
+
+\section{Using FLANN}
+
+\subsection{Using FLANN from MATLAB}
+
+
+The FLANN library can be used from MATLAB through the following wrapper
+functions: \texttt{flann\_build\_index}, \texttt{flann\_search} and
+\texttt{flann\_free\_index}. The \texttt{flann\_build\_index} function
+creates a search index from the dataset points, \texttt{flann\_search} uses
+this index to perform nearest-neighbor searches and
+\texttt{flann\_free\_index} deletes the index and releases the memory it
+uses.
+
+The following sections describe in more detail the FLANN matlab wrapper
+functions and show examples of how they may be used.
+
+\subsubsection{flann\_build\_index}
+\label{sec:flann_build_index}
+
+This function creates a search index from the initial dataset of points,
+index used  later for fast nearest-neighbor searches in the dataset.
+
+\begin{Verbatim}
+[index, parameters, speedup] = flann_build_index(dataset,build_params);
+\end{Verbatim}
+
+
+The arguments passed to the \texttt{flann\_build\_index} function have the
+following meaning:
+\begin{description}
+
+\item [\texttt{dataset}] is a $d \times n$ matrix containing $n$
+$d$-dimensional points
+
+\item [\texttt{build\_params}] - is a MATLAB structure containing the
+parameters passed to the function.
+
+\end{description}
+
+Depending on the contents of the \texttt{build\_params} structure, the
+function has two different behaviors. If the structure contains a field
+that specifies the index type to create the function will create an index
+of that type (using index parameters which also have to be included in
+the \texttt{build\_params} structure). If the index and index parameters
+are not specified directly the function will first try to automatically
+detect the best index and index parameters to use for nearest neighbor
+search in the provided dataset.
+
+\paragraph{Using automatic index and parameter configuration}
+When using automatic configuration the  \texttt{build\_params} structure
+must contain the following fields:
+
+
+\begin{description}
+
+\item[\texttt{target\_precision}] - is a number between 0 and 1 specifying the
+percentage of the approximate nearest-neighbor searches that return the
+exact nearest-neighbor. Using a higher value for this parameter gives
+more
+accurate results, but the searching takes longer. The optimum value
+usually
+depends on the application.
+
+\item[\texttt{build\_weight}] - specifies the importance of the
+index build time reported to the nearest-neighbor search time. In some
+applications it's acceptable for the index build step to take a long time
+if the subsequent searches in the index can be performed very fast. In
+other applications it's required that the index be build as fast as
+possible even if that leads to slightly longer search times. (Default
+value: 0.01)
+
+\item[\texttt{memory\_weight}] - is used to specify the tradeoff between
+time (index build time and search time) and memory used by the index. A
+value less than 1 gives more importance to the time spent and a value
+greater than 1 gives more importance to the memory usage.
+ \end{description}
+
+
+\paragraph{Specifying the index type and parameters manually}
+
+Because the parameter estimation step is costly, it is
+possible to skip this step and reuse the already computed parameters the
+next time an index is created from similar data points (coming from the
+same distribution). To specify the index type and the index parameters
+manually, the \texttt{build\_params} structure must contain the following
+fields:
+
+
+
+\begin{description}
+\item[\texttt{algorithm}] - the algorithm to use for building the index.
+The possible values are: \texttt{'linear'}, \texttt{'kdtree'},
+\texttt{'kmeans'} and \texttt{'composite'}. The \texttt{'linear'} option
+does not create any index, it uses brute-force search in the original
+dataset points, \texttt{'kdtree'} creates one or more randomized kd-trees,
+\texttt{'kmeans'} creates a hierarchical kmeans clustering tree and
+\texttt{'composite'} is a mix of both kdtree and kmeans trees.
+\item[\texttt{trees}] - the number of randomized kd-trees to
+create. This parameter is required only when the algorithm used is
+\texttt{'kdtree'}.
+\item[\texttt{branching}] - the branching factor to use for
+the hierarchical kmeans tree creation. While kdtree is always a binary
+tree, each node in the kmeans tree may have several branches depending on
+the value of this parameter. This parameter is required only when the
+algorithm used is \texttt{'kmeans'}.
+\item[\texttt{iterations}] - the maximum number of iterations to
+use in the kmeans clustering stage when building the kmeans tree. A value
+of -1 used here means that the kmeans clustering should be performed until
+convergence. This parameter is required only when the algorithm used is
+\texttt{'kmeans'}.
+\end{description}
+
+The above parameters have a big impact on the performance of the new search
+index (nearest-neighbor search time) and on the time and memory required to
+build the index. The optimum parameter values depend on the dataset
+characteristics (number of dimensions, distribution of points in the
+dataset) and on the application domain (desired precision for the
+approximate nearest neighbor searches).
+
+
+
+
+The \texttt{flann\_build\_index} function returns the newly created
+\texttt{index}, the \texttt{parameters} used for creating the index and, if
+automatic configuration was used, an estimation of the \texttt{speedup}
+over linear search that is achieved when searching the index.
+
+
+
+
+\subsubsection{flann\_search}
+
+This function performs nearest-neighbor searches using the index already
+created:
+\begin{Verbatim}
+result = flann_search(index, testset, k, parameters);
+\end{Verbatim}
+
+The arguments required by this function are:
+\begin{description}
+\item[\texttt{index}] - the index returned by the
+\texttt{flann\_build\_index} function
+\item[\texttt{testset}] - a $d \times m$ matrix containing $m$ test points
+whose k-nearest-neighbors need to be found
+\item[\texttt{k}] - the number of nearest neighbors to be returned for each
+point from \texttt{testset}
+\item[\texttt{parameters}] - structure containing the search parameters.
+Currently it has only one member, \texttt{parameters.checks}, denoting the
+number of times the tree(s) in the index should be recursively traversed. A
+higher value for this parameter would give better search precision, but
+also take more time. If automatic configuration was used when the
+index was created, the number of checks required to achieve the specified
+precision is also computed. In such case, the parameters structure returned
+by the \texttt{flann\_build\_index} function can be passed directly to the
+\texttt{flann\_search} function.
+\end{description}
+
+The function returns a matrix of size $k \times m$ in which each column contains the indexes (in the dataset matrix) of the $k$ nearest neighbors of the corresponding point from testset.
+
+For the case where a single search will be performed with each index, the
+\texttt{flann\_search} function accepts the dataset instead of the index as
+first argument, in which case the index is created searched and then
+deleted in one step. In this case the parameters structure passed to the
+\texttt{flann\_search} function must also contain the fields of the
+\texttt{build\_params} structure that would normally be passed to the
+\texttt{flann\_build\_index} function if the index was build separately.
+\begin{Verbatim}
+result = flann_search(dataset, testset, k, parameters);
+\end{Verbatim}
+
+
+\subsubsection{flann\_free\_index}
+
+This function must be called to delete an index and release all the memory
+used by it:
+\begin{Verbatim}
+flann_free_index(index);
+\end{Verbatim}
+
+\subsubsection{Examples}
+
+Let's look at a few examples showing how the functions described above are
+used:
+
+\paragraph{Example 1:}
+
+In this example the index is constructed using automatic parameter estimation, requesting 90\% as desired precision and using the default values for the build time and memory usage factors. The index is then used to search for the nearest-neighbors of the points in the testset matrix and finally the index is deleted.
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+
+dataset = single(rand(128,10000));
+testset = single(rand(128,1000));
+
+build_params.target_precision = 0.9;
+build_params.build_weight = 0.01;
+build_params.memory_weight = 0;
+
+[index, parameters] = flann_build_index(dataset, build_params);
+
+result = flann_search(index,testset,5,parameters);
+
+flann_free_index(index);
+
+\end{Verbatim}
+
+
+
+
+% \bibliographystyle{alpha}
+% \bibliography{references}
+
+
+\paragraph{Example 2:}
+
+In this example the index constructed with the parameters specified manually.
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+
+dataset = single(rand(128,10000));
+testset = single(rand(128,1000));
+
+index = flann_build_index(dataset,struct('algorithm','kdtree','trees',8));
+
+result = flann_search(index,testset,5,struct('checks',128));
+
+flann_free_index(index);
+
+\end{Verbatim}
+
+\paragraph{Example 3:}
+
+In this example the index creation, searching and deletion are all performed in one step:
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+
+dataset = single(rand(128,10000));
+testset = single(rand(128,1000));
+
+result = flann_search(dataset,testset,5,struct('checks',128,'algorithm',...
+    'kmeans','branching',64,'iterations',5));
+
+\end{Verbatim}
+
+\subsection{Using FLANN from C/C++}
+
+FLANN can be easily used in C/C++ programs through the C bindings provided
+with the library. To use the C bindings, the library header file
+\texttt{flann.h} (located in the \texttt{build/include} directory) must be
+included. Also the compiler must be told where to look for that file, by
+adding the \texttt{build/include} directory to the compiler include path
+(all the paths in this document are specified relative to the library main
+directory). The directory can be added to the compiler include
+path using the \texttt{-I} compiler flag (on most Unix/Linux systems). When
+linking the C/C++ application the \texttt{libflann.a} and
+\texttt{libgphobos.a} libraries must be linked in. This is done using the
+\texttt{-l} compiler flag followed by the library name
+(eg. \texttt{-lflann}) and by specifying the library search path
+(\texttt{build/lib}) with the \texttt{-L} flag. The entire compile command
+that must be used will look like this:
+\begin{Verbatim}[fontsize=\footnotesize]
+g++ flann_example.cc -I build/include -L build/lib -o flann_example \
+-lflann -lgphobos
+\end{Verbatim}
+
+The following section describes the C bindings offered by the FLANN
+library:
+
+\paragraph{flann\_init()}
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+void flann_init();
+\end{Verbatim}
+This function performs various initializations needed by the library. It
+must be called before any other function from the library is called.
+
+\paragraph{flann\_term()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+void nn_term();
+\end{Verbatim}
+This is the pair of \texttt{flann\_init()} and runs finalization
+operations, such as freeing memory used by the library.
+
+
+\paragraph{flann\_build\_index()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+FLANN_INDEX flann_build_index(float* dataset, int rows, int cols,float* speedup,
+   IndexParameters* index_params, FLANNParameters* flann_params);
+\end{Verbatim}
+This function builds an index and return a reference to it. The arguments
+expected by this function are as follows:
+\begin{description}
+ \item[dataset, rows and cols] - are used to specify the input dataset of
+points: dataset is a pointer to a $\rm{rows} \times \rm{cols}$ matrix
+stored in row-major order.
+\item [speedup] - is used to return the approximate speedup over linear
+search achieved when using the automatic index and parameter configuration
+(see section \ref{sec:flann_build_index})
+\item [index\_params] - is a structure containing the parameters passed to
+the function. This structure is defined as follows:
+\begin{Verbatim}[fontsize=\footnotesize]
+struct IndexParameters {
+    int algorithm;
+    int checks;
+    int trees;
+    int branching;
+    int iterations;
+    int centers_init;
+    float target_precision;
+    float build_weight;
+    float memory_weight;
+};
+\end{Verbatim}
+
+The \texttt{algorithm} and \texttt{centers\_init} fields can take the
+following values:
+\begin{Verbatim}[fontsize=\footnotesize]
+const int LINEAR    = 0;
+const int KDTREE    = 1;
+const int KMEANS    = 2;
+const int COMPOSITE = 3;
+
+const int CENTERS_RANDOM = 0;
+const int CENTERS_GONZALES = 1;
+\end{Verbatim}
+The \texttt{algorithm} field is used to manually select the type of index
+used. The \texttt{centers\_init} field specifies how to choose the invital
+cluster centers when performing the hierarchical k-means clustering (in
+case the algorithm used is k-means): \texttt{CENTERS\_RANDOM} chooses the
+initial centers randomly and \texttt{CENTERS\_GONZALES} chooses the
+initial centers to be spaced apart from each other by using Gonzales' algorithm.
+
+The rest of the fields of the \texttt{IndexParameters} structure have the
+same meaning as described in \ref{sec:flann_build_index}.
+
+\item [flann\_params] - is a structure containing parameters that influence the
+behavior of the FLANN library functions. If a NULL value is passed, this
+argument is ignored.
+\begin{Verbatim}[fontsize=\footnotesize]
+struct FLANNParameters {
+    int log_level;
+    char* log_destination;
+    long random_seed;
+};
+\end{Verbatim}
+
+\begin{description}
+\item [random\_seed] - contains the random seed to use to initialize the random
+number generator.
+ \item[log\_level] - specifies the amount of messages generated by the FLANN
+library functions It can take the following values:
+\begin{Verbatim}[fontsize=\footnotesize]
+const int LOG_NONE  = 0;
+const int LOG_FATAL = 1;
+const int LOG_ERROR = 2;
+const int LOG_WARN  = 3;
+const int LOG_INFO  = 4;
+\end{Verbatim}
+\item [log\_destination] - contains the name of a file where these messages
+should be generated or NULL for the console.
+\end{description}
+\end{description}
+
+
+\paragraph{flann\_find\_nearest\_neighbors\_index()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, 
+   int tcount, int* result, int nn, int checks, FLANNParameters* flann_params);
+\end{Verbatim}
+This function searches for the nearest neighbors of the
+\texttt{testset} points using an index already build and referenced by
+\texttt{index\_id}. The \texttt{testset} is a matrix stored in row-major format
+with \texttt{tcount} rows and the same number of columns as the dimensionality
+of the points used to build the index. The function computes \texttt{nn}
+nearest neighbors for each point in the \texttt{testset} and stores them in the
+\texttt{result} matrix (which is a $\rm{tcount} \times \rm{nn}$ matrix stored in
+row-major format). The memory for the \texttt{result} matrix must be allocated
+before the \texttt{flann\_find\_nearest\_neighbors\_index()} function is
+called. The \texttt{checks} parameter specifies how many tree traversals should
+be performed during the search.
+
+
+
+\paragraph{flann\_find\_nearest\_neighbors()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int flann_find_nearest_neighbors(float* dataset, int count, int length,
+   float* testset, int tcount, int* result, int nn, 
+   IndexParameters* index_params, FLANNParameters* flann_params);
+\end{Verbatim}
+This function is similar to the
+\texttt{flann\_find\_nearest\_neighbors\_index()} function, but instread of
+using a previously constructed index, it constructs the index, does the nearest
+neighbor search and deletes the index in one step.
+
+
+
+
+\paragraph{flann\_free\_index()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+void flann_free_index(FLANN_INDEX index_id, FLANNParameters* flann_params);
+\end{Verbatim}
+This function deletes a previously constructed index and frees all the memory
+used by it.
+
+\bigskip
+
+See section \ref{sec:quickstart} for an example of how to use the C/C++
+bindings.
+
+\subsection{Using FLANN from python}
+
+FLANN can be used from python programs using the python bindings distributed
+with the library. The python bindings cen be installed on a system using the
+distutils script provided (setup.py), by running the following command in the
+build/python directory:
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+$ python setup.py install
+\end{Verbatim}
+
+
+To use the python FLANN bindings the package \texttt{pyflann} must be imported
+(see the python example in section \ref{sec:quickstart}). This package contains
+a class called FLANN that handles the nearest-neighbor search operations. This
+class containg the following methods:
+\begin{description}
+\item [\texttt{def build\_index(self, dataset, **kwargs)}] :\\
+    This method builds and internally stores an index to be used for future
+nearest neighbor matchings. It erases any previously stored index, so in order
+to work with multiple indexes, multiple instances of the FLANN class must be
+used. The \texttt{dataset} argument must be a 2D numpy array or a matrix. The
+rest of the arguments that can be passed to the method are the same as
+ those used in the \texttt{build\_params} structure from
+section \ref{sec:flann_build_index}. The method returns the estimated speedup
+when automatic algorithm and parameter configuration is used.
+
+\item [\texttt{def nn\_index(self, testset, num\_neighbors = 1, **kwargs)}] :\\
+    This method searches for the \texttt{num\_neighbors} nearest neighbors of
+each point in \texttt{testset} using the index computed by
+\texttt{build\_index}.
+
+\item[\texttt{def nn(self, dataset, testset, num\_neighbors = 1, **kwargs)}]:\\
+    This method builds the index, performs the nearest neighbor search and
+deleted the index, all in one step.
+
+\item [\texttt{def delete\_index(self, **kwargs)}] :\\
+    This method deletes the current index and all the data associated with it.
+It should be called to free all the memory used by the index.
+
+\end{description}
+
+
+See section \ref{sec:quickstart} for an example of how to use the Python
+bindings.
+
+
+\subsection{Using the \texttt{flann} command line application}
+
+The FLANN distribution also contains a command line application that can be
+used to perform nearest-neighbor searches using datasets stored in files. The
+application can read datasets stored in CSV format, space-separated values or
+raw binary format.
+
+The command line application takes a command name as the first argument and
+then the arguments for that command:
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+$ flann
+Usage: flann [command command_options]
+
+Commands:
+        autotune_params
+        sample
+        help
+        compute_clusters
+        compute_nn
+        generate_random
+        run_test
+        compute_gt
+        convert
+
+For more info type: flann help [command]
+\end{Verbatim}
+
+To see the possible arguments for each command, use \texttt{flann help
+<command>}. For example:
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+$ flann help compute_nn
+Command: compute_nn [options]
+Builds an index from a dataset and searches that index for the nearest
+neighbors of all the features in a testset.
+
+Options:
+  --verbosity, -v             The program verbosity (trace > info > warn > error
+> fatal > none) (Default: info)
+  --reporters, -e             Comma-delimited list of reporters to use.
+  --help, -h                  Display help message
+  --input-file, -i            Name of file with input dataset.
+  --params-file, -p           File containing 'optimum' input dataset
+parameters.
+  --algorithm, -a             The algorithm to use when constructing the index
+(kdtree, kmeans...).
+  --trees, -r                 Number of parallel trees to use (where available,
+for example kdtree).
+  --branching, -b             Branching factor (where applicable, for example
+kmeans) (default: 2).
+  --byte-features, -B         Use byte-sized feature elements.
+  --centers-init, -C          Hot to choose the initial cluster centers for
+kmeans (random, gonzales) (default: random).
+  --max-iterations, -M        Max iterations to perform for kmeans (default:
+until convergence).
+  --test-file, -t             Name of file with test dataset.
+  --output-file, -o           Output file to save the features to.
+  --nn, -n                    Number of nearest neighbors to search for.
+  --checks, -c                Number of times to restart search (in
+best-bin-first manner).
+  --skip-matches, -K          Skip the first NUM matches at test phase.
+
+\end{Verbatim}
+
+
+\section{Acknowledgments}
+
+Many thanks to Hoyt Koepke for his work on the python bindings.
+
+
+
+
+
+\end{document}
