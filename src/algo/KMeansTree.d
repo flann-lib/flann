@@ -353,6 +353,69 @@ class KMeansTree(T) : NNIndex
 		return centers[0..index];
 	}
 
+/+
+vector<Point> chooseSmartCenters(const vector<Point> &data, int numCenters, int numLocalTries) {
+	ASSERT( numCenters > 0 && numCenters <= (int)data.size() );
+	int i;
+    Scalar currentPot = 0;
+    vector<Point> centers;
+	vector<Scalar> closestDistSq;
+
+	// Choose one random center and set the closestDistSq values
+    int index = (int)(getRandomScalar() * data.size());
+    centers.push_back(data[index]);
+    for (i = 0; i < (int)data.size(); i++) {
+		closestDistSq.push_back( distSq(data[i], data[index]) );
+        currentPot += closestDistSq[i];
+    }
+
+	// Choose each center
+	for (int centerCount = 1; centerCount < numCenters; centerCount++) {
+
+        // Repeat several trials
+        Scalar bestNewPot = -1;
+        int bestNewIndex;
+        for (int localTrial = 0; localTrial < numLocalTries; localTrial++) {
+		
+    		// Choose our center - have to be slightly careful to return a valid answer even accounting
+			// for possible rounding errors
+		    Scalar randVal = getRandomScalar() * currentPot;
+            for (index = 0; index < (int)data.size()-1; index++) {
+                if (randVal <= closestDistSq[index])
+                    break;
+                else
+                    randVal -= closestDistSq[index];
+            }
+
+    		// Compute the new potential
+            Scalar newPot = 0;
+		    for (i = 0; i < (int)data.size(); i++)
+                newPot += min( distSq(data[i], data[index]), closestDistSq[i] );
+
+            // Store the best result
+            if (bestNewPot < 0 || newPot < bestNewPot) {
+                bestNewPot = newPot;
+                bestNewIndex = index;
+            }
+		}
+
+        // Add the appropriate center
+        centers.push_back(data[bestNewIndex]);
+        currentPot = bestNewPot;
+        for (i = 0; i < (int)data.size(); i++)
+            closestDistSq[i] = min( distSq(data[i], data[bestNewIndex]), closestDistSq[i] );
+	}
+		
+	return centers;
+}
++/
+
+
+
+
+
+
+
 
 	/**
 	 * Builds the index
