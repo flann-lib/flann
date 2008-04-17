@@ -20,7 +20,8 @@ ifeq ($(PROFILE),debug)
 endif
 ifeq (${PROFILE},release)
 #	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
-	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe -C-q,-march=k8
+#	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe -C-q,-march=pentium4
+	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe -C-q,-march=i686
 endif
 
 
