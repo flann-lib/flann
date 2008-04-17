@@ -20,9 +20,8 @@ ifeq ($(PROFILE),debug)
 endif
 ifeq (${PROFILE},release)
 #	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
-	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe -C-q,-march=k8
+	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe -C-q,-march=i686
 endif
-
 
 WARNS = -W -Wall
 INCLUDES = -Iinclude
@@ -54,7 +53,7 @@ export PROFILE BUILD_DIR LDPATH
 
 .PHONY: clean all rebuild compile
 
-all: program library c_bindings matlab_bindings python_bindings 
+all: program library c_bindings matlab_bindings python_bindings manual
 
 clean:
 	rm -rf ${BUILD_DIR}/*
@@ -84,6 +83,9 @@ library:
 	@mkdir -p ${BUILD_DIR}/lib
 	${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
 	cp ${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2/libgphobos.a ${BUILD_DIR}/lib
+
+manual:
+	(cd doc; make)
 
 dist:
 	@mkdir -p dist
