@@ -147,7 +147,7 @@ bool rt_init( void delegate( Exception ) dg = null );
 bool rt_term( void delegate( Exception ) dg = null ); 
 
 
-void flann_init(FLANNParameters* p = null)
+void flann_init()
 {
 	if (!initialized) {
 		rt_init();
@@ -158,7 +158,6 @@ void flann_init(FLANNParameters* p = null)
 		
 		initialized = true;
 	}
-	init_flann_parameters(p);
 }
 
 void flann_term()
@@ -224,11 +223,9 @@ void flann_log_destination(char* destination)
 FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FLANNParameters* flann_params)
 {	
 	try {
-		flann_init(flann_params);
-		
-		StartStopTimer t = new StartStopTimer();
-		
-		
+		flann_init();
+		init_flann_parameters(flann_params);
+				
 		if (nn_ids_count==nn_ids.length) {
 			// extended indices and features arrays
 			Object[] tmp = new Object[2*nn_ids_count];
@@ -254,9 +251,7 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 			Params params = parametersToParams(*index_params);
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
-			t.start();
 			index.buildIndex();
-			t.stop();
 		}
 		else {
 			Params params = estimateBuildIndexParams!(float)(inputData, target_precision, index_params.build_weight, index_params.memory_weight);
@@ -272,7 +267,6 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 			}
 		}
 		
-		logger.info(sprint("Time: {}",t.value));
 		FLANN_INDEX indexID = nn_ids_count++;
 		nn_ids[indexID] = index;
 		features[indexID] = inputData;
@@ -282,15 +276,14 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 		logger.error("Caught exception: "~e.toString());
 		return -1;
 	}
-/+	GC.setAttr(nn_ids.ptr,GC.BlkAttr.NO_SCAN);
-	GC.collect();+/
 }
 
 
 int flann_find_nearest_neighbors(float* dataset, int count, int length, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FLANNParameters* flann_params)
 {
 	try {
-		flann_init(flann_params);
+		flann_init();
+		init_flann_parameters(flann_params);
 		
 		auto inputData = new Dataset!(float)(dataset,count,length);
 
@@ -341,13 +334,13 @@ int flann_find_nearest_neighbors(float* dataset, int count, int length, float* t
 		logger.error("Caught exception: "~e.toString());
 		return -1;
 	}
-// 	GC.collect();
 }
 
 int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks, FLANNParameters* flann_params)
 {
 	try {
-		flann_init(flann_params);
+		flann_init();
+		init_flann_parameters(flann_params);
 		
 		if (index_id < nn_ids_count) {
 			Object indexObj = nn_ids[index_id];
@@ -386,13 +379,13 @@ int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int
 		return -1;
 	}
 	
-// 	GC.collect();
 }
 
 void flann_free_index(FLANN_INDEX index_id, FLANNParameters* flann_params)
 {
 	try {
-		flann_init(flann_params);
+		flann_init();
+		init_flann_parameters(flann_params);
 		
 		if (index_id < nn_ids_count) {
 			Object index = nn_ids[index_id];
@@ -412,7 +405,8 @@ void flann_free_index(FLANN_INDEX index_id, FLANNParameters* flann_params)
 int flann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, IndexParameters* index_params, FLANNParameters* flann_params)
 {
 	try {
-		flann_init(flann_params);
+		flann_init();
+		init_flann_parameters(flann_params);
 		
 		auto inputData = new Dataset!(float)(dataset,count,length);
 		scope(exit) delete inputData;
@@ -434,7 +428,6 @@ int flann_compute_cluster_centers(float* dataset, int count, int length, int clu
 		}
 
 		delete centers;
-// 		GC.collect();
 
 		return clusterNum;
 	} catch (Exception e) {
