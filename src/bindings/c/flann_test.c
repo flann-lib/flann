@@ -64,9 +64,9 @@ int main(int argc, char** argv)
 	int tcount = 1000;
 	
 	printf("Reading input data file.\n");
-	float* dataset = read_dat_file("features.dat", rows, cols);
+	float* dataset = read_dat_file("dataset.dat", rows, cols);
 	printf("Reading test data file.\n");
-	float* testset = read_dat_file("test.dat", tcount, cols);
+	float* testset = read_dat_file("testset.dat", tcount, cols);
 	
 	IndexParameters p;
 		

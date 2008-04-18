@@ -1,0 +1,36 @@
+VER=1.0
+
+dist: dist-bin-linux dist-src dist-gdc
+	
+
+dist-bin-linux:
+	rm -rf dist/flann-${VER}-linux*
+	@mkdir -p dist/flann-${VER}-linux
+	cp -r build/* dist/flann-${VER}-linux
+	rm -rf dist/flann-${VER}-linux/python/*utils*
+	rm -rf dist/flann-${VER}-linux/python/tests/*utils*
+	rm -rf dist/flann-${VER}-linux/python/tests/*memusage*
+	mkdir -p dist/flann-${VER}-linux/doc
+	cp doc/manual.pdf dist/flann-${VER}-linux/doc
+	cp README dist/flann-${VER}-linux
+	cp -r data dist/flann-${VER}-linux
+	(cd dist; zip -r -9 flann-${VER}-linux.zip flann-${VER}-linux)
+
+
+dist-src:
+	rm -rf dist/flann-${VER}-src*
+	@mkdir -p dist/flann-${VER}-src
+	cp -r src dist/flann-${VER}-src
+	mkdir -p dist/flann-${VER}-src/doc
+	cp doc/manual.pdf dist/flann-${VER}-src/doc
+	mkdir -p dist/flann-${VER}-src/bin
+	(cd bin; cp -r `ls | grep -v gdc` ../dist/flann-${VER}-src/bin)
+	cp Makefile dist/flann-${VER}-src
+	cp README dist/flann-${VER}-src
+	(cd dist; zip -r -9 flann-${VER}-src.zip flann-${VER}-src)
+
+dist-gdc:
+	rm -rf dist/gdc
+	@mkdir -p dist
+	cp -r bin/gdc dist
+	(cd dist; zip -r -9 gdc.zip gdc)
