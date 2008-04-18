@@ -16,9 +16,9 @@
 module main;
 
 import tango.core.Memory : GC;
-debug {
-	import jive.stacktrace;
-}
+// debug {
+// 	import jive.stacktrace;
+// }
 
 import console.commands.all;
 

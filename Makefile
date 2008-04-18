@@ -54,7 +54,7 @@ export PROFILE BUILD_DIR LDPATH
 
 .PHONY: clean all rebuild compile
 
-all: program library c_bindings matlab_bindings python_bindings manual
+all: program library c_bindings matlab_bindings python_bindings
 
 clean:
 	rm -rf ${BUILD_DIR}/*
@@ -85,16 +85,20 @@ library:
 	${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
 	cp ${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2/libgphobos.a ${BUILD_DIR}/lib
 
-manual:
-	(cd doc; make)
+dist-bin-inux:
+	@mkdir -p dist/flann-1.0-linux
+	cp -r build dist/flann-1.0-linux
+	mkdir -p dist/flann-1.0-linux/doc
+	cp doc/manual.pdf dist/flann-1.0-linux/doc
+	cp README dist/flann-1.0-linux/doc
 
-dist:
-	@mkdir -p dist
-	cp -r build dist
-	cp -r src dist
-	mkdir -p dist/doc
-	cp doc/manual.pdf dist/doc
-	cp -r bin dist/bin
-	cp -r libs dist/libs
-	cp Makefile dist
-	cp README dist
+
+dist-src:
+	@mkdir -p dist/flann-1.0-src
+	cp -r src dist/flann-1.0-src
+	mkdir -p dist/flann-1.0-src/doc
+	cp doc/manual.pdf dist/flann-1.0-src/doc
+	mkdir -p dist/flann-1.0-src/bin
+	cp -r bin/{build,rebuild,rebuild.1,rebuild.conf} dist/flann-1.0-src/bin
+	cp Makefile dist/flann-1.0-src
+	cp README dist/flann-1.0-src
