@@ -24,6 +24,8 @@ def createUtilsC():
     #utils_c_ext.customize.add_extra_compile_arg('--debug')
 
     utils_c_ext.customize.add_extra_compile_arg('-O3')
+    utils_c_ext.customize.add_extra_compile_arg('-Wno-write-strings')
+    utils_c_ext.customize.add_extra_compile_arg('-Wno-unused')
 
     # A helper function to make the code more concise
     def addFunc(name, code, *varlist):

@@ -50,8 +50,8 @@ def getIncludeDirs():
 def getLibDirs():
     basedir = getBaseDir()
     return [ '../lib',
-			'../../../build/lib',
-            join(basedir, 'bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2')]
+             '../../../build/lib',
+             join(basedir, 'bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2')]
 
 def getLibs():
     return ['flann', 'gphobos']
@@ -93,8 +93,11 @@ def createPythonBase(*args):
         fci.customize.add_include_dir(d)
     for l in getLibs():
         fci.customize.add_library(l)    
+
     fci.customize.add_extra_compile_arg('-Wno-unused-variable')
     fci.customize.add_extra_compile_arg('-Wno-deprecated')
+    fci.customize.add_extra_compile_arg('-Wno-write-strings')
+    fci.customize.add_extra_compile_arg('-Wno-unused')
     
     # A helper function to make the code more concise
     def addFunc(name, code, *varlist):
@@ -109,17 +112,6 @@ def createPythonBase(*args):
 
         args = [n for n, v in varlist]
         vardict = dict(varlist)
-
-        code = (code
-                .replace('\n         ', '\n')
-                .replace('\n        ', '\n')
-                .replace('\n       ', '\n')
-                .replace('\n      ', '\n')
-                .replace('\n     ', '\n')
-                .replace('\n    ', '\n')
-                .replace('\n   ', '\n')
-                .replace('\n  ', '\n')
-                .replace('\n ', '\n'))
                 
         fci.add_function(ext_tools.ext_function(name, code, args, local_dict = vardict))
 
