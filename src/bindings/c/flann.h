@@ -10,6 +10,8 @@ const int COMPOSITE = 3;
 
 const int CENTERS_RANDOM = 0;
 const int CENTERS_GONZALES = 1;
+const int CENTERS_KMEANSPP = 2;
+
 
 const int LOG_NONE	= 0;
 const int LOG_FATAL	= 1;

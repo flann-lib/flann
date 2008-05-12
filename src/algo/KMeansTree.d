@@ -139,6 +139,7 @@ class KMeansTree(T) : NNIndex
 	static this() {
 		centerAlgs["random"] = &chooseCentersRandom;
 		centerAlgs["gonzales"] = &chooseCentersGonzales;		
+		centerAlgs["kmeanspp"] = &chooseCentersKMeanspp;
 	}
 	
 	/**
@@ -354,6 +355,83 @@ class KMeansTree(T) : NNIndex
 	}
 
 
+	/**
+	 * Chooses the initial centers in the k-means using the algorithm 
+	 * proposed in the KMeans++ paper:
+	 * Arthur, David; Vassilvitskii, Sergei - k-means++: The Advantages of Careful Seeding
+	 * 
+	 * Params:
+	 *     k = number of centers 
+	 *     vecs = the dataset of points
+	 *     indices = indices in the dataset
+	 * Returns:
+	 */
+	private static T[][] chooseCentersKMeanspp(int k, T[][] vecs, int[] indices)
+	{
+		int n = indices.length;
+		
+		double currentPot = 0;
+		static T[][] centers;
+		static double[] closestDistSq;
+		if (centers is null || centers.length!=k) {
+			centers = new T[][k];
+			closestDistSq = new double[n];
+		}
+
+		// Choose one random center and set the closestDistSq values
+		int index = cast(int) (drand48() * n);  
+		assert(index >=0 && index < n);
+		centers[0] = vecs[indices[index]];
+		
+		for (int i = 0; i < n; i++) {
+			closestDistSq[i] = squaredDist(vecs[indices[i]], vecs[indices[index]]);
+			currentPot += closestDistSq[i];
+		}
+
+
+	const int numLocalTries = 1;
+
+	// Choose each center
+	int centerCount;
+	for (centerCount = 1; centerCount < k; centerCount++) {
+
+        // Repeat several trials
+        double bestNewPot = -1;
+        int bestNewIndex; 
+        for (int localTrial = 0; localTrial < numLocalTries; localTrial++) {
+		
+    		// Choose our center - have to be slightly careful to return a valid answer even accounting
+			// for possible rounding errors
+		    double randVal = drand48() * currentPot;
+            for (index = 0; index < n-1; index++) {
+                if (randVal <= closestDistSq[index])
+                    break;
+                else
+                    randVal -= closestDistSq[index];
+            }
+
+    		// Compute the new potential
+            double newPot = 0;
+		    for (int i = 0; i < n; i++)
+                newPot += min( squaredDist(vecs[indices[i]], vecs[indices[index]]), closestDistSq[i] );
+
+            // Store the best result
+            if (bestNewPot < 0 || newPot < bestNewPot) {
+                bestNewPot = newPot;
+                bestNewIndex = index;
+            }
+		}
+
+        // Add the appropriate center
+        centers[centerCount] = vecs[indices[bestNewIndex]];
+        currentPot = bestNewPot;
+        for (int i = 0; i < n; i++)
+            closestDistSq[i] = min( squaredDist(vecs[indices[i]], vecs[indices[bestNewIndex]]), closestDistSq[i] );
+	}
+
+		
+		return centers[0..centerCount];
+	}
 
 
 

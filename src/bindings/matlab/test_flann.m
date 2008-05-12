@@ -47,7 +47,6 @@ ok = 1;
         assert(size(dataset,1) == size(testset,1));
     end
     run_test('Load data',@test_load_data);
-    % variables form the test that we want in the outer scope
 
 	match = [];
     function test_linear_search
@@ -77,6 +76,8 @@ ok = 1;
     end
     run_test('k-means search',@test_kmeans_search);
 
+    
+    
     function test_composite_search
         result = flann_search(dataset, testset, 10, struct('algorithm','composite',...
                                                           'branching',32,...
@@ -97,7 +98,7 @@ ok = 1;
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
     end
-    run_test('search with autotune',@test_autotune_search);
+    %run_test('search with autotune',@test_autotune_search);
     
     function test_index_kdtree_search
         [index, search_params ] = flann_build_index(dataset, struct('algorithm','kdtree', 'trees',8,...
@@ -121,8 +122,33 @@ ok = 1;
     end
     run_test('index kmeans search',@test_index_kmeans_search);
     
+    function test_index_kmeans_search_gonzales
+        [index, search_params ] = flann_build_index(dataset, struct('algorithm','kmeans',...
+                                                          'branching',32,...
+                                                          'iterations',3,...
+                                                          'checks',16,...
+                                                          'centers_init','gonzales'));                                             
+        result = flann_search(index, testset, 10, search_params);
+        n = size(match,2);      
+        precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
+        assert(precision>0.9);
+    end
+    run_test('index kmeans search gonzales',@test_index_kmeans_search_gonzales);
     
-   function test_index_composite_search
+    function test_index_kmeans_search_kmeanspp
+        [index, search_params ] = flann_build_index(dataset, struct('algorithm','kmeans',...
+                                                          'branching',32,...
+                                                          'iterations',3,...
+                                                          'checks',16,...
+                                                          'centers_init','kmeanspp'));                                             
+        result = flann_search(index, testset, 10, search_params);
+        n = size(match,2);      
+        precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
+        assert(precision>0.9);
+    end
+    run_test('index kmeans search kmeanspp',@test_index_kmeans_search_kmeanspp);
+
+    function test_index_composite_search
         [index, search_params ] = flann_build_index(dataset,struct('algorithm','composite',...
                                                           'branching',32,...
                                                           'iterations',3,...
@@ -144,7 +170,7 @@ ok = 1;
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
     end
-    run_test('index autotune search',@test_index_autotune_search);    
+    %run_test('index autotune search',@test_index_autotune_search);    
     
     status();
 end

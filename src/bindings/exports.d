@@ -28,6 +28,7 @@ const int COMPOSITE = 3;
 
 const int CENTERS_RANDOM = 0;
 const int CENTERS_GONZALES = 1;
+const int CENTERS_KMEANSPP = 2;
 
 const int LOG_NONE	= 0;
 const int LOG_FATAL	= 1;
@@ -71,7 +72,7 @@ static this()
 
 private {
 	char[][] algos = [ "linear","kdtree", "kmeans", "composite" ];
-	char[][] centers_algos = [ "random", "gonzales" ];
+	char[][] centers_algos = [ "random", "gonzales", "kmeanspp" ];
 	
 	Params parametersToParams(IndexParameters parameters)
 	{
@@ -249,6 +250,7 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 		NNIndex index;
 		if (target_precision < 0) {
 			Params params = parametersToParams(*index_params);
+			logger.info(sprint("Building index using params: {}",params));
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
 			index.buildIndex();
@@ -293,7 +295,7 @@ int flann_find_nearest_neighbors(float* dataset, int count, int length, float* t
 		if (target_precision < 0) {
 			Params params = parametersToParams(*index_params);
 			logger.info(sprint("Building index using params: {}",params));
-			char[] algorithm = params["algorithm"].get!(char[]);		
+			char[] algorithm = params["algorithm"].get!(char[]);
 			index = indexRegistry!(float)[algorithm](inputData, params);
  			index.buildIndex();
 		}

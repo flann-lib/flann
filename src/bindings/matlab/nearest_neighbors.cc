@@ -74,6 +74,7 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
+		p.centers_init = (int) pp[5];
 		p.target_precision = -1;		
 	}	
 	/* do the search */
@@ -90,7 +91,7 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	free(result);
 	
 	if (nOutArray > 1) {
-		OutArray[1] = mxCreateDoubleMatrix(1, 5, mxREAL);
+		OutArray[1] = mxCreateDoubleMatrix(1, 6, mxREAL);
 		double* pParams = mxGetPr(OutArray[1]);
 		
 		pParams[0] = p.checks;
@@ -98,6 +99,7 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 		pParams[2] = p.trees;
 		pParams[3] = p.branching;
 		pParams[4] = p.iterations;
+		pParams[5] = p.centers_init;
 	}
 }
 
@@ -196,6 +198,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		p.trees=(int)pp[2];
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
+		p.centers_init = (int) pp[5];
 		p.target_precision = -1;		
 	}	
 	
@@ -210,7 +213,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	pOut[0] = indexID;
 
 	if (nOutArray > 1) {
-		OutArray[1] = mxCreateDoubleMatrix(1, 5, mxREAL);
+		OutArray[1] = mxCreateDoubleMatrix(1, 6, mxREAL);
 		double* pParams = mxGetPr(OutArray[1]);
 		
 		pParams[0] = p.checks;
@@ -218,6 +221,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		pParams[2] = p.trees;
 		pParams[3] = p.branching;
 		pParams[4] = p.iterations;
+		pParams[5] = p.centers_init;
 	}
 	if (nOutArray > 2) {
 		OutArray[2] = mxCreateDoubleMatrix(1, 1, mxREAL);

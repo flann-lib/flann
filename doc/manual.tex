@@ -308,6 +308,13 @@ use in the kmeans clustering stage when building the kmeans tree. A value
 of -1 used here means that the kmeans clustering should be performed until
 convergence. This parameter is required only when the algorithm used is
 \texttt{'kmeans'}.
+\item[\texttt{centers\_init}] - the algorithm to use for selecting the initial
+centers when performing a kmeans clustering step. The possible values are
+'random' (picks the initial cluster centers randomly), 'gonzales' (picks the
+initial centers using the Gonzales algorithm) and 'kmeanspp' (picks the initial
+centers using the algorithm suggested in \cite{arthur_kmeanspp_2007}). If this
+parameters is omitted, the default value is 'random'.
+
 \end{description}
 
 The above parameters have a big impact on the performance of the new search
@@ -521,13 +528,16 @@ const int COMPOSITE = 3;
 
 const int CENTERS_RANDOM = 0;
 const int CENTERS_GONZALES = 1;
+const int CENTERS_KMEANSPP = 2;
 \end{Verbatim}
 The \texttt{algorithm} field is used to manually select the type of index
 used. The \texttt{centers\_init} field specifies how to choose the invital
 cluster centers when performing the hierarchical k-means clustering (in
 case the algorithm used is k-means): \texttt{CENTERS\_RANDOM} chooses the
-initial centers randomly and \texttt{CENTERS\_GONZALES} chooses the
-initial centers to be spaced apart from each other by using Gonzales' algorithm.
+initial centers randomly, \texttt{CENTERS\_GONZALES} chooses the
+initial centers to be spaced apart from each other by using Gonzales' algorithm
+and \texttt{CENTERS\_KMEANSPP} chooses the initial centers using the algorithm
+proposed in \cite{arthur_kmeanspp_2007}.
 
 The rest of the fields of the \texttt{IndexParameters} structure have the
 same meaning as described in \ref{sec:flann_build_index}.
@@ -724,5 +734,7 @@ Many thanks to Hoyt Koepke for his work on the python bindings.
 
 
 
+\bibliographystyle{alpha}
+\bibliography{references}
 
 \end{document}

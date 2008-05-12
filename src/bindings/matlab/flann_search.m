@@ -8,57 +8,81 @@ function result = flann_search(data, testset, n, search_params)
 % Marius Muja, January 2008
 
 
+    algos = { 'linear', 'kdtree', 'kmeans', 'composite' };
+    center_algos = {'random', 'gonzales', 'kmeanspp' };
+    function value = id2value(array, id)
+        value = array(id+1);
+    end
+    function id = value2id(array,value)
+        cnt = 0;
+        for item = array,
+            if strcmp(value,item)
+                id = cnt;
+                break;
+            end
+            cnt  = cnt + 1;
+        end            
+    end
+
+
+
+
 if (size(data,1)==1 && size(data,2)==1)
-	% we already have an index
-	if ~isfield(search_params,'checks')
-		error('Missing the "checks" parameter');
-	end
-	result = nearest_neighbors('index_find_nn', data, testset, n, search_params.checks);
+    % we already have an index
+    if ~isfield(search_params,'checks')
+        error('Missing the "checks" parameter');
+    end
+    result = nearest_neighbors('index_find_nn', data, testset, n, search_params.checks);
 else
-	% create the index now
-	if isfield(search_params,'target_precision')
-		build_weigh = 0.01;
-		if isfield(search_params,'build_weigh')
-			build_weigh = search_params.build_weigh;
-		end
-		memory_weigh = 0;
-		if isfield(search_params,'memory_weigh')
-			memory_weigh = search_params.memory_weigh;
-		end
-		p = [-1 search_params.target_precision build_weigh memory_weigh];
-	elseif isfield(search_params,'algorithm')
-		if strcmp(search_params.algorithm,'kdtree') && ~isfield(search_params,'trees')
-			error('Missing "trees" parameter');
-		end
-		if strcmp(search_params.algorithm,'kmeans') && ~isfield(search_params,'branching')
-			error('Missing "branching" parameter');
-		end
-		if strcmp(search_params.algorithm,'kmeans') && ~isfield(search_params,'iterations')
-			error('Missing "iterations" parameter');
-		end
-		
-		trees = -1;
-		if isfield(search_params,'trees')
-			trees = search_params.trees;
-		end
-		branching = -1;
-		if isfield(search_params,'branching')
-			branching = search_params.branching;
-		end
-		iterations = -2;
-		if isfield(search_params,'iterations')
-			iterations = search_params.iterations;
-		end
-		checks = 1;
-		if isfield(search_params,'checks')
-			checks = search_params.checks;
-		end
-		
-		algorithm_id = get_algorithm_id(search_params.algorithm);
-	
-		p = [checks algorithm_id trees branching iterations];
-	else
-		error('Incomplete "build_params" structure');
-	end
-	result = nearest_neighbors('find_nn', data, testset, n, p);
+    % create the index now
+    if isfield(search_params,'target_precision')
+        build_weigh = 0.01;
+        if isfield(search_params,'build_weigh')
+            build_weigh = search_params.build_weigh;
+        end
+        memory_weigh = 0;
+        if isfield(search_params,'memory_weigh')
+            memory_weigh = search_params.memory_weigh;
+        end
+        p = [-1 search_params.target_precision build_weigh memory_weigh];
+    elseif isfield(search_params,'algorithm')
+        if strcmp(search_params.algorithm,'kdtree') && ~isfield(search_params,'trees')
+            error('Missing "trees" parameter');
+        end
+        if strcmp(search_params.algorithm,'kmeans') && ~isfield(search_params,'branching')
+            error('Missing "branching" parameter');
+        end
+        if strcmp(search_params.algorithm,'kmeans') && ~isfield(search_params,'iterations')
+            error('Missing "iterations" parameter');
+        end
+
+        trees = -1;
+        if isfield(search_params,'trees')
+            trees = search_params.trees;
+        end
+        branching = -1;
+        if isfield(search_params,'branching')
+            branching = search_params.branching;
+        end
+        iterations = -2;
+        if isfield(search_params,'iterations')
+            iterations = search_params.iterations;
+        end
+        checks = 1;
+        if isfield(search_params,'checks')
+            checks = search_params.checks;
+        end
+        centers_init = 0;
+        if isfield(search_params,'centers_init')
+            centers_init = value2id(center_algos,search_params.centers_init);
+        end
+
+        algorithm_id = value2id(algos,search_params.algorithm);
+
+        p = [checks algorithm_id trees branching iterations centers_init];
+    else
+        error('Incomplete "build_params" structure');
+    end
+    result = nearest_neighbors('find_nn', data, testset, n, p);
+end
 end

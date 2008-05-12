@@ -72,6 +72,7 @@ matlab_bindings: library
 
 python_bindings: library
 	cp -r src/bindings/python_dist ${BUILD_DIR}
+	-rm -rf ${BUILD_DIR}/python
 	mv ${BUILD_DIR}/python_dist ${BUILD_DIR}/python
 
 c_bindings: library

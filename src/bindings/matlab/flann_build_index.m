@@ -7,6 +7,23 @@ function [index, params, speedup] = flann_build_index(dataset, build_params)
 % Marius Muja, January 2008
 
 
+
+    algos = { 'linear', 'kdtree', 'kmeans', 'composite' };
+    center_algos = {'random', 'gonzales', 'kmeanspp' };
+    function value = id2value(array, id)
+        value = array(id+1);
+    end
+    function id = value2id(array,value)
+        cnt = 0;
+        for item = array,
+            if strcmp(value,item)
+                id = cnt;
+                break;
+            end
+            cnt  = cnt + 1;
+        end            
+    end
+
 if ~(isstruct(build_params)) 
 	error('The "build_params" argument should be a structure');
 end
@@ -48,17 +65,23 @@ elseif isfield(build_params,'algorithm')
 	if isfield(build_params,'checks')
 		checks = build_params.checks;
 	end
+    centers_init = 0;
+    if isfield(build_params,'centers_init')
+        centers_init = value2id(center_algos,build_params.centers_init);
+    end
 	
-    algorithm_id = get_algorithm_id(build_params.algorithm);
+    algorithm_id = value2id(algos,build_params.algorithm);
 
-    p = [checks algorithm_id trees branching iterations];
+    p = [checks algorithm_id trees branching iterations centers_init];
 else
     error('Incomplete "build_params" structure');
 end
 [index, search_params, speedup] = nearest_neighbors('build_index',dataset,p);
 
 params.checks = search_params(1);
-params.algorithm = get_algorithm(search_params(2));
+params.algorithm = id2value(algos,search_params(2));
 params.trees = search_params(3);
 params.branching = search_params(4);
 params.iterations = search_params(5);
+params.centers_init = id2value(center_algos,search_params(6));
+end
