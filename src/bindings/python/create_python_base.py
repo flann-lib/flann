@@ -162,6 +162,12 @@ def createPythonBase(*args):
                     % (n, n, dbcomment, n,'%f','float(' + n + ')')
                     for n in get_index_param_struct_name_list()])
           )
+			
+    ret_params_code = \
+        ("py::dict ret_params;\n"
+         + ''.join(['ret_params["%s"] = idxparams.%s; \n'
+                    % (n, n) for n in get_index_param_struct_name_list()])
+          )
     
     idxparam_ptr_code = r"&idxparams"
 
@@ -178,10 +184,14 @@ def createPythonBase(*args):
 
             py::tuple result(2);
             result[0] = flann_build_index(dataset, npts, dim, &speedup, %s, %s);
-            result[1] = speedup;
+            """ % (dbcomment, idxparam_ptr_code, flannparam_ptr_code) +
+			ret_params_code +
+			r"""
+            ret_params["speedup"] = speedup;
+            result[1] = ret_params;
 
             return_val = result;
-            """ % (dbcomment, idxparam_ptr_code, flannparam_ptr_code),
+            """,
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),

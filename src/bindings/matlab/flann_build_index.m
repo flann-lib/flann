@@ -66,7 +66,7 @@ elseif isfield(build_params,'algorithm')
 		checks = build_params.checks;
 	end
     centers_init = 0;
-    if isfield(build_params,'centers_init')
+    if isfield(build_params,'centers_init') 
         centers_init = value2id(center_algos,build_params.centers_init);
     end
 	

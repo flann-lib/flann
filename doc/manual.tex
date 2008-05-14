@@ -141,7 +141,7 @@ from numpy import *
 from numpy.random import *
 
 dataset = rand(10000, 128)
-testset = rand(10000, 128)
+testset = rand(1000, 128)
 
 flann = FLANN()
 result = flann.nn(dataset,testset,5,algorithm="kmeans",
@@ -619,13 +619,14 @@ bindings.
 \subsection{Using FLANN from python}
 
 FLANN can be used from python programs using the python bindings distributed
-with the library. The python bindings cen be installed on a system using the
+with the library. The python bindings can be installed on a system using the
 distutils script provided (setup.py), by running the following command in the
 build/python directory:
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
 $ python setup.py install
 \end{Verbatim}
-
+The python bindings also require the numpy and scipy.weave packages to be
+installed.
 
 To use the python FLANN bindings the package \texttt{pyflann} must be imported
 (see the python example in section \ref{sec:quickstart}). This package contains
@@ -639,13 +640,40 @@ to work with multiple indexes, multiple instances of the FLANN class must be
 used. The \texttt{dataset} argument must be a 2D numpy array or a matrix. The
 rest of the arguments that can be passed to the method are the same as
  those used in the \texttt{build\_params} structure from
-section \ref{sec:flann_build_index}. The method returns the estimated speedup
-when automatic algorithm and parameter configuration is used.
+section \ref{sec:flann_build_index}. Similar to the MATLAB version, the index
+can be created using manually specified parameters or the parameters can be
+automatically computed (by specifying the target\_precision, build\_weight and
+memory\_weight arguments).
+
+The method returns a dictionary containing the parameters used to construct the
+index. In case automatic parameter selection is used, the dictionary will also
+contain the number of checks required to achieve the desired target precision
+and an estimation of the speedup over linear search that the library will
+provide.
+
 
 \item [\texttt{def nn\_index(self, testset, num\_neighbors = 1, **kwargs)}] :\\
     This method searches for the \texttt{num\_neighbors} nearest neighbors of
 each point in \texttt{testset} using the index computed by
-\texttt{build\_index}.
+\texttt{build\_index}. Additionally, a parameter called checks, denoting the
+number of times the index tree(s) should be recursivelly searched, must be
+given.
+
+Example:
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+from pyflann import *
+from numpy import *
+from numpy.random import *
+
+dataset = rand(10000, 128)
+testset = rand(1000, 128)
+
+flann = FLANN()
+params = flann.build_index(dataset, target_precision=0.9, log_level = "info");
+print params
+
+result = flann.nn_index(testset,5, checks=params["checks"]);
+\end{Verbatim}
 
 \item[\texttt{def nn(self, dataset, testset, num\_neighbors = 1, **kwargs)}]:\\
     This method builds the index, performs the nearest neighbor search and

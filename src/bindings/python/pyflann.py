@@ -158,7 +158,7 @@ class FLANN:
         npts, dim = pts.shape
         pts_flat = self.__getFlattenedArray(pts)
         
-        params = self.__get_param_arg_list(kwargs)
+        params_ = self.__get_param_arg_list(kwargs)
         flann_params = self.__get_flann_param_arg_list(kwargs)
 
         kwargs['random_seed'] = self.__getRandomSeed(kwargs)
@@ -169,12 +169,14 @@ class FLANN:
                     flann.del_index(self.__curindex, *flann_params)
             
             with self.__nn_lock:
-                self.__curindex, speedup = flann.make_index(pts_flat, npts, dim, *params)
+                self.__curindex, index_params = flann.make_index(pts_flat, npts, dim, *params_)
 
             self.__curindex_data = pts_flat
             self.__curindex_data_shape = pts.shape
+            
+            params.translate_strings_back(index_params)
         
-        return speedup
+        return index_params
 
 
     def nn_index(self, querypts, num_neighbors = 1, **kwargs):

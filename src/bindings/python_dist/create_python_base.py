@@ -45,13 +45,13 @@ def getBaseDir():
     return toRoot(getcwd())
 
 def getIncludeDirs():
-    return [ '../c','../include']
+    basedir = getBaseDir()
+    return [join(basedir, 'src/bindings/c')]
 
 def getLibDirs():
     basedir = getBaseDir()
-    return [ '../lib',
-             '../../../build/lib',
-             join(basedir, 'bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2')]
+    return [join(basedir, 'build/lib'),
+            join(basedir, 'bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2')]
 
 def getLibs():
     return ['flann', 'gphobos']
@@ -70,9 +70,9 @@ def createPythonBase(*args):
     # Make sure we are in the correct directory
     cwd = getcwd()
 
-    #basedir = getBaseDir()
+    basedir = getBaseDir()
     
-    #chdir(abspath(join(basedir, 'src/bindings/python/')))
+    chdir(abspath(join(basedir, 'src/bindings/python/')))
 
     try:
         remove("flann_python_base.cpp")
@@ -93,7 +93,6 @@ def createPythonBase(*args):
         fci.customize.add_include_dir(d)
     for l in getLibs():
         fci.customize.add_library(l)    
-
     fci.customize.add_extra_compile_arg('-Wno-unused-variable')
     fci.customize.add_extra_compile_arg('-Wno-deprecated')
     fci.customize.add_extra_compile_arg('-Wno-write-strings')
@@ -163,6 +162,12 @@ def createPythonBase(*args):
                     % (n, n, dbcomment, n,'%f','float(' + n + ')')
                     for n in get_index_param_struct_name_list()])
           )
+			
+    ret_params_code = \
+        ("py::dict ret_params;\n"
+         + ''.join(['ret_params["%s"] = idxparams.%s; \n'
+                    % (n, n) for n in get_index_param_struct_name_list()])
+          )
     
     idxparam_ptr_code = r"&idxparams"
 
@@ -179,10 +184,14 @@ def createPythonBase(*args):
 
             py::tuple result(2);
             result[0] = flann_build_index(dataset, npts, dim, &speedup, %s, %s);
-            result[1] = speedup;
+            """ % (dbcomment, idxparam_ptr_code, flannparam_ptr_code) +
+			ret_params_code +
+			r"""
+            ret_params["speedup"] = speedup;
+            result[1] = ret_params;
 
             return_val = result;
-            """ % (dbcomment, idxparam_ptr_code, flannparam_ptr_code),
+            """,
             ('dataset', empty(1, dtype=float32)),
             ('npts', int(0)),
             ('dim', int(0)),

@@ -112,6 +112,16 @@ def __translate_strings(argdict):
                                     + "Possible string values are " 
                                     + ', '.join(sorted(__translation_dict[k].keys())))
 
+
+def translate_strings_back(argdict):
+
+    for k in __translatable_set.intersection(argdict.keys()):
+        val = argdict[k]
+        
+        for x in __translation_dicts[k]:
+            if __translation_dicts[k][x] == val:
+                argdict[k] = x
+
 def __make_type_translation_table():
     def getCorrectType(k, v):
         d = {k : v}
