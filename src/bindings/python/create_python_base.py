@@ -46,12 +46,13 @@ def getBaseDir():
 
 def getIncludeDirs():
     basedir = getBaseDir()
-    return [join(basedir, 'src/bindings/c')]
+    return [join(basedir, 'src/bindings/c'), '../c','../include']
 
 def getLibDirs():
     basedir = getBaseDir()
-    return [join(basedir, 'build/lib'),
-            join(basedir, 'bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2')]
+    return [ '../lib',
+             '../../../build/lib',
+             join(basedir, 'bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2')]
 
 def getLibs():
     return ['flann', 'gphobos']
@@ -72,9 +73,8 @@ def createPythonBase(*args):
 
     basedir = getBaseDir()
     
-    chdir(abspath(join(basedir, 'src/bindings/python/')))
-
     try:
+        chdir(abspath(join(basedir, 'src/bindings/python/')))
         remove("flann_python_base.cpp")
     except OSError:
         pass
