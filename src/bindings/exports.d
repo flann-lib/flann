@@ -253,7 +253,8 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 			logger.info(sprint("Building index using params: {}",params));
 			char[] algorithm = params["algorithm"].get!(char[]);		
 			index = indexRegistry!(float)[algorithm](inputData, params);
-			index.buildIndex();
+			float time = profile({index.buildIndex();});
+            logger.info(sprint("Building index took: {}",time));
 		}
 		else {
 			Params params = estimateBuildIndexParams!(float)(inputData, target_precision, index_params.build_weight, index_params.memory_weight);
