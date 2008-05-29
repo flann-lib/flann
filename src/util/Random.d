@@ -15,6 +15,7 @@
 module util.Random;
 
 import tango.stdc.time;
+import tango.math.Random;
 
 import util.Utils;
 import util.Logger;
@@ -22,11 +23,12 @@ import util.Logger;
 /**
  * Declaration for random functions from C world.
  */
-extern (C) {
-	double drand48();
-	double lrand48();
-	double srand48(long);
-}
+// extern (C) {
+// 	double drand48();
+// 	double lrand48();
+// 	double srand48(long);
+// }
+// 
 
 
 /**
@@ -34,8 +36,24 @@ extern (C) {
  * using the system time.
  */
 static this() {
-	srand48(time(null));
+// 	srand48(time(null));
 // 	srand48(0);
+}
+
+
+void seed_random(uint value)
+{
+	Random.shared.seed(value);
+}
+
+uint next_random(uint max)
+{
+	return Random.shared.next(max);
+}
+
+double next_random()
+{
+	return (cast(double)Random.shared.next())/uint.max;
 }
 
 /**
@@ -83,7 +101,8 @@ class DistinctRandom
 	
 		// permute the element in the array
 		for (int i=0;i<n;++i) {
-			int rand = cast(int) (drand48() * n);  
+// 			int rand = cast(int) (drand48() * n);  
+			int rand = next_random(n);
 			assert(rand >=0 && rand < n);
 			swap(vals[i], vals[rand]);
 		}

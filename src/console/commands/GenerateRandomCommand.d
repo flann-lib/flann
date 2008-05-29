@@ -52,7 +52,8 @@ class GenerateRandomCommand : DefaultCommand
 		
 					for (int i=0;i<count;++i) {
 						for (int j=0;j<length;++j) {
-							buffer[j] = cast(float) drand48();
+// 							buffer[j] = cast(float) drand48();
+							buffer[j] = cast(float) next_random();
 						}
 						stream.write((cast(void*)buffer.ptr)[0..float.sizeof*length]);
 // 						tick();

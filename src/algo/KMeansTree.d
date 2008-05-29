@@ -321,7 +321,8 @@ class KMeansTree(T) : NNIndex
 		static T[][] centers;
 		if (centers is null || centers.length!=k) centers = new T[][k];
 		
-		int rand = cast(int) (drand48() * n);  
+// 		int rand = cast(int) (drand48() * n);  
+		int rand = next_random(n);  
 		assert(rand >=0 && rand < n);
 		
 		centers[0] = vecs[indices[rand]];
@@ -379,7 +380,8 @@ class KMeansTree(T) : NNIndex
 		}
 
 		// Choose one random center and set the closestDistSq values
-		int index = cast(int) (drand48() * n);  
+// 		int index = cast(int) (drand48() * n);  
+		int index = next_random(n);  
 		assert(index >=0 && index < n);
 		centers[0] = vecs[indices[index]];
 		
@@ -402,7 +404,8 @@ class KMeansTree(T) : NNIndex
 		
     		// Choose our center - have to be slightly careful to return a valid answer even accounting
 			// for possible rounding errors
-		    double randVal = drand48() * currentPot;
+// 		    double randVal = drand48() * currentPot;
+		    double randVal = next_random() * currentPot;
             for (index = 0; index < n-1; index++) {
                 if (randVal <= closestDistSq[index])
                     break;

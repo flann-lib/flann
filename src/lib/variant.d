@@ -15,7 +15,7 @@ version( Tango )
 // formatters for some basic types, and thus does not pass the unit tests.
 // `);
 
-    import tango.core.Exception : TracedException;
+    import tango.core.Exception : Exception;
     import tango.core.Vararg : va_list;
 	import tango.text.convert.Float;
     import tango.text.convert.Integer;
@@ -227,7 +227,7 @@ private bool canImplicitCastTo(dsttypeT)(TypeInfo srctype)
 }
 
 version( Tango )
-    alias TracedException BaseException;
+    alias Exception BaseException;
 else
     alias Exception BaseException;
 

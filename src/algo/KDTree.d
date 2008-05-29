@@ -185,7 +185,8 @@ class KDTree(T) : NNIndex{
 		for (int i = 0; i < numTrees_; i++) {
 			/* Randomize the order of vectors to allow for unbiased sampling. */
 			for (int j = 0; j < size; j++) {
-				int rand = cast(int) (drand48() * size);  
+// 				int rand = cast(int) (drand48() * size);  
+				int rand = next_random(size);  
 				assert(rand >=0 && rand < size);
 				swap(vind[j], vind[rand]);
 			}
@@ -340,7 +341,8 @@ class KDTree(T) : NNIndex{
 			}
 		}
 		/* Select a random integer in range [0,num-1], and return that index. */
-		int rand = cast(int) (drand48() * num);
+// 		int rand = cast(int) (drand48() * num);
+		int rand = next_random(num);
 		assert(rand >=0 && rand < num);
 		return topind[rand];
 	}
