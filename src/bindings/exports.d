@@ -178,7 +178,7 @@ private void init_flann_parameters(FLANNParameters* p)
 	if (p !is null) {
  		flann_log_verbosity(p.log_level);
 		flann_log_destination(p.log_destination);
-		srand48(p.random_seed);
+		seed_random(p.random_seed);
 	}
 }
 
