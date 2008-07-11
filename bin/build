@@ -1,5 +1,5 @@
 #!/bin/bash
 
 DIR=`dirname $0`
-export PATH=$DIR/gdc/bin:$PATH
+export PATH=$DIR/gdc-`uname -m`/bin:$PATH
 $DIR/rebuild $@

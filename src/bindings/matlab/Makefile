@@ -36,7 +36,7 @@ all: mexfile
 
 mexfile : ${SRC_DIR}/nearest_neighbors.cc Makefile ${LIB_TARGET}
 	@mkdir -p ${BUILD_DIR}/matlab
-	${MEX} ${INCLUDES} ${CFLAGS} $< -o ${BUILD_DIR}/matlab/nearest_neighbors -L${BUILD_DIR}/lib -L${LDPATH} -lflann -lgphobos -lm -lpthread
+	${MEX} ${INCLUDES} ${CFLAGS} $< -o ${BUILD_DIR}/matlab/nearest_neighbors -L${BUILD_DIR}/lib -lflann -lgphobos -lm -lpthread
 	cp ${SRC_DIR}/*.m ${BUILD_DIR}/matlab
 
 
