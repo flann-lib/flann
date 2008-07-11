@@ -46,3 +46,13 @@ else version( darwin )
 
     int utime(char*, utimbuf*);
 }
+else version( freebsd )
+{
+    struct utimbuf
+    {
+        time_t  actime;
+        time_t  modtime;
+    }
+
+    int utime(char*, utimbuf*);
+}

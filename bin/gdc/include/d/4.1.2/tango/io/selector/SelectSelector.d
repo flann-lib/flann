@@ -24,6 +24,8 @@ debug (selector)
 
 version (Windows)
 {
+    import tango.core.Thread;
+
     private
     {
         // Opaque struct
@@ -54,7 +56,7 @@ version (Windows)
  * // Register to read from socket
  * selector.register(socket, Event.Read);
  *
- * uint eventCount = selector.select(Msec(100));
+ * int eventCount = selector.select(0.1); // 0.1 seconds
  * if (eventCount > 0)
  * {
  *     // We can now read from the socket
@@ -433,7 +435,8 @@ public class SelectSelector: AbstractSelector
         fd_set *writefds;
         fd_set *exceptfds;
         timeval tv;
-
+        version (Windows)
+            bool handlesAvailable = false;
 
         debug (selector)
             Stdout.format("--- SelectSelector.select(timeout={0} msec)\n", timeout.millis);
@@ -443,24 +446,30 @@ public class SelectSelector: AbstractSelector
             debug (selector)
                 _readSet.dump("_readSet");
 
-            _selectedReadSet.copy(_readSet);
-            readfds = cast(fd_set*) _selectedReadSet;
+            version (Windows)
+                handlesAvailable = handlesAvailable || (_readSet.length > 0);
+
+            readfds = cast(fd_set*) _selectedReadSet.copy(_readSet);
         }
         if (_writeSet !is null)
         {
             debug (selector)
                 _writeSet.dump("_writeSet");
 
-            _selectedWriteSet.copy(_writeSet);
-            writefds = cast(fd_set*) _selectedWriteSet;
+            version (Windows)
+                handlesAvailable = handlesAvailable || (_writeSet.length > 0);
+
+            writefds = cast(fd_set*) _selectedWriteSet.copy(_writeSet);
         }
         if (_exceptionSet !is null)
         {
             debug (selector)
                 _exceptionSet.dump("_exceptionSet");
 
-            _selectedExceptionSet.copy(_exceptionSet);
-            exceptfds = cast(fd_set*) _selectedExceptionSet;
+            version (Windows)
+                handlesAvailable = handlesAvailable || (_exceptionSet.length > 0);
+
+            exceptfds = cast(fd_set*) _selectedExceptionSet.copy(_exceptionSet);
         }
 
         version (Posix)
@@ -493,13 +502,24 @@ public class SelectSelector: AbstractSelector
         }
         else
         {
-            toTimeval(&tv, timeout);
+            // Windows returns an error when select() is called with all three
+            // handle sets empty, so we emulate the POSIX behavior by calling
+            // Thread.sleep().
+            if (handlesAvailable)
+            {
+                toTimeval(&tv, timeout);
 
-            // FIXME: Can a system call be interrupted on Windows?
-            _eventCount = .select(ISelectable.Handle.max, readfds, writefds, exceptfds, timeout is TimeSpan.max ? null : &tv);
+                // FIXME: Can a system call be interrupted on Windows?
+                _eventCount = .select(ISelectable.Handle.max, readfds, writefds, exceptfds, timeout is TimeSpan.max ? null : &tv);
 
-            debug (selector)
-                Stdout.format("---   .select() returned {0}\n", _eventCount);
+                debug (selector)
+                    Stdout.format("---   .select() returned {0}\n", _eventCount);
+            }
+            else
+            {
+                Thread.sleep(timeout.interval());
+                _eventCount = 0;
+            }
         }
         return _eventCount;
     }
@@ -637,6 +657,14 @@ version (Windows)
         }
 
         /**
+         * Return the number of handles present in the HandleSet.
+         */
+        public uint length()
+        {
+            return _buffer[0];
+        }
+
+        /**
          * Remove all the handles from the set.
          */
         private void reset()
@@ -691,7 +719,7 @@ version (Windows)
         /**
          * Copy the contents of the HandleSet into this instance.
          */
-        private void copy(HandleSet handleSet)
+        private HandleSet copy(HandleSet handleSet)
         {
             if (handleSet !is null)
             {
@@ -701,6 +729,7 @@ version (Windows)
             {
                 _buffer = null;
             }
+            return this;
         }
 
         /**
@@ -804,6 +833,14 @@ else version (Posix)
         }
 
         /**
+         * Return the number of handles present in the HandleSet.
+         */
+        public uint length()
+        {
+            return _buffer.length;
+        }
+
+        /**
          * Remove all the handles from the set.
          */
         public void reset()
@@ -835,7 +872,7 @@ else version (Posix)
         /**
          * Copy the contents of the HandleSet into this instance.
          */
-        private void copy(HandleSet handleSet)
+        private HandleSet copy(HandleSet handleSet)
         {
             if (handleSet !is null)
             {
@@ -845,6 +882,7 @@ else version (Posix)
             {
                 _buffer = null;
             }
+            return this;
         }
 
         /**

@@ -11,7 +11,7 @@ module tango.core.Array;
 
 
 private import tango.core.Traits;
-private import tango.stdc.stdlib : alloca;
+private import tango.stdc.stdlib : alloca, rand;
 
 
 version( DDoc )
@@ -21,6 +21,7 @@ version( DDoc )
 
     typedef bool function( Elem )       Pred1E;
     typedef bool function( Elem, Elem ) Pred2E;
+    typedef size_t function( size_t )   Oper1A;
 }
 
 
@@ -44,6 +45,35 @@ private
         static bool opCall( T p1, T p2 )
         {
             return p1 < p2;
+        }
+    }
+
+
+    struct RandOper()
+    {
+        static size_t opCall( size_t lim )
+        {
+            // NOTE: The use of 'max' here is intended to eliminate modulo bias
+            //       in this routine.
+            size_t max = size_t.max - (size_t.max % lim);
+            size_t val;
+
+            do
+            {
+                static if( size_t.sizeof == 4 )
+                {
+                    val = (((cast(size_t)rand()) << 16) & 0xffff0000u) |
+                          (((cast(size_t)rand()))       & 0x0000ffffu);
+                }
+                else // assume size_t.sizeof == 8
+                {
+                    val = (((cast(size_t)rand()) << 48) & 0xffff000000000000uL) |
+                          (((cast(size_t)rand()) << 32) & 0x0000ffff00000000uL) |
+                          (((cast(size_t)rand()) << 16) & 0x00000000ffff0000uL) |
+                          (((cast(size_t)rand()))       & 0x000000000000ffffuL);
+                }
+            } while( val > max );
+            return val % lim;
         }
     }
 
@@ -1738,6 +1768,77 @@ else
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Shuffle
+////////////////////////////////////////////////////////////////////////////////
+
+
+version( DDoc )
+{
+    /**
+     * Performs a linear scan of buf from $(LB)2 .. buf.length$(RP), exchanging
+     * each element with an element in the range $(LB)0 .. pos$(RP), where pos
+     * represents the current array position.
+     *
+     * Params:
+     *  buf  = The array to shuffle.
+     *  oper = The randomize operation, which should return a number in the
+     *         range $(LB)0 .. N$(RP) for any supplied value N.  This routine
+     *         may be any callable type.
+     */
+    void shuffle( Elem[] buf, Oper1A oper = Oper1A.init );
+
+}
+else
+{
+    template shuffle_( Elem, Oper )
+    {
+        static assert( isCallableType!(Oper) );
+
+
+        void fn( Elem[] buf, Oper oper )
+        {
+            // NOTE: Indexes are passed instead of references because DMD does
+            //       not inline the reference-based version.
+            void exch( size_t p1, size_t p2 )
+            {
+                Elem t  = buf[p1];
+                buf[p1] = buf[p2];
+                buf[p2] = t;
+            }
+
+            for( size_t pos = buf.length - 1; pos > 0; --pos )
+            {
+                exch( pos, oper( pos + 1 ) );
+            }
+        }
+    }
+
+
+    template shuffle( Buf, Oper = RandOper!() )
+    {
+        void shuffle( Buf buf, Oper oper = Oper.init )
+        {
+            return shuffle_!(ElemTypeOf!(Buf), Oper).fn( buf, oper );
+        }
+    }
+
+
+    debug( UnitTest )
+    {
+      unittest
+      {
+        char[] buf = "abcdefghijklmnopqrstuvwxyz";
+        char[] tmp = buf.dup;
+
+        assert( tmp == buf );
+        shuffle( tmp );
+        assert( tmp != buf );
+      }
+    }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Partition
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1987,7 +2088,7 @@ version( DDoc )
      *         less than e2 and false if not.  This predicate may be any
      *         callable type.
      */
-    void sort( Elem[] buf, Pred2E pred = Pred2E.init );
+    void sort( Elem, Pred2E = IsLess!(Elem) )( Elem[] buf, Pred2E pred = Pred2E.init );
 }
 else
 {
@@ -2012,10 +2113,81 @@ else
                 buf[p2] = t;
             }
 
-            void quicksort( size_t l, size_t r )
+            // NOTE: This algorithm operates on the inclusive range [l .. r].
+            void insertionSort( size_t l, size_t r )
+            {
+                for( size_t i = r; i > l; --i )
+                {
+                    // swap the min element to buf[0] to act as a sentinel
+                    if( pred( buf[i], buf[i - 1] ) )
+                        exch( i, i - 1 );
+                }
+                for( size_t i = l + 2; i <= r; ++i )
+                {
+                    size_t  j = i;
+                    Elem    v = buf[i];
+
+                    // don't need to test (j != l) because of the sentinel
+                    while( pred( v, buf[j - 1] ) )
+                    {
+                        buf[j] = buf[j - 1];
+                        j--;
+                    }
+                    buf[j] = v;
+                }
+            }
+
+            size_t medianOf( size_t l, size_t m, size_t r )
+            {
+                if( pred( buf[m], buf[l] ) )
+                {
+                    if( pred( buf[r], buf[m] ) )
+                        return m;
+                    else
+                    {
+                        if( pred( buf[r], buf[l] ) )
+                            return r;
+                        else
+                            return l;
+                    }
+                }
+                else
+                {
+                    if( pred( buf[r], buf[m] ) )
+                    {
+                        if( pred( buf[r], buf[l] ) )
+                            return l;
+                        else
+                            return r;
+                    }
+                    else
+                        return m;
+                }
+            }
+
+            // NOTE: This algorithm operates on the inclusive range [l .. r].
+            void quicksort( size_t l, size_t r, size_t d )
             {
                 if( r <= l )
                     return;
+
+                // HEURISTIC: Use insertion sort for sufficiently small arrays.
+                enum { MIN_LENGTH = 80 }
+                if( r - l < MIN_LENGTH )
+                    return insertionSort( l, r );
+
+                // HEURISTIC: If the recursion depth is too great, assume this
+                //            is a worst-case array and fail to heap sort.
+                if( d-- == 0 )
+                {
+                    makeHeap( buf[l .. r+1], pred );
+                    sortHeap( buf[l .. r+1], pred );
+                    return;
+                }
+
+                // HEURISTIC: Use the median-of-3 value as a pivot.  Swap this
+                //            into r so quicksort remains untouched.
+                exch( r, medianOf( l, l + (r - l) / 2, r ) );
 
                 // This implementation of quicksort improves upon the classic
                 // algorithm by partitioning the array into three parts, one
@@ -2063,19 +2235,31 @@ else
                     j = i - 1;
                     for( size_t k = l; k < p; k++, j-- )
                         exch( k, j );
-                    quicksort( l, j );
+                    quicksort( l, j, d );
                 }
                 if( ++i < q )
                 {
                     for( size_t k = r - 1; k >= q; k--, i++ )
                         exch( k, i );
-                    quicksort( i, r );
+                    quicksort( i, r, d );
                 }
+            }
+
+            size_t maxDepth( size_t x )
+            {
+                size_t d = 0;
+
+                do
+                {
+                    ++d;
+                    x /= 2;
+                } while( x > 1 );
+                return d * 2; // same as "floor( log( x ) / log( 2 ) ) * 2"
             }
 
             if( buf.length > 1 )
             {
-                quicksort( 0, buf.length - 1 );
+                quicksort( 0, buf.length - 1, maxDepth( buf.length ) );
             }
         }
     }

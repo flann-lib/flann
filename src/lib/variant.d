@@ -539,10 +539,11 @@ struct Variant
         {
             version( Tango )
             {
-                TypeInfo[1] tis = [type];
-                ArgList args = cast(ArgList)this.data.ptr;
+//                 TypeInfo[1] tis = [type];
+//                 ArgList args = cast(ArgList)this.data.ptr;
+                static char buffer[1024];
     
-                return layout.convert(tis, args, "{}");
+                return layout.convertOne(buffer, type, this.data.ptr);
             }
             else
             {

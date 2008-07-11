@@ -75,6 +75,22 @@ else version( darwin )
     //time_t (defined in tango.stdc.time)
     alias uint      uid_t;
 }
+else version( freebsd )
+{
+    alias long      blkcnt_t;
+    alias uint      blksize_t;
+    alias uint      dev_t;
+    alias uint      gid_t;
+    alias uint      ino_t;
+    alias ushort    mode_t;
+    alias ushort    nlink_t;
+    alias long      off_t;
+    alias int       pid_t;
+    //size_t (defined in tango.stdc.stddef)
+    alias size_t    ssize_t;
+    //time_t (defined in tango.stdc.time)
+    alias uint      uid_t;
+}
 
 //
 // XOpen (XSI)
@@ -116,6 +132,16 @@ else version( darwin )
     // key_t
     alias int   suseconds_t;
     alias uint  useconds_t;
+}
+else version( freebsd )
+{
+    //clock_t
+    alias ulong fsblkcnt_t;
+    alias ulong fsfilcnt_t;
+    alias long  id_t;
+    // key_t
+    alias c_long   suseconds_t; // C long
+    alias uint  useconds_t; // C unsigned int
 }
 
 //
@@ -318,6 +344,29 @@ else version( darwin )
 
     alias _opaque_pthread_t* pthread_t;
 }
+else version( freebsd )
+{
+    struct pthread;
+
+    /*
+    
+    {
+
+        c_long                  tid;
+        umutex                  lock;
+        umtx_t                  cycle;
+        int                     locklevel; // C int
+        int                     critical_count; // C int
+        int                     sigblock; // C int
+        TAILQ_ENTRY(pthread)    tle;
+        TAILQ_ENTRY(pthread)    gcle;
+        LIST_ENTRY(pthread)     hle;
+        int                     refcount; // C int
+    }
+    */
+
+    alias pthread* pthread_t;
+}
 
 //
 // Barrier (BAR)
@@ -361,6 +410,25 @@ else version( darwin )
         int             pshared;
     }
 }
+else version( freebsd )
+{
+    struct pthread_barrier {
+        umutex                  b_lock;
+        ucond                   b_cv;
+        long                    b_cycle; // volatile
+        int                     b_count; // volatile C int
+        int                     b_waiters;  // volatile C int
+    }
+
+    alias pthread_barrier* pthread_barrier_t;
+
+    struct pthread_barrierattr
+    {
+        int             pshared;
+    }
+
+    alias pthread_barrierattr* pthread_barrierattr_t;
+}
 
 //
 // Spin (SPN)
@@ -376,6 +444,12 @@ version( linux )
 else version( darwin )
 {
     struct pthread_spinlock_t;
+}
+else version( freebsd )
+{
+    private struct pthread_spinlock;
+
+    alias pthread_spinlock* pthread_spinlock_t;
 }
 
 //

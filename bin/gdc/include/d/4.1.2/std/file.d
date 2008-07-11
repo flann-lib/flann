@@ -855,7 +855,7 @@ private import std.date;
 
 alias std.c.unix.unix unix;
 
-extern (C) char* strerror(int);
+private import std.c.string;
 
 /***********************************
  */
@@ -876,7 +876,8 @@ class FileException : Exception
     }
 
     this(char[] name, uint errno)
-    {	char* s = strerror(errno);
+    {	char[80] buf = void;
+	auto s = _d_gnu_cbridge_strerror(errno, buf.ptr, buf.length);
 	this(name, std.string.toString(s).dup);
 	this.errno = errno;
     }

@@ -216,7 +216,7 @@ void flann_log_destination(char* destination)
 	if (destination is null) {
 		logger.addAppender(new ConsoleAppender());
 	} else {
-		logger.addAppender(new FileAppender(fromUtf8z(destination)));
+		logger.addAppender(new FileAppender(fromStringz(destination)));
 	}
 }
 

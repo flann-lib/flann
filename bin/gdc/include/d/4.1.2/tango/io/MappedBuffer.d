@@ -144,14 +144,14 @@ class MappedBuffer : Buffer, IConduit.Seek
         {               
                 // Linux code: not yet tested on other POSIX systems.
                 private void*   base;           // array pointer
-                private ulong   size;           // length of file
+                private uint    size;           // length of file
 
                 this (FileConduit host)
                 {
                         super(0);
 
                         this.host = host;
-                        size = host.length;
+                        size = cast(uint) host.length;
                         
                         // Make sure the mapping attributes are consistant with
                         // the FileConduit attributes.
@@ -168,7 +168,7 @@ class MappedBuffer : Buffer, IConduit.Seek
                         if (base is null)
                             host.error();
                                 
-                        void[] mem = base [0 .. cast(int) size];
+                        void[] mem = base [0 .. size];
                         setContent (mem);
                 }    
 

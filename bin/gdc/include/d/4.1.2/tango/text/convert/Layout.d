@@ -28,8 +28,6 @@ module tango.text.convert.Layout;
 
 private import  tango.core.Exception;
 
-private import  tango.core.Vararg;
-
 private import  Unicode = tango.text.convert.Utf;
 
 private import  Float   = tango.text.convert.Float,
@@ -41,23 +39,17 @@ private import  Float   = tango.text.convert.Float,
 
 *******************************************************************************/
 
-version (DigitalMars)
+version (GNU)
+        {
+        private import std.stdarg;
+        alias void* Arg;
+        alias va_list ArgList;
+        }
+     else
         {
         alias void* Arg;
         alias void* ArgList;
         }
-     else
-        version (X86_64)
-                {
-                private import std.stdarg;
-                alias void* Arg;
-                alias va_list ArgList;
-                }
-             else
-                {
-                alias char* Arg;
-                alias char* ArgList;
-                }
 
 /*******************************************************************************
 
@@ -91,7 +83,7 @@ class Layout(T)
                 uint sink (T[] s)
                 {
                         int len = s.length;
-                        if (len < (result.ptr + result.length) - p)
+                        if (len <= (result.ptr + result.length) - p)
                            {
                            p [0..len] = s;
                            p += len;
@@ -189,6 +181,8 @@ class Layout(T)
                 assert (formatStr, "null format specifier");
                 assert (arguments.length < 64, "too many args in Layout.convert");
 
+        version (GNU)
+                {
                 Arg[64] arglist = void;
                 int[64] intargs = void;
                 byte[64] byteargs = void;
@@ -201,11 +195,10 @@ class Layout(T)
 
                 foreach (i, arg; arguments)
                         {
-				        version (X86_64)
-                			arglist[i] = args.ptr;
+                        static if (is(typeof(args.ptr)))
+                            arglist[i] = args.ptr;
                         else
-                			arglist[i] = args;
-                        
+                            arglist[i] = args;
                         /* Since floating point types don't live on
                          * the stack, they must be accessed by the
                          * correct type. */
@@ -214,19 +207,19 @@ class Layout(T)
                                {
                                case TypeCode.FLOAT:
                                     floatargs[i] = va_arg!(float)(args);
-                                    arglist[i] = cast(Arg) &floatargs[i];
+                                    arglist[i] = &floatargs[i];
                                     converted = true;
                                     break;
 
                                case TypeCode.DOUBLE:
                                     doubleargs[i] = va_arg!(double)(args);
-                                    arglist[i] = cast(Arg) &doubleargs[i];
+                                    arglist[i] = &doubleargs[i];
                                     converted = true;
                                     break;
 
                                case TypeCode.REAL:
                                     realargs[i] = va_arg!(real)(args);
-                                    arglist[i] = cast(Arg) &realargs[i];
+                                    arglist[i] = &realargs[i];
                                     converted = true;
                                     break;
 
@@ -239,30 +232,30 @@ class Layout(T)
                                   {
                                   case 1:
                                        byteargs[i] = va_arg!(byte)(args);
-                                       arglist[i] = cast(Arg) &byteargs[i];
+                                       arglist[i] = &byteargs[i];
                                        break;
                                   case 2:
                                        shortargs[i] = va_arg!(short)(args);
-                                       arglist[i] = cast(Arg) &shortargs[i];
+                                       arglist[i] = &shortargs[i];
                                        break;
                                   case 4:
                                        intargs[i] = va_arg!(int)(args);
-                                       arglist[i] = cast(Arg) &intargs[i];
+                                       arglist[i] = &intargs[i];
                                        break;
                                   case 8:
                                        longargs[i] = va_arg!(long)(args);
-                                       arglist[i] = cast(Arg) &longargs[i];
+                                       arglist[i] = &longargs[i];
                                        break;
                                   case 16:
                                        voidargs[i] = va_arg!(void[])(args);
-                                       arglist[i] = cast(Arg) &voidargs[i];
+                                       arglist[i] = &voidargs[i];
                                        break;
                                   default:
                                        assert (false, "Unknown size: " ~ Integer.toString (arg.tsize));
                                   }
                            }
                         }
-/+                }
+                }
              else
                 {
                 Arg[64] arglist = void;
@@ -271,7 +264,7 @@ class Layout(T)
                         arglist[i] = args;
                         args += (arg.tsize + int.sizeof - 1) & ~ (int.sizeof - 1);
                         }
-                }+/
+                }
                 return parse (formatStr, arguments, arglist, sink);
         }
 
@@ -406,7 +399,7 @@ class Layout(T)
                                        if (p !is _arg )
                                            length += sink (", ");
                                        processElement (tiStat.value, p);
-                                       p += tiStat.tsize;
+                                       p += tiStat.tsize/tiStat.len;
                                        }
                                    length += sink (" ]");
                                    }
@@ -536,28 +529,28 @@ class Layout(T)
                             return (*cast(bool*) p) ? t : f;
 
                        case TypeCode.BYTE:
-                            return integer (result, *cast(byte*) p, format);
+                            return integer (result, *cast(byte*) p, format, ubyte.max);
 
                        case TypeCode.UBYTE:
-                            return integer (result, *cast(ubyte*) p, format, 'u');
+                            return integer (result, *cast(ubyte*) p, format, ubyte.max, 'u');
 
                        case TypeCode.SHORT:
-                            return integer (result, *cast(short*) p, format);
+                            return integer (result, *cast(short*) p, format, ushort.max);
 
                        case TypeCode.USHORT:
-                            return integer (result, *cast(ushort*) p, format, 'u');
+                            return integer (result, *cast(ushort*) p, format, ushort.max, 'u');
 
                        case TypeCode.INT:
-                            return integer (result, *cast(int*) p, format);
+                            return integer (result, *cast(int*) p, format, uint.max);
 
                        case TypeCode.UINT:
-                            return integer (result, *cast(uint*) p, format, 'u');
+                            return integer (result, *cast(uint*) p, format, uint.max, 'u');
 
                        case TypeCode.ULONG:
-                            return integer (result, *cast(long*) p, format, 'u');
+                            return integer (result, *cast(long*) p, format, ulong.max, 'u');
 
                        case TypeCode.LONG:
-                            return integer (result, *cast(long*) p, format);
+                            return integer (result, *cast(long*) p, format, ulong.max);
 
                        case TypeCode.FLOAT:
                             return floater (result, *cast(float*) p, format);
@@ -578,7 +571,7 @@ class Layout(T)
                             return fromUtf32 ((cast(dchar*) p)[0..1], result);
 
                        case TypeCode.POINTER:
-                            return integer (result, *cast(size_t*) p, format, 'x');
+                            return integer (result, *cast(size_t*) p, format, size_t.max, 'x');
 
                        case TypeCode.CLASS:
                             auto c = *cast(Object*) p;
@@ -628,7 +621,7 @@ class Layout(T)
 
         **********************************************************************/
 
-        protected T[] integer (T[] output, long v, T[] format, T style = 'd')
+        protected T[] integer (T[] output, long v, T[] format, ulong mask = ulong.max, T style = 'd')
         {
                 Integer.Flags flags;
                 uint          width = output.length;
@@ -639,6 +632,8 @@ class Layout(T)
                        output = output [0 .. width];
                        flags |= flags.Zero;
                        }
+                if (style != 'd')
+                    v &= mask;
                 return Integer.format (output, v, cast(Integer.Style) style, flags);
         }
 
@@ -850,6 +845,29 @@ debug (UnitTest)
         // fragments before and after
         assert( Formatter( "d{0}d", "s" ) == "dsd" );
 
+        // Negative numbers in various bases
+        assert( Formatter( "{:b}", cast(byte) -1 ) == "11111111" );
+        assert( Formatter( "{:b}", cast(short) -1 ) == "1111111111111111" );
+        assert( Formatter( "{:b}", cast(int) -1 )
+                == "11111111111111111111111111111111" );
+        assert( Formatter( "{:b}", cast(long) -1 )
+                == "1111111111111111111111111111111111111111111111111111111111111111" );
+
+        assert( Formatter( "{:o}", cast(byte) -1 ) == "377" );
+        assert( Formatter( "{:o}", cast(short) -1 ) == "177777" );
+        assert( Formatter( "{:o}", cast(int) -1 ) == "37777777777" );
+        assert( Formatter( "{:o}", cast(long) -1 ) == "1777777777777777777777" );
+
+        assert( Formatter( "{:d}", cast(byte) -1 ) == "-1" );
+        assert( Formatter( "{:d}", cast(short) -1 ) == "-1" );
+        assert( Formatter( "{:d}", cast(int) -1 ) == "-1" );
+        assert( Formatter( "{:d}", cast(long) -1 ) == "-1" );
+
+        assert( Formatter( "{:x}", cast(byte) -1 ) == "ff" );
+        assert( Formatter( "{:x}", cast(short) -1 ) == "ffff" );
+        assert( Formatter( "{:x}", cast(int) -1 ) == "ffffffff" );
+        assert( Formatter( "{:x}", cast(long) -1 ) == "ffffffffffffffff" );
+
         // argument index
         assert( Formatter( "a{0}b{1}c{2}", "x", "y", "z" ) == "axbycz" );
         assert( Formatter( "a{2}b{1}c{0}", "x", "y", "z" ) == "azbycx" );
@@ -906,6 +924,7 @@ debug (Layout)
         {
                 auto layout = new Layout!(char);
 
+                layout.sprint (new char[3], "hi");
                 Cout (layout ("{:d2}", 56)).newline;
                 Cout (layout ("{:f4}", 0.001)).newline;
                 Cout (layout ("{:f8}", 3.14159)).newline;

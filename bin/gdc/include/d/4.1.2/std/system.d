@@ -1,3 +1,4 @@
+// Written in the D programming language
 
 /**
  * Information about the target operating system, environment, and CPU
@@ -63,7 +64,7 @@ const
 	RedHatLinux,
     }
 
-    /// Byte order endiannes
+    /// Byte order endianness
 
     enum Endian
     {
@@ -73,7 +74,7 @@ const
 
     version(LittleEndian)
     {
-	/// Native system endiannes
+	/// Native system endianness
         Endian endian = Endian.LittleEndian;
     }
     else

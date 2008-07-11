@@ -14,6 +14,8 @@
 
 module tango.group.file;
 
+pragma (msg, "Please post your usage of tango.group to this ticket: http://dsource.org/projects/tango/ticket/1013");
+
 public  import  tango.io.File,
                 tango.io.Print,
                 tango.io.Stdout,

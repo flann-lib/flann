@@ -7,7 +7,6 @@
  */
 module tango.core.Variant;
 
-private import tango.core.Exception : TracedException;
 private import tango.core.Vararg : va_list;
 
 private
@@ -197,7 +196,7 @@ private
  * This exception is thrown whenever you attempt to get the value of a Variant
  * without using a compatible type.
  */
-class VariantTypeMismatchException : TracedException
+class VariantTypeMismatchException : Exception
 {
     this(TypeInfo expected, TypeInfo got)
     {
@@ -273,11 +272,11 @@ struct Variant
             }
             else static if( isPointer!(T) )
             {
-                this.value.ptr = cast(void*)T;
+                this.value.ptr = cast(void*)value;
             }
             else static if( isObject!(T) )
             {
-                this.value.obj = T;
+                this.value.obj = value;
             }
             else
             {
@@ -431,7 +430,6 @@ struct Variant
                 return result;
             }
         }
-        assert(false);
     }
 
     /**
@@ -571,6 +569,7 @@ debug( UnitTest )
         assert( v.isA!(void), v.type.toString );
         assert( v.isEmpty, v.type.toString );
 
+        // Test basic integer storage and implicit casting support
         v = 42;
         assert( v.isA!(int), v.type.toString );
         assert( v.isImplicitly!(long), v.type.toString );
@@ -580,29 +579,53 @@ debug( UnitTest )
         assert( v.get!(long) == 42L );
         assert( v.get!(ulong) == 42uL );
 
+        // Test clearing
         v.clear;
         assert( v.isA!(void), v.type.toString );
         assert( v.isEmpty, v.type.toString );
 
+        // Test strings
         v = "Hello, World!"c;
         assert( v.isA!(char[]), v.type.toString );
         assert( !v.isImplicitly!(wchar[]), v.type.toString );
         assert( v.get!(char[]) == "Hello, World!" );
 
+        // Test array storage
         v = [1,2,3,4,5];
         assert( v.isA!(int[]), v.type.toString );
         assert( v.get!(int[]) == [1,2,3,4,5] );
 
+        // Test pointer storage
+        v = &v;
+        assert( v.isA!(Variant*), v.type.toString );
+        assert( !v.isImplicitly!(int*), v.type.toString );
+        // NB: we *should* be able to implicitly cast any pointer to a void*;
+        // I'm just not sure how to do it right now.  This test will catch
+        // once it works, and remind us to switch the assert around.
+        assert( !v.isImplicitly!(void*), "see above comment in source" );
+        assert( v.get!(Variant*) == &v );
+
+        // Test object storage
+        {
+            scope o = new Object;
+            v = o;
+            assert( v.isA!(Object), v.type.toString );
+            assert( v.get!(Object) is o );
+        }
+
+        // Test doubles and implicit casting
         v = 3.1413;
         assert( v.isA!(double), v.type.toString );
         assert( v.isImplicitly!(real), v.type.toString );
         assert( !v.isImplicitly!(float), v.type.toString );
         assert( v.get!(double) == 3.1413 );
-        
+
+        // Test storage transitivity
         auto u = Variant(v);
         assert( u.isA!(double), u.type.toString );
         assert( u.get!(double) == 3.1413 );
 
+        // Test operators
         v = 38;
         assert( v + 4 == 42 );
         assert( 4 + v == 42 );
@@ -628,6 +651,7 @@ debug( UnitTest )
         assert( Variant("abc") ~ "def" == "abcdef" );
         assert( "abc" ~ Variant("def") == "abcdef" );
 
+        // Test op= operators
         v = 38; v += 4; assert( v == 42 );
         v = 38; v -= 4; assert( v == 34 );
         v = 38; v *= 2; assert( v == 76 );
@@ -641,12 +665,15 @@ debug( UnitTest )
 
         v = "abc"; v ~= "def"; assert( v == "abcdef" );
 
+        // Test comparison
         assert( Variant(0) < Variant(42) );
         assert( Variant(42) > Variant(0) );
         assert( Variant(21) == Variant(21) );
         assert( Variant(0) != Variant(42) );
         assert( Variant("bar") == Variant("bar") );
         assert( Variant("foo") != Variant("bar") );
+
+        // Test variants as AA keys
         {
             auto v1 = Variant(42);
             auto v2 = Variant("foo");
@@ -656,11 +683,13 @@ debug( UnitTest )
             hash[v1] = 0;
             hash[v2] = 1;
             hash[v3] = 2;
-            
+
             assert( hash[v1] == 0 );
             assert( hash[v2] == 1 );
             assert( hash[v3] == 2 );
         }
+
+        // Test AA storage
         {
             int[char[]] hash;
             hash["a"] = 1;

@@ -91,7 +91,7 @@ struct lldiv_t { long quot,rem; }
 	alias gcc.config.errno.ERANGE ERANGE;
     }
     else
-	//const int ERANGE = 34;	// on both Windows and linux
+	const int ERANGE = 34;	// on both Windows and linux
 
 double atof(char *);	///
 int    atoi(char *);	/// ditto

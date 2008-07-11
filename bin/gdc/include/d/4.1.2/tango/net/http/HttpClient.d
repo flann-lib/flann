@@ -108,6 +108,10 @@ class HttpClient
         // should we perform internal redirection?
         private bool                    doRedirect = true;
 
+        // limit the number of redirects, or catch circular redirects
+        private uint                    redirections, 
+                                        redirectionLimit = 5;
+
         // use HTTP v1.0?
         private static const char[] DefaultHttpVersion = "HTTP/1.0";
 
@@ -384,132 +388,137 @@ class HttpClient
 
         private IBuffer open (RequestMethod method, Pump pump, IBuffer input)
         {
-                // create socket, and connect it 
-                socket = createSocket;
-                socket.setTimeout (timeout);
-                socket.connect (address);
-
-                // create buffers for input and output
-                if (input)
-                    input.clear, input.setConduit (socket);
-                else
-                   input = new Buffer (socket);
-                output = new Buffer (socket);
-
-                // save for read() method
-                this.input = input;
-
-                // setup a Host header
-                if (headersOut.get (HttpHeader.Host, null) is null)
-                    headersOut.add (HttpHeader.Host, uri.getHost);
-
-                // http/1.0 needs connection:close
-                headersOut.add (HttpHeader.Connection, "close");
-
-                // attach/extend query parameters if user has added some
-                tmp.clear;
-                auto query = uri.extendQuery (paramsOut.formatTokens(tmp, "&"));
-
-                // patch request path?
-                auto path = uri.getPath;
-                if (path.length is 0)
-                    path = "/";
- 
-                // format encoded request 
-                output (method.name) (" "), uri.encode (&output.consume, path, uri.IncPath);
-
-                // should we emit query as part of request line?
-                if (query.length)
-                    if (method is Get)
-                        output ("?"), uri.encode (&output.consume, query, uri.IncQueryAll);
-                    else 
-                       if (method is Post && pump.funcptr is null)
-                          {
-                          // we're POSTing query text - add default info
-                          if (headersOut.get (HttpHeader.ContentType, null) is null)
-                              headersOut.add (HttpHeader.ContentType, "application/x-www-form-urlencoded");
-
-                          if (headersOut.get (HttpHeader.ContentLength, null) is null)
-                              headersOut.addInt (HttpHeader.ContentLength, query.length);
-                          }
-
-                // complete the request line, and emit headers too
-                output (" ") (DefaultHttpVersion) (HttpConst.Eol);
-   
-                headersOut.produce (&output.consume, HttpConst.Eol);
-                output (HttpConst.Eol);
-
-                // user has additional data to send?
-                if (pump.funcptr)
-                    pump (output);
-                else
-                   // send encoded POST query instead?
-                   if (method is Post && query.length)
-                       uri.encode (&output.consume, query, uri.IncQueryAll);
-
-                // send entire request
-                output.flush;
-
-                // Token for initial parsing of input header lines
-                auto line = new LineIterator!(char) (input);
-
-                // skip any blank lines
-                while (line.next && line.get.length is 0) 
-                      {}
-
-                // throw if we experienced a timeout
-                if (socket.hadTimeout)
-                    responseLine.error ("response timeout");
-
-                // is this a bogus request?
-                if (line.get.length is 0)
-                    responseLine.error ("truncated response");
-
-                // read response line
-                responseLine.parse (line.get);
-
-                // parse incoming headers
-                headersIn.reset.parse (input);
-
-                // check for redirection
-                if (doRedirect)
-                    switch (responseLine.getStatus)
-                           {
-                           case HttpResponseCode.SeeOther:
-                           case HttpResponseCode.MovedPermanently:
-                           case HttpResponseCode.MovedTemporarily:
-                           case HttpResponseCode.TemporaryRedirect:
-                                // drop this connection
-                                close;
-   
-                                // remove any existing Host header
-                                headersOut.remove (HttpHeader.Host);
-
-                                // parse redirected uri
-                                auto redirect = headersIn.get (HttpHeader.Location, "[missing url]");
-                                uri.relParse (redirect);
-
-                                // decode the host name (may take a second or two)
-                                auto host = uri.getHost();
-                                if (host)
-                                    address = new InternetAddress (uri.getHost, uri.getValidPort);
-                                else
-                                   responseLine.error ("redirect has invalid url: "~redirect);
-
-                                // figure out what to do
-                                if (method is Get || method is Head)
-                                    return open (method, pump, input);
-                                else
-                                   if (method is Post)
-                                       return redirectPost (pump, input, responseLine.getStatus);
-                                   else
-                                      responseLine.error ("unexpected redirect for method "~method.name);
-                           default:
-                                break;
-                           }
-
-                // return the input buffer
-                return input;
+                try {
+                    if (++redirections > redirectionLimit)
+                        responseLine.error ("too many redirections, or a circular redirection");
+    
+                    // create socket, and connect it 
+                    socket = createSocket;
+                    socket.setTimeout (timeout);
+                    socket.connect (address);
+    
+                    // create buffers for input and output
+                    if (input)
+                        input.clear, input.setConduit (socket);
+                    else
+                       input = new Buffer (socket);
+                    output = new Buffer (socket);
+    
+                    // save for read() method
+                    this.input = input;
+    
+                    // setup a Host header
+                    if (headersOut.get (HttpHeader.Host, null) is null)
+                        headersOut.add (HttpHeader.Host, uri.getHost);
+    
+                    // http/1.0 needs connection:close
+                    headersOut.add (HttpHeader.Connection, "close");
+    
+                    // attach/extend query parameters if user has added some
+                    tmp.clear;
+                    auto query = uri.extendQuery (paramsOut.formatTokens(tmp, "&"));
+    
+                    // patch request path?
+                    auto path = uri.getPath;
+                    if (path.length is 0)
+                        path = "/";
+     
+                    // format encoded request 
+                    output (method.name) (" "), uri.encode (&output.consume, path, uri.IncPath);
+    
+                    // should we emit query as part of request line?
+                    if (query.length)
+                        if (method is Get)
+                            output ("?"), uri.encode (&output.consume, query, uri.IncQueryAll);
+                        else 
+                           if (method is Post && pump.funcptr is null)
+                              {
+                              // we're POSTing query text - add default info
+                              if (headersOut.get (HttpHeader.ContentType, null) is null)
+                                  headersOut.add (HttpHeader.ContentType, "application/x-www-form-urlencoded");
+    
+                              if (headersOut.get (HttpHeader.ContentLength, null) is null)
+                                  headersOut.addInt (HttpHeader.ContentLength, query.length);
+                              }
+    
+                    // complete the request line, and emit headers too
+                    output (" ") (DefaultHttpVersion) (HttpConst.Eol);
+       
+                    headersOut.produce (&output.consume, HttpConst.Eol);
+                    output (HttpConst.Eol);
+    
+                    // user has additional data to send?
+                    if (pump.funcptr)
+                        pump (output);
+                    else
+                       // send encoded POST query instead?
+                       if (method is Post && query.length)
+                           uri.encode (&output.consume, query, uri.IncQueryAll);
+    
+                    // send entire request
+                    output.flush;
+    
+                    // Token for initial parsing of input header lines
+                    auto line = new LineIterator!(char) (input);
+    
+                    // skip any blank lines
+                    while (line.next && line.get.length is 0) 
+                          {}
+    
+                    // throw if we experienced a timeout
+                    if (socket.hadTimeout)
+                        responseLine.error ("response timeout");
+    
+                    // is this a bogus request?
+                    if (line.get.length is 0)
+                        responseLine.error ("truncated response");
+    
+                    // read response line
+                    responseLine.parse (line.get);
+    
+                    // parse incoming headers
+                    headersIn.reset.parse (input);
+    
+                    // check for redirection
+                    if (doRedirect)
+                        switch (responseLine.getStatus)
+                               {
+                               case HttpResponseCode.SeeOther:
+                               case HttpResponseCode.MovedPermanently:
+                               case HttpResponseCode.MovedTemporarily:
+                               case HttpResponseCode.TemporaryRedirect:
+                                    // drop this connection
+                                    close;
+       
+                                    // remove any existing Host header
+                                    headersOut.remove (HttpHeader.Host);
+    
+                                    // parse redirected uri
+                                    auto redirect = headersIn.get (HttpHeader.Location, "[missing Location header]");
+                                    uri.relParse (redirect);
+    
+                                    // decode the host name (may take a second or two)
+                                    auto host = uri.getHost();
+                                    if (host)
+                                        address = new InternetAddress (uri.getHost, uri.getValidPort);
+                                    else
+                                       responseLine.error ("redirect has invalid url: "~redirect);
+    
+                                    // figure out what to do
+                                    if (method is Get || method is Head)
+                                        return open (method, pump, input);
+                                    else
+                                       if (method is Post)
+                                           return redirectPost (pump, input, responseLine.getStatus);
+                                       else
+                                          responseLine.error ("unexpected redirect for method "~method.name);
+                               default:
+                                    break;
+                               }
+    
+                    // return the input buffer
+                    return input;
+                    } finally {redirections = 0;}
         }
 
         /***********************************************************************

@@ -1,6 +1,9 @@
 /**
- * The traits module defines tools useful for obtaining detailed type
- * information at compile-time.
+ * The traits module defines tools useful for obtaining detailed compile-time
+ * information about a type.  Please note that the mixed naming scheme used in
+ * this module is intentional.  Templates which evaluate to a type follow the
+ * naming convention used for types, and templates which evaluate to a value
+ * follow the naming convention used for functions.
  *
  * Copyright: Copyright (C) 2005-2006 Sean Kelly.  All rights reserved.
  * License:   BSD style: $(LICENSE)
@@ -10,7 +13,7 @@ module tango.core.Traits;
 
 
 /**
- *
+ * Evaluates to true if T is char, wchar, or dchar.
  */
 template isCharType( T )
 {
@@ -21,7 +24,7 @@ template isCharType( T )
 
 
 /**
- *
+ * Evaluates to true if T is a signed integer type.
  */
 template isSignedIntegerType( T )
 {
@@ -34,7 +37,7 @@ template isSignedIntegerType( T )
 
 
 /**
- *
+ * Evaluates to true if T is an unsigned integer type.
  */
 template isUnsignedIntegerType( T )
 {
@@ -47,7 +50,7 @@ template isUnsignedIntegerType( T )
 
 
 /**
- *
+ * Evaluates to true if T is a signed or unsigned integer type.
  */
 template isIntegerType( T )
 {
@@ -57,7 +60,7 @@ template isIntegerType( T )
 
 
 /**
- *
+ * Evaluates to true if T is a real floating-point type.
  */
 template isRealType( T )
 {
@@ -68,7 +71,7 @@ template isRealType( T )
 
 
 /**
- *
+ * Evaluates to true if T is a complex floating-point type.
  */
 template isComplexType( T )
 {
@@ -79,7 +82,7 @@ template isComplexType( T )
 
 
 /**
- *
+ * Evaluates to true if T is an imaginary floating-point type.
  */
 template isImaginaryType( T )
 {
@@ -90,7 +93,8 @@ template isImaginaryType( T )
 
 
 /**
- *
+ * Evaluates to true if T is any floating-point type: real, complex, or
+ * imaginary.
  */
 template isFloatingPointType( T )
 {
@@ -101,7 +105,7 @@ template isFloatingPointType( T )
 
 
 /**
- *
+ * Evaluates to true if T is a pointer type.
  */
 template isPointerType( T )
 {
@@ -110,7 +114,7 @@ template isPointerType( T )
 
 
 /**
- *
+ * Evaluates to true if T is a a pointer, class, interface, or delegate.
  */
 template isReferenceType( T )
 {
@@ -123,7 +127,7 @@ template isReferenceType( T )
 
 
 /**
- *
+ * Evaulates to true if T is a dynamic array type.
  */
 template isDynamicArrayType( T )
 {
@@ -131,17 +135,30 @@ template isDynamicArrayType( T )
 }
 
 
-/**
- *
- */
-template isStaticArrayType( T )
+private template isStaticArrayTypeInst( T )
 {
-    const bool isStaticArrayType = is( typeof(T.init)[(T).sizeof / typeof(T.init).sizeof] == T );
+    const T isStaticArrayTypeInst = void;
 }
 
 
 /**
- *
+ * Evaluates to true if T is a static array type.
+ */
+template isStaticArrayType( T )
+{
+    static if( is( typeof(T.length) ) && !is( typeof(T) == typeof(T.init) ) )
+    {
+        const bool isStaticArrayType = is( T == typeof(T[0])[isStaticArrayTypeInst!(T).length] );
+    }
+    else
+    {
+        const bool isStaticArrayType = false;
+    }
+}
+
+
+/**
+ * Evaluates to true if T is an associative array type.
  */
 private template isAssocArrayType( T )
 {
@@ -150,7 +167,8 @@ private template isAssocArrayType( T )
 
 
 /**
- *
+ * Evaluates to true if T is a function, function pointer, delegate, or
+ * callable object.
  */
 template isCallableType( T )
 {
@@ -162,7 +180,7 @@ template isCallableType( T )
 
 
 /**
- *
+ * Evaluates to the return type of Fn.  Fn is required to be a callable type.
  */
 template ReturnTypeOf( Fn )
 {
@@ -174,16 +192,20 @@ template ReturnTypeOf( Fn )
 
 
 /**
- *
+ * Evaluates to the return type of fn.  fn is required to be callable.
  */
 template ReturnTypeOf( alias fn )
 {
-    alias ReturnTypeOf!(typeof(fn)) ReturnTypeOf;
+    static if( is( typeof(fn) Base == typedef ) )
+        alias ReturnTypeOf!(Base) ReturnTypeOf;
+    else
+        alias ReturnTypeOf!(typeof(fn)) ReturnTypeOf;
 }
 
 
 /**
- *
+ * Evaluates to a tuple representing the parameters of Fn.  Fn is required to
+ * be a callable type.
  */
 template ParameterTupleOf( Fn )
 {
@@ -199,16 +221,21 @@ template ParameterTupleOf( Fn )
 
 
 /**
- *
+ * Evaluates to a tuple representing the parameters of fn.  n is required to
+ * be callable.
  */
 template ParameterTupleOf( alias fn )
 {
-    alias ParameterTupleOf!(typeof(fn)) ParameterTupleOf;
+    static if( is( typeof(fn) Base == typedef ) )
+        alias ParameterTupleOf!(Base) ParameterTupleOf;
+    else
+        alias ParameterTupleOf!(typeof(fn)) ParameterTupleOf;
 }
 
 
 /**
- *
+ * Evaluates to a tuple representing the ancestors of T.  T is required to be
+ * a class or interface type.
  */
 template BaseTypeTupleOf( T )
 {

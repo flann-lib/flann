@@ -49,6 +49,11 @@
  *  POWER = $1<sup>$2</sup>
  *  BIGSUM = $(BIG &Sigma; <sup>$2</sup><sub>$(SMALL $1)</sub>)
  *  CHOOSE = $(BIG &#40;) <sup>$(SMALL $1)</sup><sub>$(SMALL $2)</sub> $(BIG &#41;)
+ *	PLUSMN = &plusmn;
+ *	INFIN = &infin;
+ *	PI = &pi;
+ *	LT = &lt;
+ *	GT = &gt;
  *  TABLE_SV = <table border=1 cellpadding=4 cellspacing=0>
  *      <caption>Special Values</caption>
  *      $0</table>
@@ -77,13 +82,13 @@ version(DigitalMars)
  */
 
 const real E          = 2.7182818284590452354L;  /** e */
-const real LOG2T      = 0x1.a934f0979a3715fcp+1; /** log<sub>2</sub>10 */ // 3.32193 fldl2t
-const real LOG2E      = 0x1.71547652b82fe178p+0; /** log<sub>2</sub>e */ // 1.4427 fldl2e
-const real LOG2       = 0x1.34413509f79fef32p-2; /** log<sub>10</sub>2 */ // 0.30103 fldlg2
+const real LOG2T      = 0x1.a934f0979a3715fcp+1L; /** log<sub>2</sub>10 */ // 3.32193 fldl2t
+const real LOG2E      = 0x1.71547652b82fe178p+0L; /** log<sub>2</sub>e */ // 1.4427 fldl2e
+const real LOG2       = 0x1.34413509f79fef32p-2L; /** log<sub>10</sub>2 */ // 0.30103 fldlg2
 const real LOG10E     = 0.43429448190325182765L;  /** log<sub>10</sub>e */
-const real LN2        = 0x1.62e42fefa39ef358p-1; /** ln 2 */    // 0.693147 fldln2
+const real LN2        = 0x1.62e42fefa39ef358p-1L; /** ln 2 */    // 0.693147 fldln2
 const real LN10       = 2.30258509299404568402L;  /** ln 10 */
-const real PI         = 0x1.921fb54442d1846ap+1; /** &pi; */ // 3.14159 fldpi
+const real PI         = 0x1.921fb54442d1846ap+1L; /** &pi; */ // 3.14159 fldpi
 const real PI_2       = 1.57079632679489661923L;  /** &pi; / 2 */
 const real PI_4       = 0.78539816339744830962L;  /** &pi; / 4 */
 const real M_1_PI     = 0.31830988618379067154L;  /** 1 / &pi; */
@@ -95,9 +100,9 @@ const real SQRT1_2    = 0.70710678118654752440L;  /** &radic;&frac12 */
 //const real SQRTPI  = 1.77245385090551602729816748334114518279754945612238L; /** &radic;&pi; */
 //const real SQRT2PI = 2.50662827463100050242E0L; /** &radic;(2 &pi;) */
 
-const real MAXLOG = 0x1.62e42fefa39ef358p+13;  /** log(real.max) */
-const real MINLOG = -0x1.6436716d5406e6d8p+13; /** log(real.min*real.epsilon) */
-const real EULERGAMMA = 0.57721_56649_01532_86060_65120_90082_40243_10421_59335_93992; /** Euler-Mascheroni constant 0.57721566.. */
+const real MAXLOG = 0x1.62e42fefa39ef358p+13L;  /** log(real.max) */
+const real MINLOG = -0x1.6436716d5406e6d8p+13L; /** log(real.min*real.epsilon) */
+const real EULERGAMMA = 0.57721_56649_01532_86060_65120_90082_40243_10421_59335_93992L; /** Euler-Mascheroni constant 0.57721566.. */
 
 /*
  * Primitives
@@ -358,12 +363,12 @@ version (GNU) {
 /**
  * Returns tangent of x. x is in radians.
  *
- *  $(TABLE_SV
- *  <tr> <th> x               <th> tan(x)      <th> invalid?
- *  <tr> <td> $(NAN)          <td> $(NAN)      <td> yes
- *  <tr> <td> &plusmn;0.0     <td> &plusmn;0.0 <td> no
- *  <tr> <td> &plusmn;&infin; <td> $(NAN) <td> yes
- *  )
+ *	$(TABLE_SV
+ *	$(TR $(TH x)               $(TH tan(x))       $(TH invalid?))
+ *	$(TR $(TD $(NAN))          $(TD $(NAN))       $(TD yes))
+ *	$(TR $(TD $(PLUSMN)0.0)    $(TD $(PLUSMN)0.0) $(TD no))
+ *	$(TR $(TD $(PLUSMN)$(INFIN)) $(TD $(NAN))     $(TD yes))
+ *	)
  */
 real tan(real x)
 {
@@ -562,11 +567,11 @@ unittest{
  * Calculates the arc cosine of x,
  * returning a value ranging from -&pi;/2 to &pi;/2.
  *
- *  $(TABLE_SV
- *      <tr> <th> x        <th> acos(x) <th> invalid?
- *      <tr> <td> &gt;1.0  <td> $(NAN)  <td> yes
- *      <tr> <td> &lt;-1.0 <td> $(NAN)  <td> yes
- *      <tr> <td> $(NAN)   <td> $(NAN)  <td> yes
+ *	$(TABLE_SV
+ *      $(TR $(TH x)         $(TH acos(x)) $(TH invalid?))
+ *      $(TR $(TD $(GT)1.0)  $(TD $(NAN))  $(TD yes))
+ *      $(TR $(TD $(LT)-1.0) $(TD $(NAN))  $(TD yes))
+ *      $(TR $(TD $(NAN))    $(TD $(NAN))  $(TD yes))
  *      )
  */
 real acos(real x)
@@ -585,11 +590,11 @@ unittest {
  * Calculates the arc sine of x,
  * returning a value ranging from -&pi;/2 to &pi;/2.
  *
- *  $(TABLE_SV
- *  <tr> <th> x        <th> asin(x)  <th> invalid?
- *  <tr> <td> &plusmn;0.0    <td> &plusmn;0.0    <td> no
- *  <tr> <td> &gt;1.0  <td> $(NAN)   <td> yes
- *  <tr> <td> &lt;-1.0 <td> $(NAN)   <td> yes
+ *	$(TABLE_SV
+ *	$(TR $(TH x)            $(TH asin(x))      $(TH invalid?))
+ *	$(TR $(TD $(PLUSMN)0.0) $(TD $(PLUSMN)0.0) $(TD no))
+ *	$(TR $(TD $(GT)1.0)     $(TD $(NAN))       $(TD yes))
+ *	$(TR $(TD $(LT)-1.0)    $(TD $(NAN))       $(TD yes))
  *       )
  */
 real asin(real x)
@@ -606,13 +611,13 @@ unittest {
 
 /**
  * Calculates the arc tangent of x,
- * returning a value ranging from -&pi;/2 to &pi;/2.
+ * returning a value ranging from -$(PI)/2 to $(PI)/2.
  *
- *  $(TABLE_SV
- *  <tr> <th> x           <th> atan(x)  <th> invalid?
- *  <tr> <td> &plusmn;0.0       <td> &plusmn;0.0    <td> no
- *  <tr> <td> &plusmn;&infin;  <td> $(NAN)   <td> yes
- *       )
+ *	$(TABLE_SV
+ *	$(TR $(TH x)                 $(TH atan(x))      $(TH invalid?))
+ *	$(TR $(TD $(PLUSMN)0.0)      $(TD $(PLUSMN)0.0) $(TD no))
+ *	$(TR $(TD $(PLUSMN)$(INFIN)) $(TD $(NAN))       $(TD yes))
+ *  )
  */
 real atan(real x)
 {

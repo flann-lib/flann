@@ -385,7 +385,7 @@ int iso8601(T) (T[] src, inout Time value)
             time (tod, p) &&
             *p++ == ',')
             {
-            date.ms = parseInt (p);
+            tod.millis = parseInt (p);
             value = Gregorian.generic.toTime (date, tod);
             return p - src.ptr;
             }

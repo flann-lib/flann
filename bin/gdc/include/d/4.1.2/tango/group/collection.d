@@ -10,6 +10,8 @@
 
 module tango.group.collection;
 
+pragma (msg, "Please post your usage of tango.group to this ticket: http://dsource.org/projects/tango/ticket/1013");
+
 public import   tango.util.collection.HashMap,
                 tango.util.collection.TreeMap,
                 tango.util.collection.TreeBag,

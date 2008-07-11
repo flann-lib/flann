@@ -148,6 +148,30 @@ else version( darwin )
     const SIGUSR2   = 31;
     const SIGURG    = 16;
 }
+else version( freebsd )
+{
+	    //SIGABRT (defined in tango.stdc.signal)
+    const SIGALRM   = 14;
+    const SIGBUS    = 10;
+    const SIGCHLD   = 20;
+    const SIGCONT   = 19;
+    //SIGFPE (defined in tango.stdc.signal)
+    const SIGHUP    = 1;
+    //SIGILL (defined in tango.stdc.signal)
+    //SIGINT (defined in tango.stdc.signal)
+    const SIGKILL   = 9;
+    const SIGPIPE   = 13;
+    const SIGQUIT   = 3;
+    //SIGSEGV (defined in tango.stdc.signal)
+    const SIGSTOP   = 17;
+    //SIGTERM (defined in tango.stdc.signal)
+    const SIGTSTP   = 18;
+    const SIGTTIN   = 21;
+    const SIGTTOU   = 22;
+    const SIGUSR1   = 30;
+    const SIGUSR2   = 31;
+    const SIGURG    = 16;
+}
 
 struct sigaction_t
 {
@@ -404,7 +428,78 @@ else version( darwin )
     int sigsuspend(sigset_t*);
     int sigwait(sigset_t*, int*);
 }
+else version( freebsd )
+{
+	union sigval 
+	{
+		int sival_int;
+		void* sival_ptr;
+		int sigval_int;
+		void* sigval_ptr;
+	}
 
+	struct sigset_t
+	{
+		uint __bits[4];
+	}
+	
+	struct siginfo_t
+	{
+		int si_signo;
+		int si_errno;
+		int si_code;
+		pid_t si_pid;
+		uid_t si_uid;
+		int si_status;
+		void* si_addr;
+		sigval si_value;
+		union __reason
+		{
+			struct __fault
+			{
+				int _trapno;
+			}
+			__fault _fault;
+			struct __timer
+			{
+				int _timerid;
+				int _overrun;
+			}
+			__timer _timer;
+			struct __mesgq
+			{
+				int _mqd;
+			}
+			__mesgq _mesgq;
+			struct __poll
+			{
+				c_long _band;
+			}
+			__poll _poll;
+			struct ___spare___
+			{
+				c_long __spare1__;
+				int[7] __spare2__;
+			}
+			___spare___ __spare__;
+		}
+		__reason _reason;
+	}
+
+	int kill(pid_t, int);
+	int sigaction(int, sigaction_t*, sigaction_t);
+	int sigaddset(sigset_t*, int);
+	int sigdelset(sigset_t*, int);
+	int sigemptyset(sigset_t *);
+	int sigfillset(sigset_t *);
+	int sigismember(sigset_t *, int);
+	int sigpending(sigset_t *);
+	int sigprocmask(int, sigset_t*, sigset_t*);
+	int sigsuspend(sigset_t *);
+	int sigwait(sigset_t*, int*);
+}
+
+	
 //
 // XOpen (XSI)
 //
@@ -640,6 +735,14 @@ else version( darwin )
         c_long  tv_nsec;
     }
 }
+else version( freebsd )
+{
+    struct timespec
+    {
+        time_t  tv_sec;
+        c_long  tv_nsec;
+    }
+}
 
 //
 // Realtime Signals (RTS)
@@ -710,6 +813,11 @@ version( linux )
     int pthread_sigmask(int,  sigset_t*, sigset_t*);
 }
 else version( darwin )
+{
+    int pthread_kill(pthread_t, int);
+    int pthread_sigmask(int,  sigset_t*, sigset_t*);
+}
+else version( freebsd )
 {
     int pthread_kill(pthread_t, int);
     int pthread_sigmask(int,  sigset_t*, sigset_t*);

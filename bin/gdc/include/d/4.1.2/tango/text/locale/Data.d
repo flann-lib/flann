@@ -366,7 +366,14 @@ package struct CultureData {
       }
     }
 
-    error ("Culture is not supported.");
+version (Posix) {
+    error ("Culture not found - if this was not tried set by the application, Tango "
+            ~ "will expect that a locale is set via environment variables LANG or LC_ALL.");
+}
+else {
+    error ("Culture not found - if this was not tried set by the application, Tango "
+            ~ "will expect that a locale is set for the system .");
+}
     return null;
   }
 

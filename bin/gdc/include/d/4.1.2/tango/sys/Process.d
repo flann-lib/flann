@@ -27,6 +27,17 @@ version (Posix)
     private import tango.stdc.posix.sys.wait;
 }
 
+version (Windows)
+{
+  version (Win32SansUnicode)
+  {
+  }
+  else
+  {
+    private import tango.text.convert.Utf : toString16;
+  }
+}
+
 debug (Process)
 {
     private import tango.io.Stdout;
@@ -368,12 +379,12 @@ class Process
             if (contains(_args[i], ' ') || _args[i].length == 0)
             {
                 command ~= '"';
-                command ~= _args[i];
+                command ~= _args[i].substitute("\\", "\\\\").substitute(`"`, `\"`);
                 command ~= '"';
             }
             else
             {
-                command ~= _args[i];
+                command ~= _args[i].substitute("\\", "\\\\").substitute(`"`, `\"`);
             }
         }
         return command;
@@ -639,22 +650,150 @@ class Process
             // Set up members of the PROCESS_INFORMATION structure.
             memset(_info, '\0', PROCESS_INFORMATION.sizeof);
 
-            char[] command = toString();
-            command ~= '\0';
-
-            // Convert the working directory to a null-ended string if
-            // necessary.
-            if (CreateProcessA(null, command.ptr, null, null, true,
-                               DETACHED_PROCESS,
-                               (_env.length > 0 ? toNullEndedBuffer(_env).ptr : null),
-                               toStringz(_workDir), &startup, _info))
+           /* 
+            * quotes and backslashes in the command line are handled very
+            * strangely by Windows.  Through trial and error, I believe that
+            * these are the rules:
+            *
+            * inside or outside quote mode:
+            * 1. if 2 or more backslashes are followed by a quote, the first
+            *    2 backslashes are reduced to 1 backslash which does not
+            *    affect anything after it.
+            * 2. one backslash followed by a quote is interpreted as a
+            *    literal quote, which cannot be used to close quote mode, and
+            *    does not affect anything after it.
+            *
+            * outside quote mode:
+            * 3. a quote enters quote mode
+            * 4. whitespace delineates an argument
+            *
+            * inside quote mode:
+            * 5. 2 quotes sequentially are interpreted as a literal quote and
+            *    an exit from quote mode.
+            * 6. a quote at the end of the string, or one that is followed by
+            *    anything other than a quote exits quote mode, but does not
+            *    affect the character after the quote.
+            * 7. end of line exits quote mode
+            *
+            * In our 'reverse' routine, we will only utilize the first 2 rules
+            * for escapes.
+            */
+            char[] command;
+            foreach(a; _args)
             {
+              char[] nextarg = a.substitute(`"`, `\"`);
+              //
+              // find all instances where \\" occurs, and double all the
+              // backslashes.  Otherwise, it will fall under rule 1, and those
+              // backslashes will be halved.
+              //
+              uint pos = 0;
+              while((pos = nextarg.locatePattern(`\\"`, pos)) < nextarg.length)
+              {
+                //
+                // move back until we have all the backslashes
+                //
+                uint afterback = pos+1;
+                while(pos > 0 && nextarg[pos - 1] == '\\')
+                  pos--;
+
+                //
+                // double the number of backslashes that do not escape the
+                // quote
+                //
+                nextarg = nextarg[0..afterback] ~ nextarg[pos..$];
+                pos = afterback + afterback - pos + 2;
+              }
+
+              //
+              // check to see if we need to surround the arg with quotes.
+              //
+              if(nextarg.length == 0)
+              {
+                nextarg = `""`;
+              }
+              else if(nextarg.contains(' '))
+              {
+                //
+                // surround with quotes, but if the arg ends in backslashes,
+                // we must double all the backslashes, or they will fall under
+                // rule 1 and be halved.
+                //
+                
+                if(nextarg[$-1] == '\\')
+                {
+                  //
+                  // ends in a backslash.  count all the \'s at the end of the
+                  // string, and repeat them
+                  //
+                  pos = nextarg.length - 1;
+                  while(pos > 0 && nextarg[pos-1] == '\\')
+                    pos--;
+                  nextarg ~= nextarg[pos..$];
+                }
+
+                // surround the argument with quotes
+                nextarg = '"' ~ nextarg ~ '"';
+              }
+
+              command ~= ' ';
+              command ~= nextarg;
+            }
+
+            command ~= '\0';
+            command = command[1..$];
+
+            // old way
+            //char[] command = toString();
+            //command ~= '\0';
+
+            version(Win32SansUnicode)
+            {
+              //
+              // ASCII version of CreateProcess
+              //
+
+              // Convert the working directory to a null-ended string if
+              // necessary.
+              //
+              // Note, this used to contain DETACHED_PROCESS, but
+              // this causes problems with redirection if the program being
+              // started decides to allocate a console (i.e. if you run a batch
+              // file)
+              if (CreateProcessA(null, command.ptr, null, null, true,
+                    CREATE_NO_WINDOW,
+                    (_env.length > 0 ? toNullEndedBuffer(_env).ptr : null),
+                    toStringz(_workDir), &startup, _info))
+              {
                 CloseHandle(_info.hThread);
                 _running = true;
+              }
+              else
+              {
+                throw new ProcessCreateException(_args[0], __FILE__, __LINE__);
+              }
             }
             else
             {
+              // Convert the working directory to a null-ended string if
+              // necessary.
+              //
+              // Note, this used to contain DETACHED_PROCESS, but
+              // this causes problems with redirection if the program being
+              // started decides to allocate a console (i.e. if you run a batch
+              // file)
+              if (CreateProcessW(null, toString16(command).ptr, null, null, true,
+                    CREATE_NO_WINDOW,
+                    (_env.length > 0 ? toNullEndedBuffer(_env).ptr : null),
+                    toString16z(toString16(_workDir)), &startup, _info))
+              {
+                CloseHandle(_info.hThread);
+                _running = true;
+              }
+              else
+              {
                 throw new ProcessCreateException(_args[0], __FILE__, __LINE__);
+              }
             }
         }
         else version (Posix)

@@ -617,20 +617,20 @@ public class ArraySeq(T) : SeqCollection!(T), Sortable!(T)
 
                 int mid = (lo + hi) / 2;
 
-                if (cmp.compare(s[lo], s[mid]) > 0)
+                if (cmp(s[lo], s[mid]) > 0)
                    {
                    T tmp = s[lo];
                    s[lo] = s[mid];
                    s[mid] = tmp; // swap
                    }
 
-                if (cmp.compare(s[mid], s[hi]) > 0)
+                if (cmp(s[mid], s[hi]) > 0)
                    {
                    T tmp = s[mid];
                    s[mid] = s[hi];
                    s[hi] = tmp; // swap
 
-                   if (cmp.compare(s[lo], s[mid]) > 0)
+                   if (cmp(s[lo], s[mid]) > 0)
                       {
                       T tmp2 = s[lo];
                       s[lo] = s[mid];
@@ -647,10 +647,10 @@ public class ArraySeq(T) : SeqCollection!(T), Sortable!(T)
 
                 for (;;)
                     {
-                    while (cmp.compare(s[right], partition) > 0)
+                    while (cmp(s[right], partition) > 0)
                            --right;
 
-                    while (left < right && cmp.compare(s[left], partition) <= 0)
+                    while (left < right && cmp(s[left], partition) <= 0)
                            ++left;
 
                     if (left < right)
@@ -916,6 +916,7 @@ debug (Test)
                          Cout (value).newline;
 
                 auto a = array.toArray;
+                a.sort;
                 foreach (value; a)
                          Cout (value).newline;
 

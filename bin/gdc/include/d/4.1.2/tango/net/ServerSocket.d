@@ -104,6 +104,18 @@ class ServerSocket : ISelectable
         }
 
         /***********************************************************************
+
+                Produce a SocketConduit instance. This can be overridden
+                to return SocketConduit derivatives  
+
+        ***********************************************************************/
+
+        protected SocketConduit create ()
+        {
+                return SocketConduit.allocate();
+        }
+
+        /***********************************************************************
         
                 Wait for a client to connect to us, and return a connected
                 SocketConduit.
@@ -112,7 +124,7 @@ class ServerSocket : ISelectable
 
         SocketConduit accept ()
         {
-                auto wrapper = SocketConduit.allocate();
+                auto wrapper = create;
                 auto accepted = socket_.accept (wrapper.socket);
 
                 // force abortive closure to avoid prolonged OS scavenging?

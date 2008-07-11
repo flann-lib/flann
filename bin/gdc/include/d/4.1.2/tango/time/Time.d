@@ -25,9 +25,12 @@ module tango.time.Time;
     Use tango.time.chrono.* to deal with these concepts.
 
     Note: nobody should change this struct without really good reason as it is
-    required to be a part of some interfaces.  It should be treated as a builtin 
-    type. Also note that there is deliberately no opCall constructor here, since 
-    it tends to produce too much overhead. 
+    required to be a part of some interfaces.  It should be treated as a
+    builtin type. Also note that there is deliberately no opCall constructor
+    here, since it tends to produce too much overhead.   If you wish to build
+    a TimeSpan struct from a ticks value, use D's builtin ability to create a
+    struct with given member values (See the description of ticks() for an
+    example of how to do this).
 
     Example:
     -------------------
@@ -93,7 +96,13 @@ struct TimeSpan
         static const TimeSpan zero = {0};
 
         /**
-         * Get the number of ticks that this timespan represents.
+         * Get the number of ticks that this timespan represents.  This can be
+         * used to construct another TimeSpan:
+         *
+         * --------
+         * long ticks = myTimeSpan.ticks;
+         * TimeSpan copyOfMyTimeSpan = TimeSpan(ticks);
+         * --------
          */
         long ticks()
         {
@@ -161,7 +170,6 @@ struct TimeSpan
         /**
          *
          * Subtract the specified TimeSpan from this TimeSpan and assign the
-         * value to this TimeSpan.
          *
          * Params: t = A TimeSpan to subtract
          * Returns: A copy of this instance after subtracting t.
@@ -459,6 +467,14 @@ struct TimeSpan
         calendar, but for an example, the beginning of December 31, 1 BC 
         in the Gregorian calendar is Time.epoch - TimeSpan.days(1).
 
+        Note: common system epochs are provided to allow calculation of time
+        in other time systems.  For example, to convert a Time myTime to Unix
+        time (number of seconds elapsed since 1/1/1970), you can write:
+
+        --------
+        auto unixTime = (myTime - Time.epoch1970).seconds;
+        --------
+
 ******************************************************************************/
 
 struct Time 
@@ -473,14 +489,28 @@ struct Time
 
         /// Represents the smallest and largest Time value.
         static const Time min       = {minimum},
-                          max       = {maximum},
-                          epoch     = {0},
-                          epoch1601 = {TimeSpan.Epoch1601},
-                          epoch1970 = {TimeSpan.Epoch1970};
+                          max       = {maximum};
+
+        /// Represents the epoch (1/1/0001)
+        static const Time epoch     = {0};
+
+        /// Represents the epoch of 1/1/1601 (Commonly used in Windows systems)
+        static const Time epoch1601 = {TimeSpan.Epoch1601};
+
+        /// Represents the epoch of 1/1/1970 (Commonly used in Unix systems)
+        static const Time epoch1970 = {TimeSpan.Epoch1970};
 
         /**********************************************************************
 
-                $(I Property.) Retrieves the number of ticks for this Time
+                $(I Property.) Retrieves the number of ticks for this Time.
+                This value can be used to construct another Time struct by
+                writing:
+
+                ---------
+                long ticks = myTime.ticks;
+                Time copyOfMyTime = Time(ticks);
+                ---------
+
 
                 Returns: A long represented by the time of this 
                          instance.

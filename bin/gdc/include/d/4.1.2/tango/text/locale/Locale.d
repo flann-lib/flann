@@ -93,7 +93,7 @@ public class Locale : Layout!(char)
 
         **********************************************************************/
 
-        protected override char[] integer (char[] output, long v, char[] alt, char format='d')
+        protected override char[] integer (char[] output, long v, char[] alt, ulong mask=ulong.max, char format='d')
         {
                 return formatInteger (output, v, alt, numberFormat);
         }

@@ -2130,7 +2130,7 @@ class BufferedFile: BufferedStream {
   }
 
   /// creates file in requested mode
-  void create(char[] filename, FileMode mode = FileMode.Out) {
+  void create(char[] filename, FileMode mode = FileMode.OutNew) {
     File sf = cast(File)s;
     sf.create(filename,mode);
     resetSource();

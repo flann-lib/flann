@@ -27,6 +27,12 @@ module tango.util.collection.model.Comparator;
  *
 **/
 
+template Comparator(T)
+{
+        alias int delegate(T, T) Comparator;
+}
+
+/+
 public interface Comparator(T)
 {
         /**
@@ -37,4 +43,4 @@ public interface Comparator(T)
         **/
         public int compare(T fst, T snd);
 }
-
++/

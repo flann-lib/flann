@@ -251,7 +251,7 @@ public class LLCell(T) : Cell!(T)
                           return hd;
                           }
 
-                    int diff = cmp.compare(a.element(), b.element());
+                    int diff = cmp (a.element(), b.element());
                     if (diff <= 0)
                        {
                        if (hd is null)

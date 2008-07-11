@@ -1,4 +1,4 @@
-/*******************************************************************************
+﻿/*******************************************************************************
  *
  * copyright:   Copyright © 2007 Daniel Keep.  All rights reserved.
  *
@@ -129,8 +129,8 @@ struct LocalFileHeader
 
         // Update lengths in data
         Data data = this.data;
-        data.file_name_length = file_name.length;
-        data.extra_field_length = extra_field.length;
+        data.file_name_length = cast(ushort) file_name.length;
+        data.extra_field_length = cast(ushort) extra_field.length;
 
         // Do it
         version( BigEndian ) swapAll(data);
@@ -260,7 +260,7 @@ struct FileHeader
     alias FileHeaderData Data;
     Data* data;
     static assert( Data.sizeof == 42 );
-    
+
     char[] file_name;
     ubyte[] extra_field;
     char[] file_comment;
@@ -314,11 +314,11 @@ struct FileHeader
 
         // Update the lengths
         Data data = *(this.data);
-        data.file_name_length = file_name.length;
-        data.extra_field_length = extra_field.length;
-       data.file_comment_length = file_comment.length;
+        data.file_name_length = cast(ushort) file_name.length;
+        data.extra_field_length = cast(ushort) extra_field.length;
+        data.file_comment_length = cast(ushort) file_comment.length;
 
-        // Ok; let's do this! 
+        // Ok; let's do this!
         version( BigEndian ) swapAll(data);
         writeExact(output, (&data)[0..1]);
         writeExact(output, file_name);
@@ -405,7 +405,7 @@ struct EndOfCDRecord
     alias EndOfCDRecordData Data;
     Data data;
     static assert( data.sizeof == 18 );
-    
+
     char[] file_comment;
 
     void[] data_arr()
@@ -425,8 +425,8 @@ struct EndOfCDRecord
 
         // Set up data block
         Data data = this.data;
-        data.file_comment_length = file_comment.length;
-        
+        data.file_comment_length = cast(ushort) file_comment.length;
+
         version( BigEndian ) swapAll(data);
         writeExact(output, (&data)[0..1]);
     }
@@ -493,6 +493,8 @@ private
             case 8:     return Method.Deflate;
             default:    return Method.Unsupported;
         }
+
+        assert(false);
     }
 
     ushort fromMethod(Method method)
@@ -504,6 +506,8 @@ private
             default:
                 assert(false, "unsupported compression method");
         }
+
+        assert(false);
     }
 
     /* NOTE: This doesn't actually appear to work.  Using the default magic
@@ -568,7 +572,7 @@ interface ZipWriter
  *      ...
  *  }
  * -----
- * 
+ *
  * See the ZipEntry class for more information on the contents of entries.
  *
  * Note that this class can only be used with input sources which can be
@@ -610,7 +614,7 @@ version( none )
         this(source.input);
     }
 }
-    
+
     /**
      * Creates a ZipBlockReader using the provided InputStream.  Please note
      * that this InputStream must also implement the IConduit.Seek interface.
@@ -659,13 +663,18 @@ version( none )
                 read_cd;
                 assert( state == State.Open );
                 return more;
-                
+
             case State.Open:
                 return (current_index < headers.length);
 
             case State.Done:
                 return false;
+
+            default:
+                assert(false);
         }
+
+        assert(false);
     }
 
     /**
@@ -680,7 +689,7 @@ version( none )
     {
         if( !more )
             ZipExhaustedException();
-        
+
         return new ZipEntry(headers[current_index++], &open_file);
     }
 
@@ -710,7 +719,7 @@ version( none )
         while( more )
         {
             entry = get(entry);
-            
+
             result = dg(entry);
             if( result )
                 break;
@@ -795,7 +804,8 @@ private:
             }
 
             auto used = header.map(cd_data[4..$]);
-            cd_data = cd_data[4+used..$];
+            assert( used <= (size_t.max-4) );
+            cd_data = cd_data[4+cast(size_t)used..$];
 
             // Update offset for next record
             cdr_offset += 4 /* for sig. */ + used;
@@ -835,16 +845,17 @@ private:
         const max_chunk_len = 4 + EndOfCDRecord.Data.sizeof + ushort.max;
 
         auto file_len = seeker.seek(0, IConduit.Seek.Anchor.End);
+        assert( file_len <= size_t.max );
 
         // We're going to need min(max_chunk_len, file_len) bytes.
-        long chunk_len = max_chunk_len;
+        size_t chunk_len = max_chunk_len;
         if( file_len < max_chunk_len )
-            chunk_len = file_len;
+            chunk_len = cast(size_t) file_len;
         //Stderr.formatln(" . chunk_len = {}", chunk_len);
 
         // Seek back and read in the chunk.  Don't forget to clean up after
         // ourselves.
-        seeker.seek(-chunk_len, IConduit.Seek.Anchor.End);
+        seeker.seek(-cast(long)chunk_len, IConduit.Seek.Anchor.End);
         auto chunk_offset = seeker.seek(0, IConduit.Seek.Anchor.Current);
         //Stderr.formatln(" . chunk_offset = {}", chunk_offset);
         auto chunk = new ubyte[chunk_len];
@@ -853,23 +864,23 @@ private:
 
         // Now look for our magic number.  Don't forget that on big-endian
         // machines, we need to byteswap the value we're looking for.
+        uint eocd_magic = EndOfCDRecord.signature;
         version( BigEndian )
-            uint eocd_magic = swap(EndOfCDRecord.signature);
-        else
-            uint eocd_magic = EndOfCDRecord.signature;
+            swap(eocd_magic);
 
         size_t eocd_loc = -1;
 
-        for( size_t i=chunk_len-18; i>=0; --i )
-        {
-            if( *(cast(uint*)(chunk.ptr+i)) == eocd_magic )
+        if( chunk_len >= 18 )
+            for( size_t i=chunk_len-18; i>=0; --i )
             {
-                // Found the bugger!  Make sure we skip the signature (forgot
-                // to do that originally; talk about weird errors :P)
-                eocd_loc = i+4;
-                break;
+                if( *(cast(uint*)(chunk.ptr+i)) == eocd_magic )
+                {
+                    // Found the bugger!  Make sure we skip the signature (forgot
+                    // to do that originally; talk about weird errors :P)
+                    eocd_loc = i+4;
+                    break;
+                }
             }
-        }
 
         // If we didn't find it, then we'll assume that this is not a valid
         // archive.
@@ -949,10 +960,10 @@ private:
         }
 
         LocalFileHeader lheader; lheader.fill(source);
-        
+
         if( !lheader.agrees_with(header) )
             ZipException.incons(header.file_name);
-        
+
         // Ok; get a slice stream for the file
         return new SliceSeekInputStream(
              source, seeker.seek(0, IConduit.Seek.Anchor.Current),
@@ -983,7 +994,7 @@ class ZipBlockWriter : ZipWriter
     {
         this(FilePath(path));
     }
-    
+
     /// ditto
     this(PathView path)
     {
@@ -1121,12 +1132,19 @@ private:
             ZipException.cdtoolong;
 
         {
+            assert( entries.length < ushort.max );
+            assert( cd_len < uint.max );
+            assert( cd_pos < uint.max );
+
             EndOfCDRecord eocdr;
             eocdr.data.central_directory_entries_on_this_disk =
-                entries.length;
-            eocdr.data.central_directory_entries_total = entries.length;
-            eocdr.data.size_of_central_directory = cd_len;
-            eocdr.data.offset_of_start_of_cd_from_starting_disk = cd_pos;
+                cast(ushort) entries.length;
+            eocdr.data.central_directory_entries_total =
+                cast(ushort) entries.length;
+            eocdr.data.size_of_central_directory =
+                cast(ushort) cd_len;
+            eocdr.data.offset_of_start_of_cd_from_starting_disk =
+                cast(ushort) cd_pos;
 
             write(output, EndOfCDRecord.signature);
             eocdr.put(output);
@@ -1147,9 +1165,9 @@ private:
 
         timeToDos(info.modified, lhdata.modification_file_time,
                                  lhdata.modification_file_date);
-        
+
         put_local_header(lhdata, info.name);
-        
+
         // Store comment
         entries[$-1].comment = info.comment;
 
@@ -1186,12 +1204,14 @@ private:
             // Count number of bytes coming in from the source file
             scope in_counter = new CounterInput(in_chain);
             in_chain = in_counter;
-            scope(success) uncompressed_size = in_counter.count;
+            assert( in_counter.count <= typeof(uncompressed_size).max );
+            scope(success) uncompressed_size = cast(uint) in_counter.count;
 
             // Count the number of bytes going out to the archive
             scope out_counter = new CounterOutput(out_chain);
             out_chain = out_counter;
-            scope(success) compressed_size = out_counter.count;
+            assert( out_counter.count <= typeof(compressed_size).max );
+            scope(success) compressed_size = cast(uint) out_counter.count;
 
             // Add crc
             scope crc_d = new Crc32(/*CRC_MAGIC*/);
@@ -1217,6 +1237,9 @@ private:
                             ZlibOutput.Level.init, -15);
                     out_chain = compress;
                     break;
+
+                default:
+                    assert(false);
             }
 
             // All done.
@@ -1317,6 +1340,8 @@ private:
                 {
                     case 0: minver(10); break;
                     case 8: minver(20); break;
+                    default:
+                        assert(false);
                 }
 
                 // File is a folder
@@ -1345,16 +1370,17 @@ private:
 
         // Write out the header and the filename
         auto header_pos = seeker.seek(0, IConduit.Seek.Anchor.Current);
-        
+
         write(output, LocalFileHeader.signature);
         header.put(output);
 
         // Save the header
+        assert( header_pos <= int.max );
         Entry entry;
         entry.data.fromLocal(header.data);
         entry.filename = file_name;
         entry.header_position = header_pos;
-        entry.data.relative_offset_of_local_header = header_pos;
+        entry.data.relative_offset_of_local_header = cast(int) header_pos;
         entries ~= entry;
     }
 }
@@ -1382,9 +1408,9 @@ class ZipEntry
      */
     uint size()
     {
-        return header.data.uncompressed_size;;
+        return header.data.uncompressed_size;
     }
-    
+
     /**
      * Opens a stream for reading from the file.  The contents of this stream
      * represent the decompressed contents of the file stored in the archive.
@@ -1423,7 +1449,7 @@ class ZipEntry
     {
         // If we haven't verified the contents yet, just read everything in
         // to trigger it.
-        scope s = open;
+        auto s = open;
         auto buffer = new ubyte[s.conduit.bufferSize];
         while( s.read(buffer) != s.Eof )
             {/*Do nothing*/}
@@ -1525,13 +1551,11 @@ struct ZipEntryInfo
 // Exceptions
 //
 
-import tango.core.Exception : TracedException;
-
 /**
  * This is the base class from which all exceptions generated by this module
  * derive from.
  */
-class ZipException : TracedException
+class ZipException : Exception
 {
     this(char[] msg) { super(msg); }
 
@@ -1679,7 +1703,7 @@ private:
         char[] ms;
         switch( m )
         {
-            case 0:     
+            case 0:
             case 8:     assert(false); // supported
 
             case 1:     ms = "Shrink"; break;
@@ -2069,27 +2093,27 @@ static this()
         '\u00e4': '\x84', '\u00e0': '\x85', '\u00e5': '\x86', '\u00e7': '\x87',
         '\u00ea': '\x88', '\u00eb': '\x89', '\u00e8': '\x8a', '\u00ef': '\x8b',
         '\u00ee': '\x8c', '\u00ec': '\x8d', '\u00c4': '\x8e', '\u00c5': '\x8f',
-    
+
         '\u00c9': '\x90', '\u00e6': '\x91', '\u00c6': '\x92', '\u00f4': '\x93',
         '\u00f6': '\x94', '\u00f2': '\x95', '\u00fb': '\x96', '\u00f9': '\x97',
         '\u00ff': '\x98', '\u00d6': '\x99', '\u00dc': '\x9a', '\u00f8': '\x9b',
         '\u00a3': '\x9c', '\u00a5': '\x9d', '\u20a7': '\x9e', '\u0192': '\x9f',
-    
+
         '\u00e1': '\xa0', '\u00ed': '\xa1', '\u00f3': '\xa2', '\u00fa': '\xa3',
         '\u00f1': '\xa4', '\u00d1': '\xa5', '\u00aa': '\xa6', '\u00ba': '\xa7',
         '\u00bf': '\xa8', '\u2310': '\xa9', '\u00ac': '\xaa', '\u00bd': '\xab',
         '\u00bc': '\xac', '\u00a1': '\xad', '\u00ab': '\xae', '\u00bb': '\xaf',
-    
+
         '\u2591': '\xb0', '\u2592': '\xb1', '\u2593': '\xb2', '\u2502': '\xb3',
         '\u2524': '\xb4', '\u2561': '\xb5', '\u2562': '\xb6', '\u2556': '\xb7',
         '\u2555': '\xb8', '\u2563': '\xb9', '\u2551': '\xba', '\u2557': '\xbb',
         '\u255d': '\xbc', '\u255c': '\xbd', '\u255b': '\xbe', '\u2510': '\xbf',
-    
+
         '\u2514': '\xc0', '\u2534': '\xc1', '\u252c': '\xc2', '\u251c': '\xc3',
         '\u2500': '\xc4', '\u253c': '\xc5', '\u255e': '\xc6', '\u255f': '\xc7',
         '\u255a': '\xc8', '\u2554': '\xc9', '\u2569': '\xca', '\u2566': '\xcb',
         '\u2560': '\xcc', '\u2550': '\xcd', '\u256c': '\xce', '\u2567': '\xcf',
-    
+
         '\u2568': '\xd0', '\u2564': '\xd1', '\u2565': '\xd2', '\u2559': '\xd3',
         '\u2558': '\xd4', '\u2552': '\xd5', '\u2553': '\xd6', '\u256b': '\xd7',
         '\u256a': '\xd8', '\u2518': '\xd9', '\u250c': '\xda', '\u2588': '\xdb',
@@ -2099,7 +2123,7 @@ static this()
         '\u03a3': '\xe4', '\u03c3': '\xe5', '\u00b5': '\xe6', '\u03c4': '\xe7',
         '\u03a6': '\xe8', '\u0398': '\xe9', '\u03a9': '\xea', '\u03b4': '\xeb',
         '\u221e': '\xec', '\u03c6': '\xed', '\u03b5': '\xee', '\u2229': '\xef',
-    
+
         '\u2261': '\xf0', '\u00b1': '\xf1', '\u2265': '\xf2', '\u2264': '\xf3',
         '\u2320': '\xf4', '\u2321': '\xf5', '\u00f7': '\xf6', '\u2248': '\xf7',
         '\u00b0': '\xf8', '\u2219': '\xf9', '\u00b7': '\xfa', '\u221a': '\xfb',
@@ -2125,13 +2149,13 @@ ubyte[] utf8_to_cp437(char[] s)
             {
                 if( 32 <= d && d <= 126 || d == 0 )
                     r[k++] = d;
-                
+
                 else if( d == '\u2302' )
                     r[k++] = '\x7f';
 
                 else if( auto e_ptr = d in utf8_to_cp437_map )
                     r[k++] = *e_ptr;
-                
+
                 else
                 {
                     throw new Exception("cannot encode character \""
@@ -2227,20 +2251,20 @@ void timeToDos(Time time, out ushort dostime, out ushort dosdate)
 
     // *muttering angrily*
     scope cal = new Gregorian;
-    
+
     if( cal.getYear(time) < 1980 )
         ZipException.tooold;
 
     auto span = time.span;
-    dostime =
+    dostime = cast(ushort) (
         (span.seconds / 2)
       | (span.minutes << 5)
-      | (span.hours   << 11);
+      | (span.hours   << 11));
 
-    dosdate =
+    dosdate = cast(ushort) (
         (cal.getDayOfMonth(time))
       | (cal.getMonth(time) << 5)
-      |((cal.getYear(time) - 1980) << 9);
+      |((cal.getYear(time) - 1980) << 9));
 }
 
 // ************************************************************************** //
@@ -2442,7 +2466,7 @@ class SliceSeekInputStream : InputStream, IConduit.Seek
 
         // Otherwise, make sure we don't try to read past the end of the slice
         if( _position+dst.length > length )
-            dst.length = length-_position;
+            dst.length = cast(size_t) (length-_position);
 
         // Seek source stream to the appropriate location.
         if( seeker.seek(0, Anchor.Current) != begin+_position )
@@ -2482,6 +2506,9 @@ class SliceSeekInputStream : InputStream, IConduit.Seek
                 _position = length+offset;
                 if( _position < 0 ) _position = 0;
                 break;
+
+            default:
+                assert(false);
         }
 
         return _position;
@@ -2542,7 +2569,7 @@ class SliceInputStream : InputStream
 
         // Otherwise, make sure we don't try to read past the end of the slice
         if( dst.length > _length )
-            dst.length = _length;
+            dst.length = cast(size_t) _length;
 
         // Do the read
         auto read = source.read(dst);
@@ -2621,7 +2648,7 @@ class SliceSeekOutputStream : OutputStream, IConduit.Seek
         // Otherwise, make sure we don't try to write past the end of the
         // slice
         if( _position+src.length > length )
-            src.length = length-_position;
+            src.length = cast(size_t) (length-_position);
 
         // Seek source stream to the appropriate location.
         if( seeker.seek(0, Anchor.Current) != begin+_position )
@@ -2666,6 +2693,9 @@ class SliceSeekOutputStream : OutputStream, IConduit.Seek
                 _position = length+offset;
                 if( _position < 0 ) _position = 0;
                 break;
+
+            default:
+                assert(false);
         }
 
         return _position;

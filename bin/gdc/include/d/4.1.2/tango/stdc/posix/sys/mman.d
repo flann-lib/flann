@@ -31,7 +31,23 @@ POSIX_MADV_WILLNEED
 POSIX_MADV_DONTNEED
 */
 
-version( darwin )
+version( linux )
+{
+    const POSIX_MADV_NORMAL     = 0;
+    const POSIX_MADV_RANDOM     = 1;
+    const POSIX_MADV_SEQUENTIAL = 2;
+    const POSIX_MADV_WILLNEED   = 3;
+    const POSIX_MADV_DONTNEED   = 4;
+}
+else version( darwin )
+{
+    const POSIX_MADV_NORMAL     = 0;
+    const POSIX_MADV_RANDOM     = 1;
+    const POSIX_MADV_SEQUENTIAL = 2;
+    const POSIX_MADV_WILLNEED   = 3;
+    const POSIX_MADV_DONTNEED   = 4;
+}
+else version( freebsd )
 {
     const POSIX_MADV_NORMAL     = 0;
     const POSIX_MADV_RANDOM     = 1;
@@ -64,6 +80,13 @@ else version( darwin )
     const PROT_WRITE    = 0x02;
     const PROT_EXEC     = 0x04;
 }
+else version( freebsd )
+{
+    const PROT_NONE     = 0x00;
+    const PROT_READ     = 0x01;
+    const PROT_WRITE    = 0x02;
+    const PROT_EXEC     = 0x04;
+}
 
 //
 // Memory Mapped Files, Shared Memory Objects, or Typed Memory Objects (MC3)
@@ -79,6 +102,11 @@ version( linux )
     int   munmap(void*, size_t);
 }
 else version( darwin )
+{
+    void* mmap(void*, size_t, int, int, int, off_t);
+    int   munmap(void*, size_t);
+}
+else version( freebsd )
 {
     void* mmap(void*, size_t, int, int, int, off_t);
     int   munmap(void*, size_t);
@@ -133,6 +161,21 @@ else version( darwin )
 
     int	msync(void*, size_t, int);
 }
+else version( darwin )
+{
+    const MAP_SHARED    = 0x0001;
+    const MAP_PRIVATE   = 0x0002;
+    const MAP_FIXED     = 0x0010;
+    const MAP_ANON      = 0x1000; // non-standard
+
+    const MAP_FAILED    = cast(void*)-1;
+
+	const MS_SYNC       = 0x0000;
+    const MS_ASYNC      = 0x0001;
+    const MS_INVALIDATE = 0x0002;
+
+    int	msync(void*, size_t, int);
+}
 
 //
 // Process Memory Locking (ML)
@@ -162,6 +205,14 @@ else version( darwin )
     int mlockall(int);
     int munlockall();
 }
+else version( freebsd )
+{
+    const MCL_CURRENT   = 0x0001;
+    const MCL_FUTURE    = 0x0002;
+
+    int mlockall(int);
+    int munlockall();
+}
 
 //
 // Range Memory Locking (MLR)
@@ -181,6 +232,11 @@ else version( darwin )
     int mlock(void*, size_t);
     int munlock(void*, size_t);
 }
+else version( freebsd )
+{
+    int mlock(void*, size_t);
+    int munlock(void*, size_t);
+}
 
 //
 // Memory Protection (MPR)
@@ -190,6 +246,10 @@ int mprotect(void*, size_t, int);
 */
 
 version( darwin )
+{
+    int mprotect(void*, size_t, int);
+}
+else version( freebsd )
 {
     int mprotect(void*, size_t, int);
 }
@@ -208,6 +268,11 @@ version( linux )
     int shm_unlink(char*);
 }
 else version( darwin )
+{
+    int shm_open(char*, int, mode_t);
+    int shm_unlink(char*);
+}
+else version( freebsd )
 {
     int shm_open(char*, int, mode_t);
     int shm_unlink(char*);

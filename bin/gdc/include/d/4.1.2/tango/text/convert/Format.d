@@ -13,8 +13,6 @@
 
 module tango.text.convert.Format;
 
-private import tango.io.model.IConduit;
-
 private import tango.text.convert.Layout;
 
 /******************************************************************************
@@ -30,45 +28,3 @@ static this()
         Format = new Layout!(char);
 }
 
-/******************************************************************************
-
-        Global function to format into a stream
-
-******************************************************************************/
-
-deprecated void format (OutputStream output, char[] fmt, ...)
-{
-        Format.convert ((char[] s){return output.write(s);}, _arguments, _argptr, fmt);
-}
-
-/******************************************************************************
-
-        Global function to format into a stream, and add a newline
-
-******************************************************************************/
-
-deprecated void formatln (OutputStream output, char[] fmt, ...)
-{
-        version (Win32)
-                 const char[] Eol = "\r\n";
-           else
-              const char[] Eol = "\n";
-
-        Format.convert ((char[] s){return output.write(s);}, _arguments, _argptr, fmt);
-        output.write (Eol);
-}
-
-
-/******************************************************************************
-
-******************************************************************************/
-
-debug (Format)
-{
-        import tango.io.Console;
-
-        void main()
-        {
-                formatln (Cout.stream, "hello {}", "world");
-        }
-}

@@ -72,3 +72,28 @@ else version( darwin )
 {
 
 }
+else version( freebsd )
+{
+    struct ipc_perm
+    {
+		ushort cuid;
+		ushort cguid;
+		ushort uid;
+		ushort gid;
+		ushort mode;
+		ushort seq;
+		key_t key;
+    }
+
+    const IPC_CREAT     = 01000;
+    const IPC_EXCL      = 02000;
+    const IPC_NOWAIT    = 04000;
+
+    const key_t IPC_PRIVATE = 0;
+
+    const IPC_RMID      = 0;
+    const IPC_SET       = 1;
+    const IPC_STAT      = 2;
+
+    key_t ftok(char*, int);
+}

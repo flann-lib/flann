@@ -11,6 +11,7 @@ module tango.stdc.posix.netinet.in_;
 private import tango.stdc.posix.config;
 public import tango.stdc.inttypes : uint32_t, uint16_t;
 public import tango.stdc.posix.arpa.inet;
+public import tango.stdc.posix.sys.socket; // for sa_family_t
 
 extern (C):
 
@@ -24,9 +25,9 @@ NOTE: The following must must be defined in tango.stdc.posix.arpa.inet to break
 in_port_t
 in_addr_t
 
-sa_family_t
-uint8_t  // from tango.stdc.inttypes
-uint32_t // from tango.stdc.inttypes
+sa_family_t // from tango.stdc.posix.sys.socket
+uint8_t     // from tango.stdc.inttypes
+uint32_t    // from tango.stdc.inttypes
 
 struct in_addr
 {
@@ -58,8 +59,6 @@ ntohs() // from tango.stdc.posix.arpa.inet
 
 version( linux )
 {
-    alias ushort sa_family_t;
-
     private const __SOCK_SIZE__ = 16;
 
     struct sockaddr_in
@@ -81,12 +80,56 @@ version( linux )
         IPPROTO_UDP  = 17
     }
 
-    const c_ulong INADDR_ANY        = 0x00000000;
-    const c_ulong INADDR_BROADCAST  = 0xffffffff;
+    const uint INADDR_ANY       = 0x00000000;
+    const uint INADDR_BROADCAST = 0xffffffff;
 }
 else version( darwin )
 {
+    private const __SOCK_SIZE__ = 16;
 
+    struct sockaddr_in
+    {
+        ubyte       sin_len;
+        sa_family_t sin_family;
+        in_port_t   sin_port;
+        in_addr     sin_addr;
+        ubyte[8]    sin_zero;
+    }
+
+    enum
+    {
+        IPPROTO_IP   = 0,
+        IPPROTO_ICMP = 1,
+        IPPROTO_TCP  = 6,
+        IPPROTO_UDP  = 17
+    }
+
+    const uint INADDR_ANY       = 0x00000000;
+    const uint INADDR_BROADCAST = 0xffffffff;
+}
+else version( freebsd )
+{
+    private const __SOCK_SIZE__ = 16;
+
+    struct sockaddr_in
+    {
+        ubyte       sin_len;
+        sa_family_t sin_family;
+        in_port_t   sin_port;
+        in_addr     sin_addr;
+        ubyte[8]    sin_zero;
+    }
+
+    enum
+    {
+        IPPROTO_IP   = 0,
+        IPPROTO_ICMP = 1,
+        IPPROTO_TCP  = 6,
+        IPPROTO_UDP  = 17
+    }
+
+    const uint INADDR_ANY       = 0x00000000;
+    const uint INADDR_BROADCAST = 0xffffffff;
 }
 
 

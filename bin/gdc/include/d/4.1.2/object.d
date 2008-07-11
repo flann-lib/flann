@@ -155,9 +155,16 @@ class ModuleInfo
 
 class Exception : Object
 {
+    interface TraceInfo
+    {
+        int opApply( int delegate( inout char[] ) );
+        char[] toString();
+    }
+
     char[]      msg;
     char[]      file;
     size_t      line;
+    TraceInfo   info;
     Exception   next;
 
     this(char[] msg, Exception next = null);

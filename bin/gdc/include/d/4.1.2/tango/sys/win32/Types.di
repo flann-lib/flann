@@ -6,7 +6,7 @@ module tango.sys.win32.Types;
 */
 
 /+ Aliases, Types, and Constants +/
-const int NULL = 0;
+const void* NULL = null;
 alias int SCODE;
 alias void VOID;
 alias void* POINTER;
@@ -38,11 +38,11 @@ const BOOL TRUE = -1;
 alias char* PANSICHAR;
 alias wchar* PWIDECHAR;
 alias int* PINTEGER;
-alias double LONGLONG;
+alias long LONGLONG;
 alias LONGLONG* PLONGLONG;
-alias double DWORDLONG;
+alias ulong DWORDLONG;
 alias DWORDLONG* PDWORDLONG;
-alias double FLOAT;
+alias float FLOAT;
 alias void* HANDLE;
 alias HANDLE HACCEL;
 alias HANDLE HBITMAP;
@@ -122,7 +122,7 @@ alias PCHAR PCSTR;
 alias wchar* PCWCH;
 alias wchar* PCWSTR;
 alias DWORD* PDWORD;
-alias double* PFLOAT;
+alias float* PFLOAT;
 alias HANDLE* PHANDLE;
 alias HKEY* PHKEY;
 alias int* PINT;
@@ -166,6 +166,9 @@ align(1):
 	WORD    Data3;
 	BYTE[8] Data4;
 }
+
+alias GUID IID;
+alias IID* REFIID;
 
 enum { AclRevisionInformation = 1, AclSizeInformation,  };
 alias ACL_INFORMATION_CLASS _ACL_INFORMATION_CLASS;
@@ -1258,6 +1261,7 @@ enum : DWORD {
     DIB_RGB_COLORS = (0),
     GENERIC_READ = (0x80000000),
     GENERIC_WRITE = (0x40000000),
+    GENERIC_EXECUTE = (0x20000000),
     FILE_READ_DATA = (0x0001),
     FILE_LIST_DIRECTORY = (0x0001),
     FILE_WRITE_DATA = (0x0002),
@@ -1439,6 +1443,7 @@ enum : DWORD {
     CREATE_DEFAULT_ERROR_MODE = (67108864),
     CREATE_NEW_CONSOLE = (16),
     CREATE_NEW_PROCESS_GROUP = (512),
+    CREATE_NO_WINDOW = (0x8000000),
     CREATE_SEPARATE_WOW_VDM = (2048),
     CREATE_SUSPENDED = (4),
     CREATE_UNICODE_ENVIRONMENT = (1024),
@@ -1814,6 +1819,7 @@ enum : DWORD {
     FILE_MAP_READ = (4),
     FILE_MAP_WRITE = (2),
     FILE_MAP_COPY = (1),
+    FILE_MAP_EXECUTE = (0x20),
     MUTEX_ALL_ACCESS = (0x1f0001),
     MUTEX_MODIFY_STATE = (1),
     SYNCHRONIZE = (0x100000),
@@ -2812,7 +2818,6 @@ enum : DWORD {
     SC_MANAGER_LOCK = (8),
     SC_MANAGER_QUERY_LOCK_STATUS = (16),
     SC_MANAGER_MODIFY_BOOT_CONFIG = (32),
-    HWND_BROADCAST = (0xFFFF),
     TAPE_FORMAT = (0x5),
     TAPE_LOAD = (0),
     TAPE_LOCK = (0x3),
@@ -2852,6 +2857,8 @@ enum : DWORD {
     RDW_UPDATENOW = (256),
     RDW_ALLCHILDREN = (128),
     RDW_NOCHILDREN = (64),
+/*
+    //
     HKEY_CLASSES_ROOT = (0x80000000),
     HKEY_CURRENT_USER = (0x80000001),
     HKEY_LOCAL_MACHINE = (0x80000002),
@@ -2859,6 +2866,7 @@ enum : DWORD {
     HKEY_PERFORMANCE_DATA = (0x80000004),
     HKEY_CURRENT_CONFIG = (0x80000005),
     HKEY_DYN_DATA = (0x80000006),
+*/
     REG_OPTION_VOLATILE = (0x1),
     REG_OPTION_NON_VOLATILE = (0),
     REG_CREATED_NEW_KEY = (0x1),
@@ -3079,10 +3087,6 @@ enum : DWORD {
     EXCEPTION_EXECUTE_HANDLER = (1),
     EXCEPTION_CONTINUE_EXECUTION = -((1)),
     EXCEPTION_CONTINUE_SEARCH = (0),
-    HWND_BOTTOM = (1),
-    HWND_NOTOPMOST = -(2),
-    HWND_TOP = (0),
-    HWND_TOPMOST = -(1),
     SWP_DRAWFRAME = (32),
     SWP_FRAMECHANGED = (32),
     SWP_HIDEWINDOW = (128),
@@ -4545,6 +4549,16 @@ char* LBSELCHSTRING = (LBSELCHSTRINGA);
 char* SETRGBSTRING = (SETRGBSTRINGA);
 char* SHAREVISTRING = (SHAREVISTRINGA);
 }
+
+const {
+HWND HWND_DESKTOP = cast(HWND) 0;
+HWND HWND_BOTTOM = cast(HWND) 1;
+HWND HWND_NOTOPMOST = cast(HWND) -2;
+HWND HWND_TOP = cast(HWND) 0;
+HWND HWND_TOPMOST = cast(HWND) -1;
+HWND HWND_BROADCAST = cast(HWND) 0xFFFF;
+}
+
 enum : DWORD {
     CD_LBSELCHANGE = (0),
     CD_LBSELADD = (2),
@@ -4840,7 +4854,6 @@ enum : DWORD {
     PRF_ERASEBKGND = (0x8),
     PRF_NONCLIENT = (0x2),
     PRF_OWNED = (0x20),
-    HWND_DESKTOP = (0),
     SC_CLOSE = (61536),
     SC___FILE__HELP = (61824),
     SC_DEFAULT = (61792),
@@ -13373,21 +13386,24 @@ struct WINDOWINFO
 alias WINDOWINFO* PWINDOWINFO;
 alias WINDOWINFO* LPWINDOWINFO;
 
+enum : HRESULT
+{
+    S_OK            = 0x00000000,
+    S_FALSE         = 0x00000001,
+    E_UNEXPECTED    = 0x8000FFFF,
+    E_NOTIMPL       = 0x80004001,
+    E_OUTOFMEMORY   = 0x8007000E,
+    E_INVALIDARG    = 0x80070057,
+    E_NOINTERFACE   = 0x80004002,
+    E_POINTER       = 0x80004003,
+    E_HANDLE        = 0x80070006,
+    E_ABORT         = 0x80004004,
+    E_FAIL          = 0x80004005,
+    E_ACCESSDENIED  = 0x80070005,
+    E_PENDING       = 0x8000000A,
+}
+
 /*
-int S_OK = (0x00000000);
-int S_FALSE = (0x00000001);
-int NOERROR = (0);
-int E_UNEXPECTED = (DWORD)((0x8000FFFF));
-int E_NOTIMPL = (DWORD)((0x80004001));
-int E_OUTOFMEMORY = (DWORD)((0x8007000E));
-int E_INVALIDARG = (DWORD)((0x80070057));
-int E_NOINTERFACE = (DWORD)((0x80004002));
-int E_POINTER = (DWORD)((0x80004003));
-int E_HANDLE = (DWORD)((0x80070006));
-int E_ABORT = (DWORD)((0x80004004));
-int E_FAIL = (DWORD)((0x80004005));
-int E_ACCESSDENIED = (DWORD)((0x80070005));
-int E_PENDING = (DWORD)((0x8000000A));
 int CO_E_INIT_TLS = (DWORD)((0x80004006));
 int CO_E_INIT_MEMORY_ALLOCATOR = (DWORD)((0x80004008));
 int CO_E_INIT_CLASS_CACHE = (DWORD)((0x80004009));

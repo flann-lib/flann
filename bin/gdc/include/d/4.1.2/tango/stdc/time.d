@@ -46,8 +46,8 @@ else
     }
 }
 
-alias int time_t;
-alias int clock_t;
+alias c_long time_t;
+alias c_long clock_t;
 
 version( Win32 )
 {
@@ -57,6 +57,10 @@ else version( darwin )
 {
     clock_t CLOCKS_PER_SEC = 100;
 }
+else version( freebsd )
+{
+	clock_t CLOCKS_PER_SEC = 128;
+}	 
 else
 {
     clock_t CLOCKS_PER_SEC = 1000000;

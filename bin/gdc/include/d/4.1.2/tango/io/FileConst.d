@@ -28,7 +28,6 @@ struct FileConst
                 enum : char 
                 {
                         CurrentDirChar = '.',
-                        RootSeparatorChar = ':',
                         FileSeparatorChar = '.',
                         PathSeparatorChar = '/',
                         SystemPathChar = ';',
@@ -37,7 +36,6 @@ struct FileConst
                 static const char[] ParentDirString = "..";
                 static const char[] CurrentDirString = ".";
                 static const char[] FileSeparatorString = ".";
-                static const char[] RootSeparatorString = ":";
                 static const char[] PathSeparatorString = "/";
                 static const char[] SystemPathString = ";";
 

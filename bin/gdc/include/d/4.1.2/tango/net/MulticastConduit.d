@@ -169,6 +169,8 @@ class MulticastConduit : DatagramConduit
 
 debug (Multicast)
 {
+        import tango.io.Console;
+
         void main()
         {
                 auto group = new InternetAddress ("225.0.0.10", 8080);
@@ -182,5 +184,6 @@ debug (Multicast)
                 // we are listening also ...
                 char[8] tmp;
                 auto bytes = multi.read (tmp);
+                Cout (tmp[0..bytes]).newline;
         }
 }

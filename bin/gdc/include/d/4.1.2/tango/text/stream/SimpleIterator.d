@@ -90,12 +90,12 @@ class SimpleIterator(T) : StreamIterator!(T)
                    {
                    foreach (int i, T c; content)
                             if (c is delim[0])
-                                return found (set (content.ptr, 0, i));
+                                return found (set (content.ptr, 0, i, i));
                    }
                 else
                    foreach (int i, T c; content)
                             if (has (delim, c))
-                                return found (set (content.ptr, 0, i));
+                                return found (set (content.ptr, 0, i, i));
 
                 return notFound;
         }

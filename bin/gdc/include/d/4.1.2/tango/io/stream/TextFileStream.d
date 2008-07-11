@@ -14,13 +14,15 @@ module tango.io.stream.TextFileStream;
 
 public  import tango.io.FileConduit;
 
+private import tango.io.Buffer;
+
 private import tango.io.stream.FileStream,
                tango.io.stream.LineStream,
                tango.io.stream.FormatStream;
 
 /*******************************************************************************
 
-        Composes a file with line-oriented input
+        Composes a file with line-oriented input. The input is buffered
 
 *******************************************************************************/
 
@@ -41,7 +43,7 @@ class TextFileInput : LineInput
 
 /*******************************************************************************
        
-        Composes a file with formatted text output
+        Composes a file with formatted text output. The output is buffered
 
 *******************************************************************************/
 
@@ -55,7 +57,7 @@ class TextFileOutput : FormatOutput
 
         this (char[] path, FileConduit.Style style = FileConduit.WriteCreate)
         {
-                super (new FileOutput (path, style));
+                super (new Buffer (new FileOutput (path, style)));
         }
  }
 

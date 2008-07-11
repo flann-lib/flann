@@ -293,7 +293,7 @@ unittest {
 
     assert(feqrel(gamma(1.0/3.L),  2.67893853470774763365569294097467764412868937795730L) >= real.mant_dig-2);
     assert(feqrel(gamma(0.25L),
-        3.62560990822190831193068515586767200299516768288006) >= real.mant_dig-1);
+        3.62560990822190831193068515586767200299516768288006L) >= real.mant_dig-1);
     assert(feqrel(gamma(1.0/5.0L),
         4.59084371199880305320475827592915200343410999829340L) >= real.mant_dig-1);
 }
@@ -1443,7 +1443,7 @@ debug(UnitTest) {
 unittest {
     // Exact values
     assert(digamma(1)== -EULERGAMMA);
-    assert(feqrel(digamma(0.25), -PI/2 - 3* LN2 - EULERGAMMA)>=real.mant_dig-6);
+    assert(feqrel(digamma(0.25), -PI/2 - 3* LN2 - EULERGAMMA)>=real.mant_dig-7);
     assert(feqrel(digamma(1.0L/6), -PI/2 *sqrt(3.0L) - 2* LN2 -1.5*log(3.0L) - EULERGAMMA)>=real.mant_dig-7);
     assert(digamma(-5)!<>0);    
     assert(feqrel(digamma(2.5), -EULERGAMMA - 2*LN2 + 2.0 + 2.0L/3)>=real.mant_dig-9);

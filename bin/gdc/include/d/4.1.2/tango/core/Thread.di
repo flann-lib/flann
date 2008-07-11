@@ -33,7 +33,7 @@ version (Win32)
 }
     extern (Windows) 
 {
-    alias uint(* btex_fptr)(void*);
+    alias uint function(void*) btex_fptr;
 }
     extern (C) 
 {
@@ -102,7 +102,7 @@ else
 }
 class Thread
 {
-    this(void(* fn)(), size_t sz = 0)
+    this(void function() fn, size_t sz = 0)
 in
 {
 assert(fn);
@@ -267,7 +267,7 @@ else
     char[] m_name;
     union
 {
-void(* m_fn)();
+void function() m_fn;
 void delegate() m_dg;
 }
     size_t m_sz;
@@ -481,7 +481,7 @@ class ThreadGroup
 {
     final
 {
-    Thread create(void(* fn)());
+    Thread create(void function() fn);
 }
     final
 {
@@ -594,7 +594,7 @@ else
 }
 class Fiber
 {
-    this(void(* fn)(), size_t sz = PAGESIZE)
+    this(void function() fn, size_t sz = PAGESIZE)
 in
 {
 assert(fn);
@@ -686,7 +686,7 @@ DG,
     Call m_call;
     union
 {
-void(* m_fn)();
+void function() m_fn;
 void delegate() m_dg;
 }
     bool m_isRunning;

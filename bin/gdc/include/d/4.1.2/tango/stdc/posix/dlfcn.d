@@ -51,3 +51,15 @@ else version( darwin )
     void* dlopen(char*, int);
     void* dlsym(void*, char*);
 }
+else version( freebsd )
+{
+    const RTLD_LAZY     = 1;
+    const RTLD_NOW      = 2;
+    const RTLD_GLOBAL   = 0x100;
+    const RTLD_LOCAL    = 0;
+
+    int   dlclose(void*);
+    char* dlerror();
+    void* dlopen(char*, int);
+    void* dlsym(void*, char*);
+}

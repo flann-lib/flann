@@ -270,8 +270,8 @@ struct Clock
 
                         TimeSpan span = time - time.epoch1970;
                         assert (span >= TimeSpan.zero);
-                        tv.tv_sec  = span.seconds;
-                        tv.tv_usec = span.micros % 1_000_000L;
+                        tv.tv_sec  = cast(typeof(tv.tv_sec)) span.seconds;
+                        tv.tv_usec = cast(typeof(tv.tv_usec)) (span.micros % 1_000_000L);
                         return tv;
                 }
         }

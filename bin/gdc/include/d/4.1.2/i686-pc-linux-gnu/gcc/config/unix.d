@@ -50,7 +50,6 @@ enum
   O_RDWR = 2,
   O_NOATIME = 262144,
   O_SYNC = 4096,
-  O_CLOEXEC = 524288,
   O_CREAT = 64,
   O_DIRECT = 16384,
   O_FSYNC = 4096,
@@ -86,7 +85,6 @@ enum
   F_TEST = 3,
   F_SETSIG = 10,
   F_NOTIFY = 1026,
-  F_DUPFD_CLOEXEC = 1030,
   F_WRLCK = 1,
   F_GETLK64 = 12,
   F_SETLKW = 7,
@@ -138,7 +136,6 @@ enum
   S_IRWXU = 448,
   S_IFMT = 61440,
   S_ISVTX = 512,
-  S_IFLNK = 40960,
   S_IFCHR = 8192,
   S_IWUSR = 128,
   S_IFREG = 32768,
@@ -150,6 +147,7 @@ enum
   S_IXUSR = 64,
   S_IWOTH = 2,
   S_IRGRP = 32,
+  S_IFLNK = 40960,
   S_IWRITE = 128,
   S_IXGRP = 8,
   S_ISUID = 2048,
@@ -426,7 +424,6 @@ enum
   SO_PEERNAME = 28,
   SO_ATTACH_FILTER = 26,
   SO_PASSCRED = 16,
-  SO_PASSSEC = 34,
   SO_RCVLOWAT = 18,
   SO_SNDTIMEO = 21,
   SO_PEERSEC = 31,
@@ -435,10 +432,8 @@ enum
   SO_SNDBUFFORCE = 32,
   SO_TIMESTAMP = 29,
   SO_DETACH_FILTER = 27,
-  SO_BSDCOMPAT = 14,
   SO_SNDBUF = 7,
   SO_DEBUG = 1,
-  SO_TIMESTAMPNS = 35,
   SO_RCVBUF = 8,
   SO_RCVBUFFORCE = 33,
   SO_SNDLOWAT = 19,
@@ -463,7 +458,6 @@ enum
   MSG_MORE = 32768,
   MSG_WAITALL = 256,
   MSG_PEEK = 2,
-  MSG_CMSG_CLOEXEC = 1073741824,
   MSG_ERRQUEUE = 8192,
   MSG_FIN = 512,
   MSG_CTRUNC = 8,
@@ -479,9 +473,10 @@ enum
   MSG_EOR = 128,
 }
 
+static if (!is(typeof(MSG_NOSIGNAL))) enum { MSG_NOSIGNAL = 0 } // for std/socket.d
 enum
 {
-  AF_MAX = 34,
+  AF_MAX = 32,
   AF_APPLETALK = 5,
   AF_INET6 = 10,
   AF_NETLINK = 16,
@@ -498,7 +493,6 @@ enum
   AF_SECURITY = 14,
   AF_AX25 = 3,
   AF_KEY = 15,
-  AF_IUCV = 32,
   AF_ECONET = 19,
   AF_INET = 2,
   AF_ATMSVC = 20,
@@ -511,7 +505,6 @@ enum
   AF_ASH = 18,
   AF_UNIX = 1,
   AF_DECnet = 12,
-  AF_RXRPC = 33,
   AF_IPX = 4,
 }
 
@@ -530,7 +523,7 @@ enum
   PF_BRIDGE = 7,
   PF_IPX = 4,
   PF_IRDA = 23,
-  PF_MAX = 34,
+  PF_MAX = 32,
   PF_ROSE = 11,
   PF_INET6 = 10,
   PF_FILE = 1,
@@ -542,11 +535,9 @@ enum
   PF_AX25 = 3,
   PF_ATMSVC = 20,
   PF_PACKET = 17,
-  PF_IUCV = 32,
   PF_APPLETALK = 5,
   PF_NETROM = 6,
   PF_INET = 2,
-  PF_RXRPC = 33,
   PF_ATMPVC = 8,
   PF_LOCAL = 1,
 }
@@ -657,13 +648,11 @@ enum { ADDR_ANY = INADDR_ANY }
 enum
 {
   TCP_KEEPCNT = 6,
-  TCP_CONGESTION = 13,
   TCP_CORK = 3,
   TCP_WINDOW_CLAMP = 10,
   TCP_MSS = 512,
   TCP_DEFER_ACCEPT = 9,
   TCP_KEEPIDLE = 4,
-  TCP_MD5SIG_MAXKEYLEN = 80,
   TCP_MAX_WINSHIFT = 14,
   TCP_SYNCNT = 7,
   TCP_MAXSEG = 2,
@@ -672,7 +661,6 @@ enum
   TCP_KEEPINTVL = 5,
   TCP_INFO = 11,
   TCP_LINGER2 = 8,
-  TCP_MD5SIG = 14,
   TCP_NODELAY = 1,
 }
 

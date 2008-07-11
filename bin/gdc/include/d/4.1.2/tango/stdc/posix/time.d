@@ -38,6 +38,10 @@ else version( darwin )
 {
     time_t timegm(tm*); // non-standard
 }
+else version( freebsd )
+{
+    time_t timegm(tm*); // non-standard
+}
 
 //
 // C Extension (CX)
@@ -147,6 +151,41 @@ else version( darwin )
 {
     int nanosleep(timespec*, timespec*);
 }
+else version( freebsd )
+{
+    const CLOCK_PROCESS_CPUTIME_ID  = 2; // (TMR|CPT)
+    const CLOCK_THREAD_CPUTIME_ID   = 3; // (TMR|TCT)
+
+    // NOTE: See above for why this is commented out.
+    //
+    //struct timespec
+    //{
+    //    time_t  tv_sec;
+    //    c_long  tv_nsec;
+    //}
+
+    struct itimerspec
+    {
+        timespec it_interval;
+        timespec it_value;
+    }
+
+    const CLOCK_REALTIME    = 0;
+    const TIMER_ABSTIME     = 0x01;
+
+    alias int clockid_t;
+    alias int timer_t;
+
+    int clock_getres(clockid_t, timespec*);
+    int clock_gettime(clockid_t, timespec*);
+    int clock_settime(clockid_t, timespec*);
+    int nanosleep(timespec*, timespec*);
+    int timer_create(clockid_t, sigevent*, timer_t*);
+    int timer_delete(timer_t);
+    int timer_gettime(timer_t, itimerspec*);
+    int timer_getoverrun(timer_t);
+    int timer_settime(timer_t, int, itimerspec*, itimerspec*);
+}
 
 
 //
@@ -167,6 +206,13 @@ version( linux )
     tm*   localtime_r(time_t*, tm*);
 }
 else version( darwin )
+{
+    char* asctime_r(tm*, char*);
+    char* ctime_r(time_t*, char*);
+    tm*   gmtime_r(time_t*, tm*);
+    tm*   localtime_r(time_t*, tm*);
+}
+else version( freebsd )
 {
     char* asctime_r(tm*, char*);
     char* ctime_r(time_t*, char*);
@@ -200,5 +246,10 @@ else version( darwin )
     extern c_long timezone;
 
     tm*   getdate(char *);
+    char* strptime(char*, char*, tm*);
+}
+else version( freebsd )
+{
+    //tm*   getdate(char *);
     char* strptime(char*, char*, tm*);
 }

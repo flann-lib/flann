@@ -32,14 +32,16 @@ abstract class DefaultCommand : GenericCommand
 		} 
 		
 		Log.getLogger("log").setLevel(Log.level(verbosity));
-		
-		string[] reporterList = split(reporters,",");
-		foreach (reporter;reporterList) {
-			uint pos = find(reporter,":");
-			if (pos!=reporter.length) {
-				report.addBackend(Registry.get!(ReportBackend)(reporter[0..pos]~"_reporter",reporter[pos+1..$]));
-			} else {
-				report.addBackend(Registry.get!(ReportBackend)(reporter[0..pos]~"_reporter"));
+	
+		if (reporters != "") {	
+			string[] reporterList = split(reporters,",");
+			foreach (reporter;reporterList) {
+				uint pos = find(reporter,":");
+				if (pos!=reporter.length) {
+					report.addBackend(Registry.get!(ReportBackend)(reporter[0..pos]~"_reporter",reporter[pos+1..$]));
+				} else {
+					report.addBackend(Registry.get!(ReportBackend)(reporter[0..pos]~"_reporter"));
+				}
 			}
 		}
 		

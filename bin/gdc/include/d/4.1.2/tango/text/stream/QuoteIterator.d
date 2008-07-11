@@ -102,7 +102,7 @@ class QuoteIterator(T) : StreamIterator!(T)
 
                 foreach (int i, T c; content)
                          if (has (delim, c))
-                             return found (set (content.ptr, 0, i));
+                             return found (set (content.ptr, 0, i, i));
                          else
                             if (c is '"' || c is '\'')
                                 if (i)

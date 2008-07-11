@@ -360,7 +360,9 @@ class KMeansTree(T) : NNIndex
 	 * Chooses the initial centers in the k-means using the algorithm 
 	 * proposed in the KMeans++ paper:
 	 * Arthur, David; Vassilvitskii, Sergei - k-means++: The Advantages of Careful Seeding
-	 * 
+     *   
+	 * Implementation of this function was converted from the one provided in Arthur's code.
+     *     
 	 * Params:
 	 *     k = number of centers 
 	 *     vecs = the dataset of points
@@ -516,7 +518,8 @@ class KMeansTree(T) : NNIndex
 		
 		if (indices.length < branching) {
 			node.indices = indices.sort;
-			node.childs.length = 0;
+            (cast(byte*)&node.childs)[0..node.childs.sizeof] = 0;
+// 			node.childs.length = 0;
 			return;
 		}
 		
@@ -524,8 +527,9 @@ class KMeansTree(T) : NNIndex
 		initial_centers = chooseCenters(branching, vecs, indices); 
 		
 		if (initial_centers.length<branching) {
-			node.indices = indices.sort;
-			node.childs.length = 0;
+		    node.indices = indices.sort;
+            (cast(byte*)&node.childs)[0..node.childs.sizeof] = 0;
+// 		node.childs.length = 0;
 			return;
 		}
 		

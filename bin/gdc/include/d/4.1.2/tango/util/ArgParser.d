@@ -70,7 +70,7 @@ alias Argument Arg;
 /**
     A utility class to parse and handle your command line arguments.
 */
-deprecated class ArgParser{
+class ArgParser{
 
     /**
         A helper struct containing a callback and an id, corresponding to

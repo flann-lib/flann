@@ -257,7 +257,7 @@ unittest {
 	for (int i=1; fact<real.max; ++i) {
 	  // Require exact equality for small factorials
 	  if (i<14) assert(tgamma(i*1.0L)==fact);
-	  assert(feqrel(tgamma(i*1.0L), fact)>real.mant_dig-15);
+	  assert(feqrel(tgamma(i * 1.0L), cast(real)fact) > real.mant_dig - 15);
 	  //writefln(i, " %a ---> %a   %a ", i*1.0L, tgamma(i*1.0L), fact, feqrel(tgamma(i*1.0L), fact));
 	  fact*=(i*1.0L);
 	}
@@ -374,6 +374,12 @@ real lgamma(real x)
 
 version(X86) // requires feqrel
 unittest {
+    // return true if x is +0.0
+    bit isPosZero(real x)
+    {
+       return (x==0) && (signbit(x)==0);
+    }
+
   assert(isnan(lgamma(real.nan)));
   assert(lgamma(real.infinity)==real.infinity);
   assert(lgamma(-1.0)==real.infinity);

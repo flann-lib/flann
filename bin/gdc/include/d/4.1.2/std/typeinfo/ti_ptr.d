@@ -7,7 +7,7 @@ class TypeInfo_P : TypeInfo
 {
     hash_t getHash(void *p)
     {
-	return cast(uint)*cast(void* *)p;
+	return cast(hash_t)*cast(void* *)p;
     }
 
     int equals(void *p1, void *p2)

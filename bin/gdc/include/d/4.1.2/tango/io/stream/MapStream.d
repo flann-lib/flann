@@ -117,6 +117,7 @@ class MapOutput(T) : OutputFilter, Buffered
 {
         private IBuffer output;
 
+        private const T[] prefix = "# ";
         private const T[] equals = " = ";
         version (Win32)
                  private const T[] NL = "\r\n";
@@ -147,7 +148,31 @@ class MapOutput(T) : OutputFilter, Buffered
 
         /***********************************************************************
 
-                Write name & value to the provided stream
+                Append a newline to the provided stream
+
+        ***********************************************************************/
+
+        final MapOutput newline ()
+        {
+                output (NL);
+                return this;
+        }
+
+        /***********************************************************************
+
+                Append a comment to the provided stream
+
+        ***********************************************************************/
+
+        final MapOutput comment (T[] text)
+        {
+                output (prefix) (text) (NL);
+                return this;
+        }
+
+        /***********************************************************************
+
+                Append name & value to the provided stream
 
         ***********************************************************************/
 
@@ -159,7 +184,7 @@ class MapOutput(T) : OutputFilter, Buffered
 
         /***********************************************************************
 
-                Write AA properties to the provided stream
+                Append AA properties to the provided stream
 
         ***********************************************************************/
 

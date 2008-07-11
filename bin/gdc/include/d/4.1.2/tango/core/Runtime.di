@@ -6,7 +6,17 @@ private
 {
     bool rt_isHalting();
 }
-    alias bool(* moduleUnitTesterType)();
+    alias bool function() ModuleUnitTester;
+    alias bool function(Object) CollectHandler;
+    alias Exception.TraceInfo function(void* ptr = null) TraceHandler;
+    extern (C) 
+{
+    void rt_setCollectHandler(CollectHandler h);
+}
+    extern (C) 
+{
+    void rt_setTraceHandler(TraceHandler h);
+}
 }
 struct Runtime
 {
@@ -19,7 +29,21 @@ return rt_isHalting();
 }
     static
 {
-    void moduleUnitTester(moduleUnitTesterType h)
+    void traceHandler(TraceHandler h)
+{
+rt_setTraceHandler(h);
+}
+}
+    static
+{
+    void collectHandler(CollectHandler h)
+{
+rt_setCollectHandler(h);
+}
+}
+    static
+{
+    void moduleUnitTester(ModuleUnitTester h)
 {
 sm_moduleUnitTester = h;
 }
@@ -28,7 +52,7 @@ sm_moduleUnitTester = h;
 {
     static
 {
-    moduleUnitTesterType sm_moduleUnitTester = null;
+    ModuleUnitTester sm_moduleUnitTester = null;
 }
 }
 }

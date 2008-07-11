@@ -14,6 +14,8 @@
 
 module tango.group.text;
 
+pragma (msg, "Please post your usage of tango.group to this ticket: http://dsource.org/projects/tango/ticket/1013");
+
 public import tango.text.Text;
 public import tango.text.Regex;
 public import tango.text.Ascii;

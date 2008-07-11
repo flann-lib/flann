@@ -97,5 +97,5 @@ version( DigitalMars )
 else version( GNU )
 {
     private import gcc.builtins;
-	alias gcc.builtins.__builtin_alloca alloca;
+    alias gcc.builtins.__builtin_alloca alloca;
 }

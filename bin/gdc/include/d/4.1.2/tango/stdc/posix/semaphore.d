@@ -56,6 +56,30 @@ else version( darwin )
 
     const SEM_FAILED    = cast(sem_t*) null;
 }
+else version( freebsd )
+{
+	const uint SEM_MAGIC = 0x09fa4012;
+	const SEM_USER = 0;
+	struct sem_t
+	{
+		uint magic;
+		pthread_mutex_t lock;
+		pthread_cond_t gtzero;
+		uint count;
+		uint nwaiters;
+		int semid;
+		int syssem;
+		struct _entry
+		{
+			sem* le_next;
+			sem** le_prev;
+		}
+		_entry entry;
+		sem_t** backpointer;
+	}
+
+	const SEM_FAILED = cast(sem_t*) null;
+}
 
 int sem_close(sem_t*);
 int sem_destroy(sem_t*);
@@ -79,6 +103,10 @@ version( linux )
     int sem_timedwait(sem_t*, timespec*);
 }
 else version( darwin )
+{
+    int sem_timedwait(sem_t*, timespec*);
+}
+else version( freebsd )
 {
     int sem_timedwait(sem_t*, timespec*);
 }

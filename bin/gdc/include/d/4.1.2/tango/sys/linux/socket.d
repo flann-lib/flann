@@ -67,6 +67,13 @@ else version( X86_64 )
 	{
 		SOL_SOCKET =  1,
 	}
+}
+else version( SPARC )
+{
+	enum: int
+	{
+		SOL_SOCKET = 0xffff,
+	}
 }else
 {
 	// Different values on other platforms.

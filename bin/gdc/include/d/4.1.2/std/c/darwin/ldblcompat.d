@@ -23,17 +23,17 @@ version (GNU_UseLongDoubleFormat128)
     // Currently, the following test from cdefs.h is not supported:
     //# if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__-0 < 1040
     version (all)
-	const char[] __DARWIN_LDBL_COMPAT  = "$LDBL128";
+	const string __DARWIN_LDBL_COMPAT  = "$LDBL128";
     else
-	const char[] __DARWIN_LDBL_COMPAT  = "$LDBLStub";
-    const char[] __DARWIN_LDBL_COMPAT2 = "$LDBL128";
+	const string __DARWIN_LDBL_COMPAT  = "$LDBLStub";
+    const string __DARWIN_LDBL_COMPAT2 = "$LDBL128";
     
-    const char[] __LIBMLDBL_COMPAT = "$LDBL128";
+    const string __LIBMLDBL_COMPAT = "$LDBL128";
 }
 else
 {
-    const char[] __DARWIN_LDBL_COMPAT  = "";
-    const char[] __DARWIN_LDBL_COMPAT2 = "";
+    const string __DARWIN_LDBL_COMPAT  = "";
+    const string __DARWIN_LDBL_COMPAT2 = "";
     
-    const char[] __LIBMLDBL_COMPAT = "";
+    const string __LIBMLDBL_COMPAT = "";
 }

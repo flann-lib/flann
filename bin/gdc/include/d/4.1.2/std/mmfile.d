@@ -194,30 +194,35 @@ class MmFile
 				assert(0);
 			}
 		
-			if (useWfuncs)
+			if (filename)
 			{
-				wchar* namez = std.utf.toUTF16z(filename);
-				hFile = CreateFileW(namez,
-						dwDesiredAccess2,
-						dwShareMode,
-						null,
-						dwCreationDisposition,
-						FILE_ATTRIBUTE_NORMAL,
-						cast(HANDLE)null);
+				if (useWfuncs)
+				{
+					auto namez = std.utf.toUTF16z(filename);
+					hFile = CreateFileW(namez,
+							dwDesiredAccess2,
+							dwShareMode,
+							null,
+							dwCreationDisposition,
+							FILE_ATTRIBUTE_NORMAL,
+							cast(HANDLE)null);
+				}
+				else
+				{
+					auto namez = std.file.toMBSz(filename);
+					hFile = CreateFileA(namez,
+							dwDesiredAccess2,
+							dwShareMode,
+							null,
+							dwCreationDisposition,
+							FILE_ATTRIBUTE_NORMAL,
+							cast(HANDLE)null);
+				}
+				if (hFile == INVALID_HANDLE_VALUE)
+					goto err1;
 			}
 			else
-			{
-				char* namez = std.file.toMBSz(filename);
-				hFile = CreateFileA(namez,
-						dwDesiredAccess2,
-						dwShareMode,
-						null,
-						dwCreationDisposition,
-						FILE_ATTRIBUTE_NORMAL,
-						cast(HANDLE)null);
-			}
-			if (hFile == INVALID_HANDLE_VALUE)
-				goto err1;
+				hFile = null;
 		
 			int hi = cast(int)(size>>32);
 			hFileMap = CreateFileMappingA(hFile, null, flProtect, hi, cast(uint)size, null);

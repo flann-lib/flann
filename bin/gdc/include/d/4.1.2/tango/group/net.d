@@ -14,6 +14,8 @@
 
 module tango.group.net;
 
+pragma (msg, "Please post your usage of tango.group to this ticket: http://dsource.org/projects/tango/ticket/1013");
+
 public import tango.net.Uri;
 public import tango.net.ServerSocket;
 public import tango.net.SocketConduit;

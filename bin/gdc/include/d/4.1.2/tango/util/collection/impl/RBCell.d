@@ -269,7 +269,7 @@ public class RBCell(T) : Cell!(T)
                 auto t = this;
                 for (;;)
                     {
-                    int diff = cmp.compare(element, t.element());
+                    int diff = cmp(element, t.element());
                     if (diff is 0)
                         return t;
                     else
@@ -294,7 +294,7 @@ public class RBCell(T) : Cell!(T)
                 auto t = this;
                 while (t !is null)
                 {
-                        int diff = cmp.compare(element, t.element());
+                        int diff = cmp(element, t.element());
                         if (diff is 0)
                         {
                                 ++c;

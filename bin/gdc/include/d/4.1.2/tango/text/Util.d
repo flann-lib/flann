@@ -58,8 +58,10 @@
         triml (source)                              // trim whitespace
         trimr (source)                              // trim whitespace
         strip (source, match)                       // trim elements
-        stripl (source, match)                      // trim left elements
-        stripr (source, match)                      // trim right elements
+        stripl (source, match)                      // trim elements
+        stripr (source, match)                      // trim elements
+        chopl (source, match)                       // trim pattern match
+        chopr (source, match)                       // trim pattern match
         delimit (src, set)                          // split on delims
         split (source, pattern)                     // split on pattern
         splitLines (source);                        // split on lines
@@ -78,12 +80,17 @@
         mismatch (s1*, s2*, length)                 // low-level compare
         matching (s1*, s2*, length)                 // low-level compare
         isSpace (match)                             // is whitespace?
+        unescape(source, output)                    // convert '\' prefixes
         layout (destination, format ...)            // featherweight printf
         lines (str)                                 // foreach lines
         quotes (str, set)                           // foreach quotes
         delimiters (str, set)                       // foreach delimiters
         patterns (str, pattern)                     // foreach patterns
         ---
+
+        Please note that any 'pattern' referred to within this module
+        refers to a pattern of characters, and not some kind of regex
+        descriptor. Use the Regex module for regex operation.
 
 *******************************************************************************/
 
@@ -187,6 +194,24 @@ T[] stripl(T) (T[] source, T match)
 
 /******************************************************************************
 
+        Trim the given array by stripping the provided match from
+        the right hand side. Returns a slice of the original content
+
+******************************************************************************/
+
+T[] stripr(T) (T[] source, T match)
+{
+        T*   head = source.ptr,
+             tail = head + source.length;
+
+        while (tail > head && *(tail-1) is match)
+               --tail;
+
+        return head [0 .. tail - head];
+}
+
+/******************************************************************************
+
         Chop the given source by stripping the provided match from
         the left hand side. Returns a slice of the original content
 
@@ -215,24 +240,6 @@ T[] chopr(T) (T[] source, T[] match)
                 source = source [0 .. $-match.length];
 
         return source;
-}
-
-/******************************************************************************
-
-        Trim the given array by stripping the provided match from
-        the right hand side. Returns a slice of the original content
-
-******************************************************************************/
-
-T[] stripr(T) (T[] source, T match)
-{
-        T*   head = source.ptr,
-             tail = head + source.length;
-
-        while (tail > head && *(tail-1) is match)
-               --tail;
-
-        return head [0 .. tail - head];
 }
 
 /******************************************************************************
@@ -451,7 +458,10 @@ T[] tail(T) (T[] src, T[] pattern, out T[] head)
         matched as a set of alternates rather than as a pattern.
 
         Splitting on a single delimiter is considerably faster than
-        splitting upon a set of alternatives
+        splitting upon a set of alternatives. 
+
+        Note that the src content is not duplicated by this function, 
+        but is sliced instead.
 
 ******************************************************************************/
 
@@ -470,6 +480,9 @@ T[][] delimit(T) (T[] src, T[] set)
         found, and return the resultant segments. The pattern is
         excluded from each of the segments.
         
+        Note that the src content is not duplicated by this function, 
+        but is sliced instead.
+
 ******************************************************************************/
 
 T[][] split(T) (T[] src, T[] pattern)
@@ -486,6 +499,9 @@ T[][] split(T) (T[] src, T[] pattern)
         Convert text into a set of lines, where each line is identified
         by a \n or \r\n combination. The line terminator is stripped from
         each resultant array
+
+        Note that the src content is not duplicated by this function, but
+        is sliced instead.
 
 ******************************************************************************/
 
@@ -544,10 +560,10 @@ T[] join(T) (T[][] src, T[] postfix=null, T[] dst=null)
 
 /******************************************************************************
 
-        Combine a series of text segments together, each appended with an 
-        optional postfix pattern. An optional output buffer can be provided
-        to avoid heap activity - it should be large enough to contain the 
-        entire output, otherwise the heap will be used instead.
+        Repeat an array for a specific number of times. An optional output 
+        buffer can be provided to avoid heap activity - it should be large 
+        enough to contain the entire output, otherwise the heap will be used 
+        instead.
 
         Returns a valid slice of the output, containing the concatenated
         text.
@@ -581,9 +597,9 @@ T[] repeat(T) (T[] src, uint count, T[] dst=null)
 bool isSpace(T) (T c)
 {
         static if (T.sizeof is 1)
-                   return (c <= 32 && (c is ' ' | c is '\t' | c is '\r' | c is '\n' | c is '\f' | c is '\v'));
+                   return (c <= 32 && (c is ' ' || c is '\t' || c is '\r' || c is '\n' || c is '\f' || c is '\v'));
         else
-           return (c <= 32 && (c is ' ' | c is '\t' | c is '\r' | c is '\n' | c is '\f' | c is '\v')) || (c is '\u2028' | c is '\u2029');
+           return (c <= 32 && (c is ' ' || c is '\t' || c is '\r' || c is '\n' || c is '\f' || c is '\v')) || (c is '\u2028' || c is '\u2029');
 }
 
 /******************************************************************************
@@ -794,7 +810,7 @@ uint mismatch(T) (T* s1, T* s2, uint length)
 
 /******************************************************************************
 
-        Freachable iterator to isolate lines.
+        Iterator to isolate lines.
 
         Converts text into a set of lines, where each line is identified
         by a \n or \r\n combination. The line terminator is stripped from
@@ -807,16 +823,16 @@ uint mismatch(T) (T* s1, T* s2, uint length)
         
 ******************************************************************************/
 
-LineFreach!(T) lines(T) (T[] src)
+LineFruct!(T) lines(T) (T[] src)
 {
-        LineFreach!(T) lines;
+        LineFruct!(T) lines;
         lines.src = src;
         return lines;
 }
 
 /******************************************************************************
 
-        Freachable iterator to isolate text elements.
+        Iterator to isolate text elements.
 
         Splits the provided array wherever a delimiter-set instance is
         found, and return the resultant segments. The delimiters are
@@ -833,9 +849,9 @@ LineFreach!(T) lines(T) (T[] src)
         
 ******************************************************************************/
 
-DelimFreach!(T) delimiters(T) (T[] src, T[] set)
+DelimFruct!(T) delimiters(T) (T[] src, T[] set)
 {
-        DelimFreach!(T) elements;
+        DelimFruct!(T) elements;
         elements.set = set;
         elements.src = src;
         return elements;
@@ -843,7 +859,7 @@ DelimFreach!(T) delimiters(T) (T[] src, T[] set)
 
 /******************************************************************************
 
-        Freachable iterator to isolate text elements.
+        Iterator to isolate text elements.
 
         Split the provided array wherever a pattern instance is found, 
         and return the resultant segments. Pattern are excluded from
@@ -857,9 +873,9 @@ DelimFreach!(T) delimiters(T) (T[] src, T[] set)
         
 ******************************************************************************/
 
-PatternFreach!(T) patterns(T) (T[] src, T[] pattern, T[] sub=null)
+PatternFruct!(T) patterns(T) (T[] src, T[] pattern, T[] sub=null)
 {
-        PatternFreach!(T) elements;
+        PatternFruct!(T) elements;
         elements.pattern = pattern;
         elements.sub = sub;
         elements.src = src;
@@ -868,7 +884,7 @@ PatternFreach!(T) patterns(T) (T[] src, T[] pattern, T[] sub=null)
 
 /******************************************************************************
 
-        Freachable iterator to isolate optionally quoted text elements.
+        Iterator to isolate optionally quoted text elements.
 
         As per elements(), but with the extension of being quote-aware;
         the set of delimiters is ignored inside a pair of quotes. Note
@@ -881,9 +897,9 @@ PatternFreach!(T) patterns(T) (T[] src, T[] pattern, T[] sub=null)
         
 ******************************************************************************/
 
-QuoteFreach!(T) quotes(T) (T[] src, T[] set)
+QuoteFruct!(T) quotes(T) (T[] src, T[] set)
 {
-        QuoteFreach!(T) quotes;
+        QuoteFruct!(T) quotes;
         quotes.set = set;
         quotes.src = src;
         return quotes;
@@ -959,6 +975,91 @@ T[] layout(T) (T[] output, T[][] layout ...)
 
         return output [0..pos];
 }
+
+/******************************************************************************
+
+        Convert 'escaped' chars to normal ones: \t => ^t for example.
+        Supports \" \' \\ \a \b \f \n \r \t \v
+        
+******************************************************************************/
+
+T[] unescape(T) (T[] src, T[] dst = null)
+{
+        int delta;
+        auto s = src.ptr;
+        auto len = src.length;
+
+        // take a peek first to see if there's anything
+        if ((delta = indexOf (s, '\\', len)) < len)
+           {
+           // make some room if not enough provided
+           if (dst.length < src.length)
+               dst.length = src.length;
+           auto d = dst.ptr;
+
+           // copy segments over, a chunk at a time
+           do {
+              d [0 .. delta] = s [0 .. delta];
+              len -= delta;
+              s += delta;
+              d += delta;
+
+              // bogus trailing '\'
+              if (len < 2)
+                 {
+                 *d++ = '\\';
+                 len = 0;
+                 break;
+                 }
+
+              // translate \char
+              auto c = s[1];
+              switch (c)
+                     {
+                      case '\\':
+                           break;
+                      case '\'':
+                           c = '\'';
+                           break;
+                      case '"':
+                           c = '"';
+                           break;
+                      case 'a':
+                           c = '\a';
+                           break;
+                      case 'b':
+                           c = '\b';
+                           break;
+                      case 'f':
+                           c = '\f';
+                           break;
+                      case 'n':
+                           c = '\n';
+                           break;
+                      case 'r':
+                           c = '\r';
+                           break;
+                      case 't':
+                           c = '\t';
+                           break;
+                      case 'v':
+                           c = '\v';
+                           break;
+                      default:
+                           *d++ = '\\';
+                     }
+              *d++ = c;  
+              len -= 2;           
+              s += 2;
+              } while ((delta = indexOf (s, '\\', len)) < len);
+
+           // copy tail too
+           d [0 .. len] = s [0 .. len];
+           return dst [0 .. (d + len) - dst.ptr];
+           }
+        return src;
+}
+
 
 /******************************************************************************
 
@@ -1058,12 +1159,14 @@ uint jhash (void[] x, uint c = 0)
 
 
 /******************************************************************************
-
-        Helper struct for iterator lines()
-         
+      
+        Helper fruct for iterator lines(). A fruct is a low 
+        impact mechanism for capturing context relating to an 
+        opApply (conjunction of the names struct and foreach)
+        
 ******************************************************************************/
 
-private struct LineFreach(T)
+private struct LineFruct(T)
 {
         private T[] src;
 
@@ -1090,20 +1193,29 @@ private struct LineFreach(T)
                       }
 
                 line = src [mark .. $];
+version(995)
+{
                 if (mark < src.length)
                     ret = dg (line);
-
+}
+else
+{
+                if (mark <= src.length)
+                    ret = dg (line);
+}
                 return ret;
         }
 }
 
 /******************************************************************************
 
-        Helper struct for iterator delimiters()
+        Helper fruct for iterator delims(). A fruct is a low 
+        impact mechanism for capturing context relating to an 
+        opApply (conjunction of the names struct and foreach)
         
 ******************************************************************************/
 
-private struct DelimFreach(T)
+private struct DelimFruct(T)
 {
         private T[] src;
         private T[] set;
@@ -1136,20 +1248,29 @@ private struct DelimFreach(T)
                                    }
 
                 token = src [mark .. $];
+version(995)
+{
                 if (mark < src.length)
                     ret = dg (token);
-
+}
+else
+{
+                if (mark <= src.length)
+                    ret = dg (token);
+}
                 return ret;
         }
 }
 
 /******************************************************************************
 
-        Helper struct for iterator patterns()
+        Helper fruct for iterator patterns(). A fruct is a low 
+        impact mechanism for capturing context relating to an 
+        opApply (conjunction of the names struct and foreach)
         
 ******************************************************************************/
 
-private struct PatternFreach(T)
+private struct PatternFruct(T)
 {
         private T[] src,
                     sub,
@@ -1188,20 +1309,29 @@ private struct PatternFreach(T)
                              }
 
                 token = src [mark .. $];
+version(995)
+{
                 if (mark < src.length)
                     ret = dg (token);
-
+}
+else
+{
+                if (mark <= src.length)
+                    ret = dg (token);
+}
                 return ret;
         }
 }
 
 /******************************************************************************
 
-        Helper struct for iterator quotes()
+        Helper fruct for iterator quotes(). A fruct is a low 
+        impact mechanism for capturing context relating to an 
+        opApply (conjunction of the names struct and foreach)
         
 ******************************************************************************/
 
-private struct QuoteFreach(T)
+private struct QuoteFruct(T)
 {
         private T[] src;
         private T[] set;
@@ -1229,9 +1359,16 @@ private struct QuoteFreach(T)
                         }
                 
                 token = src [mark .. $];
+version(995)
+{
                 if (mark < src.length)
                     ret = dg (token);
-
+}
+else
+{
+                if (mark <= src.length)
+                    ret = dg (token);
+}
                 return ret;
         }
 }
@@ -1327,7 +1464,10 @@ debug (UnitTest)
         x = delimit ("abcd", ":");
         assert (x.length is 1 && x[0] == "abcd");
         x = delimit ("abcd:", ":");
+version(995)
         assert (x.length is 1 && x[0] == "abcd");
+else
+        assert (x.length is 2 && x[0] == "abcd" && x[1] == "");
         x = delimit ("a;b$c#d:e@f", ";:$#@");
         assert (x.length is 6 && x[0]=="a" && x[1]=="b" && x[2]=="c" &&
                                  x[3]=="d" && x[4]=="e" && x[5]=="f");
@@ -1347,14 +1487,27 @@ debug (UnitTest)
         assert (locatePatternPrior ("abcdefgcde", "cde", 4) is 2);
         assert (locatePatternPrior ("abcdefg", "abcdefgx") is 7);
 
+version(995)
+{
         x = splitLines ("a\nb\n");
         assert (x.length is 2 && x[0] == "a" && x[1] == "b");
         x = splitLines ("a\r\n");
         assert (x.length is 1 && x[0] == "a");
+}
+else
+{
+        x = splitLines ("a\nb\n");
+        assert (x.length is 3 && x[0] == "a" && x[1] == "b" && x[2] == "");
+        x = splitLines ("a\r\n");
+        assert (x.length is 2 && x[0] == "a" && x[1] == "");
+}
         x = splitLines ("a");
         assert (x.length is 1 && x[0] == "a");
         x = splitLines ("");
+version(995)
         assert (x.length is 0);
+else
+        assert (x.length is 1);
 
         char[][] q;
         foreach (element; quotes ("1 'avcc   cc ' 3", " "))
@@ -1369,6 +1522,11 @@ debug (UnitTest)
         assert (x.length is 3 && x[0] == "one" && x[1] == "two" && x[2] == "three");
         x = split ("one, two, three", ",,");
         assert (x.length is 1 && x[0] == "one, two, three");
+        x = split ("one,,", ",");
+version(995)
+        assert (x.length is 2 && x[0] == "one" && x[1] == "");
+else
+        assert (x.length is 3 && x[0] == "one" && x[1] == "" && x[2] == "");
 
         char[] h, t;
         h =  head ("one:two:three", ":", t);
@@ -1414,6 +1572,15 @@ debug (UnitTest)
         assert (repeat ("abc", 1, rep) == "abc");
         assert (repeat ("abc", 2, rep) == "abcabc");
         assert (repeat ("", 4, rep) == "");
+
+        assert (unescape ("abc") == "abc");
+        assert (unescape ("abc\\") == "abc\\");
+        assert (unescape ("abc\\t") == "abc\t");
+        assert (unescape ("abc\\tc") == "abc\tc");
+        assert (unescape ("\\t") == "\t");
+        assert (unescape ("\\tx") == "\tx");
+        assert (unescape ("\\v\\vx") == "\v\vx");
+        assert (unescape ("abc\\t\\a\\bc") == "abc\t\a\bc");
         }
 }
 

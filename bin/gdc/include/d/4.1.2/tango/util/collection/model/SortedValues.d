@@ -30,7 +30,7 @@ private import  tango.util.collection.model.View,
  * appear in sorted order;  that is if a and b are two Elements
  * obtained in succession from elements().nextElement(), that 
  * <PRE>
- * comparator().compare(a, b) <= 0.
+ * comparator(a, b) <= 0.
  * </PRE>
  * 
         author: Doug Lea

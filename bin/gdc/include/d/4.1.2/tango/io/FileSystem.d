@@ -33,7 +33,7 @@ version (Posix)
 
 *******************************************************************************/
 
-class FileSystem
+struct FileSystem
 {
         /***********************************************************************
 
@@ -56,6 +56,41 @@ class FileSystem
                    target.prepend (target.padded(prefix));
                    }
                 return target;
+        }
+
+        /***********************************************************************
+
+                Convert the provided path to an absolute path, using the
+                current working directory where prefix is not provided. 
+                If the given path is already an absolute path, return it 
+                intact.
+
+                Returns the provided path, adjusted as necessary
+
+        ***********************************************************************/
+
+        static char[] toAbsolute (char[] path, char[] prefix=null)
+        {
+                scope target = new FilePath (path);
+                return toAbsolute (target, prefix).toString;
+        }
+
+        /***********************************************************************
+
+                Compare to paths for absolute equality. The given prefix
+                is prepended to the paths where they are not already in
+                absolute format (start with a '/'). Where prefix is not
+                provided, the current working directory will be used
+
+                Returns true if the paths are equivalent, false otherwise
+
+        ***********************************************************************/
+
+        static bool equals (char[] path1, char[] path2, char[] prefix=null)
+        {
+                scope p1 = new FilePath (path1);
+                scope p2 = new FilePath (path2);
+                return (toAbsolute(p1, prefix) == toAbsolute(p2, prefix)) is 0;
         }
 
         /***********************************************************************
@@ -122,7 +157,7 @@ class FileSystem
                                 GetCurrentDirectoryA (len, dir.ptr);
                                 if (len)
                                    {
-                                   dir[len-1] = '\\';                                   
+                                   dir[len-1] = '/';                                   
                                    path = dir;
                                    }
                                 else
@@ -141,7 +176,7 @@ class FileSystem
                                 if (len && i)
                                    {
                                    path = dir[0..i];
-                                   path[$-1] = '\\';
+                                   path[$-1] = '/';
                                    }
                                 else
                                    exception ("Failed to get current directory");
@@ -225,7 +260,7 @@ debug (FileSystem)
         path.set ("...");
         foo (path); 
 
-        path.set (r"\x\y\.file");
+        path.set (r"/x/y/.file");
         foo (path); 
 
         path.suffix = ".foo";
@@ -235,7 +270,7 @@ debug (FileSystem)
         FileSystem.toAbsolute(path);
         foo(path);
 
-        path.set (r"arf\test");
+        path.set (r"arf/test");
         foo(path);
         FileSystem.toAbsolute(path);
         foo(path);

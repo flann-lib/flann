@@ -1,3 +1,4 @@
+// Written in the D programming language
 
 /* NOTE: This file has been patched from the original DMD distribution to
    work with the GDC compiler.
@@ -23,6 +24,7 @@ enum
     MIctordone = 2,	// finished construction
     MIstandalone = 4,	// module ctor does not depend on other module
 			// ctors being done first
+    MIhasictor = 8,	// has ictor member
 }
 
 /***********************
@@ -36,9 +38,13 @@ class ModuleInfo
 
     uint flags;		// initialization state
 
-    void (*ctor)();
-    void (*dtor)();
-    void (*unitTest)();
+    void (*ctor)();	// module static constructor (order dependent)
+    void (*dtor)();	// module static destructor
+    void (*unitTest)();	// module unit tests
+
+    void* xgetMembers;	// module getMembers() function
+
+    void (*ictor)();	// module static constructor (order independent)
 
     /******************
      * Return collection of all modules in the program.
@@ -53,7 +59,8 @@ class ModuleCtorError : Exception
 {
     this(ModuleInfo m)
     {
-	super("circular initialization dependency with module " ~ m.name);
+	super(cast(string) ("circular initialization dependency with module "
+                            ~ m.name));
     }
 }
 
@@ -119,6 +126,7 @@ extern (C) void _moduleCtor()
 
     _moduleinfo_dtors = new ModuleInfo[_moduleinfo_array.length];
     debug printf("_moduleinfo_dtors = x%x\n", cast(void *)_moduleinfo_dtors);
+    _moduleIndependentCtors();
     _moduleCtor2(_moduleinfo_array, 0);
 
     version (none)
@@ -226,4 +234,21 @@ extern (C) void _moduleUnitTests()
 	}
     }
 }
+
+/**********************************
+ * Run unit tests.
+ */
+
+extern (C) void _moduleIndependentCtors()
+{
+    debug printf("_moduleIndependentCtors()\n");
+    foreach (m; _moduleinfo_array)
+    {
+	if (m && m.flags & MIhasictor && m.ictor)
+	{
+	    (*m.ictor)();
+	}
+    }
+}
+
 

@@ -163,6 +163,50 @@ else version( darwin )
         short   l_whence;
     }
 }
+else version( freebsd )
+{
+    const F_DUPFD       = 0;
+    const F_GETFD       = 1;
+    const F_SETFD       = 2;
+    const F_GETFL       = 3;
+    const F_SETFL       = 4;
+    const F_GETOWN      = 5;
+    const F_SETOWN      = 6;
+    const F_GETLK       = 7;
+    const F_SETLK       = 8;
+    const F_SETLKW      = 9;
+
+    const FD_CLOEXEC    = 1;
+
+    const F_RDLCK       = 1;
+    const F_UNLCK       = 2;
+    const F_WRLCK       = 3;
+
+    const O_CREAT       = 0x0200;
+    const O_EXCL        = 0x0800;
+    const O_NOCTTY      = 0;
+    const O_TRUNC       = 0x0400;
+
+    const O_RDONLY      = 0x0000;
+    const O_WRONLY      = 0x0001;
+    const O_RDWR        = 0x0002;
+    const O_ACCMODE     = 0x0003;
+
+    const O_NONBLOCK    = 0x0004;
+    const O_APPEND      = 0x0008;
+    const O_SYNC        = 0x0080;
+    //const O_DSYNC
+    //const O_RSYNC
+
+    struct flock
+    {
+        off_t   l_start;
+        off_t   l_len;
+        pid_t   l_pid;
+        short   l_type;
+        short   l_whence;
+    }
+}
 
 int creat(char*, mode_t);
 int fcntl(int, int, ...);

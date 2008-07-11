@@ -51,6 +51,10 @@ version( linux )
 
         alias int[6] __jmp_buf;
     }
+    else version ( SPARC )
+    {
+        alias int[3] __jmp_buf;
+    }
 
     struct __jmp_buf_tag
     {

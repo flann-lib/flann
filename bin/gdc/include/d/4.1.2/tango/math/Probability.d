@@ -90,8 +90,8 @@ real normalDistributionComplInv(real p)
 
 debug(UnitTest) {
 unittest {
-    assert(feqrel(normalDistributionInv(normalDistribution(0.1)),0.1)>=real.mant_dig-4);
-    assert(feqrel(normalDistributionComplInv(normalDistributionCompl(0.1)),0.1)>=real.mant_dig-4);
+    assert(feqrel(normalDistributionInv(normalDistribution(0.1)),0.1L)>=real.mant_dig-4);
+    assert(feqrel(normalDistributionComplInv(normalDistributionCompl(0.1)),0.1L)>=real.mant_dig-4);
 }
 }
 
@@ -369,7 +369,7 @@ unittest {
   assert(fabs(fDistributionComplInv(8, 34, 0.2) - 1.48267037661408L)< 0.0000000005L);
   assert(fabs(fDistributionComplInv(4, 16, 0.008) - 5.043_537_593_48596L)< 0.0000000005L);
   // Regression test: This one used to fail because of a bug in the definition of MINLOG.
-  assert(feqrel(fDistributionCompl(4, 16, fDistributionComplInv(4,16, 0.008)), 0.008)>=real.mant_dig-3);
+  assert(feqrel(fDistributionCompl(4, 16, fDistributionComplInv(4,16, 0.008)), 0.008L)>=real.mant_dig-3);
 }
 }
 

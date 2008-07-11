@@ -14,6 +14,8 @@
 
 module tango.group.stream;
 
+pragma (msg, "Please post your usage of tango.group to this ticket: http://dsource.org/projects/tango/ticket/1013");
+
 public  import  tango.io.stream.UtfStream,
                 tango.io.stream.MapStream,
                 tango.io.stream.LineStream,

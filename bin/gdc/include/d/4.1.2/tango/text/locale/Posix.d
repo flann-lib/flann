@@ -21,9 +21,7 @@ private import tango.text.locale.Data;
 private import tango.stdc.ctype;
 private import tango.stdc.posix.stdlib;
 private import tango.stdc.string;
-private import tango.stdc.time;
 private import tango.stdc.locale;
-private import tango.stdc.posix.time;
 
 /*private extern(C) char* setlocale(int type, char* locale);
 private extern(C) void putenv(char*);
@@ -34,31 +32,40 @@ int getUserCulture() {
   char* env = getenv("LC_ALL");
   if (!env || *env == '\0') {
     env = getenv("LANG");
-    if (!env || *env == '\0')
-      throw new LocaleException("Neither LANG nor LC_ALL were found to be set. Please set for locale formatting to function.");
   }
 
   // getenv returns a string of the form <language>_<region>.
   // Therefore we need to replace underscores with hyphens.
-  char* p = env;
-  int len;
-  while (*p) {
-    if (*p == '.'){
-      break;
-    }
-    if (*p == '_'){
-      *p = '-';
-    }
-    p++;
-    len++;
-  }
+  char[] s;
+  if (env){
+      char* p = env;
+      int len;
+      while (*p) {
+        if (*p == '.'){
+          break;
+        }
+        if (*p == '_'){
+          *p = '-';
+        }
+        p++;
+        len++;
+      }
 
-  char[] s = env[0 .. len];
+      s = env[0 .. len];
+  } else {
+      s="en-US";
+  }
   foreach (entry; CultureData.cultureDataTable) {
     // todo: there is also a local compareString defined. Is it correct that here 
     // we use tango.text.locale.Data, which matches the signature?
     if (tango.text.locale.Data.compareString(entry.name, s) == 0)
-	// todo: here was entry.id returned, which does not exist. Is lcid correct?
+      return entry.lcid;
+  }
+  
+  foreach (entry; CultureData.cultureDataTable) {
+    // todo: there is also a local compareString defined. Is it correct that here 
+    // we use tango.text.locale.Data, which matches the signature?
+    if (tango.text.locale.Data.compareString(entry.name, "en-US") == 0)
       return entry.lcid;
   }
   return 0;
@@ -95,13 +102,6 @@ void setUserCulture(int lcid) {
   setlocale(LC_TELEPHONE, name.ptr);
   setlocale(LC_MEASUREMENT, name.ptr);
   setlocale(LC_IDENTIFICATION, name.ptr);
-}
-
-ulong getUtcTime() {
-   int t;
-   time(&t);
-   gmtime(&t);
-   return cast(ulong)((cast(long)t * 10000000L) + 116444736000000000L);
 }
 
 int compareString(int lcid, char[] stringA, uint offsetA, uint lengthA, char[] stringB, uint offsetB, uint lengthB, bool ignoreCase) {

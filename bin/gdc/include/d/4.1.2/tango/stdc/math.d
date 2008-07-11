@@ -361,6 +361,73 @@ else version( darwin )
     }
   }
 }
+else version( freebsd )
+{
+    enum
+    {
+		FP_INFINITE = 0x01,
+		FP_NAN = 0x02,
+		FP_NORMAL = 0x04,
+		FP_SUBNORMAL = 0x08,
+		FP_ZERO = 0x10
+    }
+
+    enum
+    {
+        FP_FAST_FMA  = 0,
+        FP_FAST_FMAF = 0,
+        FP_FAST_FMAL = 0,
+    }
+
+	int	__fpclassifyd(double);
+	int	__fpclassifyf(float);
+	int	__fpclassifyl(real);
+	int	__isfinitef(float);
+	int	__isfinite(double);
+	int	__isfinitel(real);
+	int	__isinff(float);
+	int	__isinfl(real);
+	int	__isnanl(real);
+	int	__isnormalf(float);
+	int	__isnormal(double);
+	int	__isnormall(real);
+	int	__signbit(double);
+	int	__signbitf(float);
+	int	__signbitl(real);
+
+  extern (D)
+  {
+    //int fpclassify(real-floating x);
+    int fpclassify(float x)     { return __fpclassifyf(x); }
+    int fpclassify(double x)    { return __fpclassifyd(x); }
+	int fpclassify(real x)    { return __fpclassifyl(x); }
+
+    //int isfinite(real-floating x);
+    int isfinite(float x)       { return __isfinitef(x); }
+    int isfinite(double x)      { return __isfinite(x); }
+	int isfinite(double x)      { return __isfinitel(x); }
+
+    //int isinf(real-floating x);
+    int isinf(float x)          { return __isinff(x); }
+    int isinf(double x)         { return __isinfl(x); }
+	int isinf(real x)         { return __isinfl(x); }
+
+    //int isnan(real-floating x);
+    int isnan(float x)          { return __isnanl(x); }
+    int isnan(double x)         { return __isnanl(x); }
+	int isnan(real x)         { return __isnanl(x); }
+
+    //int isnormal(real-floating x);
+    int isnormal(float x)       { return __isnormalf(x); }
+    int isnormal(double x)      { return __isnormal(x); }
+    int isnormal(real x)        { return __isnormall(x); }
+
+    //int signbit(real-floating x);
+    int signbit(float x)     { return __signbitf(x); }
+    int signbit(double x)    { return __signbit(x); }
+	int signbit(double x)    { return __signbit(x); }
+    }
+}
 
 extern (D)
 {

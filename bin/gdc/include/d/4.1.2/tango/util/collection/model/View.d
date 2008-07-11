@@ -135,7 +135,7 @@ public interface View(T)
          * gets of altered Views.)
          * Note: Since all View implementations are synchronizable,
          * you may be able to guarantee that element traversals will not be
-         * corrupted by using the java <CODE>synchronized</CODE> construct
+         * corrupted by using the D <CODE>synchronized</CODE> construct
          * around code blocks that do traversals. (Use with care though,
          * since such constructs can cause deadlock.)
          * <P>

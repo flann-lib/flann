@@ -8,7 +8,7 @@
                         Dec 2006: Outback release
 
         authors:        Kris
-        
+
 *******************************************************************************/
 
 module tango.io.Buffer;
@@ -25,45 +25,45 @@ public  import  tango.io.model.IBuffer,
 extern (C)
 {
         protected void * memcpy (void *dst, void *src, uint);
-}       
+}
 
 /*******************************************************************************
 
         Buffer is central concept in Tango I/O. Each buffer acts
         as a queue (line) where items are removed from the front
-        and new items are added to the back. Buffers are modeled 
-        by tango.io.model.IBuffer, and a concrete implementation 
+        and new items are added to the back. Buffers are modeled
+        by tango.io.model.IBuffer, and a concrete implementation
         is provided by this class.
-        
-        Buffer can be read from and written to directly, though 
-        various data-converters and filters are often leveraged 
-        to apply structure to what might otherwise be simple raw 
-        data. 
 
-        Buffers may also be tokenized by applying an Iterator. 
-        This can be handy when one is dealing with text input, 
-        and/or the content suits a more fluid format than most 
-        typical converters support. Iterator tokens are mapped 
-        directly onto buffer content (sliced), making them quite 
-        efficient in practice. Like other types of buffer client, 
+        Buffer can be read from and written to directly, though
+        various data-converters and filters are often leveraged
+        to apply structure to what might otherwise be simple raw
+        data.
+
+        Buffers may also be tokenized by applying an Iterator.
+        This can be handy when one is dealing with text input,
+        and/or the content suits a more fluid format than most
+        typical converters support. Iterator tokens are mapped
+        directly onto buffer content (sliced), making them quite
+        efficient in practice. Like other types of buffer client,
         multiple iterators can be mapped onto one common buffer
         and access will be serialized.
 
         Buffers are sometimes memory-only, in which case there
-        is nothing left to do when a client has consumed all the 
+        is nothing left to do when a client has consumed all the
         content. Other buffers are themselves bound to an external
-        device called a conduit. When this is the case, a consumer 
-        will eventually cause a buffer to reload via its associated 
-        conduit and previous buffer content will be lost. 
-        
+        device called a conduit. When this is the case, a consumer
+        will eventually cause a buffer to reload via its associated
+        conduit and previous buffer content will be lost.
+
         A similar approach is applied to clients which populate a
         buffer, whereby the content of a full buffer will be flushed
-        to a bound conduit before continuing. Another variation is 
-        that of a memory-mapped buffer, whereby the buffer content 
-        is mapped directly to virtual memory exposed via the OS. This 
+        to a bound conduit before continuing. Another variation is
+        that of a memory-mapped buffer, whereby the buffer content
+        is mapped directly to virtual memory exposed via the OS. This
         can be used to address large files as an array of content.
 
-        Direct buffer manipulation typically involves appending, 
+        Direct buffer manipulation typically involves appending,
         as in the following example:
         ---
         // create a small buffer
@@ -82,42 +82,42 @@ extern (C)
         ---
 
         A slice() method will return all valid content within a buffer.
-        GrowBuffer can be used instead, where one wishes to append beyond 
-        a specified limit. 
-        
-        A common usage of a buffer is in conjunction with a conduit, 
-        such as FileConduit. Each conduit exposes a preferred-size for 
+        GrowBuffer can be used instead, where one wishes to append beyond
+        a specified limit.
+
+        A common usage of a buffer is in conjunction with a conduit,
+        such as FileConduit. Each conduit exposes a preferred-size for
         its associated buffers, utilized during buffer construction:
         ---
         auto file = new FileConduit ("file.name");
         auto buf = new Buffer (file);
         ---
 
-        However, this is typically hidden by higher level constructors 
+        However, this is typically hidden by higher level constructors
         such as those exposed via the stream wrappers. For example:
         ---
         auto input = new DataInput (new FileInput("file.name"));
         ---
 
-        There is indeed a buffer between the resultant stream and the 
-        file source, but explicit buffer construction is unecessary in 
-        common cases. 
+        There is indeed a buffer between the resultant stream and the
+        file source, but explicit buffer construction is unecessary in
+        common cases.
 
-        An Iterator is constructed in a similar manner, where you provide 
-        it an input stream to operate upon. There's a variety of iterators 
-        available in the tango.text.stream package, and they are templated 
-        for each of utf8, utf16, and utf32. This example uses a line iterator 
+        An Iterator is constructed in a similar manner, where you provide
+        it an input stream to operate upon. There's a variety of iterators
+        available in the tango.text.stream package, and they are templated
+        for each of utf8, utf16, and utf32. This example uses a line iterator
         to sweep a text file:
         ---
         auto lines = new LineInput (new FileInput("file.name"));
         foreach (line; lines)
                  Cout(line).newline;
-        ---                 
+        ---
 
         Buffers are useful for many purposes within Tango, but there
-        are times when it may be more appropriate to sidestep them. For 
-        such cases, all conduit derivatives (such as FileConduit) support 
-        direct array-based IO via a pair of read() and write() methods. 
+        are times when it may be more appropriate to sidestep them. For
+        such cases, all conduit derivatives (such as FileConduit) support
+        direct array-based IO via a pair of read() and write() methods.
 
 *******************************************************************************/
 
@@ -130,33 +130,33 @@ class Buffer : IBuffer
         protected uint          extent;         // limit of valid content
         protected uint          dimension;      // maximum extent of content
 
-        
+
         protected static char[] overflow  = "output buffer is full";
         protected static char[] underflow = "input buffer is empty";
         protected static char[] eofRead   = "end-of-flow whilst reading";
         protected static char[] eofWrite  = "end-of-flow whilst writing";
 
         /***********************************************************************
-        
+
                 Ensure the buffer remains valid between method calls
-                 
+
         ***********************************************************************/
 
-        invariant 
+        invariant
         {
                 assert (index <= extent);
                 assert (extent <= dimension);
         }
 
         /***********************************************************************
-        
+
                 Construct a buffer
 
-                Params: 
+                Params:
                 conduit = the conduit to buffer
 
                 Remarks:
-                Construct a Buffer upon the provided conduit. A relevant 
+                Construct a Buffer upon the provided conduit. A relevant
                 buffer size is supplied via the provided conduit.
 
         ***********************************************************************/
@@ -170,10 +170,10 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Construct a buffer
 
-                Params: 
+                Params:
                 stream = an input stream
                 capacity = desired buffer capacity
 
@@ -189,10 +189,10 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Construct a buffer
 
-                Params: 
+                Params:
                 stream = an output stream
                 capacity = desired buffer capacity
 
@@ -208,32 +208,32 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Construct a buffer
 
-                Params: 
+                Params:
                 capacity = the number of bytes to make available
 
                 Remarks:
-                Construct a Buffer with the specified number of bytes. 
+                Construct a Buffer with the specified number of bytes.
 
         ***********************************************************************/
 
         this (uint capacity = 0)
         {
-                setContent (new ubyte[capacity], 0);              
+                setContent (new ubyte[capacity], 0);
         }
 
         /***********************************************************************
-        
+
                 Construct a buffer
 
-                Params: 
+                Params:
                 data = the backing array to buffer within
 
                 Remarks:
                 Prime a buffer with an application-supplied array. All content
-                is considered valid for reading, and thus there is no writable 
+                is considered valid for reading, and thus there is no writable
                 space initially available.
 
         ***********************************************************************/
@@ -244,21 +244,21 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Construct a buffer
 
-                Params: 
+                Params:
                 data =          the backing array to buffer within
                 readable =      the number of bytes initially made
                                 readable
 
                 Remarks:
-                Prime buffer with an application-supplied array, and 
+                Prime buffer with an application-supplied array, and
                 indicate how much readable data is already there. A
                 write operation will begin writing immediately after
                 the existing readable content.
 
-                This is commonly used to attach a Buffer instance to 
+                This is commonly used to attach a Buffer instance to
                 a local array.
 
         ***********************************************************************/
@@ -269,11 +269,11 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Attempt to share an upstream Buffer, and create an instance
                 where there not one available.
 
-                Params: 
+                Params:
                 stream = an input stream
                 size = a hint of the desired buffer size. Defaults to the
                 conduit-defined size
@@ -298,11 +298,11 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Attempt to share an upstream Buffer, and create an instance
                 where there not one available.
 
-                Params: 
+                Params:
                 stream = an output stream
                 size = a hint of the desired buffer size. Defaults to the
                 conduit-defined size
@@ -330,7 +330,7 @@ class Buffer : IBuffer
 
                 Reset the buffer content
 
-                Params: 
+                Params:
                 data =  the backing array to buffer within. All content
                         is considered valid
 
@@ -351,10 +351,10 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Reset the buffer content
 
-                Params: 
+                Params:
                 data =          the backing array to buffer within
                 readable =      the number of bytes within data considered
                                 valid
@@ -379,14 +379,14 @@ class Buffer : IBuffer
                 // reset to start of input
                 this.index = 0;
 
-                return this;            
+                return this;
         }
 
         /***********************************************************************
-        
+
                 Access buffer content
 
-                Params: 
+                Params:
                 size =  number of bytes to access
                 eat =   whether to consume the content or not
 
@@ -397,30 +397,30 @@ class Buffer : IBuffer
                 Remarks:
                 Read a slice of data from the buffer, loading from the
                 conduit as necessary. The specified number of bytes is
-                sliced from the buffer, and marked as having been read 
+                sliced from the buffer, and marked as having been read
                 when the 'eat' parameter is set true. When 'eat' is set
                 false, the read position is not adjusted.
 
-                Note that the slice cannot be larger than the size of 
+                Note that the slice cannot be larger than the size of
                 the buffer ~ use method fill(void[]) instead where you
                 simply want the content copied, or use conduit.read()
-                to extract directly from an attached conduit. Also note 
-                that if you need to retain the slice, then it should be 
+                to extract directly from an attached conduit. Also note
+                that if you need to retain the slice, then it should be
                 .dup'd before the buffer is compressed or repopulated.
 
                 Examples:
                 ---
-                // create a buffer with some content 
+                // create a buffer with some content
                 auto buffer = new Buffer ("hello world");
 
-                // consume everything unread 
+                // consume everything unread
                 auto slice = buffer.slice (buffer.readable);
                 ---
 
         ***********************************************************************/
 
         void[] slice (uint size, bool eat = true)
-        {   
+        {
                 if (size > readable)
                    {
                    if (source is null)
@@ -428,7 +428,7 @@ class Buffer : IBuffer
 
                    // make some space? This will try to leave as much content
                    // in the buffer as possible, such that entire records may
-                   // be aliased directly from within. 
+                   // be aliased directly from within.
                    if (size > writable)
                       {
                       if (size > dimension)
@@ -446,7 +446,7 @@ class Buffer : IBuffer
                 auto i = index;
                 if (eat)
                     index += size;
-                return data [i .. i + size];               
+                return data [i .. i + size];
         }
 
         /**********************************************************************
@@ -475,7 +475,7 @@ class Buffer : IBuffer
 
                 Copy buffer content into the provided dst
 
-                Params: 
+                Params:
                 dst = destination of the content
                 bytes = size of dst
 
@@ -483,7 +483,7 @@ class Buffer : IBuffer
                 A reference to the populated content
 
                 Remarks:
-                Fill the provided array with content. We try to satisfy 
+                Fill the provided array with content. We try to satisfy
                 the request from the buffer content, and read directly
                 from an attached conduit where more is required.
 
@@ -497,20 +497,20 @@ class Buffer : IBuffer
 
                 return tmp;
         }
-        
+
         /***********************************************************************
-        
+
                 Append content
 
                 Params:
                 src = the content to _append
 
-                Returns a chaining reference if all content was written. 
+                Returns a chaining reference if all content was written.
                 Throws an IOException indicating eof or eob if not.
 
                 Remarks:
                 Append an array to this buffer, and flush to the
-                conduit as necessary. This is often used in lieu of 
+                conduit as necessary. This is often used in lieu of
                 a Writer.
 
         ***********************************************************************/
@@ -519,27 +519,27 @@ class Buffer : IBuffer
         {
                 return append (src.ptr, src.length);
         }
-        
+
         /***********************************************************************
-        
+
                 Append content
 
                 Params:
                 src = the content to _append
                 length = the number of bytes in src
 
-                Returns a chaining reference if all content was written. 
+                Returns a chaining reference if all content was written.
                 Throws an IOException indicating eof or eob if not.
 
                 Remarks:
                 Append an array to this buffer, and flush to the
-                conduit as necessary. This is often used in lieu of 
+                conduit as necessary. This is often used in lieu of
                 a Writer.
 
         ***********************************************************************/
 
         IBuffer append (void* src, uint length)
-        {               
+        {
                 if (length > writable)
                     // can we write externally?
                     if (sink)
@@ -565,30 +565,30 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Append content
 
                 Params:
                 other = a buffer with content available
 
                 Returns:
-                Returns a chaining reference if all content was written. 
+                Returns a chaining reference if all content was written.
                 Throws an IOException indicating eof or eob if not.
 
                 Remarks:
                 Append another buffer to this one, and flush to the
-                conduit as necessary. This is often used in lieu of 
+                conduit as necessary. This is often used in lieu of
                 a Writer.
 
         ***********************************************************************/
 
-        IBuffer append (IBuffer other)        
-        {               
+        IBuffer append (IBuffer other)
+        {
                 return append (other.slice);
         }
 
         /***********************************************************************
-        
+
                 Consume content from a producer
 
                 Params:
@@ -609,32 +609,32 @@ class Buffer : IBuffer
 
         ***********************************************************************/
 
-        void consume (void[] x)        
-        {   
+        void consume (void[] x)
+        {
                 append (x);
         }
-                    
+
         /***********************************************************************
-        
+
                 Retrieve the valid content
 
                 Returns:
                 a void[] slice of the buffer
 
                 Remarks:
-                Return a void[] slice of the buffer, from the current position 
+                Return a void[] slice of the buffer, from the current position
                 up to the limit of valid content. The content remains in the
                 buffer for future extraction.
 
         ***********************************************************************/
 
         void[] slice ()
-        {       
+        {
                 return  data [index .. extent];
         }
 
         /***********************************************************************
-        
+
                 Move the current read location
 
                 Params:
@@ -644,11 +644,11 @@ class Buffer : IBuffer
                 Returns true if successful, false otherwise.
 
                 Remarks:
-                Skip ahead by the specified number of bytes, streaming from 
+                Skip ahead by the specified number of bytes, streaming from
                 the associated conduit as necessary.
-        
+
                 Can also reverse the read position by 'size' bytes, when size
-                is negative. This may be used to support lookahead operations. 
+                is negative. This may be used to support lookahead operations.
                 Note that a negative size will fail where there is not sufficient
                 content available in the buffer (can't _skip beyond the beginning).
 
@@ -670,7 +670,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Iterator support
 
                 Params:
@@ -680,13 +680,13 @@ class Buffer : IBuffer
                 Returns true if a token was isolated, false otherwise.
 
                 Remarks:
-                Upon success, the delegate should return the byte-based 
+                Upon success, the delegate should return the byte-based
                 index of the consumed pattern (tail end of it). Failure
                 to match a pattern should be indicated by returning an
                 IConduit.Eof
 
                 Each pattern is expected to be stripped of the delimiter.
-                An end-of-file condition causes trailing content to be 
+                An end-of-file condition causes trailing content to be
                 placed into the token. Requests made beyond Eof result
                 in empty matches (length is zero).
 
@@ -721,11 +721,11 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Available content
 
                 Remarks:
-                Return count of _readable bytes remaining in buffer. This is 
+                Return count of _readable bytes remaining in buffer. This is
                 calculated simply as limit() - position()
 
         ***********************************************************************/
@@ -733,14 +733,14 @@ class Buffer : IBuffer
         uint readable ()
         {
                 return extent - index;
-        }               
+        }
 
         /***********************************************************************
-        
+
                 Available space
 
                 Remarks:
-                Return count of _writable bytes available in buffer. This is 
+                Return count of _writable bytes available in buffer. This is
                 calculated simply as capacity() - limit()
 
         ***********************************************************************/
@@ -748,7 +748,7 @@ class Buffer : IBuffer
         uint writable ()
         {
                 return dimension - extent;
-        }               
+        }
 
         /***********************************************************************
 
@@ -761,26 +761,26 @@ class Buffer : IBuffer
                 Returns whatever the delegate returns.
 
                 Remarks:
-                Exposes the raw data buffer at the current _write position, 
+                Exposes the raw data buffer at the current _write position,
                 The delegate is provided with a void[] representing space
                 available within the buffer at the current _write position.
 
-                The delegate should return the appropriate number of bytes 
+                The delegate should return the appropriate number of bytes
                 if it writes valid content, or IConduit.Eof on error.
 
         ***********************************************************************/
 
         uint write (uint delegate (void[]) dg)
         {
-                int count = dg (data [extent..dimension]);
+                auto count = dg (data [extent..dimension]);
 
-                if (count != IConduit.Eof) 
+                if (count != IConduit.Eof)
                    {
                    extent += count;
                    assert (extent <= dimension);
                    }
                 return count;
-        }               
+        }
 
         /***********************************************************************
 
@@ -796,9 +796,9 @@ class Buffer : IBuffer
                 Exposes the raw data buffer at the current _read position. The
                 delegate is provided with a void[] representing the available
                 data, and should return zero to leave the current _read position
-                intact. 
-                
-                If the delegate consumes data, it should return the number of 
+                intact.
+
+                If the delegate consumes data, it should return the number of
                 bytes consumed; or IConduit.Eof to indicate an error.
 
         ***********************************************************************/
@@ -806,14 +806,14 @@ class Buffer : IBuffer
         uint read (uint delegate (void[]) dg)
         {
                 int count = dg (data [index..extent]);
-                
+
                 if (count != IConduit.Eof)
                    {
                    index += count;
                    assert (index <= extent);
                    }
                 return count;
-        }               
+        }
 
         /***********************************************************************
 
@@ -823,12 +823,12 @@ class Buffer : IBuffer
                 the buffer instance
 
                 Remarks:
-                If we have some data left after an export, move it to 
-                front-of-buffer and set position to be just after the 
-                remains. This is for supporting certain conduits which 
+                If we have some data left after an export, move it to
+                front-of-buffer and set position to be just after the
+                remains. This is for supporting certain conduits which
                 choose to write just the initial portion of a request.
-                
-                Limit is set to the amount of data remaining. Position 
+
+                Limit is set to the amount of data remaining. Position
                 is always reset to zero.
 
         ***********************************************************************/
@@ -844,20 +844,20 @@ class Buffer : IBuffer
                 index = 0;
                 extent = r;
                 return this;
-        }               
+        }
 
         /***********************************************************************
 
                 Fill buffer from the specific conduit
-               
+
                 Returns:
                 Returns the number of bytes read, or Conduit.Eof
-        
+
                 Remarks:
-                Try to _fill the available buffer with content from the 
-                specified conduit. We try to read as much as possible 
-                by clearing the buffer when all current content has been 
-                eaten. If there is no space available, nothing will be 
+                Try to _fill the available buffer with content from the
+                specified conduit. We try to read as much as possible
+                by clearing the buffer when all current content has been
+                eaten. If there is no space available, nothing will be
                 read.
 
         ***********************************************************************/
@@ -869,12 +869,12 @@ class Buffer : IBuffer
 
                 if (readable is 0)
                     index = extent = 0;  // same as clear(), but without chain
-                else 
+                else
                    if (writable is 0)
                        return 0;
 
                 return write (&src.read);
-        } 
+        }
 
         /***********************************************************************
 
@@ -885,11 +885,11 @@ class Buffer : IBuffer
 
                 Remarks:
                 Write as much of the buffer that the associated conduit
-                can consume. The conduit is not obliged to consume all 
+                can consume. The conduit is not obliged to consume all
                 content, so some may remain within the buffer.
 
                 Throws an IOException on premature Eof.
-        
+
         ***********************************************************************/
 
         final uint drain (OutputStream dst)
@@ -906,7 +906,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Truncate buffer content
 
                 Remarks:
@@ -923,10 +923,10 @@ class Buffer : IBuffer
                    return true;
                    }
                 return false;
-        }               
+        }
 
         /***********************************************************************
-        
+
                 Access buffer limit
 
                 Returns:
@@ -935,7 +935,7 @@ class Buffer : IBuffer
                 Remarks:
                 Each buffer has a capacity, a limit, and a position. The
                 capacity is the maximum content a buffer can contain, limit
-                represents the extent of valid content, and position marks 
+                represents the extent of valid content, and position marks
                 the current read location.
 
         ***********************************************************************/
@@ -946,7 +946,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Access buffer capacity
 
                 Returns:
@@ -955,7 +955,7 @@ class Buffer : IBuffer
                 Remarks:
                 Each buffer has a capacity, a limit, and a position. The
                 capacity is the maximum content a buffer can contain, limit
-                represents the extent of valid content, and position marks 
+                represents the extent of valid content, and position marks
                 the current read location.
 
         ***********************************************************************/
@@ -966,7 +966,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Access buffer read position
 
                 Returns:
@@ -975,7 +975,7 @@ class Buffer : IBuffer
                 Remarks:
                 Each buffer has a capacity, a limit, and a position. The
                 capacity is the maximum content a buffer can contain, limit
-                represents the extent of valid content, and position marks 
+                represents the extent of valid content, and position marks
                 the current read location.
 
         ***********************************************************************/
@@ -986,7 +986,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Set external conduit
 
                 Params:
@@ -995,7 +995,7 @@ class Buffer : IBuffer
                 Remarks:
                 Sets the external conduit associated with this buffer.
 
-                Buffers do not require an external conduit to operate, but 
+                Buffers do not require an external conduit to operate, but
                 it can be convenient to associate one. For example, methods
                 fill() & drain() use it to import/export content as necessary.
 
@@ -1009,7 +1009,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Set output stream
 
                 Params:
@@ -1018,7 +1018,7 @@ class Buffer : IBuffer
                 Remarks:
                 Sets the external output stream associated with this buffer.
 
-                Buffers do not require an external stream to operate, but 
+                Buffers do not require an external stream to operate, but
                 it can be convenient to associate one. For example, methods
                 fill & drain use them to import/export content as necessary.
 
@@ -1031,7 +1031,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Set input stream
 
                 Params:
@@ -1040,7 +1040,7 @@ class Buffer : IBuffer
                 Remarks:
                 Sets the external input stream associated with this buffer.
 
-                Buffers do not require an external stream to operate, but 
+                Buffers do not require an external stream to operate, but
                 it can be convenient to associate one. For example, methods
                 fill & drain use them to import/export content as necessary.
 
@@ -1053,11 +1053,11 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-                
+
                 Access buffer content
 
                 Remarks:
-                Return the entire backing array. Exposed for subclass usage 
+                Return the entire backing array. Exposed for subclass usage
                 only
 
         ***********************************************************************/
@@ -1068,7 +1068,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Copy content into buffer
 
                 Params:
@@ -1076,9 +1076,9 @@ class Buffer : IBuffer
                 size = the length of content at src
 
                 Remarks:
-                Bulk _copy of data from 'src'. The new content is made 
+                Bulk _copy of data from 'src'. The new content is made
                 available for reading. This is exposed for subclass use
-                only 
+                only
 
         ***********************************************************************/
 
@@ -1095,8 +1095,8 @@ class Buffer : IBuffer
 
         /***********************************************************************
 
-                Cast to a target type without invoking the wrath of the 
-                runtime checks for misalignment. Instead, we truncate the 
+                Cast to a target type without invoking the wrath of the
+                runtime checks for misalignment. Instead, we truncate the
                 array length
 
         ***********************************************************************/
@@ -1124,7 +1124,7 @@ class Buffer : IBuffer
 
 
         /***********************************************************************
-        
+
                 Return the name of this conduit
 
         ***********************************************************************/
@@ -1133,12 +1133,12 @@ class Buffer : IBuffer
         {
                 return "<buffer>";
         }
-                     
+
         /***********************************************************************
-        
+
                 Generic IOException thrower
-                
-                Params: 
+
+                Params:
                 msg = a text message describing the exception reason
 
                 Remarks:
@@ -1152,12 +1152,12 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Flush all buffer content to the specific conduit
 
                 Remarks:
-                Flush the contents of this buffer. This will block until 
-                all content is actually flushed via the associated conduit, 
+                Flush the contents of this buffer. This will block until
+                all content is actually flushed via the associated conduit,
                 whereas drain() will not.
 
                 Do nothing where a conduit is not attached, enabling memory
@@ -1178,14 +1178,14 @@ class Buffer : IBuffer
                    sink.flush;
                    }
                 return this;
-        } 
+        }
 
         /***********************************************************************
-        
+
                 Clear buffer content
 
                 Remarks:
-                Reset 'position' and 'limit' to zero. This effectively 
+                Reset 'position' and 'limit' to zero. This effectively
                 clears all content from the buffer.
 
         ***********************************************************************/
@@ -1198,16 +1198,16 @@ class Buffer : IBuffer
                 if (source)
                     source.clear;
                 return this;
-        }               
+        }
 
         /***********************************************************************
-        
+
                 Copy content via this buffer from the provided src
                 conduit.
 
                 Remarks:
-                The src conduit has its content transferred through 
-                this buffer via a series of fill & drain operations, 
+                The src conduit has its content transferred through
+                this buffer via a series of fill & drain operations,
                 until there is no more content available. The buffer
                 content should be explicitly flushed by the caller.
 
@@ -1225,13 +1225,13 @@ class Buffer : IBuffer
                            else
                               error (overflow);
                 return this;
-        } 
+        }
 
         /***********************************************************************
 
                 Transfer content into the provided dst
 
-                Params: 
+                Params:
                 dst = destination of the content
 
                 Returns:
@@ -1240,15 +1240,15 @@ class Buffer : IBuffer
                 available.
 
                 Remarks:
-                Populates the provided array with content. We try to 
-                satisfy the request from the buffer content, and read 
-                directly from an attached conduit when the buffer is 
+                Populates the provided array with content. We try to
+                satisfy the request from the buffer content, and read
+                directly from an attached conduit when the buffer is
                 empty.
 
         ***********************************************************************/
 
         override uint read (void[] dst)
-        {   
+        {
                 uint content = readable();
                 if (content)
                    {
@@ -1260,10 +1260,10 @@ class Buffer : IBuffer
                    index += content;
                    }
                 else
-                   if (source) 
+                   if (source)
                       {
                       // pathological cases read directly from conduit
-                      if (dst.length > dimension) 
+                      if (dst.length > dimension)
                           content = source.read (dst);
                       else
                          // keep buffer partially populated
@@ -1279,7 +1279,7 @@ class Buffer : IBuffer
 
                 Emulate OutputStream.write()
 
-                Params: 
+                Params:
                 src = the content to write
 
                 Returns:
@@ -1288,28 +1288,28 @@ class Buffer : IBuffer
 
                 Remarks:
                 Appends src content to the buffer, flushing to an attached
-                conduit as necessary. An IOException is thrown upon write 
+                conduit as necessary. An IOException is thrown upon write
                 failure.
 
         ***********************************************************************/
 
         override uint write (void[] src)
-        {   
+        {
                 append (src.ptr, src.length);
                 return src.length;
         }
 
         /***********************************************************************
-        
+
                 Access configured conduit
 
                 Returns:
-                Returns the conduit associated with this buffer. Returns 
+                Returns the conduit associated with this buffer. Returns
                 null if the buffer is purely memory based; that is, it's
                 not backed by some external medium.
 
                 Remarks:
-                Buffers do not require an external conduit to operate, but 
+                Buffers do not require an external conduit to operate, but
                 it can be convenient to associate one. For example, methods
                 fill() & drain() use it to import/export content as necessary.
 
@@ -1326,7 +1326,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Return a preferred size for buffering conduit I/O
 
         ***********************************************************************/
@@ -1335,7 +1335,7 @@ class Buffer : IBuffer
         {
                 return 32 * 1024;
         }
-                     
+
         /***********************************************************************
 
                 Is the conduit alive?
@@ -1343,21 +1343,21 @@ class Buffer : IBuffer
         ***********************************************************************/
 
         final override bool isAlive ()
-        {       
+        {
                 return true;
         }
 
         /***********************************************************************
-        
+
                 Exposes configured output stream
 
                 Returns:
-                Returns the OutputStream associated with this buffer. Returns 
+                Returns the OutputStream associated with this buffer. Returns
                 null if the buffer is not attached to an output; that is, it's
                 not backed by some external medium.
 
                 Remarks:
-                Buffers do not require an external stream to operate, but 
+                Buffers do not require an external stream to operate, but
                 it can be convenient to associate them. For example, methods
                 fill & drain use them to import/export content as necessary.
 
@@ -1369,16 +1369,16 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Exposes configured input stream
 
                 Returns:
-                Returns the InputStream associated with this buffer. Returns 
+                Returns the InputStream associated with this buffer. Returns
                 null if the buffer is not attached to an input; that is, it's
                 not backed by some external medium.
 
                 Remarks:
-                Buffers do not require an external stream to operate, but 
+                Buffers do not require an external stream to operate, but
                 it can be convenient to associate them. For example, methods
                 fill & drain use them to import/export content as necessary.
 
@@ -1390,7 +1390,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-                
+
                 Release external resources
 
         ***********************************************************************/
@@ -1400,7 +1400,7 @@ class Buffer : IBuffer
         }
 
         /***********************************************************************
-        
+
                 Close the stream
 
                 Remarks:
@@ -1409,7 +1409,7 @@ class Buffer : IBuffer
 
         ***********************************************************************/
 
-        override void close () 
+        override void close ()
         {
                 if (sink)
                     sink.close;

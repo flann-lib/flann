@@ -1148,13 +1148,13 @@ private char[] combineCPathWithDPath(char* c_path, char[] path, int char_pos)
 /**
  * Replaces the tilde from path with the path from the user database.
  */
-private char[] expandFromDatabase(char[] path)
+private string expandFromDatabase(string path)
 {
     assert(path.length > 2 || (path.length == 2 && path[1] != sep[0]));
     assert(path[0] == '~');
 
     // Extract username, searching for path separator.
-    char[] username;
+    string username;
     ptrdiff_t last_char = find(path, sep[0]);
 
     if (last_char == -1)

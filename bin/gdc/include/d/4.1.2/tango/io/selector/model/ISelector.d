@@ -238,7 +238,7 @@ interface ISelectionSet
  * SocketConduit conduit2;
  * MyClass object1;
  * MyClass object2;
- * uint eventCount;
+ * int eventCount;
  *
  * // Initialize the selector assuming that it will deal with 2 conduits and
  * // will receive 2 events per invocation to the select() method.
@@ -390,7 +390,8 @@ interface ISelector
      *
      * Returns:
      * The amount of conduits that have received events; 0 if no conduits
-     * have received events within the specified timeout.
+     * have received events within the specified timeout and -1 if there
+     * was an error.
      */
     public abstract int select();
 

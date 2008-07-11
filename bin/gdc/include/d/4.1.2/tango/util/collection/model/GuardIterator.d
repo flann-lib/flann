@@ -18,8 +18,8 @@ private import tango.util.collection.model.Iterator;
 
 /**
  *
- * CollectionIterator extends the standard java.util.Iterator
- * interface with two additional methods.
+ * CollectionIterator extends the standard
+ * tango.util.collection.model.Iterator interface with two additional methods.
  * 
         author: Doug Lea
  * @version 0.93

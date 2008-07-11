@@ -53,7 +53,7 @@ class AutotuneParams : DefaultCommand
 		
 		// read input data		
 		if (inputFile != "") {
-			logger.info( "Reading input data from "~inputFile);
+			logger.info( sprint("Reading input data from {}",inputFile));
 			inputData = new Dataset!(T)();
 			inputData.readFromFile(inputFile);
 		}	

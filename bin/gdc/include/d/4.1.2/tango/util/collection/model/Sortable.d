@@ -32,7 +32,7 @@ private import  tango.util.collection.model.Dispenser,
  * appear in sorted order;  that is if a and b are two elements
  * obtained in succession from nextElement(), that 
  * <PRE>
- * comparator().compare(a, b) <= 0.
+ * comparator(a, b) <= 0.
  * </PRE>
  * 
         author: Doug Lea

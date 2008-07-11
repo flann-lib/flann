@@ -63,6 +63,26 @@ else version( darwin )
         }
     }
 }
+else version ( freebsd )
+{
+    const int EOF           = -1;
+    const int FOPEN_MAX     = 20;
+    const int FILENAME_MAX  = 1024;
+    const int TMP_MAX       = 308915776;
+    const int L_tmpnam      = 1024;
+
+    private
+    {
+        struct __sbuf
+        {
+            ubyte *_base;
+            int _size;
+        }
+        struct __sFILEX
+        {
+        }
+    }
+}
 else
 {
     static assert( false );
@@ -139,6 +159,38 @@ struct _iobuf
         int       _blksize;
         fpos_t    _offset;
     }
+    else version( freebsd )
+    {
+        ubyte*    _p;
+        int       _r;
+        int       _w;
+        short     _flags;
+        short     _file;
+        __sbuf    _bf;
+        int       _lbfsize;
+
+        void* function()                        _cookie;
+        int* function(void*)                    _close;
+        int* function(void*, char*, int)        _read;
+        fpos_t* function(void*, fpos_t, int)    _seek;
+        int* function(void*, char *, int)       _write;
+
+        __sbuf    _ub;
+        __sFILEX* _extra;
+        int       _ur;
+
+        ubyte[3]  _ubuf;
+        ubyte[1]  _nbuf;
+
+        __sbuf    _lb;
+
+        int       _blksize;
+        fpos_t    _offset;
+    }
+    else
+    {
+        static assert( false );
+    }
 }
 
 alias _iobuf FILE;
@@ -176,33 +228,37 @@ version( Win32 )
         _IOAPP   = 0x200,
     }
 
-	extern void function() _fcloseallp;
+    extern void function() _fcloseallp;
 
-	version (GNU) {
-		extern FILE[_NFILE]* _imp___iob;
+    version (GNU)
+    {
+        extern FILE[_NFILE]* _imp___iob;
 
-		const FILE* stdin;
-		const FILE* stdout;
-		const FILE* stderr;
-		const FILE* stdaux;
-		const FILE* stdprn;
-		
-		static this() {
-			stdin  = &(*_imp___iob)[0];
-			stdout = &(*_imp___iob)[1];
-			stderr = &(*_imp___iob)[2];
-			stdaux = &(*_imp___iob)[3];
-			stdprn = &(*_imp___iob)[4];
-		}
-	} else {
-		extern FILE[_NFILE] _iob;
+        const FILE* stdin;
+        const FILE* stdout;
+        const FILE* stderr;
+        const FILE* stdaux;
+        const FILE* stdprn;
 
-		const FILE* stdin  = &_iob[0];
-		const FILE* stdout = &_iob[1];
-		const FILE* stderr = &_iob[2];
-		const FILE* stdaux = &_iob[3];
-		const FILE* stdprn = &_iob[4];
-	}
+        static this()
+        {
+            stdin  = &(*_imp___iob)[0];
+            stdout = &(*_imp___iob)[1];
+            stderr = &(*_imp___iob)[2];
+            stdaux = &(*_imp___iob)[3];
+            stdprn = &(*_imp___iob)[4];
+        }
+    }
+    else
+    {
+        extern FILE[_NFILE] _iob;
+
+        const FILE* stdin  = &_iob[0];
+        const FILE* stdout = &_iob[1];
+        const FILE* stderr = &_iob[2];
+        const FILE* stdaux = &_iob[3];
+        const FILE* stdprn = &_iob[4];
+    }
 }
 else version( linux )
 {
@@ -219,7 +275,25 @@ else version( linux )
 }
 else version( darwin )
 {
+    extern FILE* __stdinp;
+    extern FILE* __stdoutp;
+    extern FILE* __stderrp;
+
+    const FILE* stdin;
+    const FILE* stdout;
+    const FILE* stderr;
+
+    static this()
+    {
+        stdin  = __stdinp;
+        stdout = __stdoutp;
+        stderr = __stderrp;
+    }
+}
+else version( freebsd )
+{
     extern FILE[3] __sF;
+
     const FILE* stdin  = &__sF[0];
     const FILE* stdout = &__sF[1];
     const FILE* stderr = &__sF[2];
@@ -312,6 +386,17 @@ else version( linux )
     int  vsnprintf(char* s, size_t n, char* format, va_list arg);
 }
 else version( darwin )
+{
+    void rewind(FILE*);
+    void clearerr(FILE*);
+    int  feof(FILE*);
+    int  ferror(FILE*);
+    int  fileno(FILE*);
+
+    int  snprintf(char*, size_t, char*, ...);
+    int  vsnprintf(char*, size_t, char*, va_list);
+}
+else version( freebsd )
 {
     void rewind(FILE*);
     void clearerr(FILE*);

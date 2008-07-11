@@ -55,7 +55,7 @@ private import tango.io.model.IConduit;
 class StreamIterator(T) : InputStream, Buffered
 {
         protected T[]           slice,
-                                pushed;
+                                delim;
         private IBuffer         input;
 
         /***********************************************************************
@@ -111,10 +111,9 @@ class StreamIterator(T) : InputStream, Buffered
 
         ***********************************************************************/
 
-        final StreamIterator push (T[] token)
+        final deprecated StreamIterator push (T[] token)
         {
-                pushed = token;
-                return this;
+                assert(false, "StreamIterator.push not supported");
         }
 
         /**********************************************************************
@@ -158,6 +157,28 @@ class StreamIterator(T) : InputStream, Buffered
                 return result;
         }
 
+        /**********************************************************************
+
+                Iterate over a set of tokens and delimiters, exposing a 
+                token count starting at zero
+
+        **********************************************************************/
+
+        int opApply (int delegate(inout int, inout T[], inout T[]) dg)
+        {
+                bool more;
+                int  result,
+                     tokens;
+
+                do {
+                   delim = null;
+                   more = consume;
+                   result = dg (tokens, slice, delim);
+                   ++tokens;
+                   } while (more && !result);
+                return result;
+        }
+
         /***********************************************************************
 
                 Locate the next token. Returns the token if found, null
@@ -178,34 +199,44 @@ class StreamIterator(T) : InputStream, Buffered
                 latter processes all tokens in one go, whereas the former
                 processes in a piecemeal fashion. To wit:
                 ---
-                foreach (line; new LineIterator!(char) (new FileConduit("myfile"))
+                foreach (line; new LineIterator!(char) (new FileConduit("myfile")))
                          Cout(line).newline;
                 ---
-
-                Note that tokens exposed via push() are returned immediately
-                when available, taking priority over the input stream itself
                 
         ***********************************************************************/
 
         final T[] next ()
         {
-                if (pushed.ptr)
-                    return pushed;
-                else
-                   if (consume() || slice.length)
-                       return slice;
+                if (consume() || slice.length)
+                    return slice;
                 return null;
         }
 
         /***********************************************************************
 
-                Set the content of the current slice
+                Set the content of the current slice to the provided 
+                start and end points
 
         ***********************************************************************/
 
         protected final uint set (T* content, uint start, uint end)
         {
                 slice = content [start .. end];
+                return end;
+        }
+
+        /***********************************************************************
+
+                Set the content of the current slice to the provided 
+                start and end points, and delimiter to the segment
+                between end & next (inclusive)
+
+        ***********************************************************************/
+
+        protected final uint set (T* content, uint start, uint end, uint next)
+        {
+                slice = content [start .. end];
+                delim = content [end .. next+1];
                 return end;
         }
 

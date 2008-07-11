@@ -202,19 +202,6 @@ class SocketConduit : Conduit
 
         /***********************************************************************
 
-                Read content from socket. This is implemented as a callback
-                from the reader() method so we can expose the timout support
-                to subclasses
-                
-        ***********************************************************************/
-
-        protected uint socketReader (void[] dst)
-        {
-                return socket_.receive (dst);
-        }
-        
-        /***********************************************************************
-
                 Release this SocketConduit
 
                 Note that one should always disconnect a SocketConduit 
@@ -235,9 +222,9 @@ class SocketConduit : Conduit
 
        /***********************************************************************
 
-                Callback routine to read content from the socket. Note
-                that the operation may timeout if method setTimeout()
-                has been invoked with a non-zero value.
+                Read content from the socket. Note that the operation 
+                may timeout if method setTimeout() has been invoked with 
+                a non-zero value.
 
                 Returns the number of bytes read from the socket, or
                 IConduit.Eof where there's no more content available
@@ -252,40 +239,7 @@ class SocketConduit : Conduit
 
         override uint read (void[] dst)
         {
-                // ensure just one read at a time
-                synchronized (this)
-                {
-                // reset timeout; we assume there's no thread contention
-                timeout = false;
-
-                // did user disable timeout checks?
-                if (tv.tv_usec | tv.tv_sec)
-                   {
-                   // nope: ensure we have a SocketSet
-                   if (ss is null)
-                       ss = new SocketSet (1);
-
-                   ss.reset ();
-                   ss.add (socket_);
-
-                   // wait until data is available, or a timeout occurs
-                   auto copy = tv;
-                   int i = socket_.select (ss, null, null, &copy);
-                       
-                   if (i <= 0)
-                      {
-                      if (i is 0)
-                          timeout = true;
-                      return Eof;
-                      }
-                   }       
-
-                // invoke the actual read op
-                int count = socketReader (dst);
-                if (count <= 0)
-                    count = Eof;
-                return count;
-                }
+                return read (dst, (void[] dst){return cast(uint) socket_.receive(dst);});
         }
         
         /***********************************************************************
@@ -305,6 +259,58 @@ class SocketConduit : Conduit
                 return count;
         }
 
+        /***********************************************************************
+ 
+                Internal routine to handle socket read under a timeout.
+                Note that this is synchronized, in order to serialize
+                socket access
+
+        ***********************************************************************/
+
+        package final synchronized uint read (void[] dst, uint delegate(void[]) dg)
+        {
+                // reset timeout; we assume there's no thread contention
+                timeout = false;
+
+                // did user disable timeout checks?
+                if (tv.tv_usec | tv.tv_sec)
+                   {
+                   // nope: ensure we have a SocketSet
+                   if (ss is null)
+                       ss = new SocketSet (1);
+
+                   ss.reset ();
+                   ss.add (socket_);
+
+                   // wait until data is available, or a timeout occurs
+                   auto copy = tv;
+version (linux)
+{
+                   // disable blocking to deal with potential linux bug
+                   auto b = socket.blocking;
+                   if (b)
+                       socket.blocking (false);
+                   int i = socket_.select (ss, null, null, &copy);
+                   if (b)
+                       socket.blocking (true);                
+}
+else
+                   int i = socket_.select (ss, null, null, &copy);
+                   if (i <= 0)
+                      {
+                      if (i is 0)
+                          timeout = true;
+                      return Eof;
+                      }
+                   }       
+
+                // invoke the actual read op
+                int count = dg (dst);
+                if (count <= 0)
+                    count = Eof;
+                return count;
+        }
+        
         /***********************************************************************
 
                 Allocate a SocketConduit from a list rather than creating

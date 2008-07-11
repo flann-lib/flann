@@ -9,48 +9,28 @@
         version:        Feb 2007: Mutating version
         version:        Mar 2007: Folded FileProxy in
         version:        Nov 2007: VFS dictates '/' always be used
+        version:        Feb 2008: Split file-system calls into a struct
 
         author:         Kris
+
+        FilePath combined a means of efficiently editing and extracting 
+        path components and of accessing the underlying file system.
+
+        Use module Path.d instead when you need only pedestrian access to 
+        the file-system, and are not manipulating the path components. Use 
+        FilePath for other scenarios, since it will often be notably more 
+        efficient
 
 *******************************************************************************/
 
 module tango.io.FilePath;
 
-private import  tango.sys.Common;
+private import  tango.io.Path;
 
 private import  tango.io.FileConst;
 
-private import  tango.core.Exception;
+private import  tango.core.Exception : IllegalArgumentException;
 
-private import  tango.time.Time;
-
-/*******************************************************************************
-
-*******************************************************************************/
-
-version (Win32)
-        {
-        version (Win32SansUnicode)
-                {
-                alias char T;
-                private extern (C) int strlen (char *s);
-                private alias WIN32_FIND_DATA FIND_DATA;
-                }
-             else
-                {
-                alias wchar T;
-                private extern (C) int wcslen (wchar *s);
-                private alias WIN32_FIND_DATAW FIND_DATA;
-                }
-        }
-
-version (Posix)
-        {
-        private import tango.stdc.stdio;
-        private import tango.stdc.string;
-        private import tango.stdc.posix.utime;
-        private import tango.stdc.posix.dirent;
-        }
 
 /*******************************************************************************
 
@@ -80,13 +60,10 @@ private extern (C) void memmove (void* dst, void* src, uint bytes);
         to the suffix i.e. ".file" is a name rather than a suffix.
 
         Note also that normalization of path-separators occurs by default. 
-        This means that the use of '\' characters with be converted into
+        This means that the use of '\' characters will be converted into
         '/' instead while parsing. To mutate the path into an O/S native
         version, use the native() method. To obtain a copy instead, use the 
         path.dup.native sequence
-
-        Compile with -version=Win32SansUnicode to enable Win95 & Win32s file
-        support.
 
 *******************************************************************************/
 
@@ -111,20 +88,6 @@ class FilePath : PathView
         ***********************************************************************/
 
         public alias bool delegate (FilePath, bool) Filter;
-
-        /***********************************************************************
-
-                Passed around during file-scanning
-
-        ***********************************************************************/
-
-        struct FileInfo
-        {
-                char[]  path,
-                        name;
-                ulong   bytes;
-                bool    folder;
-        }
 
         /***********************************************************************
 
@@ -165,12 +128,6 @@ class FilePath : PathView
                 set (filepath);
         }
         
-        // now converts to '/' always. Use toNative to get Win32 paths
-        deprecated this (char[] filepath, bool native)
-        {
-                set (filepath);
-        }
-
         /***********************************************************************
 
                 Return the complete text of this filepath
@@ -399,9 +356,7 @@ class FilePath : PathView
 
         final FilePath replace (char from, char to)
         {
-                foreach (inout char c; path)
-                         if (c is from)
-                             c = to;
+                .replace (path, from, to);
                 return this;
         }
 
@@ -420,7 +375,8 @@ class FilePath : PathView
 
         final FilePath standard ()
         {
-                return replace ('\\', '/');
+                .standard (path);
+                return this;
         }
 
         /***********************************************************************
@@ -435,10 +391,8 @@ class FilePath : PathView
 
         final FilePath native ()
         {
-                version (Win32)
-                         return replace ('/', '\\');
-                     else
-                        return this;
+                .native (path);
+                return this;
         }
 
         /***********************************************************************
@@ -639,12 +593,7 @@ class FilePath : PathView
 
         static char[] join (char[][] paths...)
         {
-                char[] result;
-
-                foreach (path; paths)
-                         result ~= padded (path);
-
-                return result.length ? result [0 .. $-1] : null;
+                return FS.join (paths);
         }
 
         /***********************************************************************
@@ -656,9 +605,7 @@ class FilePath : PathView
 
         static char[] stripped (char[] path, char c = FileConst.PathSeparatorChar)
         {
-                if (path.length && path[$-1] is c)
-                    path = path [0 .. $-1];
-                return path;
+                return FS.stripped (path, c);
         }
 
         /***********************************************************************
@@ -670,9 +617,7 @@ class FilePath : PathView
 
         static char[] padded (char[] path, char c = FileConst.PathSeparatorChar)
         {
-                if (path.length && path[$-1] != c)
-                    path = path ~ c;
-                return path;
+                return FS.padded (path, c);
         }
 
         /***********************************************************************
@@ -721,7 +666,7 @@ class FilePath : PathView
 
                             version (Win32)
                             {
-                            case FileConst.RootSeparatorChar:
+                            case ':':
                                  folder_ = i + 1;
                                  break;
                             }
@@ -789,57 +734,6 @@ class FilePath : PathView
         /********************** file-system methods ***************************/
         /**********************************************************************/
 
-
-        /***********************************************************************
-
-                Does this path currently exist?
-
-        ***********************************************************************/
-
-        final bool exists ()
-        {
-                try {
-                    fileSize();
-                    return true;
-                    } catch (IOException){}
-                return false;
-        }
-
-        /***********************************************************************
-
-                Returns the time of the last modification. Accurate
-                to whatever the OS supports
-
-        ***********************************************************************/
-
-        final Time modified ()
-        {
-                return timeStamps.modified;
-        }
-
-        /***********************************************************************
-
-                Returns the time of the last access. Accurate to
-                whatever the OS supports
-
-        ***********************************************************************/
-
-        final Time accessed ()
-        {
-                return timeStamps.accessed;
-        }
-
-        /***********************************************************************
-
-                Returns the time of file creation. Accurate to
-                whatever the OS supports
-
-        ***********************************************************************/
-
-        final Time created ()
-        {
-                return timeStamps.created;
-        }
 
         /***********************************************************************
 
@@ -938,6 +832,59 @@ class FilePath : PathView
 
         /***********************************************************************
 
+                Does this path currently exist?
+
+        ***********************************************************************/
+
+        final bool exists ()
+        {
+                return FS.exists (cString);
+        }
+
+        /***********************************************************************
+
+                Returns the time of the last modification. Accurate
+                to whatever the OS supports, and in a format dictated
+                by the file-system. For example NTFS keeps UTC time, 
+                while FAT timestamps are based on the local time. 
+
+        ***********************************************************************/
+
+        final Time modified ()
+        {
+                return timeStamps.modified;
+        }
+
+        /***********************************************************************
+
+                Returns the time of the last access. Accurate to
+                whatever the OS supports, and in a format dictated
+                by the file-system. For example NTFS keeps UTC time, 
+                while FAT timestamps are based on the local time.
+
+        ***********************************************************************/
+
+        final Time accessed ()
+        {
+                return timeStamps.accessed;
+        }
+
+        /***********************************************************************
+
+                Returns the time of file creation. Accurate to
+                whatever the OS supports, and in a format dictated
+                by the file-system. For example NTFS keeps UTC time,  
+                while FAT timestamps are based on the local time.
+
+        ***********************************************************************/
+
+        final Time created ()
+        {
+                return timeStamps.created;
+        }
+
+        /***********************************************************************
+
                 change the name or location of a file/directory, and
                 adopt the provided Path
 
@@ -945,18 +892,153 @@ class FilePath : PathView
 
         final FilePath rename (FilePath dst)
         {
-                return rename (dst.toString);
+                FS.rename (cString, dst.cString);
+                return this.set (dst);
         }
 
         /***********************************************************************
 
-                Throw an exception using the last known error
+                Transfer the content of another file to this one. Returns a
+                reference to this class on success, or throws an IOException
+                upon failure.
 
         ***********************************************************************/
 
-        private void exception ()
+        final FilePath copy (char[] source)
         {
-                throw new IOException (toString ~ ": " ~ SysError.lastMsg);
+                FS.copy (source~'\0', cString);
+                return this;
+        }
+
+        /***********************************************************************
+
+                Return the file length (in bytes)
+
+        ***********************************************************************/
+
+        final ulong fileSize ()
+        {
+                return FS.fileSize (cString);
+        }
+
+        /***********************************************************************
+
+                Is this file writable?
+
+        ***********************************************************************/
+
+        final bool isWritable ()
+        {
+                return FS.isWritable (cString);
+        }
+
+        /***********************************************************************
+
+                Is this file actually a folder/directory?
+
+        ***********************************************************************/
+
+        final bool isFolder ()
+        {
+                if (dir_)
+                    return true;
+
+                return FS.isFolder (cString);
+        }
+
+        /***********************************************************************
+
+                Return timestamp information
+
+                Timstamps are returns in a format dictated by the 
+                file-system. For example NTFS keeps UTC time, 
+                while FAT timestamps are based on the local time
+
+        ***********************************************************************/
+
+        final Stamps timeStamps ()
+        {
+                return FS.timeStamps (cString);
+        }
+
+        /***********************************************************************
+
+                Transfer the content of another file to this one. Returns a
+                reference to this class on success, or throws an IOException
+                upon failure.
+
+        ***********************************************************************/
+
+        final FilePath copy (FilePath src)
+        {
+                FS.copy (src.cString, cString);
+                return this;
+        }
+
+        /***********************************************************************
+
+                Remove the file/directory from the file-system
+
+        ***********************************************************************/
+
+        final FilePath remove ()
+        {      
+                FS.remove (cString);
+                return this;
+        }
+
+        /***********************************************************************
+
+               change the name or location of a file/directory, and
+               adopt the provided Path
+
+        ***********************************************************************/
+
+        final FilePath rename (char[] dst)
+        {
+                FS.rename (cString, dst~'\0');
+                return this.set (dst);
+        }
+
+        /***********************************************************************
+
+                Create a new file
+
+        ***********************************************************************/
+
+        final FilePath createFile ()
+        {
+                FS.createFile (cString);
+                return this;
+        }
+
+        /***********************************************************************
+
+                Create a new directory
+
+        ***********************************************************************/
+
+        final FilePath createFolder ()
+        {
+                FS.createFolder (cString);
+                return this;
+        }
+
+        /***********************************************************************
+
+                List the set of filenames within this folder.
+
+                Each path and filename is passed to the provided
+                delegate, along with the path prefix and whether
+                the entry is a folder or not.
+
+                Returns the number of files scanned.
+
+        ***********************************************************************/
+
+        final int opApply (int delegate(ref FileInfo) dg)
+        {
+                return FS.list (cString, dg);
         }
 
         /***********************************************************************
@@ -969,668 +1051,6 @@ class FilePath : PathView
         {
                 throw new IllegalArgumentException (msg ~ toString);
         }
-
-        /***********************************************************************
-
-        ***********************************************************************/
-
-        version (Win32)
-        {
-                /***************************************************************
-
-                        return a wchar[] instance of the path
-
-                ***************************************************************/
-
-                private wchar[] toString16 (wchar[] tmp, char[] path)
-                {
-                        auto i = MultiByteToWideChar (CP_UTF8, 0,
-                                                      path.ptr, path.length,
-                                                      tmp.ptr, tmp.length);
-                        return tmp [0..i];
-                }
-
-                /***************************************************************
-
-                        return a char[] instance of the path
-
-                ***************************************************************/
-
-                private char[] toString (char[] tmp, wchar[] path)
-                {
-                        auto i = WideCharToMultiByte (CP_UTF8, 0, path.ptr, path.length,
-                                                      tmp.ptr, tmp.length, null, null);
-                        return tmp [0..i];
-                }
-
-                /***************************************************************
-
-                        return a wchar[] instance of the path
-
-                ***************************************************************/
-
-                private wchar[] name16 (wchar[] tmp, bool withNull=true)
-                {
-                        int offset = withNull ? 0 : 1;
-                        return toString16 (tmp, this.cString[0 .. $-offset]);
-                }
-
-                /***************************************************************
-
-                        Get info about this path
-
-                ***************************************************************/
-
-                private DWORD getInfo (inout WIN32_FILE_ATTRIBUTE_DATA info)
-                {
-                        version (Win32SansUnicode)
-                                {
-                                if (! GetFileAttributesExA (this.cString.ptr, GetFileInfoLevelStandard, &info))
-                                      exception;
-                                }
-                             else
-                                {
-                                wchar[MAX_PATH] tmp = void;
-                                if (! GetFileAttributesExW (name16(tmp).ptr, GetFileInfoLevelStandard, &info))
-                                      exception;
-                                }
-
-                        return info.dwFileAttributes;
-                }
-
-                /***************************************************************
-
-                        Get flags for this path
-
-                ***************************************************************/
-
-                private DWORD getFlags ()
-                {
-                        WIN32_FILE_ATTRIBUTE_DATA info = void;
-
-                        return getInfo (info);
-                }
-
-                /***************************************************************
-
-                        Return the file length (in bytes)
-
-                ***************************************************************/
-
-                final ulong fileSize ()
-                {
-                        WIN32_FILE_ATTRIBUTE_DATA info = void;
-
-                        getInfo (info);
-                        return (cast(ulong) info.nFileSizeHigh << 32) +
-                                            info.nFileSizeLow;
-                }
-
-                /***************************************************************
-
-                        Is this file writable?
-
-                ***************************************************************/
-
-                final bool isWritable ()
-                {
-                        return (getFlags & FILE_ATTRIBUTE_READONLY) == 0;
-                }
-
-                /***************************************************************
-
-                        Is this file actually a folder/directory?
-
-                ***************************************************************/
-
-                final bool isFolder ()
-                {
-                        if (dir_)
-                            return true;
-
-                        return (getFlags & FILE_ATTRIBUTE_DIRECTORY) != 0;
-                }
-
-                /***************************************************************
-
-                        Return timestamp information
-
-                ***************************************************************/
-
-                final Stamps timeStamps ()
-                {
-                        static Time convert (FILETIME time)
-                        {
-                                return Time (TimeSpan.Epoch1601 + *cast(long*) &time);
-                        }
-
-                        WIN32_FILE_ATTRIBUTE_DATA info = void;
-                        Stamps                    time = void;
-
-                        getInfo (info);
-                        time.modified = convert (info.ftLastWriteTime);
-                        time.accessed = convert (info.ftLastAccessTime);
-                        time.created  = convert (info.ftCreationTime);
-                        return time;
-                }
-
-                /***********************************************************************
-
-                        Transfer the content of another file to this one. Returns a
-                        reference to this class on success, or throws an IOException
-                        upon failure.
-
-                ***********************************************************************/
-
-                final FilePath copy (char[] source)
-                {
-                        auto src = new FilePath (source);
-
-                        version (Win32SansUnicode)
-                                {
-                                if (! CopyFileA (src.cString.ptr, this.cString.ptr, false))
-                                      exception;
-                                }
-                             else
-                                {
-                                wchar[MAX_PATH+1] tmp1 = void;
-                                wchar[MAX_PATH+1] tmp2 = void;
-
-                                if (! CopyFileW (toString16(tmp1, src.cString).ptr, name16(tmp2).ptr, false))
-                                      exception;
-                                }
-
-                        return this;
-                }
-
-                /***************************************************************
-
-                        Remove the file/directory from the file-system
-
-                ***************************************************************/
-
-                final FilePath remove ()
-                {
-                        if (isFolder)
-                           {
-                           version (Win32SansUnicode)
-                                   {
-                                   if (! RemoveDirectoryA (this.cString.ptr))
-                                         exception;
-                                   }
-                                else
-                                   {
-                                   wchar[MAX_PATH] tmp = void;
-                                   if (! RemoveDirectoryW (name16(tmp).ptr))
-                                         exception;
-                                   }
-                           }
-                        else
-                           version (Win32SansUnicode)
-                                   {
-                                   if (! DeleteFileA (this.cString.ptr))
-                                         exception;
-                                   }
-                                else
-                                   {
-                                   wchar[MAX_PATH] tmp = void;
-                                   if (! DeleteFileW (name16(tmp).ptr))
-                                         exception;
-                                   }
-
-                        return this;
-                }
-
-                /***************************************************************
-
-                       change the name or location of a file/directory, and
-                       adopt the provided Path
-
-                ***************************************************************/
-
-                final FilePath rename (char[] dst)
-                {
-                        const int Typical = MOVEFILE_REPLACE_EXISTING +
-                                            MOVEFILE_COPY_ALLOWED     +
-                                            MOVEFILE_WRITE_THROUGH;
-
-                        int     result;
-                        char[]  cstr = dst ~ '\0';
-
-                        version (Win32SansUnicode)
-                                 result = MoveFileExA (this.cString.ptr, cstr.ptr, Typical);
-                             else
-                                {
-                                wchar[MAX_PATH] tmp1 = void;
-                                wchar[MAX_PATH] tmp2 = void;
-                                result = MoveFileExW (name16(tmp1).ptr, toString16(tmp2, cstr).ptr, Typical);
-                                }
-
-                        if (! result)
-                              exception;
-
-                        this.set (dst);
-                        return this;
-                }
-
-                /***************************************************************
-
-                        Create a new file
-
-                ***************************************************************/
-
-                final FilePath createFile ()
-                {
-                        HANDLE h;
-
-                        version (Win32SansUnicode)
-                                 h = CreateFileA (this.cString.ptr, GENERIC_WRITE,
-                                                  0, null, CREATE_ALWAYS,
-                                                  FILE_ATTRIBUTE_NORMAL, cast(HANDLE) 0);
-                             else
-                                {
-                                wchar[MAX_PATH] tmp = void;
-                                h = CreateFileW (name16(tmp).ptr, GENERIC_WRITE,
-                                                 0, null, CREATE_ALWAYS,
-                                                 FILE_ATTRIBUTE_NORMAL, cast(HANDLE) 0);
-                                }
-
-                        if (h == INVALID_HANDLE_VALUE)
-                            exception;
-
-                        if (! CloseHandle (h))
-                              exception;
-
-                        return this;
-                }
-
-                /***************************************************************
-
-                        Create a new directory
-
-                ***************************************************************/
-
-                final FilePath createFolder ()
-                {
-                        version (Win32SansUnicode)
-                                {
-                                if (! CreateDirectoryA (this.cString.ptr, null))
-                                      exception;
-                                }
-                             else
-                                {
-                                wchar[MAX_PATH] tmp = void;
-                                if (! CreateDirectoryW (name16(tmp).ptr, null))
-                                      exception;
-                                }
-                        return this;
-                }
-
-                /***************************************************************
-
-                        List the set of filenames within this folder.
-
-                        Each path and filename is passed to the provided
-                        delegate, along with the path prefix and whether
-                        the entry is a folder or not.
-
-                        Returns the number of files scanned.
-
-                ***************************************************************/
-
-                final int opApply (int delegate(ref FileInfo) dg)
-                {
-                        HANDLE                  h;
-                        int                     ret;
-                        char[]                  prefix;
-                        char[MAX_PATH+1]        tmp = void;
-                        FIND_DATA               fileinfo = void;
-
-                        int next()
-                        {
-                                version (Win32SansUnicode)
-                                         return FindNextFileA (h, &fileinfo);
-                                   else
-                                      return FindNextFileW (h, &fileinfo);
-                        }
-
-                        static T[] padded (T[] s, T[] ext)
-                        {
-                                if (s.length is 0 || s[$-1] != '\\')
-                                    return s ~ "\\" ~ ext;
-                                return s ~ ext;
-                        }
-
-                        version (Win32SansUnicode)
-                                 h = FindFirstFileA (padded(this.toString, "*\0").ptr, &fileinfo);
-                             else
-                                {
-                                wchar[MAX_PATH] host = void;
-                                h = FindFirstFileW (padded(name16(host, false), "*\0").ptr, &fileinfo);
-                                }
-
-                        if (h is INVALID_HANDLE_VALUE)
-                            exception;
-
-                        scope (exit)
-                               FindClose (h);
-
-                        prefix = FilePath.padded (this.toString);
-                        do {
-                           version (Win32SansUnicode)
-                                   {
-                                   auto len = strlen (fileinfo.cFileName.ptr);
-                                   auto str = fileinfo.cFileName.ptr [0 .. len];
-                                   }
-                                else
-                                   {
-                                   auto len = wcslen (fileinfo.cFileName.ptr);
-                                   auto str = toString (tmp, fileinfo.cFileName [0 .. len]);
-                                   }
-
-                           // skip hidden/system files
-                           if ((fileinfo.dwFileAttributes & (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN)) is 0)
-                              {
-                              FileInfo info = void;
-                              info.name   = str;
-                              info.path   = prefix;
-                              info.bytes  = (cast(ulong) fileinfo.nFileSizeHigh << 32) + fileinfo.nFileSizeLow;
-                              info.folder = (fileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-
-                              // skip "..." names
-                              if (str.length > 3 || str != "..."[0 .. str.length])
-                                  if ((ret = dg(info)) != 0)
-                                       break;
-                              }
-                           } while (next);
-
-                        return ret;
-                }
-        }
-
-
-        /***********************************************************************
-
-        ***********************************************************************/
-
-        version (Posix)
-        {
-                /***************************************************************
-
-                        Get info about this path
-
-                ***************************************************************/
-
-                private uint getInfo (inout stat_t stats)
-                {
-                        if (posix.stat (this.cString.ptr, &stats))
-                            exception;
-
-                        return stats.st_mode;
-                }
-
-                /***************************************************************
-
-                        Return the file length (in bytes)
-
-                ***************************************************************/
-
-                final ulong fileSize ()
-                {
-                        stat_t stats = void;
-
-                        getInfo (stats);
-                        return cast(ulong) stats.st_size;    // 32 bits only
-                }
-
-                /***************************************************************
-
-                        Is this file writable?
-
-                ***************************************************************/
-
-                final bool isWritable ()
-                {
-                        stat_t stats = void;
-
-                        return (getInfo(stats) & O_RDONLY) == 0;
-                }
-
-                /***************************************************************
-
-                        Is this file actually a folder/directory?
-
-                ***************************************************************/
-
-                final bool isFolder ()
-                {
-                        stat_t stats = void;
-
-                        return (getInfo(stats) & S_IFDIR) != 0;
-                }
-
-                /***************************************************************
-
-                        Return timestamp information
-
-                ***************************************************************/
-
-                final Stamps timeStamps ()
-                {
-                        static Time convert (timeval* tv)
-                        {
-                                return Time.epoch1970 +
-                                       TimeSpan.seconds(tv.tv_sec) +
-                                       TimeSpan.micros(tv.tv_usec);
-                        }
-
-                        stat_t stats = void;
-                        Stamps time  = void;
-
-                        getInfo (stats);
-
-                        time.modified = convert (cast(timeval*) &stats.st_mtime);
-                        time.accessed = convert (cast(timeval*) &stats.st_atime);
-                        time.created  = convert (cast(timeval*) &stats.st_ctime);
-                        return time;
-                }
-
-                /***********************************************************************
-
-                        Transfer the content of another file to this one. Returns a
-                        reference to this class on success, or throws an IOException
-                        upon failure.
-
-                ***********************************************************************/
-
-                final FilePath copy (char[] source)
-                {
-                        auto from = new FilePath (source);
-
-                        auto src = posix.open (from.cString.ptr, O_RDONLY, 0640);
-                        scope (exit)
-                               if (src != -1)
-                                   posix.close (src);
-
-                        auto dst = posix.open (this.cString.ptr, O_CREAT | O_RDWR, 0660);
-                        scope (exit)
-                               if (dst != -1)
-                                   posix.close (dst);
-
-                        if (src is -1 || dst is -1)
-                            exception;
-
-                        // copy content
-                        ubyte[] buf = new ubyte [16 * 1024];
-                        int read = posix.read (src, buf.ptr, buf.length);
-                        while (read > 0)
-                              {
-                              auto p = buf.ptr;
-                              do {
-                                 int written = posix.write (dst, p, read);
-                                 p += written;
-                                 read -= written;
-                                 if (written is -1)
-                                     exception;
-                                 } while (read > 0);
-                              read = posix.read (src, buf.ptr, buf.length);
-                              }
-                        if (read is -1)
-                            exception;
-
-                        // copy timestamps
-                        stat_t stats;
-                        if (posix.stat (from.cString.ptr, &stats))
-                            exception;
-
-                        utimbuf utim;
-                        utim.actime = stats.st_atime;
-                        utim.modtime = stats.st_mtime;
-                        if (utime (this.cString.ptr, &utim) is -1)
-                            exception;
-
-                        return this;
-                }
-
-                /***************************************************************
-
-                        Remove the file/directory from the file-system
-
-                ***************************************************************/
-
-                final FilePath remove ()
-                {
-                        if (isFolder)
-                           {
-                           if (posix.rmdir (this.cString.ptr))
-                               exception;
-                           }
-                        else
-                           if (tango.stdc.stdio.remove (this.cString.ptr) == -1)
-                               exception;
-
-                        return this;
-                }
-
-                /***************************************************************
-
-                       change the name or location of a file/directory, and
-                       adopt the provided FilePath
-
-                ***************************************************************/
-
-                final FilePath rename (char[] dst)
-                {
-                        char[] cstr = dst ~ '\0';
-                        if (tango.stdc.stdio.rename (this.cString.ptr, cstr.ptr) == -1)
-                            exception;
-
-                        this.set (dst);
-                        return this;
-                }
-
-                /***************************************************************
-
-                        Create a new file
-
-                ***************************************************************/
-
-                final FilePath createFile ()
-                {
-                        int fd;
-
-                        fd = posix.open (this.cString.ptr, O_CREAT | O_WRONLY | O_TRUNC, 0660);
-                        if (fd == -1)
-                            exception;
-
-                        if (posix.close(fd) == -1)
-                            exception;
-
-                        return this;
-                }
-
-                /***************************************************************
-
-                        Create a new directory
-
-                ***************************************************************/
-
-                final FilePath createFolder ()
-                {
-                        if (posix.mkdir (this.cString.ptr, 0777))
-                            exception;
-
-                        return this;
-                }
-
-                /***************************************************************
-
-                        List the set of filenames within this folder.
-
-                        Each path and filename is passed to the provided
-                        delegate, along with the path prefix and whether
-                        the entry is a folder or not.
-
-                        Returns the number of files scanned.
-
-                ***************************************************************/
-
-                final int opApply (int delegate(ref FileInfo) dg)
-                {
-                        int             ret;
-                        DIR*            dir;
-                        dirent          entry;
-                        dirent*         pentry;
-                        stat_t          sbuf;
-                        char[]          prefix;
-                        char[]          sfnbuf;
-
-                        dir = tango.stdc.posix.dirent.opendir (this.cString.ptr);
-                        if (! dir)
-                              exception;
-
-                        scope (exit)
-                               tango.stdc.posix.dirent.closedir (dir);
-
-                        // ensure a trailing '/' is present
-                        prefix = FilePath.padded (this.toString);
-
-                        // prepare our filename buffer
-                        sfnbuf = prefix.dup;
-                        
-                        // pentry is null at end of listing, or on an error 
-	  		while (readdir_r (dir, &entry, &pentry), pentry != null)
-                              {
-                              auto len = tango.stdc.string.strlen (entry.d_name.ptr);
-                              auto str = entry.d_name.ptr [0 .. len];
-                              ++len;  // include the null
-
-                              // resize the buffer as necessary ...
-                              if (sfnbuf.length < prefix.length + len)
-                                  sfnbuf.length = prefix.length + len;
-
-                              sfnbuf [prefix.length .. prefix.length + len]
-                                      = entry.d_name.ptr [0 .. len];
-
-                              // skip "..." names
-                              if (str.length > 3 || str != "..."[0 .. str.length])
-                                 {
-                                 if (stat (sfnbuf.ptr, &sbuf))
-                                     exception;
-
-                                 FileInfo info = void;
-                                 info.name   = str;
-                                 info.path   = prefix;
-                                 info.folder = (sbuf.st_mode & S_IFDIR) != 0;
-                                 info.bytes  = (sbuf.st_mode & S_IFREG) != 0 ? sbuf.st_size : 0;
-
-                                 if ((ret = dg(info)) != 0)
-                                      break;
-                                 }
-                              }
-                        return ret;
-                }
-        }
 }
 
 
@@ -1641,18 +1061,8 @@ class FilePath : PathView
 
 interface PathView
 {
-        /***********************************************************************
-
-                TimeStamp information. Accurate to whatever the OS supports
-
-        ***********************************************************************/
-
-        struct Stamps
-        {
-                Time    created,        /// time created
-                        accessed,       /// last time accessed
-                        modified;       /// last time modified
-        }
+        alias FS.Stamps         Stamps;
+        alias FS.FileInfo       FileInfo;
 
         /***********************************************************************
 

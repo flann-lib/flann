@@ -2,14 +2,8 @@
 module tango.core.Exception;
 private
 {
-    alias void(* assertHandlerType)(char[] file, size_t line, char[] msg = null);
-    alias TracedExceptionInfo(* traceHandlerType)(void* ptr = null);
+    alias void function(char[] file, size_t line, char[] msg = null) assertHandlerType;
     assertHandlerType assertHandler = null;
-    traceHandlerType traceHandler = null;
-}
-interface TracedExceptionInfo
-{
-    int opApply(int delegate(ref char[]));
 }
 class OutOfMemoryException : Exception
 {
@@ -22,38 +16,14 @@ super("Memory allocation failed",file,line);
 return msg ? super.toString() : "Memory allocation failed";
 }
 }
-class TracedException : Exception
-{
-    this(char[] msg)
-{
-super(msg);
-m_info = traceContext();
-}
-    this(char[] msg, Exception e)
-{
-super(msg,e);
-m_info = traceContext();
-}
-    this(char[] msg, char[] file, size_t line)
-{
-super(msg,file,line);
-m_info = traceContext();
-}
-    char[] toString();
-    int opApply(int delegate(ref char[] buf) dg);
-    private
-{
-    TracedExceptionInfo m_info;
-}
-}
-class PlatformException : TracedException
+class PlatformException : Exception
 {
     this(char[] msg)
 {
 super(msg);
 }
 }
-class AssertException : TracedException
+class AssertException : Exception
 {
     this(char[] file, size_t line)
 {
@@ -64,14 +34,14 @@ super("Assertion failure",file,line);
 super(msg,file,line);
 }
 }
-class ArrayBoundsException : TracedException
+class ArrayBoundsException : Exception
 {
     this(char[] file, size_t line)
 {
 super("Array index out of bounds",file,line);
 }
 }
-class FinalizeException : TracedException
+class FinalizeException : Exception
 {
     ClassInfo info;
     this(ClassInfo c, Exception e = null)
@@ -84,14 +54,14 @@ info = c;
 return "An exception was thrown while finalizing an instance of class " ~ info.name;
 }
 }
-class SwitchException : TracedException
+class SwitchException : Exception
 {
     this(char[] file, size_t line)
 {
 super("No appropriate switch clause found",file,line);
 }
 }
-class TextException : TracedException
+class TextException : Exception
 {
     this(char[] msg)
 {
@@ -204,14 +174,21 @@ class LocaleException : TextException
 super(msg);
 }
 }
-class RegistryException : TracedException
+class XmlException : TextException
 {
     this(char[] msg)
 {
 super(msg);
 }
 }
-class IllegalArgumentException : TracedException
+class RegistryException : Exception
+{
+    this(char[] msg)
+{
+super(msg);
+}
+}
+class IllegalArgumentException : Exception
 {
     this(char[] msg)
 {
@@ -225,7 +202,7 @@ class IllegalElementException : IllegalArgumentException
 super(msg);
 }
 }
-class NoSuchElementException : TracedException
+class NoSuchElementException : Exception
 {
     this(char[] msg)
 {
@@ -243,10 +220,6 @@ void setAssertHandler(assertHandlerType h)
 {
 assertHandler = h;
 }
-void setTraceHandler(traceHandlerType h)
-{
-traceHandler = h;
-}
 extern (C) 
 {
     void onAssertError(char[] file, size_t line);
@@ -255,7 +228,6 @@ extern (C)
 {
     void onAssertErrorMsg(char[] file, size_t line, char[] msg);
 }
-TracedExceptionInfo traceContext(void* ptr = null);
 extern (C) 
 {
     void onArrayBoundsError(char[] file, size_t line);

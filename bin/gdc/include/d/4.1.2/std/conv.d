@@ -944,6 +944,17 @@ unittest
     // nan
     f = toFloat("nan");
     assert(toString(f) == toString(float.nan));
+
+    bool ok = false;
+    try
+    {
+	toFloat("\x00");
+    }
+    catch (ConvError e)
+    {
+	ok = true;
+    }
+    assert(ok);
 }
 
 /*******************************************************
@@ -1013,6 +1024,17 @@ unittest
     d = toDouble("nan");
     assert(toString(d) == toString(double.nan));
     //assert(cast(real)d == cast(real)double.nan);
+
+    bool ok = false;
+    try
+    {
+	toDouble("\x00");
+    }
+    catch (ConvError e)
+    {
+	ok = true;
+    }
+    assert(ok);
 }
 
 /*******************************************************
@@ -1086,6 +1108,17 @@ unittest
     r = toReal(toString(real.nan));
     assert(toString(r) == toString(real.nan));
     //assert(r == real.nan);
+
+    bool ok = false;
+    try
+    {
+	toReal("\x00");
+    }
+    catch (ConvError e)
+    {
+	ok = true;
+    }
+    assert(ok);
 }
 
 version (none)

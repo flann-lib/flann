@@ -29,14 +29,14 @@ MEX = mex
 SRC_DIR = .
 
 
-all: ${BUILD_DIR}/matlab/nearest_neighbors.mexglx
+all: mexfile
 
 .phony: all clean
 
 
-${BUILD_DIR}/matlab/nearest_neighbors.mexglx : ${SRC_DIR}/nearest_neighbors.cc Makefile ${LIB_TARGET}
+mexfile : ${SRC_DIR}/nearest_neighbors.cc Makefile ${LIB_TARGET}
 	@mkdir -p ${BUILD_DIR}/matlab
-	${MEX} ${INCLUDES} ${CFLAGS} $< -o $@ -L${BUILD_DIR}/lib -L${LDPATH} -lflann -lgphobos -lm -lpthread
+	${MEX} ${INCLUDES} ${CFLAGS} $< -o ${BUILD_DIR}/matlab/nearest_neighbors -L${BUILD_DIR}/lib -L${LDPATH} -lflann -lgphobos -lm -lpthread
 	cp ${SRC_DIR}/*.m ${BUILD_DIR}/matlab
 
 

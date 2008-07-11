@@ -40,7 +40,7 @@ private import tango.util.collection.model.Iterator;
  * To use this, you will also need to write a little class of the form:
  * ---
  * class IsPanel : Predicate {
- *  bool predicate(Object v) { return ( 0 !is cast(Panel)v; }
+ *  bool predicate(Object v) { return cast(Panel) v !is null; }
  * }
  * ---
  * See_Also: tango.util.collection.Predicate.predicate
@@ -109,7 +109,7 @@ public class FilteringIterator(T) : Iterator!(T)
         }
 
         /**
-         * Implements java.util.Iterator.more
+         * Implements tango.util.collection.model.Iterator.more
         **/
 
         public final bool more()
@@ -118,7 +118,7 @@ public class FilteringIterator(T) : Iterator!(T)
         }
 
         /**
-         * Implements java.util.Iterator.get.
+         * Implements tango.util.collection.model.Iterator.get.
         **/
         public final T get()
         {

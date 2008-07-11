@@ -408,6 +408,18 @@ else version( darwin )
     const F_TLOCK       = 2;
     const F_TEST        = 3;
 }
+else version( freebsd )
+{
+    const F_OK          = 0;
+    const R_OK          = 0x04;
+    const W_OK          = 0x02;
+    const X_OK          = 0x01;
+
+    const F_ULOCK       = 0;
+    const F_LOCK        = 1;
+    const F_TLOCK       = 2;
+    const F_TEST        = 3;
+}
 
 //
 // File Synchronization (FSC)
@@ -492,6 +504,31 @@ else version (darwin)
     ssize_t    pread(int, void*, size_t, off_t);
     ssize_t    pwrite(int, void*, size_t, off_t);
     pid_t      setpgrp();
+    int        setregid(gid_t, gid_t);
+    int        setreuid(uid_t, uid_t);
+    void       swab(void*, void*, ssize_t);
+    void       sync();
+    int        truncate(char*, off_t);
+    useconds_t ualarm(useconds_t, useconds_t);
+    int        usleep(useconds_t);
+    pid_t      vfork();
+}
+else version (freebsd)
+{
+    char*      crypt(char*, char*);
+    //char*      ctermid(char*);
+    void       encrypt(char*, int);
+    int        fchdir(int);
+    c_long     gethostid();
+    int        getpgid(pid_t);
+    int        getsid(pid_t);
+    char*      getwd(char*); // LEGACY
+    int        lchown(char*, uid_t, gid_t);
+    int        lockf(int, int, off_t);
+    int        nice(int);
+    ssize_t    pread(int, void*, size_t, off_t);
+    ssize_t    pwrite(int, void*, size_t, off_t);
+    int        setpgrp(pid_t, pid_t);
     int        setregid(gid_t, gid_t);
     int        setreuid(uid_t, uid_t);
     void       swab(void*, void*, ssize_t);

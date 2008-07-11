@@ -209,6 +209,8 @@ T[] format(T) (T[] dst, long i, Style fmt=Style.Signed, Flags flags=Flags.None)
                   {
                   case 'd':
                   case 'D':
+                  case 'g':
+                  case 'G':
                        if (i < 0)
                           {
                           prefix = "-";
@@ -463,13 +465,13 @@ uint trim(T) (T[] digits, inout bool sign, inout uint radix)
         
 ******************************************************************************/
 
-uint atoi(T) (T[] s)
+uint atoi(T) (T[] s, int radix = 10)
 {
         uint value;
 
         foreach (c; s)
                  if (c >= '0' && c <= '9')
-                     value = value * 10 + (c - '0');
+                     value = value * radix + (c - '0');
                  else
                     break;
         return value;
@@ -486,16 +488,16 @@ uint atoi(T) (T[] s)
         
 ******************************************************************************/
 
-T[] itoa(T, U=uint) (T[] output, U value)
-{return itoa!(T)(output, value);}
+T[] itoa(T, U=uint) (T[] output, U value, int radix = 10)
+{return itoa!(T)(output, value, radix);}
 
-T[] itoa(T) (T[] output, uint value)
+T[] itoa(T) (T[] output, uint value, int radix = 10)
 {
         T* p = output.ptr + output.length;
 
         do {
-           *--p = value % 10 + '0';
-           } while (value /= 10);
+           *--p = value % radix + '0';
+           } while (value /= radix);
         return output[p-output.ptr .. $];
 }
 

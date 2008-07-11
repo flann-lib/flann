@@ -84,7 +84,6 @@ class Uri : UriView
                 {"nfs",         2049}, 
                 {"nntp",        119},
                 {"pop",         110}, 
-                {"prospero",    1525},
                 {"rwhois",      4321},
                 {"sip",         InvalidPort},
                 {"sips",        InvalidPort},
@@ -94,8 +93,6 @@ class Uri : UriView
                 {"smtp",        25},
                 {"snews",       563},
                 {"telnet",      23},
-                {"vemmi",       575},
-                {"videotex",    516},
                 {"wais",        210},
                 {"whois",       43},
                 {"whois++",     43},
@@ -191,6 +188,7 @@ class Uri : UriView
                 map['+'] |= IncPath;
                 map['$'] |= IncPath;
                 map[','] |= IncPath;
+                map['_'] |= IncPath;
 
                 // include these as query symbols
                 map[';'] |= IncQuery | IncQueryAll;

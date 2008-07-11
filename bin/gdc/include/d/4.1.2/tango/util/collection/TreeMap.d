@@ -24,8 +24,7 @@ private import  tango.util.collection.model.Comparator,
 private import  tango.util.collection.impl.RBPair,
                 tango.util.collection.impl.RBCell,
                 tango.util.collection.impl.MapCollection,
-                tango.util.collection.impl.AbstractIterator,
-                tango.util.collection.impl.DefaultComparator;
+                tango.util.collection.impl.AbstractIterator;
 
 
 /**
@@ -109,9 +108,45 @@ public class TreeMap(K, T) : MapCollection!(K, T), SortedKeys!(K, T)
                 super(s);
                 count = n;
                 tree = t;
-                cmp = (c is null) ? new DefaultComparator!(K) : c;
-                cmpElem = new DefaultComparator!(T);
+                cmp = (c is null) ? &compareKey : c;
+                cmpElem = &compareElem;
         }
+
+        /**
+         * The default key comparator
+         *
+         * @param fst first argument
+         * @param snd second argument
+         * Returns: a negative number if fst is less than snd; a
+         * positive number if fst is greater than snd; else 0
+        **/
+
+        private final int compareKey(K fst, K snd)
+        {
+                if (fst is snd)
+                    return 0;
+
+                return typeid(K).compare (&fst, &snd);
+        }
+
+
+        /**
+         * The default element comparator
+         *
+         * @param fst first argument
+         * @param snd second argument
+         * Returns: a negative number if fst is less than snd; a
+         * positive number if fst is greater than snd; else 0
+        **/
+
+        private final int compareElem(T fst, T snd)
+        {
+                if (fst is snd)
+                    return 0;
+
+                return typeid(T).compare (&fst, &snd);
+        }
+
 
         /**
          * Create an independent copy. Does not clone elements.
@@ -213,7 +248,7 @@ public class TreeMap(K, T) : MapCollection!(K, T), SortedKeys!(K, T)
         {
                 if (cmp !is c)
                    {
-                   cmp = (c is null) ? new DefaultComparator!(K) : c;
+                   cmp = (c is null) ? &compareKey : c;
 
                    if (count !is 0)
                       {       
@@ -508,7 +543,7 @@ public class TreeMap(K, T) : MapCollection!(K, T), SortedKeys!(K, T)
                    RBPairT t = tree;
                    for (;;)
                        {
-                       int diff = cmp.compare(key, t.key());
+                       int diff = cmp(key, t.key());
                        if (diff is 0 && checkOccurrence)
                           {
                           if (t.element() != element)
@@ -567,7 +602,7 @@ public class TreeMap(K, T) : MapCollection!(K, T), SortedKeys!(K, T)
                    while (t !is null)
                          {
                          K v = t.key();
-                         assert((last is K.init || cmp.compare(last, v) <= 0));
+                         assert((last is K.init || cmp(last, v) <= 0));
                          last = v;
                          t = cast(RBPairT)(t.successor());
                          }

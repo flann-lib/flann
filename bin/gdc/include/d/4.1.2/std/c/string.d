@@ -68,3 +68,7 @@ version (Windows)
 {
     int memicmp(char* s1, char* s2, size_t n);	///
 }
+
+// Original DMD strerror_r is non-portable glibc version
+char* _d_gnu_cbridge_strerror(int errnum, char* buf, size_t buflen);
+

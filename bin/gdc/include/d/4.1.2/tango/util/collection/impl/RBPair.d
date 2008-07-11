@@ -152,7 +152,7 @@ public class RBPair(K, T) : RBCell!(T)
 
                 for (;;)
                     {
-                    int diff = cmp.compare(key, t.key_);
+                    int diff = cmp(key, t.key_);
                     if (diff is 0)
                         return t;
                     else
@@ -176,7 +176,7 @@ public class RBPair(K, T) : RBCell!(T)
 
                 for (;;)
                     {
-                    int diff = cmp.compare(key, t.key_);
+                    int diff = cmp(key, t.key_);
                     if (diff is 0 && t.element() == (element))
                         return t;
                     else
@@ -201,7 +201,7 @@ public class RBPair(K, T) : RBCell!(T)
 
                 while (t !is null)
                       {
-                      int diff = cmp.compare(key, t.key_);
+                      int diff = cmp(key, t.key_);
                       // rely on insert to always go left on <=
                       if (diff is 0)
                           ++c;
@@ -224,7 +224,7 @@ public class RBPair(K, T) : RBCell!(T)
                 
                 while (t !is null)
                       {
-                      int diff = cmp.compare(key, t.key_);
+                      int diff = cmp(key, t.key_);
                       if (diff is 0)
                          {
                          if (t.element() == (element))

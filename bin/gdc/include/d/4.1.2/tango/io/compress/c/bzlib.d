@@ -68,7 +68,7 @@ import tango.stdc.stdio : FILE;
 //C           int        verbosity, 
 //C           int        workFactor 
 //C        );
-extern (Windows):
+extern (System):
 int  BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosity, int workFactor);
 
 //C     BZ_EXTERN int BZ_API(BZ2_bzCompress) ( 
@@ -116,7 +116,7 @@ alias void BZFILE;
 //C           void* unused,    
 //C           int   nUnused 
 //C        );
-extern (Windows):
+extern (System):
 BZFILE * BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *unused, int nUnused);
 
 //C     BZ_EXTERN void BZ_API(BZ2_bzReadClose) ( 

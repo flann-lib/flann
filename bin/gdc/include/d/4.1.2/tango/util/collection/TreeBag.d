@@ -22,8 +22,7 @@ private import  tango.util.collection.model.Iterator,
 
 private import  tango.util.collection.impl.RBCell,
                 tango.util.collection.impl.BagCollection,
-                tango.util.collection.impl.AbstractIterator,
-                tango.util.collection.impl.DefaultComparator;
+                tango.util.collection.impl.AbstractIterator;
 
 /**
  * RedBlack trees.
@@ -101,8 +100,26 @@ public class TreeBag(T) : BagCollection!(T), SortedValues!(T)
                 if (cmp !is null)
                     cmp_ = cmp;
                 else
-                   cmp_ = new DefaultComparator!(T);
+                   cmp_ = &compare;
         }
+
+        /**
+         * The default comparator
+         *
+         * @param fst first argument
+         * @param snd second argument
+         * Returns: a negative number if fst is less than snd; a
+         * positive number if fst is greater than snd; else 0
+        **/
+
+        private final int compare(T fst, T snd)
+        {
+                if (fst is snd)
+                    return 0;
+
+                return typeid(T).compare (&fst, &snd);
+        }
+
 
         /**
          * Make an independent copy of the tree. Does not clone elements.
@@ -192,7 +209,7 @@ public class TreeBag(T) : BagCollection!(T), SortedValues!(T)
                    if (cmp !is null)
                        cmp_ = cmp;
                    else
-                      cmp_ = new DefaultComparator!(T);
+                      cmp_ = &compare;
 
                    if (count !is 0)
                       {       // must rebuild tree!
@@ -327,7 +344,7 @@ public class TreeBag(T) : BagCollection!(T), SortedValues!(T)
 
                    for (;;)
                        {
-                       int diff = cmp_.compare(element, t.element());
+                       int diff = cmp_(element, t.element());
                        if (diff is 0 && checkOccurrence)
                            return ;
                        else
@@ -416,7 +433,7 @@ public class TreeBag(T) : BagCollection!(T), SortedValues!(T)
                          {
                          T v = t.element();
                          if (last !is T.init)
-                             assert(cmp_.compare(last, v) <= 0);
+                             assert(cmp_(last, v) <= 0);
                          last = v;
                          t = t.successor();
                          }
@@ -475,9 +492,11 @@ debug (Test)
         void main()
         {
                 auto bag = new TreeBag!(char[]);
+                bag.add ("zebra");
                 bag.add ("bar");
                 bag.add ("barrel");
                 bag.add ("foo");
+                bag.add ("apple");
 
                 foreach (value; bag.elements) {}
 

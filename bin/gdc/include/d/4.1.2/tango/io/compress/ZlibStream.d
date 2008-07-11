@@ -16,7 +16,7 @@ module tango.io.compress.ZlibStream;
 
 private import tango.io.compress.c.zlib;
 
-private import tango.stdc.stringz : fromUtf8z;
+private import tango.stdc.stringz : fromStringz;
 
 private import tango.core.Exception : IOException;
 
@@ -519,7 +519,7 @@ class ZlibException : IOException
 
     this(int code, char* msg)
     {
-        super(codeName(code)~": "~fromUtf8z(msg));
+        super(codeName(code)~": "~fromStringz(msg));
     }
 
     protected char[] codeName(int code)

@@ -858,7 +858,15 @@ public:
 
     this(uint errcode)
     {
+      version (Unix)
+      {
+	char[80] buf = void;
+	super(std.string.toString(_d_gnu_cbridge_strerror(errcode, buf.ptr, buf.length)).dup);
+      }
+      else
+      {
 	super(std.string.toString(strerror(errcode)).dup);
+      }
     }
 }
 

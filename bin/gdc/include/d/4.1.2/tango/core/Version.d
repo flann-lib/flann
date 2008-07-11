@@ -14,6 +14,7 @@
 
 module tango.core.Version;
 
-public const Tango = 0.994f;
-
-
+public enum Tango {
+    Major = 0,
+    Minor = 996
+}

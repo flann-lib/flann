@@ -16,7 +16,6 @@ alias tango.text.locale.Win32 nativeMethods;
 
 extern (Windows)
 private {
-  void GetSystemTimeAsFileTime(out ulong lpSystemTimeAsFileTime);
   uint GetUserDefaultLCID();
   uint GetThreadLocale();
   bool SetThreadLocale(uint Locale);
@@ -31,12 +30,6 @@ int getUserCulture() {
 
 void setUserCulture(int lcid) {
   SetThreadLocale(lcid);
-}
-
-ulong getUtcTime() {
-  ulong ticks;
-  GetSystemTimeAsFileTime(ticks);
-  return ticks;
 }
 
 int compareString(int lcid, char[] stringA, uint offsetA, uint lengthA, char[] stringB, uint offsetB, uint lengthB, bool ignoreCase) {

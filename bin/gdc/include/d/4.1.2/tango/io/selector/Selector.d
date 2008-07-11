@@ -62,14 +62,13 @@ module tango.io.selector.Selector;
  * When select() returns you will receive an integer; if this integer is
  * bigger than 0, it indicates the number of conduits that have been selected.
  * If this number is 0, the it means that the selector reached a timeout, and
- * if it's -1, then it means that another thread called the wakeup() method on
- * the selector. A normal block that deals with the selection process would
- * look like this:
+ * if it's -1, then it means that there was an error. A normal block that deals 
+ * with the selection process would look like this:
  *
  * ---
  * try
  * {
- *     uint eventCount = selector.select(10.0);
+ *     int eventCount = selector.select(10.0);
  *     if (eventCount > 0)
  *     {
  *         // Process the I/O events in the selected set
@@ -80,7 +79,7 @@ module tango.io.selector.Selector;
  *     }
  *     else if (eventCount == -1)
  *     {
- *         // Another thread called the wakeup() method.
+ *         // Error
  *     }
  *     else
  *     {

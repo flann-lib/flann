@@ -74,6 +74,7 @@ python_bindings: library
 	cp -r src/bindings/python_dist ${BUILD_DIR}
 	-rm -rf ${BUILD_DIR}/python
 	mv ${BUILD_DIR}/python_dist ${BUILD_DIR}/python
+	(cd ${BUILD_DIR}/python; sage -python create_python_base.py)
 
 c_bindings: library
 	(cd src/bindings/c; make)
@@ -85,5 +86,5 @@ program:
 library:
 	@mkdir -p ${BUILD_DIR}/lib
 	${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
-	cp ${BIN_DIR}/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2/libgphobos.a ${BUILD_DIR}/lib
+	cp `${BIN_DIR}/gdc/bin/gdc -print-file-name=libgphobos.a` ${BUILD_DIR}/lib
 

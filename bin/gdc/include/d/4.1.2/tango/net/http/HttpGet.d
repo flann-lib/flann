@@ -78,5 +78,7 @@ class HttpGet : HttpClient
                     } finally {close;}
                 return buffer.slice;
         }
+
+        alias HttpClient.read read;
 }
 

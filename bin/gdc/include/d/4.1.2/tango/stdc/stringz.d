@@ -28,7 +28,7 @@ char* toStringz (char[] s)
  * Convert a C-style 0 terminated string to an array of char
  */
 
-char[] fromUtf8z (char* s)
+char[] fromStringz (char* s)
 {
         return s ? s[0 .. strlenz(s)] : null;
 }
@@ -49,7 +49,28 @@ wchar* toString16z (wchar[] s)
  * Convert a C-style 0 terminated string to an array of wchar
  */
 
-wchar[] fromUtf16z (wchar* s)
+wchar[] fromString16z (wchar* s)
+{
+        return s ? s[0 .. strlenz(s)] : null;
+}
+
+/*********************************
+ * Convert array of dchars s[] to a C-style 0 terminated string.
+ */
+
+dchar* toString32z (dchar[] s)
+{
+        if (s.ptr)
+            if (! (s.length && s[$-1] is 0))
+                   s = s ~ "\0"d;
+        return s.ptr;
+}
+
+/*********************************
+ * Convert a C-style 0 terminated string to an array of dchar
+ */
+
+dchar[] fromString32z (dchar* s)
 {
         return s ? s[0 .. strlenz(s)] : null;
 }

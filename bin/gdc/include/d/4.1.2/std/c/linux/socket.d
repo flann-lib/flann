@@ -235,6 +235,7 @@ enum: int
 	MSG_OOB =        0x1,
 	MSG_PEEK =       0x2,
 	MSG_DONTROUTE =  0x4,
+        MSG_NOSIGNAL =   0x4000,
 }
 
 

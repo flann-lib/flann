@@ -14,6 +14,8 @@
 
 module tango.group.digest;
 
+pragma (msg, "Please post your usage of tango.group to this ticket: http://dsource.org/projects/tango/ticket/1013");
+
 public import tango.io.digest.Md2;
 public import tango.io.digest.Md4;
 public import tango.io.digest.Md5;

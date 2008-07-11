@@ -14,8 +14,6 @@ module tango.text.convert.Sprint;
 
 private import tango.text.convert.Layout;
 
-private import tango.core.Vararg;
-
 /******************************************************************************
 
         Constructs sprintf-style output. This is a replacement for the 

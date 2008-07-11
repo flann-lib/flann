@@ -24,6 +24,10 @@ private
 }
     extern (C) 
 {
+    void gc_minimize();
+}
+    extern (C) 
+{
     uint gc_getAttr(void* p);
 }
     extern (C) 
@@ -49,6 +53,10 @@ private
     extern (C) 
 {
     size_t gc_extend(void* p, size_t mx, size_t sz);
+}
+    extern (C) 
+{
+    size_t gc_reserve(size_t sz);
 }
     extern (C) 
 {
@@ -88,7 +96,6 @@ private
 {
     void gc_removeRange(void* p);
 }
-    alias bool(* collectHandlerType)(Object obj);
 }
 struct GC
 {
@@ -111,6 +118,13 @@ gc_disable();
     void collect()
 {
 gc_collect();
+}
+}
+    static
+{
+    void minimize()
+{
+gc_minimize();
 }
 }
     enum BlkAttr : uint
@@ -171,6 +185,13 @@ return gc_extend(p,mx,sz);
 }
     static
 {
+    size_t reserve(size_t sz)
+{
+return gc_reserve(sz);
+}
+}
+    static
+{
     void free(void* p)
 {
 gc_free(p);
@@ -225,22 +246,4 @@ gc_removeRoot(p);
 gc_removeRange(p);
 }
 }
-    static
-{
-    void collectHandler(collectHandlerType h)
-{
-sm_collectHandler = h;
-}
-}
-    private
-{
-    static
-{
-    collectHandlerType sm_collectHandler = null;
-}
-}
-}
-extern (C) 
-{
-    bool onCollectResource(Object obj);
 }

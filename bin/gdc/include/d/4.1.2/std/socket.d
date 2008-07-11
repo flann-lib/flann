@@ -108,11 +108,9 @@ class SocketException: Exception
 		{
 			if(errorCode > 0)
 			{
-				char* cs;
-				size_t len;
-				
-				cs = strerror(errorCode);
-				len = strlen(cs);
+				char[80] buf;
+				auto cs = _d_gnu_cbridge_strerror(errorCode, buf.ptr, buf.length);
+				auto len = strlen(cs);
 				
 				if(cs[len - 1] == '\n')
 					len--;
@@ -484,7 +482,8 @@ class InternetHost
 	 */	
 	bool getHostByName(string name)
 	{
-		hostent* he = gethostbyname(toStringz(name));
+		hostent* he;
+                synchronized(this.classinfo) he = gethostbyname(toStringz(name));
 		if(!he)
 			return false;
 		validHostent(he);
@@ -499,7 +498,8 @@ class InternetHost
 	bool getHostByAddr(uint addr)
 	{
 		uint x = htonl(addr);
-		hostent* he = gethostbyaddr(&x, 4, cast(int)AddressFamily.INET);
+		hostent* he;
+                synchronized(this.classinfo) he = gethostbyaddr(&x, 4, cast(int)AddressFamily.INET);
 		if(!he)
 			return false;
 		validHostent(he);
@@ -516,7 +516,8 @@ class InternetHost
 	bool getHostByAddr(string addr)
 	{
 		uint x = inet_addr(std.string.toStringz(addr));
-		hostent* he = gethostbyaddr(&x, 4, cast(int)AddressFamily.INET);
+		hostent* he;
+                synchronized(this.classinfo) he = gethostbyaddr(&x, 4, cast(int)AddressFamily.INET);
 		if(!he)
 			return false;
 		validHostent(he);
@@ -759,11 +760,12 @@ enum SocketShutdown: int
 /// Flags may be OR'ed together:
 enum SocketFlags: int
 {
-	NONE =       0,		/// no flags specified 
+	NONE =       0,             /// no flags specified 
 	
-	OOB =        MSG_OOB,	/// out-of-band stream data
-	PEEK =       MSG_PEEK,	/// peek at incoming data without removing it from the queue, only for receiving
+	OOB =        MSG_OOB,       /// out-of-band stream data
+	PEEK =       MSG_PEEK,      /// peek at incoming data without removing it from the queue, only for receiving
 	DONTROUTE =  MSG_DONTROUTE, /// data should not be subject to routing; this flag may be ignored. Only for sending
+        NOSIGNAL =   MSG_NOSIGNAL,  /// don't send SIGPIPE signal on socket write error and instead return EPIPE
 }
 
 
@@ -1325,6 +1327,7 @@ class Socket
 	//returns number of bytes actually sent, or -1 on error
 	int send(void[] buf, SocketFlags flags)
 	{
+                flags |= SocketFlags.NOSIGNAL;
 		int sent = .send(sock, buf.ptr, buf.length, cast(int)flags);
 		return sent;
 	}
@@ -1332,7 +1335,7 @@ class Socket
 	/// ditto
 	int send(void[] buf)
 	{
-		return send(buf, SocketFlags.NONE);
+		return send(buf, SocketFlags.NOSIGNAL);
 	}
 	
 	/**
@@ -1340,6 +1343,7 @@ class Socket
 	 */
 	int sendTo(void[] buf, SocketFlags flags, Address to)
 	{
+                flags |= SocketFlags.NOSIGNAL;
 		int sent = .sendto(sock, buf.ptr, buf.length, cast(int)flags, to.name(), to.nameLen());
 		return sent;
 	}
@@ -1355,6 +1359,7 @@ class Socket
 	/// ditto
 	int sendTo(void[] buf, SocketFlags flags)
 	{
+                flags |= SocketFlags.NOSIGNAL;
 		int sent = .sendto(sock, buf.ptr, buf.length, cast(int)flags, null, 0);
 		return sent;
 	}

@@ -78,7 +78,6 @@ struct FileRoots
                         version(darwin)
                         {
                             assert(0);
-                            return null;
                         }
                         else
                         {

@@ -28,7 +28,11 @@ version (darwin)
         public import tango.sys.darwin.darwin;
         alias tango.sys.darwin.darwin posix;
         }
-
+version (freebsd)
+        {
+        public import tango.sys.freebsd.freebsd;
+        alias tango.sys.freebsd.freebsd posix;
+        }
 
 /*******************************************************************************
 
@@ -55,11 +59,11 @@ version (Win32)
 
         private extern (Windows)
                        {
-                       DWORD FormatMessageA (DWORD dwFlags,
+                       DWORD FormatMessageW (DWORD dwFlags,
                                              LPCVOID lpSource,
                                              DWORD dwMessageId,
                                              DWORD dwLanguageId,
-                                             LPTSTR lpBuffer,
+                                             LPWSTR lpBuffer,
                                              DWORD nSize,
                                              LPCVOID args
                                              );
@@ -117,24 +121,27 @@ struct SysError
 
                 version (Win32)
                         {
-                        DWORD  r;
-                        LPVOID lpMsgBuf;
+                        DWORD  i;
+                        LPWSTR lpMsgBuf;
 
-                        r = FormatMessageA (
+                        i = FormatMessageW (
                                 FORMAT_MESSAGE_ALLOCATE_BUFFER |
                                 FORMAT_MESSAGE_FROM_SYSTEM |
                                 FORMAT_MESSAGE_IGNORE_INSERTS,
                                 null,
                                 errcode,
                                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-                                cast(LPTSTR)&lpMsgBuf,
+                                cast(LPWSTR)&lpMsgBuf,
                                 0,
                                 null);
 
                         /* Remove \r\n from error string */
-                        if (r >= 2) r-= 2;
-                        text = (cast(char *)lpMsgBuf)[0..r].dup;
-                        LocalFree(cast(HLOCAL)lpMsgBuf);
+                        if (i >= 2) i -= 2;
+                        text = new char[i * 3];
+                        i = WideCharToMultiByte (CP_UTF8, 0, lpMsgBuf, i, 
+                                                 text.ptr, i, null, null);
+                        text = text [0 .. i];
+                        LocalFree (cast(HLOCAL) lpMsgBuf);
                         }
                      else
                         {

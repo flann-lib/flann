@@ -42,9 +42,6 @@ package import  tango.net.Socket,
 
 class DatagramConduit : SocketConduit
 {
-        private Address to,
-                        from;
-
         /***********************************************************************
         
                 Create a read/write datagram socket
@@ -54,6 +51,22 @@ class DatagramConduit : SocketConduit
         this ()
         {
                 super (SocketType.DGRAM, ProtocolType.IP);
+        }
+
+        /***********************************************************************
+
+                Populate the provided array from the socket. This will stall
+                until some data is available, or a timeout occurs. We assume 
+                the datagram has been connected.
+
+                Returns the number of bytes read to the output, or Eof if
+                the socket cannot read
+
+        ***********************************************************************/
+
+        override uint read (void[] src)
+        {
+                return read (src, null);
         }
 
         /***********************************************************************
@@ -68,10 +81,30 @@ class DatagramConduit : SocketConduit
 
         ***********************************************************************/
 
-        uint read (void[] dst, Address from=null)
+        uint read (void[] dst, Address from)
         {
-                this.from = from;
-                return input.read (dst);
+                uint reader (void[] dst)
+                {
+                        return (dst.length) ? (from ? socket.receiveFrom(dst, from) : socket.receiveFrom(dst)) : 0;
+                }
+
+                return super.read (dst, &reader);
+        }
+
+        /***********************************************************************
+
+                Write the provided content to the socket. This will stall
+                until the socket responds in some manner. We assume the 
+                datagram has been connected.
+
+                Returns the number of bytes sent to the output, or Eof if
+                the socket cannot write
+
+        ***********************************************************************/
+
+        override uint write (void[] src)
+        {
+                return write (src, null);
         }
 
         /***********************************************************************
@@ -84,56 +117,13 @@ class DatagramConduit : SocketConduit
 
         ***********************************************************************/
 
-        uint write (void[] src, Address to=null)
+        uint write (void[] src, Address to)
         {
-                this.to = to;
-                return output.write (src);
-        }
-
-        /***********************************************************************
-
-                SocketConduit override:
-                
-                Read available datagram bytes into a provided array. Returns
-                the number of bytes read from the input, or Eof if the socket
-                cannot read.
-
-                Note that we're taking advantage of timout support within the
-                superclass 
-
-        ***********************************************************************/
-
-        protected override uint socketReader (void[] dst)
-        {
-                int count;
-
-                if (dst.length)
-                    count = (from) ? socket.receiveFrom (dst, from) : socket.receiveFrom (dst);
-
-                return count;
-        }
-
-        /***********************************************************************
-
-                SocketConduit override:
-
-                Write the provided content to the socket. This will stall
-                until the socket responds in some manner. If there is no
-                target address held by this class, we assume the datagram
-                has been connected instead.
-
-                Returns the number of bytes sent to the output, or Eof if
-                the socket cannot write
-
-        ***********************************************************************/
-
-        protected override uint write (void[] src)
-        {
-                int count;
+                int count = Eof;
                 
                 if (src.length)
                    {
-                   count = (to) ? socket.sendTo (src, to) : socket.sendTo (src);
+                   count = (to) ? socket.sendTo(src, to) : socket.sendTo(src);
                    if (count <= 0)
                        count = Eof;
                    }

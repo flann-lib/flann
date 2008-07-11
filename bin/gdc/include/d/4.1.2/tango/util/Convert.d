@@ -13,7 +13,6 @@ module tango.util.Convert;
 
 private import tango.core.Traits;
 private import tango.core.Tuple : Tuple;
-private import tango.core.Exception : TracedException;
 
 private import tango.math.Math;
 private import tango.text.convert.Utf;
@@ -177,7 +176,7 @@ else
  * be represented in the destination type.  This exception is also thrown when
  * the conversion would cause an over- or underflow.
  */
-class ConversionException : TracedException
+class ConversionException : Exception
 {
     this( char[] msg )
     {
@@ -193,7 +192,7 @@ typedef int Missing;
  * So, how is this module structured?
  *
  * Firstly, we need a bunch of support code.  The first block of this contains
-	 * some CTFE functions for string manipulation (to cut down on the number of
+ * some CTFE functions for string manipulation (to cut down on the number of
  * template symbols we generate.)
  *
  * The next contains a boat-load of templates.  Most of these are trait
@@ -789,6 +788,8 @@ D toIntegerFromString(D,S)(S value)
 
             if( len < value.length )
                 throwConvError;
+
+            return result;
         }
         else
         {
@@ -848,7 +849,7 @@ D toReal(D,S)(S value)
 
     else+/ static if( isIntegerType!(S) || isRealType!(S))
         return cast(D) value;
-	
+
     /+else static if( isCharType!(S) )
         return cast(D) to!(uint)(value);+/
 

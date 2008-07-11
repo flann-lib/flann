@@ -41,3 +41,25 @@ version( linux )
     ssize_t readv(int, iovec*, int);
     ssize_t writev(int, iovec*, int);
 }
+else version( darwin )
+{
+    struct iovec
+    {
+        void*  iov_base;
+        size_t iov_len;
+    }
+
+    ssize_t readv(int, iovec*, int);
+    ssize_t writev(int, iovec*, int);
+}
+else version( freebsd )
+{
+    struct iovec
+    {
+        void*  iov_base;
+        size_t iov_len;
+    }
+
+    ssize_t readv(int, iovec*, int);
+    ssize_t writev(int, iovec*, int);
+}

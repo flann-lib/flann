@@ -146,7 +146,11 @@ int _spawnvp(int mode, char *pathname, char **argv)
 
 Lerror:
     retval = getErrno;
-    throw new Exception("Cannot spawn " ~ toString(pathname) ~ "; " ~ toString(strerror(retval)) ~ " [errno " ~ toString(retval) ~ "]");
+    char[80] buf = void;
+    throw new Exception(
+        "Cannot spawn " ~ toString(pathname) ~ "; "
+                      ~ toString(_d_gnu_cbridge_strerror(retval, buf.ptr, buf.length))
+                      ~ " [errno " ~ toString(retval) ~ "]");
 }   // _spawnvp
 private
 {

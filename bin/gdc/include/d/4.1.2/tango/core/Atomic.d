@@ -377,11 +377,11 @@ else version( D_InlineAsm_X86 )
                 {
                     volatile asm
                     {
-                        mov BL, 42;
+                        mov DL, 42;
                         mov AL, 42;
                         mov ECX, val;
                         lock;
-                        cmpxchg [ECX], BL;
+                        cmpxchg [ECX], DL;
                     }
                 }
                 else
@@ -402,11 +402,11 @@ else version( D_InlineAsm_X86 )
                 {
                     volatile asm
                     {
-                        mov BX, 42;
+                        mov DX, 42;
                         mov AX, 42;
                         mov ECX, val;
                         lock;
-                        cmpxchg [ECX], BX;
+                        cmpxchg [ECX], DX;
                     }
                 }
                 else
@@ -428,11 +428,11 @@ else version( D_InlineAsm_X86 )
                 {
                     volatile asm
                     {
-                        mov EBX, 42;
+                        mov EDX, 42;
                         mov EAX, 42;
                         mov ECX, val;
                         lock;
-                        cmpxchg [ECX], EBX;
+                        cmpxchg [ECX], EDX;
                     }
                 }
                 else
@@ -525,9 +525,9 @@ else version( D_InlineAsm_X86 )
                     volatile asm
                     {
                         mov EAX, val;
-                        mov BL, newval;
+                        mov DL, newval;
                         lock;
-                        xchg [EAX], BL;
+                        xchg [EAX], DL;
                     }
                 }
                 else
@@ -535,8 +535,8 @@ else version( D_InlineAsm_X86 )
                     volatile asm
                     {
                         mov EAX, val;
-                        mov BL, newval;
-                        mov [EAX], BL;
+                        mov DL, newval;
+                        mov [EAX], DL;
                     }
                 }
             }
@@ -552,9 +552,9 @@ else version( D_InlineAsm_X86 )
                     volatile asm
                     {
                         mov EAX, val;
-                        mov BX, newval;
+                        mov DX, newval;
                         lock;
-                        xchg [EAX], BX;
+                        xchg [EAX], DX;
                     }
                 }
                 else
@@ -562,8 +562,8 @@ else version( D_InlineAsm_X86 )
                     volatile asm
                     {
                         mov EAX, val;
-                        mov BX, newval;
-                        mov [EAX], BX;
+                        mov DX, newval;
+                        mov [EAX], DX;
                     }
                 }
             }
@@ -579,9 +579,9 @@ else version( D_InlineAsm_X86 )
                     volatile asm
                     {
                         mov EAX, val;
-                        mov EBX, newval;
+                        mov EDX, newval;
                         lock;
-                        xchg [EAX], EBX;
+                        xchg [EAX], EDX;
                     }
                 }
                 else
@@ -589,8 +589,8 @@ else version( D_InlineAsm_X86 )
                     volatile asm
                     {
                         mov EAX, val;
-                        mov EBX, newval;
-                        mov [EAX], EBX;
+                        mov EDX, newval;
+                        mov [EAX], EDX;
                     }
                 }
             }
@@ -613,9 +613,9 @@ else version( D_InlineAsm_X86 )
                         volatile asm
                         {
                             mov RAX, val;
-                            mov RBX, newval;
+                            mov RDX, newval;
                             lock;
-                            xchg [RAX], RBX;
+                            xchg [RAX], RDX;
                         }
                     }
                     else
@@ -623,8 +623,8 @@ else version( D_InlineAsm_X86 )
                         volatile asm
                         {
                             mov RAX, val;
-                            mov RBX, newval;
-                            mov [RAX], RBX;
+                            mov RDX, newval;
+                            mov [RAX], RDX;
                         }
                     }
                 }
@@ -681,11 +681,11 @@ else version( D_InlineAsm_X86 )
 
                 volatile asm
                 {
-                    mov BL, newval;
+                    mov DL, newval;
                     mov AL, equalTo;
                     mov ECX, val;
                     lock; // lock always needed to make this op atomic
-                    cmpxchg [ECX], BL;
+                    cmpxchg [ECX], DL;
                     setz AL;
                 }
             }
@@ -698,11 +698,11 @@ else version( D_InlineAsm_X86 )
 
                 volatile asm
                 {
-                    mov BX, newval;
+                    mov DX, newval;
                     mov AX, equalTo;
                     mov ECX, val;
                     lock; // lock always needed to make this op atomic
-                    cmpxchg [ECX], BX;
+                    cmpxchg [ECX], DX;
                     setz AL;
                 }
             }
@@ -715,11 +715,11 @@ else version( D_InlineAsm_X86 )
 
                 volatile asm
                 {
-                    mov EBX, newval;
+                    mov EDX, newval;
                     mov EAX, equalTo;
                     mov ECX, val;
                     lock; // lock always needed to make this op atomic
-                    cmpxchg [ECX], EBX;
+                    cmpxchg [ECX], EDX;
                     setz AL;
                 }
             }
@@ -739,11 +739,11 @@ else version( D_InlineAsm_X86 )
 
                     volatile asm
                     {
-                        mov RBX, newval;
+                        mov RDX, newval;
                         mov RAX, equalTo;
                         mov RCX, val;
                         lock; // lock always needed to make this op atomic
-                        cmpxchg [RCX], RBX;
+                        cmpxchg [RCX], RDX;
                         setz AL;
                     }
                 }
@@ -756,6 +756,8 @@ else version( D_InlineAsm_X86 )
 
                     volatile asm
                     {
+                        push EDI;
+                        push EBX;
                         lea EDI, newval;
                         mov EBX, [EDI];
                         mov ECX, 4[EDI];
@@ -766,6 +768,8 @@ else version( D_InlineAsm_X86 )
                         lock; // lock always needed to make this op atomic
                         cmpxch8b [EDI];
                         setz AL;
+                        pop EBX;
+                        pop EDI;
                     }
                 }
             }

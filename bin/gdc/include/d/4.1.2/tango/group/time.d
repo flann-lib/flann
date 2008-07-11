@@ -14,6 +14,8 @@
 
 module tango.group.time;
 
+pragma (msg, "Please post your usage of tango.group to this ticket: http://dsource.org/projects/tango/ticket/1013");
+
 public import tango.time.Time;
 public import tango.time.Clock;
 public import tango.time.ISO8601;

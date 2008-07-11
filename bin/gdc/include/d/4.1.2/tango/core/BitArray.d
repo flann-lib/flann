@@ -14,7 +14,11 @@ private import tango.core.BitManip;
 
 
 /**
- * An array of bits.
+ * This struct represents an array of boolean values, each of which occupy one
+ * bit of memory for storage.  Thus an array of 32 bits would occupy the same
+ * space as one integer value.  The typical array operations--such as indexing
+ * and sorting--are supported, as well as bitwise operations such as and, or,
+ * xor, and complement.
  */
 struct BitArray
 {
@@ -23,7 +27,14 @@ struct BitArray
 
 
     /**
+     * This initializes a BitArray of bits.length bits, where each bit value
+     * matches the corresponding boolean value in bits.
      *
+     * Params:
+     *  bits = The initialization value.
+     *
+     * Returns:
+     *  A BitArray with the same number and sequence of elements as bits.
      */
     static BitArray opCall( bool[] bits )
     {
@@ -36,7 +47,10 @@ struct BitArray
     }
 
     /**
+     * Get the number of bits in this array.
      *
+     * Returns:
+     *  The number of bits in this array.
      */
     size_t length()
     {
@@ -45,23 +59,27 @@ struct BitArray
 
 
     /**
+     * Resizes this array to newlen bits.  If newlen is larger than the current
+     * length, the new bits will be initialized to zero.
      *
+     * Params:
+     *  newlen = The number of bits this array should contain.
      */
-    void length(size_t newlen)
+    void length( size_t newlen )
     {
-        if (newlen != len)
+        if( newlen != len )
         {
-            size_t olddim = dim();
-            size_t newdim = (newlen + 31) / 32;
+            auto olddim = dim();
+            auto newdim = (newlen + 31) / 32;
 
-            if (newdim != olddim)
+            if( newdim != olddim )
             {
                 // Create a fake array so we can use D's realloc machinery
-                uint[] b = ptr[0 .. olddim];
+                uint[] buf = ptr[0 .. olddim];
 
-                b.length = newdim; // realloc
-                ptr = b.ptr;
-                if (newdim & 31)
+                buf.length = newdim; // realloc
+                ptr = buf.ptr;
+                if( newdim & 31 )
                 {
                     // Set any pad bits to 0
                     ptr[newdim - 1] &= ~(~0 << (newdim & 31));
@@ -73,7 +91,10 @@ struct BitArray
 
 
     /**
+     * Gets the length of a uint array large enough to hold all stored bits.
      *
+     * Returns:
+     *  The size a uint array would have to be to store this array.
      */
     size_t dim()
     {
@@ -82,15 +103,18 @@ struct BitArray
 
 
     /**
-     * Support for array.dup property for BitArray.
+     * Duplicates this array, much like the dup property for built-in arrays.
+     *
+     * Returns:
+     *  A duplicate of this array.
      */
     BitArray dup()
     {
         BitArray ba;
 
-        uint[] b = ptr[0 .. dim].dup;
+        uint[] buf = ptr[0 .. dim].dup;
         ba.len = len;
-        ba.ptr = b.ptr;
+        ba.ptr = buf.ptr;
         return ba;
     }
 
@@ -101,28 +125,32 @@ struct BitArray
       {
         BitArray a;
         BitArray b;
-        int i;
 
         a.length = 3;
         a[0] = 1; a[1] = 0; a[2] = 1;
         b = a.dup;
-        assert(b.length == 3);
-        for (i = 0; i < 3; i++)
+        assert( b.length == 3 );
+        for( int i = 0; i < 3; ++i )
         {
-            //printf("b[%d] = %d\n", i, b[i]);
-            assert(b[i] == (((i ^ 1) & 1) ? true : false));
+            assert( b[i] == (((i ^ 1) & 1) ? true : false) );
         }
       }
     }
 
 
     /**
-     * Set BitArray to contents of ba[]
+     * Resets the length of this array to bits.length and then initializes this
+     *
+     * Resizes this array to hold bits.length bits and initializes each bit
+     * value to match the corresponding boolean value in bits.
+     *
+     * Params:
+     *  bits = The initialization value.
      */
-    void opAssign(bool[] ba)
+    void opAssign( bool[] bits )
     {
-        length = ba.length;
-        foreach (i, b; ba)
+        length = bits.length;
+        foreach( i, b; bits )
         {
             (*this)[i] = b;
         }
@@ -130,20 +158,22 @@ struct BitArray
 
 
     /**
-     * Map BitArray onto v[], with numbits being the number of bits
-     * in the array. Does not copy the data.
+     * Map BitArray onto target, with numbits being the number of bits in the
+     * array. Does not copy the data.  This is the inverse of opCast.
      *
-     * This is the inverse of opCast.
+     * Params:
+     *  target  = The array to map.
+     *  numbits = The number of bits to map in target.
      */
-    void init(void[] v, size_t numbits)
+    void init( void[] target, size_t numbits )
     in
     {
-        assert(numbits <= v.length * 8);
-        assert((v.length & 3) == 0);
+        assert( numbits <= target.length * 8 );
+        assert( (target.length & 3) == 0 );
     }
     body
     {
-        ptr = cast(uint*)v.ptr;
+        ptr = cast(uint*)target.ptr;
         len = numbits;
     }
 
@@ -154,43 +184,47 @@ struct BitArray
       {
         BitArray a = [1,0,1,0,1];
         BitArray b;
-        void[] v;
+        void[] buf;
 
-        v = cast(void[])a;
-        b.init(v, a.length);
+        buf = cast(void[])a;
+        b.init( buf, a.length );
 
-        assert(b[0] == 1);
-        assert(b[1] == 0);
-        assert(b[2] == 1);
-        assert(b[3] == 0);
-        assert(b[4] == 1);
+        assert( b[0] == 1 );
+        assert( b[1] == 0 );
+        assert( b[2] == 1 );
+        assert( b[3] == 0 );
+        assert( b[4] == 1 );
 
         a[0] = 0;
-        assert(b[0] == 0);
+        assert( b[0] == 0 );
 
-        assert(a == b);
+        assert( a == b );
       }
     }
 
 
     /**
-     * Support for array.reverse property for BitArray.
+     * Reverses the contents of this array in place, much like the reverse
+     * property for built-in arrays.
+     *
+     * Returns:
+     *  A shallow copy of this array.
      */
     BitArray reverse()
-    out (result)
+    out( result )
     {
-        assert(result == *this);
+        assert( result == *this );
     }
     body
     {
-        if (len >= 2)
+        if( len >= 2 )
         {
             bool t;
             size_t lo, hi;
 
             lo = 0;
             hi = len - 1;
-            for (; lo < hi; lo++, hi--)
+            for( ; lo < hi; ++lo, --hi )
             {
                 t = (*this)[lo];
                 (*this)[lo] = (*this)[hi];
@@ -205,61 +239,63 @@ struct BitArray
     {
       unittest
       {
-        BitArray b;
         static bool[5] data = [1,0,1,1,0];
-        int i;
-
-        b = data;
+        BitArray b = data;
         b.reverse;
-        for (i = 0; i < data.length; i++)
+
+        for( size_t i = 0; i < data.length; ++i )
         {
-            assert(b[i] == data[4 - i]);
+            assert( b[i] == data[4 - i] );
         }
       }
     }
 
 
     /**
-     * Support for array.sort property for BitArray.
+     * Sorts this array in place, with zero entries sorting before one.  This
+     * is equivalent to the sort property for built-in arrays.
+     *
+     * Returns:
+     *  A shallow copy of this array.
      */
     BitArray sort()
-    out (result)
+    out( result )
     {
-        assert(result == *this);
+        assert( result == *this );
     }
     body
     {
-        if (len >= 2)
+        if( len >= 2 )
         {
             size_t lo, hi;
 
             lo = 0;
             hi = len - 1;
-            while (1)
+            while( true )
             {
-                while (1)
+                while( true )
                 {
-                    if (lo >= hi)
+                    if( lo >= hi )
                         goto Ldone;
-                    if ((*this)[lo] == true)
+                    if( (*this)[lo] == true )
                         break;
-                    lo++;
+                    ++lo;
                 }
 
-                while (1)
+                while( true )
                 {
-                    if (lo >= hi)
+                    if( lo >= hi )
                         goto Ldone;
-                    if ((*this)[hi] == false)
+                    if( (*this)[hi] == false )
                         break;
-                    hi--;
+                    --hi;
                 }
 
                 (*this)[lo] = false;
                 (*this)[hi] = true;
 
-                lo++;
-                hi--;
+                ++lo;
+                --hi;
             }
             Ldone:
             ;
@@ -276,43 +312,47 @@ struct BitArray
         static BitArray ba = { 10, &x };
 
         ba.sort;
-        for (size_t i = 0; i < 6; i++)
-            assert(ba[i] == false);
-        for (size_t i = 6; i < 10; i++)
-            assert(ba[i] == true);
+        for( size_t i = 0; i < 6; ++i )
+            assert( ba[i] == false );
+        for( size_t i = 6; i < 10; ++i )
+            assert( ba[i] == true );
       }
     }
 
 
     /**
-     * Support for foreach loops for BitArray.
+     * Operates on all bits in this array.
+     *
+     * Params:
+     *  dg = The supplied code as a delegate.
      */
-    int opApply(int delegate(inout bool) dg)
+    int opApply( int delegate(inout bool) dg )
     {
         int result;
 
-        for (size_t i = 0; i < len; i++)
+        for( size_t i = 0; i < len; ++i )
         {
-            bool b = opIndex(i);
-            result = dg(b);
-            opIndexAssign(b,i);
-            if (result)
+            bool b = opIndex( i );
+            result = dg( b );
+            opIndexAssign( b, i );
+            if( result )
                 break;
         }
         return result;
     }
 
+
     /** ditto */
-    int opApply(int delegate(inout size_t, inout bool) dg)
+    int opApply( int delegate(inout size_t, inout bool) dg )
     {
         int result;
 
-        for (size_t i = 0; i < len; i++)
+        for( size_t i = 0; i < len; ++i )
         {
-            bool b = opIndex(i);
-            result = dg(i, b);
-            opIndexAssign(b,i);
-            if (result)
+            bool b = opIndex( i );
+            result = dg( i, b );
+            opIndexAssign( b, i );
+            if( result )
                 break;
         }
         return result;
@@ -326,26 +366,26 @@ struct BitArray
         BitArray a = [1,0,1];
 
         int i;
-        foreach (b;a)
+        foreach( b; a )
         {
-            switch (i)
+            switch( i )
             {
-            case 0: assert(b == true);  break;
-            case 1: assert(b == false); break;
-            case 2: assert(b == true);  break;
-            default: assert(0);
+            case 0: assert( b == true );  break;
+            case 1: assert( b == false ); break;
+            case 2: assert( b == true );  break;
+            default: assert( false );
             }
             i++;
         }
 
-        foreach (j,b;a)
+        foreach( j, b; a )
         {
-            switch (j)
+            switch( j )
             {
-            case 0: assert(b == true);  break;
-            case 1: assert(b == false); break;
-            case 2: assert(b == true);  break;
-            default: assert(0);
+            case 0: assert( b == true );  break;
+            case 1: assert( b == false ); break;
+            case 2: assert( b == true );  break;
+            default: assert( false );
             }
         }
       }
@@ -353,28 +393,30 @@ struct BitArray
 
 
     /**
-     * Support for operators == and != for bit arrays.
+     * Compares this array to another for equality.  Two bit arrays are equal
+     * if they are the same size and contain the same series of bits.
+     *
+     * Params:
+     *  rhs = The array to compare against.
+     *
+     * Returns:
+     *  zero if not equal and non-zero otherwise.
      */
-    int opEquals(BitArray a2)
+    int opEquals( BitArray rhs )
     {
-        int i;
-
-        if (this.length != a2.length)
-            return 0;       // not equal
-        byte *p1 = cast(byte*)this.ptr;
-        byte *p2 = cast(byte*)a2.ptr;
-        uint n = this.length / 8;
-        for (i = 0; i < n; i++)
+        if( this.length != rhs.length )
+            return 0; // not equal
+        byte* p1 = cast(byte*)this.ptr;
+        byte* p2 = cast(byte*)rhs.ptr;
+        size_t n = this.length / 8;
+        size_t i;
+        for( i = 0; i < n; ++i )
         {
-            if (p1[i] != p2[i])
-            return 0;       // not equal
+            if( p1[i] != p2[i] )
+            return 0; // not equal
         }
-
-        ubyte mask;
-
         n = this.length & 7;
-    mask = cast(ubyte)((1 << n) - 1);
-        //printf("i = %d, n = %d, mask = %x, %x, %x\n", i, n, mask, p1[i], p2[i]);
+        ubyte mask = cast(ubyte)((1 << n) - 1);
         return (mask == 0) || (p1[i] & mask) == (p2[i] & mask);
     }
 
@@ -397,33 +439,41 @@ struct BitArray
 
 
     /**
-     * Implement comparison operators.
+     * Performs a lexicographical comparison of this array to the supplied
+     * array.
+     *
+     * Params:
+     *  rhs = The array to compare against.
+     *
+     * Returns:
+     *  A value less than zero if this array sorts before the supplied array,
+     *  zero if the arrays are equavalent, and a value greater than zero if
+     *  this array sorts after the supplied array.
      */
-    int opCmp(BitArray a2)
+    int opCmp( BitArray rhs )
     {
-        uint len;
-        uint i;
-
-        len = this.length;
-        if (a2.length < len)
-            len = a2.length;
+        auto len = this.length;
+        if( rhs.length < len )
+            len = rhs.length;
         ubyte* p1 = cast(ubyte*)this.ptr;
-        ubyte* p2 = cast(ubyte*)a2.ptr;
-        uint n = len / 8;
-        for (i = 0; i < n; i++)
+        ubyte* p2 = cast(ubyte*)rhs.ptr;
+        size_t n = len / 8;
+        size_t i;
+        for( i = 0; i < n; ++i )
         {
-            if (p1[i] != p2[i])
-            break;      // not equal
+            if( p1[i] != p2[i] )
+            break; // not equal
         }
-        for (uint j = i * 8; j < len; j++)
-    {   ubyte mask = cast(ubyte)(1 << j);
+        for( size_t j = i * 8; j < len; ++j )
+        {
+            ubyte mask = cast(ubyte)(1 << j);
             int c;
 
             c = cast(int)(p1[i] & mask) - cast(int)(p2[i] & mask);
-            if (c)
-            return c;
+            if( c )
+                return c;
         }
-        return cast(int)this.len - cast(int)a2.length;
+        return cast(int)this.len - cast(int)rhs.length;
     }
 
     debug( UnitTest )
@@ -436,21 +486,24 @@ struct BitArray
         BitArray d = [1,0,1,1,1];
         BitArray e = [1,0,1,0,1];
 
-        assert(a >  b);
-        assert(a >= b);
-        assert(a <  c);
-        assert(a <= c);
-        assert(a <  d);
-        assert(a <= d);
-        assert(a == e);
-        assert(a <= e);
-        assert(a >= e);
+        assert( a >  b );
+        assert( a >= b );
+        assert( a <  c );
+        assert( a <= c );
+        assert( a <  d );
+        assert( a <= d );
+        assert( a == e );
+        assert( a <= e );
+        assert( a >= e );
       }
     }
 
 
     /**
-     * Convert to void[].
+     * Convert this array to a void array.
+     *
+     * Returns:
+     *  This array represented as a void array.
      */
     void[] opCast()
     {
@@ -465,27 +518,40 @@ struct BitArray
         BitArray a = [1,0,1,0,1];
         void[] v = cast(void[])a;
 
-        assert(v.length == a.dim * uint.sizeof);
+        assert( v.length == a.dim * uint.sizeof );
       }
     }
 
 
     /**
-     * Support for [$(I index)] operation for BitArray.
+     * Support for index operations, much like the behavior of built-in arrays.
+     *
+     * Params:
+     *  pos = The desired index position.
+     *
+     * In:
+     *  pos must be less than the length of this array.
+     *
+     * Returns:
+     *  The value of the bit at pos.
      */
-    bool opIndex(size_t i)
+    bool opIndex( size_t pos )
     in
     {
-        assert(i < len);
+        assert( pos < len );
     }
     body
     {
-        return cast(bool)bt(ptr, i);
+        return cast(bool)bt( ptr, pos );
     }
 
 
     /**
-     * Support for unary operator ~ for bit arrays.
+     * Generates a copy of this array with the unary complement operation
+     * applied.
+     *
+     * Returns:
+     *  A new array which is the complement of this array.
      */
     BitArray opCom()
     {
@@ -494,9 +560,9 @@ struct BitArray
         BitArray result;
 
         result.length = len;
-        for (size_t i = 0; i < dim; i++)
+        for( size_t i = 0; i < dim; ++i )
             result.ptr[i] = ~this.ptr[i];
-        if (len & 31)
+        if( len & 31 )
             result.ptr[dim - 1] &= ~(~0 << (len & 31));
         return result;
     }
@@ -519,12 +585,23 @@ struct BitArray
 
 
     /**
-     * Support for binary operator & for bit arrays.
+     * Generates a new array which is the result of a bitwise and operation
+     * between this array and the supplied array.
+     *
+     * Params:
+     *  rhs = The array with which to perform the bitwise and operation.
+     *
+     * In:
+     *  rhs.length must equal the length of this array.
+     *
+     * Returns:
+     *  A new array which is the result of a bitwise and with this array and
+     *  the supplied array.
      */
-    BitArray opAnd(BitArray e2)
+    BitArray opAnd( BitArray rhs )
     in
     {
-        assert(len == e2.length);
+        assert( len == rhs.length );
     }
     body
     {
@@ -533,8 +610,8 @@ struct BitArray
         BitArray result;
 
         result.length = len;
-        for (size_t i = 0; i < dim; i++)
-            result.ptr[i] = this.ptr[i] & e2.ptr[i];
+        for( size_t i = 0; i < dim; ++i )
+            result.ptr[i] = this.ptr[i] & rhs.ptr[i];
         return result;
     }
 
@@ -558,12 +635,23 @@ struct BitArray
 
 
     /**
-     * Support for binary operator | for bit arrays.
+     * Generates a new array which is the result of a bitwise or operation
+     * between this array and the supplied array.
+     *
+     * Params:
+     *  rhs = The array with which to perform the bitwise or operation.
+     *
+     * In:
+     *  rhs.length must equal the length of this array.
+     *
+     * Returns:
+     *  A new array which is the result of a bitwise or with this array and
+     *  the supplied array.
      */
-    BitArray opOr(BitArray e2)
+    BitArray opOr( BitArray rhs )
     in
     {
-        assert(len == e2.length);
+        assert( len == rhs.length );
     }
     body
     {
@@ -572,8 +660,8 @@ struct BitArray
         BitArray result;
 
         result.length = len;
-        for (size_t i = 0; i < dim; i++)
-            result.ptr[i] = this.ptr[i] | e2.ptr[i];
+        for( size_t i = 0; i < dim; ++i )
+            result.ptr[i] = this.ptr[i] | rhs.ptr[i];
         return result;
     }
 
@@ -597,12 +685,23 @@ struct BitArray
 
 
     /**
-     * Support for binary operator ^ for bit arrays.
+     * Generates a new array which is the result of a bitwise xor operation
+     * between this array and the supplied array.
+     *
+     * Params:
+     *  rhs = The array with which to perform the bitwise xor operation.
+     *
+     * In:
+     *  rhs.length must equal the length of this array.
+     *
+     * Returns:
+     *  A new array which is the result of a bitwise xor with this array and
+     *  the supplied array.
      */
-    BitArray opXor(BitArray e2)
+    BitArray opXor( BitArray rhs )
     in
     {
-        assert(len == e2.length);
+        assert( len == rhs.length );
     }
     body
     {
@@ -611,8 +710,8 @@ struct BitArray
         BitArray result;
 
         result.length = len;
-        for (size_t i = 0; i < dim; i++)
-            result.ptr[i] = this.ptr[i] ^ e2.ptr[i];
+        for( size_t i = 0; i < dim; ++i )
+            result.ptr[i] = this.ptr[i] ^ rhs.ptr[i];
         return result;
     }
 
@@ -636,14 +735,23 @@ struct BitArray
 
 
     /**
-     * Support for binary operator - for bit arrays.
+     * Generates a new array which is the result of this array minus the
+     * supplied array.  $(I a - b) for BitArrays means the same thing as
+     * $(I a &amp; ~b).
      *
-     * $(I a - b) for BitArrays means the same thing as $(I a &amp; ~b).
+     * Params:
+     *  rhs = The array with which to perform the subtraction operation.
+     *
+     * In:
+     *  rhs.length must equal the length of this array.
+     *
+     * Returns:
+     *  A new array which is the result of this array minus the supplied array.
      */
-    BitArray opSub(BitArray e2)
+    BitArray opSub( BitArray rhs )
     in
     {
-        assert(len == e2.length);
+        assert( len == rhs.length );
     }
     body
     {
@@ -652,8 +760,8 @@ struct BitArray
         BitArray result;
 
         result.length = len;
-        for (size_t i = 0; i < dim; i++)
-            result.ptr[i] = this.ptr[i] & ~e2.ptr[i];
+        for( size_t i = 0; i < dim; ++i )
+            result.ptr[i] = this.ptr[i] & ~rhs.ptr[i];
         return result;
     }
 
@@ -667,50 +775,58 @@ struct BitArray
 
         BitArray c = a - b;
 
-        assert(c[0] == 0);
-        assert(c[1] == 0);
-        assert(c[2] == 0);
-        assert(c[3] == 0);
-        assert(c[4] == 1);
+        assert( c[0] == 0 );
+        assert( c[1] == 0 );
+        assert( c[2] == 0 );
+        assert( c[3] == 0 );
+        assert( c[4] == 1 );
       }
     }
 
 
     /**
-     * Support for binary operator ~ for bit arrays.
+     * Generates a new array which is the result of this array concatenated
+     * with the supplied array.
+     *
+     * Params:
+     *  rhs = The array with which to perform the concatenation operation.
+     *
+     * Returns:
+     *  A new array which is the result of this array concatenated with the
+     *  supplied array.
      */
-    BitArray opCat(bool b)
+    BitArray opCat( bool rhs )
     {
-        BitArray r;
+        BitArray result;
 
-        r = this.dup;
-        r.length = len + 1;
-        r[len] = b;
-        return r;
+        result = this.dup;
+        result.length = len + 1;
+        result[len] = rhs;
+        return result;
     }
 
 
     /** ditto */
-    BitArray opCat_r(bool b)
+    BitArray opCat_r( bool lhs )
     {
-        BitArray r;
+        BitArray result;
 
-        r.length = len + 1;
-        r[0] = b;
-        for (size_t i = 0; i < len; i++)
-            r[1 + i] = (*this)[i];
-        return r;
+        result.length = len + 1;
+        result[0] = lhs;
+        for( size_t i = 0; i < len; ++i )
+            result[1 + i] = (*this)[i];
+        return result;
     }
 
 
     /** ditto */
-    BitArray opCat(BitArray b)
+    BitArray opCat( BitArray rhs )
     {
-        BitArray r;
+        BitArray result;
 
-        r = this.dup();
-        r ~= b;
-        return r;
+        result = this.dup();
+        result ~= rhs;
+        return result;
     }
 
 
@@ -723,60 +839,80 @@ struct BitArray
         BitArray c;
 
         c = (a ~ b);
-        assert(c.length == 5);
-        assert(c[0] == 1);
-        assert(c[1] == 0);
-        assert(c[2] == 0);
-        assert(c[3] == 1);
-        assert(c[4] == 0);
+        assert( c.length == 5 );
+        assert( c[0] == 1 );
+        assert( c[1] == 0 );
+        assert( c[2] == 0 );
+        assert( c[3] == 1 );
+        assert( c[4] == 0 );
 
         c = (a ~ true);
-        assert(c.length == 3);
-        assert(c[0] == 1);
-        assert(c[1] == 0);
-        assert(c[2] == 1);
+        assert( c.length == 3 );
+        assert( c[0] == 1 );
+        assert( c[1] == 0 );
+        assert( c[2] == 1 );
 
         c = (false ~ a);
-        assert(c.length == 3);
-        assert(c[0] == 0);
-        assert(c[1] == 1);
-        assert(c[2] == 0);
+        assert( c.length == 3 );
+        assert( c[0] == 0 );
+        assert( c[1] == 1 );
+        assert( c[2] == 0 );
       }
     }
 
 
     /**
-     * Support for [$(I index)] operation for BitArray.
+     * Support for index operations, much like the behavior of built-in arrays.
+     *
+     * Params:
+     *  b   = The new bit value to set.
+     *  pos = The desired index position.
+     *
+     * In:
+     *  pos must be less than the length of this array.
+     *
+     * Returns:
+     *  The new value of the bit at pos.
      */
-    bool opIndexAssign(bool b, size_t i)
+    bool opIndexAssign( bool b, size_t pos )
     in
     {
-        assert(i < len);
+        assert( pos < len );
     }
     body
     {
-        if (b)
-            bts(ptr, i);
+        if( b )
+            bts( ptr, pos );
         else
-            btr(ptr, i);
+            btr( ptr, pos );
         return b;
     }
 
 
     /**
-     * Support for operator &= bit arrays.
+     * Updates the contents of this array with the result of a bitwise and
+     * operation between this array and the supplied array.
+     *
+     * Params:
+     *  rhs = The array with which to perform the bitwise and operation.
+     *
+     * In:
+     *  rhs.length must equal the length of this array.
+     *
+     * Returns:
+     *  A shallow copy of this array.
      */
-    BitArray opAndAssign(BitArray e2)
+    BitArray opAndAssign( BitArray rhs )
     in
     {
-        assert(len == e2.length);
+        assert( len == rhs.length );
     }
     body
     {
         auto dim = this.dim();
 
-        for (size_t i = 0; i < dim; i++)
-            ptr[i] &= e2.ptr[i];
+        for( size_t i = 0; i < dim; ++i )
+            ptr[i] &= rhs.ptr[i];
         return *this;
     }
 
@@ -789,29 +925,39 @@ struct BitArray
         BitArray b = [1,0,1,1,0];
 
         a &= b;
-        assert(a[0] == 1);
-        assert(a[1] == 0);
-        assert(a[2] == 1);
-        assert(a[3] == 0);
-        assert(a[4] == 0);
+        assert( a[0] == 1 );
+        assert( a[1] == 0 );
+        assert( a[2] == 1 );
+        assert( a[3] == 0 );
+        assert( a[4] == 0 );
       }
     }
 
 
     /**
-     * Support for operator |= for bit arrays.
+     * Updates the contents of this array with the result of a bitwise or
+     * operation between this array and the supplied array.
+     *
+     * Params:
+     *  rhs = The array with which to perform the bitwise or operation.
+     *
+     * In:
+     *  rhs.length must equal the length of this array.
+     *
+     * Returns:
+     *  A shallow copy of this array.
      */
-    BitArray opOrAssign(BitArray e2)
+    BitArray opOrAssign( BitArray rhs )
     in
     {
-        assert(len == e2.length);
+        assert( len == rhs.length );
     }
     body
     {
         auto dim = this.dim();
 
-        for (size_t i = 0; i < dim; i++)
-            ptr[i] |= e2.ptr[i];
+        for( size_t i = 0; i < dim; ++i )
+            ptr[i] |= rhs.ptr[i];
         return *this;
     }
 
@@ -824,29 +970,39 @@ struct BitArray
         BitArray b = [1,0,1,1,0];
 
         a |= b;
-        assert(a[0] == 1);
-        assert(a[1] == 0);
-        assert(a[2] == 1);
-        assert(a[3] == 1);
-        assert(a[4] == 1);
+        assert( a[0] == 1 );
+        assert( a[1] == 0 );
+        assert( a[2] == 1 );
+        assert( a[3] == 1 );
+        assert( a[4] == 1 );
       }
     }
 
 
     /**
-     * Support for operator ^= for bit arrays.
+     * Updates the contents of this array with the result of a bitwise xor
+     * operation between this array and the supplied array.
+     *
+     * Params:
+     *  rhs = The array with which to perform the bitwise xor operation.
+     *
+     * In:
+     *  rhs.length must equal the length of this array.
+     *
+     * Returns:
+     *  A shallow copy of this array.
      */
-    BitArray opXorAssign(BitArray e2)
+    BitArray opXorAssign( BitArray rhs )
     in
     {
-        assert(len == e2.length);
+        assert( len == rhs.length );
     }
     body
     {
         auto dim = this.dim();
 
-        for (size_t i = 0; i < dim; i++)
-            ptr[i] ^= e2.ptr[i];
+        for( size_t i = 0; i < dim; ++i )
+            ptr[i] ^= rhs.ptr[i];
         return *this;
     }
 
@@ -859,31 +1015,40 @@ struct BitArray
         BitArray b = [1,0,1,1,0];
 
         a ^= b;
-        assert(a[0] == 0);
-        assert(a[1] == 0);
-        assert(a[2] == 0);
-        assert(a[3] == 1);
-        assert(a[4] == 1);
+        assert( a[0] == 0 );
+        assert( a[1] == 0 );
+        assert( a[2] == 0 );
+        assert( a[3] == 1 );
+        assert( a[4] == 1 );
       }
     }
 
 
     /**
-     * Support for operator -= for bit arrays.
+     * Updates the contents of this array with the result of this array minus
+     * the supplied array.  $(I a - b) for BitArrays means the same thing as
+     * $(I a &amp; ~b).
      *
-     * $(I a -= b) for BitArrays means the same thing as $(I a &amp;= ~b).
+     * Params:
+     *  rhs = The array with which to perform the subtraction operation.
+     *
+     * In:
+     *  rhs.length must equal the length of this array.
+     *
+     * Returns:
+     *  A shallow copy of this array.
      */
-    BitArray opSubAssign(BitArray e2)
+    BitArray opSubAssign( BitArray rhs )
     in
     {
-        assert(len == e2.length);
+        assert( len == rhs.length );
     }
     body
     {
         auto dim = this.dim();
 
-        for (size_t i = 0; i < dim; i++)
-            ptr[i] &= ~e2.ptr[i];
+        for( size_t i = 0; i < dim; ++i )
+            ptr[i] &= ~rhs.ptr[i];
         return *this;
     }
 
@@ -896,19 +1061,26 @@ struct BitArray
         BitArray b = [1,0,1,1,0];
 
         a -= b;
-        assert(a[0] == 0);
-        assert(a[1] == 0);
-        assert(a[2] == 0);
-        assert(a[3] == 0);
-        assert(a[4] == 1);
+        assert( a[0] == 0 );
+        assert( a[1] == 0 );
+        assert( a[2] == 0 );
+        assert( a[3] == 0 );
+        assert( a[4] == 1 );
       }
     }
 
 
     /**
-     * Support for operator ~= for bit arrays.
+     * Updates the contents of this array with the result of this array
+     * concatenated with the supplied array.
+     *
+     * Params:
+     *  rhs = The array with which to perform the concatenation operation.
+     *
+     * Returns:
+     *  A shallow copy of this array.
      */
-    BitArray opCatAssign(bool b)
+    BitArray opCatAssign( bool b )
     {
         length = len + 1;
         (*this)[len - 1] = b;
@@ -924,27 +1096,25 @@ struct BitArray
         BitArray b;
 
         b = (a ~= true);
-        assert(a[0] == 1);
-        assert(a[1] == 0);
-        assert(a[2] == 1);
-        assert(a[3] == 0);
-        assert(a[4] == 1);
-        assert(a[5] == 1);
+        assert( a[0] == 1 );
+        assert( a[1] == 0 );
+        assert( a[2] == 1 );
+        assert( a[3] == 0 );
+        assert( a[4] == 1 );
+        assert( a[5] == 1 );
 
-        assert(b == a);
+        assert( b == a );
       }
     }
 
 
-    /**
-     * ditto
-     */
-    BitArray opCatAssign(BitArray b)
+    /** ditto */
+    BitArray opCatAssign( BitArray rhs )
     {
         auto istart = len;
-        length = len + b.length;
-        for (auto i = istart; i < len; i++)
-            (*this)[i] = b[i - istart];
+        length = len + rhs.length;
+        for( auto i = istart; i < len; ++i )
+            (*this)[i] = rhs[i - istart];
         return *this;
     }
 
@@ -958,14 +1128,14 @@ struct BitArray
         BitArray c;
 
         c = (a ~= b);
-        assert(a.length == 5);
-        assert(a[0] == 1);
-        assert(a[1] == 0);
-        assert(a[2] == 0);
-        assert(a[3] == 1);
-        assert(a[4] == 0);
+        assert( a.length == 5 );
+        assert( a[0] == 1 );
+        assert( a[1] == 0 );
+        assert( a[2] == 0 );
+        assert( a[3] == 1 );
+        assert( a[4] == 0 );
 
-        assert(c == a);
+        assert( c == a );
       }
     }
 }

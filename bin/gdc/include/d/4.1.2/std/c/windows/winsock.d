@@ -381,6 +381,7 @@ enum: int
 	MSG_OOB =        0x1,
 	MSG_PEEK =       0x2,
 	MSG_DONTROUTE =  0x4,
+        MSG_NOSIGNAL =   0x0, /// not supported on win32, would be 0x4000 if it was
 }
 
 

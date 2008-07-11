@@ -106,7 +106,7 @@ class LineIterator(T) : StreamIterator!(T)
                             int slice = i;
                             if (i && content[i-1] is '\r')
                                 --slice;
-                            set (content.ptr, 0, slice);
+                            set (content.ptr, 0, slice, i);
                             return found (i);
                             }
 
@@ -114,3 +114,21 @@ class LineIterator(T) : StreamIterator!(T)
         }
 }
 
+
+
+/*******************************************************************************
+
+*******************************************************************************/
+
+debug (LineIterator)
+{
+        import tango.io.Buffer;
+        import tango.io.Console;
+
+        void main()
+        {
+                auto lines = new LineIterator!(char)(new Buffer("one\ntwo\r\nthree"));
+                foreach (i, line, delim; lines)
+                         Cout (line) (delim);
+        }
+}

@@ -75,6 +75,36 @@ version( linux )
     int   shmdt(void*);
     int   shmget(key_t, size_t, int);
 }
+else version( freebsd )
+{
+    const SHM_RDONLY    = 010000;
+    const SHM_RND       = 020000;
+	const SHMLBA		= 1 << 12; // PAGE_SIZE = (1<<PAGE_SHIFT)
+
+    alias c_ulong   shmatt_t;
+
+    struct shmid_ds
+    {
+        ipc_perm    shm_perm;
+        size_t      shm_segsz;
+        time_t      shm_atime;
+        c_ulong     __unused1;
+        time_t      shm_dtime;
+        c_ulong     __unused2;
+        time_t      shm_ctime;
+        c_ulong     __unused3;
+        pid_t       shm_cpid;
+        pid_t       shm_lpid;
+        shmatt_t    shm_nattch;
+        c_ulong     __unused4;
+        c_ulong     __unused5;
+    }
+
+    void* shmat(int, void*, int);
+    int   shmctl(int, int, shmid_ds*);
+    int   shmdt(void*);
+    int   shmget(key_t, size_t, int);
+}
 else version( darwin )
 {
 

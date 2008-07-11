@@ -227,11 +227,7 @@ T[] format(T) (T[] dst, NumType x, uint decimals=Dec, int e=Exp)
            // emit first digit, and decimal point
            *p++ = toDigit (x, count);
            if (decimals)
-              {
-              *p++ = '.';
-              if (exp < 0)
-                  count += exp;
-              }
+               *p++ = '.';
 
            // emit rest of mantissa
            while (decimals-- > 0)
@@ -241,15 +237,21 @@ T[] format(T) (T[] dst, NumType x, uint decimals=Dec, int e=Exp)
            if (exp)
               {
               *p++ = 'e';
-              *p++ = (exp < 0) ? '-' : '+';
-              if (exp < 0)
-                  exp = -exp;
+              *p++ = (exp < 0) ? (exp = -exp, '-') : '+';
 
-              if (exp >= 100)
+              if (exp >= 1000)
                  {
+                 *p++ = (exp/1000) + '0';
+                 exp %= 1000;
                  *p++ = (exp/100) + '0';
                  exp %= 100;
                  }
+              else
+                 if (exp >= 100)
+                    {
+                    *p++ = (exp/100) + '0';
+                    exp %= 100;
+                    }
 
               *p++ = (exp/10) + '0';
               *p++ = (exp%10) + '0';
@@ -427,9 +429,12 @@ private NumType pow10 (uint exp)
                 1.0e64L,
                 1.0e128L,
                 1.0e256L,
+                1.0e512L,
+                1.0e1024L,
+                1.0e2048L,
                 ];
 
-        if (exp >= 512)
+        if (exp >= 4096)
             throw new IllegalArgumentException ("Float.pow10 :: exponent too large");
 
         NumType mult = 1.0;
@@ -477,11 +482,11 @@ debug (Float)
 
         void main() 
         {
-                char[20] tmp;
-
+                char[30] tmp;
+                
                 Cout (format(tmp, 1)).newline;
                 Cout (format(tmp, 0)).newline;
-                Cout (format(tmp, 0.000001)).newline;
+                Cout (format(tmp, 0.000001)).newline.newline;
 
                 Cout (format(tmp, 3.14159, 6, 0)).newline;
                 Cout (format(tmp, 3e100, 6, 3)).newline;

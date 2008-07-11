@@ -14,6 +14,8 @@
 
 module tango.group.log;
 
+pragma (msg, "Please post your usage of tango.group to this ticket: http://dsource.org/projects/tango/ticket/1013");
+
 public import tango.util.log.Log;
 public import tango.util.log.Logger;
 public import tango.util.log.Hierarchy;

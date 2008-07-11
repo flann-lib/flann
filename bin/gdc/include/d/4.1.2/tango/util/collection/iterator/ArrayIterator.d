@@ -57,8 +57,8 @@ public class ArrayIterator(T) : GuardIterator!(T)
         }
 
         /**
-         * Implements java.util.Iterator.more.
-         * See_Also: java.util.Iterator.more
+         * Implements tango.util.collection.model.Iterator.more.
+         * See_Also: tango.util.collection.model.Iterator.more
         **/
         public bool more()
         {
@@ -78,8 +78,8 @@ public class ArrayIterator(T) : GuardIterator!(T)
         }
 
         /**
-         * Implements java.util.Iterator.get().
-         * See_Also: java.util.Iterator.get()
+         * Implements tango.util.collection.model.Iterator.get().
+         * See_Also: tango.util.collection.model.Iterator.get()
         **/
         public T get()
         {

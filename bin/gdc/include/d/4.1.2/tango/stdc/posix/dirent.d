@@ -95,6 +95,48 @@ else version( darwin )
 
     dirent* readdir(DIR*);
 }
+else version( freebsd )
+{
+    enum
+    {
+        DT_UNKNOWN  = 0,
+        DT_FIFO     = 1,
+        DT_CHR      = 2,
+        DT_DIR      = 4,
+        DT_BLK      = 6,
+        DT_REG      = 8,
+        DT_LNK      = 10,
+        DT_SOCK     = 12,
+        DT_WHT      = 14
+    }
+
+    align(4)
+    struct dirent
+    {
+		uint d_fileno;
+		ushort d_reclen;
+		ubyte d_type;
+		ubyte d_namelen;
+		char d_name[256];
+    }
+
+	struct _telldir;
+    struct DIR
+    {
+        int dd_fd;
+		c_long dd_loc;
+		c_long dd_size;
+		char* dd_buf;
+		int dd_len;
+		c_long dd_seek;
+		c_long dd_rewind;
+		int dd_flags;
+		void* dd_lock;
+		_telldir* dd_td;
+    }
+
+    dirent* readdir(DIR*);
+}
 else
 {
     dirent* readdir(DIR*);

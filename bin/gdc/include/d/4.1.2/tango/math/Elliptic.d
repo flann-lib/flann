@@ -87,8 +87,7 @@ real ellipticF(real phi, real m )
     if( phi < 0.0L ){
         phi = -phi;
         sign = -1;
-    } else
-    sign = 0;
+    } else sign = 0;
     b = sqrt(a);
     t = tan( phi );
     if( fabs(t) > 10.0L ) {
@@ -140,7 +139,7 @@ done:
  * geometric mean algorithm.
  */
 
-real ellipticE(real phi, real m )
+real ellipticE(real phi, real m)
 {
     real a, b, c, e, temp, t, E;
     int d, mod, npio2, sign;
@@ -282,7 +281,7 @@ const real [] Q = [
  *
  * E(m) = $(INTEGRATE 0, &pi/2) sqrt( 1- m $(POWER sin, 2) t) dt
  *
- * Where m = 1 - m1, using the approximation
+ * where m = 1 - x, using the approximation
  *
  *      P(x)  -  x log x Q(x).
  *
@@ -343,4 +342,64 @@ unittest {
     real x=0.5653L;
     assert(ellipticKComplete(1-x) == ellipticF(PI_2, x) );
     assert(ellipticEComplete(1-x) == ellipticE(PI_2, x) );
+}
+
+
+/**
+ *  Incomplete elliptic integral of the third kind
+ *
+ * Approximates the integral
+ *
+ * PI(n; phi | m) = $(INTEGRATE t=0, phi) dt/((1 - n $(POWER sin,2)t) * sqrt( 1- m $(POWER sin, 2) t))
+ *
+ * of amplitude phi, modulus m, and characteristic n using Gauss-Legendre
+ * quadrature.
+ * 
+ * Note that ellipticPi(PI_2, m, 1) is infinite for any m.
+ */
+real ellipticPi(real phi, real m, real n)
+{
+    // BUGS: This implementation suffers from poor precision.
+    const double [] t = [
+        0.9931285991850949, 0.9639719272779138,
+        0.9122344282513259, 0.8391169718222188,
+        0.7463319064601508, 0.6360536807265150,
+        0.5108670019508271, 0.3737060887154195,
+        0.2277858511416451, 0.7652652113349734e-1
+    ];
+    const double [] w =[
+        0.1761400713915212e-1, 0.4060142980038694e-1,
+        0.6267204833410907e-1, 0.8327674157670475e-1,
+        0.1019301198172404, 0.1181945319615184,
+        0.1316886384491766, 0.1420961093183820,
+        0.1491729864726037, 0.1527533871307258
+    ];
+        bool b1 = (m==1) && abs(phi-90)<=1e-8;
+        bool b2 = (n==1) && abs(phi-90)<=1e-8;
+        if (b1 || b2) return real.infinity;
+        real c1 = 0.87266462599716e-2 * phi;
+        real c2 = c1;
+        double x = 0;
+        for (int i=0; i< t.length; ++i) {
+            real c0 = c2 * t[i];
+            real t1 = c1 + c0;
+            real t2 = c1 - c0;
+            real s1 = sin(t1);  //  sin(c1 * (1 + t[i]))
+            real s2 = sin(t2);  //  sin(c1 * (1 - t[i]))
+            real f1 = 1.0 / ((1.0 - n * s1 * s1) * sqrt(1.0 - m * s1 * s1));
+            real f2 = 1.0 / ((1.0 - n * s2 * s2) * sqrt(1.0 - m * s2 * s2));
+            x+= w[i]*(f1+f2);
+        }
+        return c1 * x;
+}
+
+/**
+ *  Complete elliptic integral of the third kind
+ */
+real ellipticPiComplete(real m, real n)
+in {
+ assert(m>=-1.0 && m<=1.0);
+}
+body {
+    return ellipticPi(PI_2, m, n);
 }
