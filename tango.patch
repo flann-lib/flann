@@ -1,0 +1,30 @@
+diff -Naur tango/util/Convert.d /cs/SCRATCH/mariusm/flann-1.0-src/bin/gdc/include/d/4.1.2/tango/util/Convert.d
+--- tango/util/Convert.d	2008-01-31 12:04:34.000000000 -0800
++++ /cs/SCRATCH/mariusm/flann-1.0-src/bin/gdc/include/d/4.1.2/tango/util/Convert.d	2008-07-02 15:17:27.000000000 -0700
+@@ -368,13 +368,13 @@
+ template uintSuperType(T,U)
+ {
+     static if( is( T == ulong ) || is( U == ulong ) )
+-        alias ulong sintSuperType;
++        alias ulong uintSuperType;
+     else static if( is( T == uint ) || is( U == uint ) )
+-        alias uint sintSuperType;
++        alias uint uintSuperType;
+     else static if( is( T == ushort ) || is( U == ushort ) )
+-        alias ushort sintSuperType;
++        alias ushort uintSuperType;
+     else static if( is( T == ubyte ) || is( U == ubyte ) )
+-        alias ubyte sintSuperType;
++        alias ubyte uintSuperType;
+ }
+ 
+ template uintOfSize(uint bytes)
+@@ -847,7 +847,7 @@
+     /+static if( is( S == bool ) )
+         return (value ? 1.0 : 0.0);
+ 
+-    else+/ static if( isIntegerType!(S) )
++    else+/ static if( isIntegerType!(S) || isRealType!(S))
+         return cast(D) value;
+ 
+     /+else static if( isCharType!(S) )
