@@ -15,14 +15,24 @@ ifndef PROFILE
 	PROFILE := release
 endif
 	
+
 ifeq ($(PROFILE),debug)
 	DFLAGS := ${DFLAGS} -g -debug
 endif
 ifeq (${PROFILE},release)
 #	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-fno-bounds-check -C-q,-funroll-loops
 #	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe -C-q,-march=pentium4
-	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe -C-q,-march=i686
+	DFLAGS := ${DFLAGS} -O -inline -release -C-q,-pipe 
 endif
+
+ARCH=$(shell uname -m)
+ifeq (${ARCH},i686)
+	DFLAGS := ${DFLAGS} -C-q,-march=i868
+endif
+ifeq (${ARCH},x86_64)
+endif
+
+
 
 WARNS = -W -Wall
 INCLUDES = -Iinclude
@@ -84,6 +94,6 @@ program:
 
 library:
 	@mkdir -p ${BUILD_DIR}/lib
-	${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
+	${BIN_DIR}/build -oq${LIB_OBJ_DIR} ${LIB_FILE} -I${SRC_DIR} -I${LIBS_DIR} -C-q,-fPIC -of${LIB_TARGET} ${LIB_DFLAGS} ${LLIBS}
 	cp `${BIN_DIR}/gdc -print-file-name=libgphobos.a` ${BUILD_DIR}/lib
 
