@@ -15,7 +15,7 @@
  *************************************************************************/
 module util.Profile;
 
-version (Posix) {
+version (linux) {
  	import tango.stdc.posix.sys.time;
 	import tango.stdc.posix.unistd;
 	
@@ -48,7 +48,7 @@ else {
 class StartStopTimer
 {
 	private:
-	version (Posix) {
+	version (linux) {
 		tms startTime;
 		int clk_tck;
 	}
@@ -66,7 +66,7 @@ class StartStopTimer
 	 * Constructor.
 	 */
 	public this() {
-		version (Posix) {
+		version (linux) {
 			clk_tck = sysconf(_SC_CLK_TCK);
 		}
 		reset();
@@ -76,7 +76,7 @@ class StartStopTimer
 	 * Starts the timer.
 	 */
 	public void start() {
-		version(Posix) {
+		version(linux) {
 			times(&startTime);
 		}
 		else {
@@ -88,7 +88,7 @@ class StartStopTimer
 	 * Stops the timer ans updates timer value.
 	 */
 	public void stop() {
-		version (Posix) {
+		version (linux) {
 			tms stopTime;
 			times(&stopTime);
 			value += (cast(typeof(value))(stopTime.tms_utime+stopTime.tms_stime-(startTime.tms_utime+startTime.tms_stime)))/clk_tck;

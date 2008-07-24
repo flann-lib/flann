@@ -27,7 +27,7 @@ endif
 
 ARCH=$(shell uname -m)
 ifeq (${ARCH},i686)
-	DFLAGS := ${DFLAGS} -C-q,-march=i868
+	DFLAGS := ${DFLAGS} -C-q,-march=i686
 endif
 ifeq (${ARCH},x86_64)
 endif

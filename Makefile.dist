@@ -1,21 +1,23 @@
-VER=1.0
+VER=1.01
+
+
 
 dist: dist-bin-linux dist-src dist-gdc
 	
 
 dist-bin-linux:
-	rm -rf dist/flann-${VER}-linux*
-	@mkdir -p dist/flann-${VER}-linux
-	cp -r build/* dist/flann-${VER}-linux
-	rm -rf dist/flann-${VER}-linux/python/*utils*
-	rm -rf dist/flann-${VER}-linux/python/tests/*utils*
-	rm -rf dist/flann-${VER}-linux/python/tests/*memusage*
-	mkdir -p dist/flann-${VER}-linux/doc
-	cp doc/manual.pdf dist/flann-${VER}-linux/doc
-	cp README dist/flann-${VER}-linux
-	cp -r data dist/flann-${VER}-linux
-	-rm flann-${VER}-linux.zip
-	(cd dist; zip -r -9 flann-${VER}-linux.zip flann-${VER}-linux)
+	rm -rf dist/flann-${VER}-linux-${CPU}*
+	@mkdir -p dist/flann-${VER}-linux-${CPU}
+	cp -r build/* dist/flann-${VER}-linux-${CPU}
+	rm -rf dist/flann-${VER}-linux-${CPU}/python/*utils*
+	rm -rf dist/flann-${VER}-linux-${CPU}/python/tests/*utils*
+	rm -rf dist/flann-${VER}-linux-${CPU}/python/tests/*memusage*
+	mkdir -p dist/flann-${VER}-linux-${CPU}/doc
+	cp doc/manual.pdf dist/flann-${VER}-linux-${CPU}/doc
+	cp README dist/flann-${VER}-linux-${CPU}
+	cp -r data dist/flann-${VER}-linux-${CPU}
+	-rm flann-${VER}-linux-${CPU}.zip
+	(cd dist; zip -r -9 flann-${VER}-linux-${CPU}.zip flann-${VER}-linux-${CPU})
 
 
 dist-src:
@@ -26,14 +28,22 @@ dist-src:
 	cp doc/manual.pdf dist/flann-${VER}-src/doc
 	mkdir -p dist/flann-${VER}-src/bin
 	(cd bin; cp -r `ls | grep -v gdc` ../dist/flann-${VER}-src/bin)
+	cp bin/gdc dist/flann-${VER}-src/bin
 	cp Makefile dist/flann-${VER}-src
 	cp README dist/flann-${VER}-src
 	-rm flann-${VER}-src.zip
 	(cd dist; zip -r -9 flann-${VER}-src.zip flann-${VER}-src)
 
-dist-gdc:
-	rm -rf dist/gdc
+dist-gdc-i686:
+	rm -rf dist/gdc-i686
 	@mkdir -p dist
-	cp -r bin/gdc dist
-	-rm gdc.zip
-	(cd dist; zip -r -9 gdc.zip gdc)
+	cp -r bin/gdc-i686 dist
+	-rm gdc-i686.zip
+	(cd dist; zip -r -9 gdc-i686.zip gdc-i686)
+
+dist-gdc-x86_64:
+	rm -rf dist/gdc-x86_64
+	@mkdir -p dist
+	cp -r bin/gdc-x86_64 dist
+	-rm gdc-x86_64.zip
+	(cd dist; zip -r -9 gdc-x86_64.zip gdc-x86_64)

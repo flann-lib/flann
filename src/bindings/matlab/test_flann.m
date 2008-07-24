@@ -98,7 +98,7 @@ ok = 1;
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
     end
-    %run_test('search with autotune',@test_autotune_search);
+    run_test('search with autotune',@test_autotune_search);
     
     function test_index_kdtree_search
         [index, search_params ] = flann_build_index(dataset, struct('algorithm','kdtree', 'trees',8,...
@@ -170,7 +170,7 @@ ok = 1;
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
     end
-    %run_test('index autotune search',@test_index_autotune_search);    
+    run_test('index autotune search',@test_index_autotune_search);    
     
     status();
 end
