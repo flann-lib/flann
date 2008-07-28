@@ -26,6 +26,7 @@ import util.Utils;
 import util.Heap;
 
 import tango.math.Math;
+import tango.io.Stdout;
 
 /**
  * Hierarchical kmeans index
@@ -54,13 +55,21 @@ class KMeansTree(T) : NNIndex
 	/**
 	 * The branching factor used in the hierarchical k-means clustering
 	 */
-	public uint branching;
+	private uint branching;
 	
 	/**
 	 * Maximum number of iterations to use when performing k-means 
 	 * clustering
 	 */
 	private uint max_iter;
+	
+	/**
+	 * Cluster border index. This is used in the tree search phase when determining
+	 * the closest cluster to explore next. A zero value takes into account only
+	 * the cluster centers, a value greater then zero also take into account the size
+	 * of the cluster.
+	 */
+	public float cb_index;
 	
 	/**
 	 * The dataset used by this index
@@ -85,6 +94,10 @@ class KMeansTree(T) : NNIndex
 		 */
 		float radius;
 		/**
+		 * The cluster mean radius.
+		 */
+		float mean_radius;
+		/**
 		 * The cluster variance.
 		 */
 		float variance;
@@ -100,6 +113,10 @@ class KMeansTree(T) : NNIndex
 		 * Node points (only for terminal nodes)
 		 */
 		int[] indices;
+		/**
+		 * Level
+		 */
+		int level;
 	}
 	alias KMeansNodeSt* KMeansNode;
 	
@@ -178,6 +195,7 @@ class KMeansTree(T) : NNIndex
 		else {
 			throw new FLANNException("Unknown algorithm for choosing initial centers.");
 		}
+		cb_index = 1;
 		
 		this.dataset = inputData;	
  		heap = new BranchHeap(inputData.rows);
@@ -438,11 +456,7 @@ class KMeansTree(T) : NNIndex
 		return centers[0..centerCount];
 	}
 
-
-
-
-
-
+	
 	/**
 	 * Builds the index
 	 */
@@ -455,7 +469,7 @@ class KMeansTree(T) : NNIndex
 		
 		root = pool.allocate!(KMeansNodeSt);
 		computeNodeStatistics(root, indices);
-		computeClustering(root, indices, branching);
+		computeClustering(root, indices, branching,0);
 	}
 	
 
@@ -511,15 +525,15 @@ class KMeansTree(T) : NNIndex
 	 *     
 	 * TODO: for 1-sized clusters don't store a cluster center (it's the same as the single cluster point)
 	 */
-	private void computeClustering(KMeansNode node, int[] indices, int branching)
+	private void computeClustering(KMeansNode node, int[] indices, int branching, int level)
 	{
 		int n = indices.length;
 		node.size = n;
+		node.level = level;
 		
 		if (indices.length < branching) {
 			node.indices = indices.sort;
             (cast(byte*)&node.childs)[0..node.childs.sizeof] = 0;
-// 			node.childs.length = 0;
 			return;
 		}
 		
@@ -529,7 +543,6 @@ class KMeansTree(T) : NNIndex
 		if (initial_centers.length<branching) {
 		    node.indices = indices.sort;
             (cast(byte*)&node.childs)[0..node.childs.sizeof] = 0;
-// 		node.childs.length = 0;
 			return;
 		}
 		
@@ -643,22 +656,27 @@ class KMeansTree(T) : NNIndex
 			int s = count[c];
 			
 			float variance = 0;
+			float mean_radius =0;
 			for (int i=0;i<n;++i) {
-				if (belongs_to[i]==c) {					
-					variance += squaredDist(vecs[indices[i]]);
+				if (belongs_to[i]==c) {
+					float d = squaredDist(vecs[indices[i]]);
+					variance += d;
+					mean_radius += sqrt(d);
 					swap(indices[i],indices[end]);
 					swap(belongs_to[i],belongs_to[end]);
 					end++;
 				}
 			}
 			variance /= s;
+			mean_radius /= s;
 			variance -= squaredDist(centers[c]);
 			
 			node.childs[c] = pool.allocate!(KMeansNodeSt);
 			node.childs[c].radius = radiuses[c];
 			node.childs[c].pivot = centers[c];
 			node.childs[c].variance = variance;
-			computeClustering(node.childs[c],indices[start..end],branching);
+			node.childs[c].mean_radius = mean_radius;
+			computeClustering(node.childs[c],indices[start..end],branching, level+1);
 			start=end;
 		}
 		
@@ -668,7 +686,7 @@ class KMeansTree(T) : NNIndex
 		delete belongs_to;
 	}
 	
-	
+	 public bool first_time = true;
 	/** 
 	 * Find set of nearest neighbors to vec. Their indices are stored inside
 	 * the result object. 
@@ -680,6 +698,12 @@ class KMeansTree(T) : NNIndex
 	 */
 	public void findNeighbors(ResultSet result, float[] vec, int maxCheck)
 	{
+		if (first_time) {
+			logger.info(sprint("cb_index is: {}",cb_index));
+			first_time = false;
+		}
+		
+		
 		if (maxCheck==-1) {
 			findExactNN(root, result, vec);
 		}
@@ -696,7 +720,9 @@ class KMeansTree(T) : NNIndex
 			}
 			assert(result.full);
 		}
+		
 	}
+	
 	
 	/**
 	 * Performs one descent in the hierarchical k-means tree. The branches not
@@ -704,6 +730,8 @@ class KMeansTree(T) : NNIndex
 	 */
 	private void findNN(KMeansNode node, ResultSet result, float[] vec)
 	{
+//		Stderr.formatln("{}",node.level);
+		
 		// Ignore those clusters that are too far away
 		{
 			float bsq = squaredDist(vec, node.pivot);
@@ -758,13 +786,18 @@ class KMeansTree(T) : NNIndex
 		int nc = node.childs.length;
 	
 		int best_index = 0;
-		distances[best_index] = squaredDist(q,node.childs[best_index].pivot);
+		distances[best_index] = squaredDist(q,node.childs[best_index].pivot) 
+						- cb_index*node.childs[best_index].variance;
+		
+//		logger.info(sprint("center dist: {}, variance: {}, dist: {}", t, node.childs[best_index].variance, t-node.childs[best_index].variance));
 		
 		for (int i=1;i<nc;++i) {
-			distances[i] = squaredDist(q,node.childs[i].pivot);
+			distances[i] = squaredDist(q,node.childs[i].pivot)
+						- cb_index* node.childs[i].variance;
 			if (distances[i]<distances[best_index]) {
 				best_index = i;
 			}
+//			logger.info(sprint("center dist: {}, variance: {}, dist: {}", t, node.childs[i].variance, t-node.childs[i].variance));
 		}
 		
 		return best_index;

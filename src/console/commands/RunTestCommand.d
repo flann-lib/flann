@@ -9,6 +9,7 @@ import console.commands.IndexCommand;
 import nn.Testing;
 import dataset.Dataset;
 import algo.NNIndex;
+import algo.KMeansTree;
 import console.report.Report;
 import util.Logger;
 import util.Utils;
@@ -33,7 +34,8 @@ class RunTestCommand : IndexCommand
 	bool altEstimator = false;
 	char[] approxMatch;
 	float maxTime;
-
+	char[] cbIndexList;
+	
 	this(string name) 
 	{
 		super(name);
@@ -46,6 +48,7 @@ class RunTestCommand : IndexCommand
 		register(skipMatches,"K","skip-matches", 0u,"Skip the first NUM matches at test phase.");
 		register(approxMatch,"X","approx-match", "","File to save approx matches to.");
 		register(maxTime,"T","max-time", 0 ,"Max time for one search.");
+		register(cbIndexList,"R","cb-index", "1" ,"Cluster-border index.");
  			
  		description = super.description~" Test the index against the test dataset (ground truth given in the match file).";
 	}
@@ -82,12 +85,22 @@ class RunTestCommand : IndexCommand
 		char[] dateTime = sprint("{}-{}-{} {:D2}:{:D2}:{:D2}",d.date.year,d.date.month,d.date.day,d.time.hours,d.time.minutes,d.time.seconds).dup;
 		report("date",dateTime);
 
+		float[] cbIndex = to!(float[])(split(cbIndexList,","));
+		KMeansTree!(T) kmeansIndex = null;
+		if (algorithm=="kmeans") {
+			kmeansIndex = cast(KMeansTree!(T))index;
+		}
+		
 		if (precisionList != "") {
-			char[][] precisionStrList = split(precisionList,",");
-			float[] precisions = to!(float[])(precisionStrList);
+			float[] precisions = to!(float[])(split(precisionList,","));
 			
-			testNNIndexPrecisions!(T,true,true)(index,inputData!(T),testData, precisions, nn, skipMatches, maxTime );
- 			
+			foreach (r;cbIndex) {
+				if (kmeansIndex !is null) {
+					kmeansIndex.first_time = true;
+					kmeansIndex.cb_index = r;
+				}
+				testNNIndexPrecisions!(T,true,true)(index,inputData!(T),testData, precisions, nn, skipMatches, maxTime );
+			}
 		}
 		else {
 			try {
@@ -97,8 +110,14 @@ class RunTestCommand : IndexCommand
 			checks = to!(typeof(checks))(split(checkList,","));
 
 		
-			foreach (c;checks) {
-				testNNIndex!(T,true,true)(index,inputData!(T),testData, c, nn, skipMatches);
+			foreach (r;cbIndex) {
+				if (kmeansIndex !is null) {
+					kmeansIndex.first_time = true;
+					kmeansIndex.cb_index = r;
+				}
+				foreach (c;checks) {
+					testNNIndex!(T,true,true)(index,inputData!(T),testData, c, nn, skipMatches);
+				}
 			}
 		}
 		
