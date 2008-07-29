@@ -41,3 +41,4 @@ mexfile : ${SRC_DIR}/nearest_neighbors.cc Makefile ${LIB_TARGET}
 
 
 clean:
+	rm -rf ${BUILD_DIR}/matlab
