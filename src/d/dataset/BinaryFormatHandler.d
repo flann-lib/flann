@@ -25,6 +25,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		}
 		
 		ulong fileSize = FilePath(file).fileSize;
+		logger.info(sprint("File size is {}: ",fileSize));
 		int count = fileSize / (veclen*U.sizeof);
 		
 		logger.info(sprint("Reading {} features from file {}: ",count,file));

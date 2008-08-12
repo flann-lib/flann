@@ -145,6 +145,15 @@ class KMeansTree(T) : NNIndex
 	 */
 	private int memoryCounter;
 	
+	
+	/**
+	 * Array with distances to the kmeans domains of a node.
+	 * Used during search phase.
+	 */
+	private float[] domain_distances;
+	
+	
+	
 	alias T[][] function(int k, T[][] vecs, int[] indices) centersAlgFunction;
 	/**
 	 * Associative array with functions to use for choosing the cluster centers. 
@@ -197,6 +206,7 @@ class KMeansTree(T) : NNIndex
 		}
 		cb_index = 1;
 		
+		domain_distances = allocate!(float[])(branching);
 		this.dataset = inputData;	
  		heap = new BranchHeap(inputData.rows);
 		root = null;
@@ -230,6 +240,7 @@ class KMeansTree(T) : NNIndex
 		delete pool;
 		delete heap;
 		delete indices;
+		free(domain_distances);
 	}
 
 	/**
@@ -730,8 +741,6 @@ class KMeansTree(T) : NNIndex
 	 */
 	private void findNN(KMeansNode node, ResultSet result, float[] vec)
 	{
-//		Stderr.formatln("{}",node.level);
-		
 		// Ignore those clusters that are too far away
 		{
 			float bsq = squaredDist(vec, node.pivot);
@@ -754,22 +763,11 @@ class KMeansTree(T) : NNIndex
 			
 			for (int i=0;i<node.indices.length;++i) {		
 				result.addPoint(vecs[node.indices[i]], node.indices[i]);
-			}	
+			}
 		} 
 		else {
-			int nc = node.childs.length;
-			static float distances[];
-			if (distances is null || distances.length!=nc) distances = new float[nc];
-			int ci = getNearestCenter(node, vec, distances);
-			
-			for (int i=0;i<nc;++i) {
-				if (i!=ci) {
- 					heap.insert(BranchSt(node.childs[i],distances[i]));
-//					heap.insert(BranchSt(node.childs[i], getDistanceToBorder(node.childs[i].pivot,node.childs[ci].pivot,vec)));
-				}
-			}
-			
-			findNN(node.childs[ci],result,vec);
+			int closest_center = exploreNodeBranches(node, vec);			
+			findNN(node.childs[closest_center],result,vec);
 		}		
 	}
 	
@@ -777,33 +775,41 @@ class KMeansTree(T) : NNIndex
 	 * Helper function that computes the nearest childs of a node to a given query point.
 	 * Params:
 	 *     node = the node
-	 *     q = teh query point
+	 *     q = the query point
 	 *     distances = array with the distances to each child node.
 	 * Returns:
 	 */	
-	private int getNearestCenter(KMeansNode node, float[] q, ref float[] distances)
+	private int exploreNodeBranches(KMeansNode node, float[] q)
 	{
 		int nc = node.childs.length;
-	
+//		static float distances[];
+//		if (distances is null || distances.length!=nc) distances = new float[nc];
+//		scope float distances[] =  new float[nc];
+		
 		int best_index = 0;
-		distances[best_index] = squaredDist(q,node.childs[best_index].pivot) 
-						- cb_index*node.childs[best_index].variance;
-		
-//		logger.info(sprint("center dist: {}, variance: {}, dist: {}", t, node.childs[best_index].variance, t-node.childs[best_index].variance));
-		
+		domain_distances[best_index] = squaredDist(q,node.childs[best_index].pivot); 
 		for (int i=1;i<nc;++i) {
-			distances[i] = squaredDist(q,node.childs[i].pivot)
-						- cb_index* node.childs[i].variance;
-			if (distances[i]<distances[best_index]) {
+			domain_distances[i] = squaredDist(q,node.childs[i].pivot);
+			if (domain_distances[i]<domain_distances[best_index]) {
 				best_index = i;
 			}
-//			logger.info(sprint("center dist: {}, variance: {}, dist: {}", t, node.childs[i].variance, t-node.childs[i].variance));
+		}
+		
+		float[] best_center = node.childs[best_index].pivot;
+		for (int i=0;i<nc;++i) {
+			if (i != best_index) {
+				domain_distances[i] -= cb_index*node.childs[i].variance;
+
+//				float dist_to_border = getDistanceToBorder(node.childs[i].pivot,best_center,q);
+//				if (domain_distances[i]<dist_to_border) {
+//					domain_distances[i] = dist_to_border;
+//				}
+				heap.insert(BranchSt(node.childs[i],domain_distances[i]));
+			}
 		}
 		
 		return best_index;
 	}
-	
-	
 
 	
 	/**
@@ -859,27 +865,27 @@ class KMeansTree(T) : NNIndex
 	{
 		int nc = node.childs.length;
 		
-		static float[] distances;
-		if (distances is null) {
-			distances = new float[nc];
-		}
+//		static float[] domain_distances;
+//		if (domain_distances is null) {
+//			domain_distances = new float[nc];
+//		}
 		
 		for (int i=0;i<nc;++i) {
 			float dist = squaredDist(q,node.childs[i].pivot);
 			
 			int j=0;
-			while (distances[j]<dist && j<i) j++;
+			while (domain_distances[j]<dist && j<i) j++;
 			for (int k=i;k>j;--k) {
-				distances[k] = distances[k-1];
+				domain_distances[k] = domain_distances[k-1];
 				sort_indices[k] = sort_indices[k-1];
 			}
-			distances[j] = dist;
+			domain_distances[j] = dist;
 			sort_indices[j] = i;
 		}		
 	}	
 	
 	/** 
-	 * Method that computes the distance from the query point q
+	 * Method that computes the squared distance from the query point q
 	 * from inside region with center c to the border between this 
 	 * region and the region with center p 
 	 */

@@ -98,6 +98,7 @@ class RunTestCommand : IndexCommand
 				if (kmeansIndex !is null) {
 					kmeansIndex.first_time = true;
 					kmeansIndex.cb_index = r;
+					report("cb_index", r);
 				}
 				testNNIndexPrecisions!(T,true,true)(index,inputData!(T),testData, precisions, nn, skipMatches, maxTime );
 			}
