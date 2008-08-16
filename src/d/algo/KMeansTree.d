@@ -124,7 +124,7 @@ class KMeansTree(T) : NNIndex
 	/**
 	 * The root node in the tree.
 	 */
-	private KMeansNode root;
+	public KMeansNode root;
 	
 	/**
 	 *  Array of indices to vectors in the dataset. 
@@ -286,7 +286,7 @@ class KMeansTree(T) : NNIndex
 	 * 
 	 * Returns: vectors in the dataset
 	 */
-	private T[][] vecs()
+	public T[][] vecs()
 	{
 		return dataset.vecs;
 	}

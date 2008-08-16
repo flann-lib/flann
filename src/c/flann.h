@@ -63,6 +63,67 @@ void flann_free_index(FLANN_INDEX index_id, FLANNParameters* flann_params);
 
 int flann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, IndexParameters* index_params, FLANNParameters* flann_params);
 
+
+
+
+
+
+
+struct KMeansNodeSt {
+        /**
+         * The cluster center.
+         */
+        struct {
+            int length;
+            float* ptr;
+        } pivot;
+        /**
+         * The cluster radius.
+         */
+        float radius;
+        /**
+         * The cluster mean radius.
+         */
+        float mean_radius;
+        /**
+         * The cluster variance.
+         */
+        float variance;
+        /**
+         * The cluster size (number of points in the cluster)
+         */
+        int size;
+        /**
+         * Child nodes (only for non-terminal nodes)
+         */
+        struct {
+            int ptr;
+            KMeansNode* ptr;
+        } childs;
+        /**
+         * Node points (only for terminal nodes)
+         */
+        struct {
+            int length;
+            int* ptr;
+        } indices;
+        /**
+         * Level
+         */
+        int level;
+}
+typedef KMeansNodeSt* KMeansNode;
+
+KMeansNode get_kmeans_hierarchical_tree(FLANN_INDEX index_id)
+
+
+
+
+
+
+
+
+
 #ifdef __cplusplus
 }
 #endif

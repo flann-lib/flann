@@ -18,7 +18,6 @@ import util.Random;
 import util.defines;
 import util.Profile;
 
-
 extern(C):
 
 const int LINEAR 	= 0;
@@ -437,4 +436,67 @@ int flann_compute_cluster_centers(float* dataset, int count, int length, int clu
 		logger.error("Caught exception: "~e.toString());
 		return -1;
 	}
+}
+
+
+struct KMeansNodeSt {
+        /**
+         * The cluster center.
+         */
+        float[] pivot;
+        /**
+         * The cluster radius.
+         */
+        float radius;
+        /**
+         * The cluster mean radius.
+         */
+        float mean_radius;
+        /**
+         * The cluster variance.
+         */
+        float variance;
+        /**
+         * The cluster size (number of points in the cluster)
+         */
+        int size;
+        /**
+         * Child nodes (only for non-terminal nodes)
+         */
+        KMeansNode[] childs;
+        /**
+         * Node points (only for terminal nodes)
+         */
+        int[] indices;
+        /**
+         * Level
+         */
+        int level;
+}
+alias KMeansNodeSt* KMeansNode;
+
+KMeansNode get_kmeans_hierarchical_tree(FLANN_INDEX index_id)
+{
+    try {
+        flann_init();
+        
+        if (index_id < nn_ids_count) {
+            Object indexObj = nn_ids[index_id];
+            if (indexObj !is null) {
+                KMeansTree!(float) tree = cast(KMeansTree!(float)) indexObj;
+    
+                return tree.root;
+            }
+            else {
+                throw new FLANNException("Invalid index ID");
+            }
+        } 
+        else {
+            throw new FLANNException("Invalid index ID");
+        }
+    }
+    catch(Exception e) {
+        logger.error("Caught exception: "~e.toString());
+        return null;
+    }
 }

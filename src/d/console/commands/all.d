@@ -12,3 +12,4 @@ public import console.commands.AutotuneParams;
 public import console.commands.SampleCommand;
 public import console.commands.ConvertDatasetCommand;
 public import console.commands.TestMatch;
+public import console.commands.SaveTreeCommand;
