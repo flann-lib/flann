@@ -243,8 +243,18 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 		if (index_params is null) {
 			throw new FLANNException("The index_params agument must be non-null");
 		}
+
+        if (index_params.build_weight < 0) {
+			throw new FLANNException("The index_params.build_weight must be positive.");
+        }
+        
+        if (index_params.memory_weight < 0) {
+			throw new FLANNException("The index_params.memory_weight must be positive.");
+        }
 		
 		float target_precision = index_params.target_precision;
+        float build_weight = index_params.build_weight;
+        float memory_weight = index_params.memory_weight;
 		
 		NNIndex index;
 		if (target_precision < 0) {
@@ -264,6 +274,8 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 			
 			*index_params = paramsToParameters(params);
 			index_params.target_precision = target_precision;
+            index_params.build_weight = build_weight;
+            index_params.memory_weight = memory_weight;
 			if (speedup !is null) {
 				*speedup = params["speedup"].get!(float);
 			}
@@ -485,7 +497,8 @@ KMeansNode get_kmeans_hierarchical_tree(FLANN_INDEX index_id)
             if (indexObj !is null) {
                 KMeansTree!(float) tree = cast(KMeansTree!(float)) indexObj;
     
-                return tree.root;
+                //return tree.root;
+                return null;
             }
             else {
                 throw new FLANNException("Invalid index ID");

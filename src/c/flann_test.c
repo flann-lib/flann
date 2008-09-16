@@ -79,12 +79,23 @@ int main(int argc, char** argv)
 	fp.log_level = LOG_WARN;
 	fp.log_destination = NULL;
 	
-	p.target_precision = 90;
+    p.algorithm = KDTREE;
+    p.checks = 2;
+    p.trees = 8;
+    p.target_precision = -1;
+
 	float speedup;
 	
 	printf("Computing index and optimum parameters.\n");
 	int index_id = flann_build_index(dataset, rows, cols, &speedup, &p, &fp);
-	flann_find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks, &fp);
+
+    flann_free_index(index_id, &fp);
+
+    printf("second forest building...\n");
+
+    int index_id1 = flann_build_index(dataset, rows, cols, &speedup, &p, &fp);
+
+	/*flann_find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks, &fp);*/
 	
 	write_dat_file("results.dat",result, tcount, nn);
 	
