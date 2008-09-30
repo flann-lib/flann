@@ -83,7 +83,7 @@ def compute_pca_projection(root):
     size = collect_vecs(root,full_vecs,0)
     print "Computing SVD... ",
     sys.stdout.flush()
-    U,S,Vh = numpy.linalg.svd(full_vecs)
+    U,S,Vh = numpy.linalg.svd(full_vecs[:1000])
     print "done"
     return Vh[:2,:].T
 
@@ -120,21 +120,21 @@ def draw_node(node,points, T, scale, level = 0):
             elif d<d2:
                 d2 = d
                 i2 = i
-        val = math.sqrt(d1/d2)
-        r = 5
-        val = math.exp(r*val)/math.exp(r)
-        if point[2]>0:
-            point[2] = (3*point[2]+val)/4
-        else:
-            point[2] = val
-        point[3] = i1
+        r = 7
+        point[3+level] = math.exp(r*math.sqrt(d1/d2))/math.exp(r)
+        
+        #if point[2]>0:
+            #point[2] = (9*point[2]+val)/10
+        #else:
+            #point[2] = val
+        point[2] = i1
 
     global levels
-    if level<levels:
+    if level<levels-1:
         child_points = [None]*len(node.childs)
         for i,n in enumerate(node.childs):
             if not n.leaf:
-                child_points[i] = [ a for a in points if a[3]==i ]
+                child_points[i] = [ a for a in points if a[2]==i ]
 
         for i,n in enumerate(node.childs):
             if not n.leaf:
@@ -157,16 +157,20 @@ def create_tree_image(treefile, size, root, T):
     xd = scale[1]-scale[0]
     yd = scale[3]-scale[2]
     scale = (xd/size[0],scale[0],yd/size[1],scale[2])
-    points = [[float(i),float(j),-1, 0] for i in xrange(size[0]) for j in xrange(size[1])]
+    points = [[float(i),float(j),0] + [-1]*17  for i in xrange(size[0]) for j in xrange(size[1])]
     print "Computing display"
     draw_node(root,points, T, scale)
-    image = Image.new("L",size)
-    for p in points:
-        i = int(p[0])
-        j = int(p[1])
-        image.putpixel((i,j), 255*(1-p[2]))
-    print "Saving image"
-    image.save("display_"+treefile+".png")
+    image = Image.new("RGBA",size)
+    global levels
+    for level in xrange(levels):
+        val = [ 0, 0, 0, 0 ]
+        for p in points:
+            i = int(p[0])
+            j = int(p[1])
+            val[3] = int(255*(p[3+level]))
+            image.putpixel((i,j), tuple(val) )
+        print "Saving image"
+        image.save("display_"+treefile+"_level_%d.png"%level)
 
 def usage():
     print "Usage: %s tree_file"%sys.argv[0]
@@ -179,10 +183,11 @@ def main():
     root = _(treefile+".pickle",'read_tree(sys.argv[1])',locals())
     T = _(treefile+"_pca.pickle",'compute_pca_projection(root)',locals())
     
-    
     global levels
-    levels = int(math.log(512)/math.log(len(root.vecs)))
-    print "Doing %d levels."%levels
+    levels = int(math.log(100000)/math.log(len(root.vecs))+0.5)
+    levels = min(levels,13)
+    #levels = 2
+    print "Branching factor: %d, doing %d levels."%(len(root.vecs),levels)
     size = (512,512)
     image = create_tree_image(treefile, size, root,T)
 
