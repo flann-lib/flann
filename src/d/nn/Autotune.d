@@ -236,7 +236,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		cost.searchTimeCost = searchTime;
 		cost.buildTimeCost = buildTime;
 		cost.timeCost = (buildTime*buildTimeFactor+searchTime)/(1+buildTimeFactor);
-		logger.info(sprint("KMeansTree buildTime={:f3}, searchTime={:f3}, timeCost={:f3}",buildTime, searchTime, cost.timeCost));
+		logger.info(sprint("KMeansTree buildTime={:f3}, searchTime={:f3}, timeCost={:f3}, buildTimeFactor={:f3}",buildTime, searchTime, cost.timeCost, buildTimeFactor));
 		
 		delete kmeans;
 		return cost;
