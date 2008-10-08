@@ -77,37 +77,3 @@ void writeMatches(string match_file, int[][] matches)
 	});
 }
 
-void compute_gt(T)(string featuresFile, string testFile, string matchFile, int nn, int skip = 0)
-{
-	Dataset!(T) inputData;
-	Dataset!(T) testData;
-	
-	logger.info("Reading input data from "~featuresFile);
-	inputData = new Dataset!(T)();
-	inputData.readFromFile(featuresFile);
-	
-	auto path = new FilePath(testFile);
-	if (path.exists() && !path.isFolder()) {
-		logger.info("Reading test data from "~testFile);
-		testData = new Dataset!(T)();
-		testData.readFromFile(testFile);
-	} 
-	else {
-		logger.info("Sampling test data from input data and writing to ");
-		testData = inputData.sample(1000);
-		testData.writeToFile(testFile);
-		
-		logger.info("Writing input data to "~("new_"~featuresFile));
-		inputData.writeToFile("new_"~featuresFile);
-	}
-
-	int matches[][];
-	logger.info("Computing ground truth");
-	matches = computeGroundTruth(inputData, testData, nn, skip);
-
-	logger.info("Writing matches to "~matchFile);
-//		Dataset!(int).handler.write(matchFile,matches,"dat");
-	writeMatches(matchFile,matches);
-	free(matches);
-
-}

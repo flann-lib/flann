@@ -25,7 +25,7 @@ import tango.stdc.stdlib;
  *     count = number of instances to allocate. 
  * Returns: pointer (of type T*) to memory buffer
  */
-public T* allocate(T)(int count = 1) 
+public T* allocate(T)(size_t count = 1) 
 {
 	T* mem = cast(T*) tango.stdc.stdlib.malloc(T.sizeof*count);
 	return mem;
@@ -37,7 +37,7 @@ public T* allocate(T)(int count = 1)
  *     count = array size
  * Returns: new array
  */
-public T[] allocate(T : T[])(int count) 
+public T[] allocate(T : T[])(size_t count) 
 {
 	T* mem = cast(T*) tango.stdc.stdlib.malloc(count*T.sizeof);		
 	return mem[0..count];
@@ -52,7 +52,7 @@ public T[] allocate(T : T[])(int count)
  *     		allocates a one dimensional array of empty arrays   
  * Returns: the new two dimensional array
  */
-public T[][] allocate(T : T[][])(int rows, int cols = -1) 
+public T[][] allocate(T : T[][])(size_t rows, int cols = -1) 
 {
 	if (cols == -1) {
 		T[]* mem = cast(T[]*) tango.stdc.stdlib.malloc(rows*(T[]).sizeof);
@@ -60,7 +60,11 @@ public T[][] allocate(T : T[][])(int rows, int cols = -1)
 	} 
 	else {
 		//if (rows & 1) rows++; // for 16 byte allignment	
-		void* mem = tango.stdc.stdlib.malloc(rows*(T[]).sizeof+rows*cols*T.sizeof);
+        size_t total_size = rows*(T[]).sizeof+rows*cols*T.sizeof;
+		void* mem = tango.stdc.stdlib.malloc(total_size);
+        if (mem is null) {
+            throw new FLANNException("Cannot allocate required memory");
+        }
 		T[]* index = cast(T[]*) mem;
 		T* mat = cast(T*) (mem+rows*(T[]).sizeof);
 		

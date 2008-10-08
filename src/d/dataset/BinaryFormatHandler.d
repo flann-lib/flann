@@ -16,7 +16,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		return "bin";
 	}
 	
-	private T[][] readBinaryFile(U)(char[] file, int veclen)
+	private T[][] readBinaryFile(U)(char[] file, int veclen, int count)
 	{
 		T[][] vecs = null;
 		
@@ -24,9 +24,9 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 			logger.warn("Data elements size not equal to used type size. Performing conversion.");
 		}
 		
-		ulong fileSize = FilePath(file).fileSize;
-		logger.info(sprint("File size is {}: ",fileSize));
-		int count = fileSize / (veclen*U.sizeof);
+//		ulong fileSize = FilePath(file).fileSize;
+//		logger.info(sprint("File size is {}: ",fileSize));
+//		int count = fileSize / (veclen*U.sizeof);
 		
 		logger.info(sprint("Reading {} features from file {}: ",count,file));
 				
@@ -50,6 +50,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 	{
 		string realFile = null;
 		int veclen;
+        int count;
 		char[] elemType;
 		
 		T[][] vecs = null;
@@ -63,6 +64,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 			
 			read(realFile);
 			read(veclen);
+			read(count);
 			read(elemType);	
 		});
 		
@@ -72,10 +74,10 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 		
 		switch (elemType) {
 			case "float":
-				vecs = readBinaryFile!(float)(realFile,veclen);
+				vecs = readBinaryFile!(float)(realFile,veclen,count);
 				break;
 			case "ubyte":
-				vecs = readBinaryFile!(ubyte)(realFile,veclen);
+				vecs = readBinaryFile!(ubyte)(realFile,veclen,count);
 				break;
 			default:
 				logger.error("Element type not supported for binary format.");
@@ -92,6 +94,7 @@ class BinaryFormatHandler(T) : FormatHandler!(T)
 			print("BINARY").newline;
 			print(bin_file).newline;
 			print(vecs[0].length).newline;
+			print(vecs.length).newline;
 			print(T.stringof).newline;
 		});
 		

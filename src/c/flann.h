@@ -98,7 +98,7 @@ struct KMeansNodeSt {
          */
         struct {
             int ptr;
-            KMeansNode* ptr;
+        //    KMeansNode* ptr;
         } childs;
         /**
          * Node points (only for terminal nodes)
@@ -111,10 +111,10 @@ struct KMeansNodeSt {
          * Level
          */
         int level;
-}
+};
 typedef KMeansNodeSt* KMeansNode;
 
-KMeansNode get_kmeans_hierarchical_tree(FLANN_INDEX index_id)
+KMeansNode get_kmeans_hierarchical_tree(FLANN_INDEX index_id);
 
 
 

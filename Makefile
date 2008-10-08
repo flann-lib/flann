@@ -1,10 +1,12 @@
+
+export ARCH=$(shell uname -m)
 # --------------------- Dirs  ----------------------------
 export ROOT_DIR = $(shell pwd)
 export SRC_DIR = ${ROOT_DIR}/src
 export LIBS_DIR = ${ROOT_DIR}/libs
-export BUILD_DIR = ${ROOT_DIR}/build
-export OBJ_DIR = ${ROOT_DIR}/tmp/build/${PROFILE}/obj
-export LIB_OBJ_DIR = ${ROOT_DIR}/tmp/build/${PROFILE}/lib_obj
+export BUILD_DIR = ${ROOT_DIR}/build/${ARCH}
+export OBJ_DIR = ${ROOT_DIR}/tmp/build/${PROFILE}/${ARCH}/obj
+export LIB_OBJ_DIR = ${ROOT_DIR}/tmp/build/${PROFILE}/${ARCH}/lib_obj
 export BIN_DIR = ${ROOT_DIR}/bin
 
 # ------------------------ Rules --------------------------------
