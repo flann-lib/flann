@@ -106,10 +106,16 @@ def compute_pca_projection(root):
     print "Computing SVD... ",
     sys.stdout.flush()
 <<<<<<< HEAD:src/python/displays/make_display.py
+<<<<<<< HEAD:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     U,S,Vh = numpy.linalg.svd(full_vecs[:1000])
+<<<<<<< HEAD:src/python/displays/make_display.py
 =======
     U,S,Vh = numpy.linalg.svd(full_vecs)
 >>>>>>> 583207f3ef9072f3ba6e5f28b4b0a51ca3f4a5c8:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     print "done"
     return Vh[:2,:].T
 
@@ -150,6 +156,9 @@ def draw_node(node,points, T, scale, level = 0):
                 d2 = d
                 i2 = i
 <<<<<<< HEAD:src/python/displays/make_display.py
+<<<<<<< HEAD:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
         r = 7
         point[3+level] = math.exp(r*math.sqrt(d1/d2))/math.exp(r)
         
@@ -158,6 +167,7 @@ def draw_node(node,points, T, scale, level = 0):
         #else:
             #point[2] = val
         point[2] = i1
+<<<<<<< HEAD:src/python/displays/make_display.py
 =======
         val = math.sqrt(d1/d2)
         r = 5
@@ -168,21 +178,35 @@ def draw_node(node,points, T, scale, level = 0):
             point[2] = val
         point[3] = i1
 >>>>>>> 583207f3ef9072f3ba6e5f28b4b0a51ca3f4a5c8:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
 
     global levels
 <<<<<<< HEAD:src/python/displays/make_display.py
+<<<<<<< HEAD:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     if level<levels-1:
+<<<<<<< HEAD:src/python/displays/make_display.py
 =======
     if level<levels:
 >>>>>>> 583207f3ef9072f3ba6e5f28b4b0a51ca3f4a5c8:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
         child_points = [None]*len(node.childs)
         for i,n in enumerate(node.childs):
             if not n.leaf:
 <<<<<<< HEAD:src/python/displays/make_display.py
+<<<<<<< HEAD:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
                 child_points[i] = [ a for a in points if a[2]==i ]
+<<<<<<< HEAD:src/python/displays/make_display.py
 =======
                 child_points[i] = [ a for a in points if a[3]==i ]
 >>>>>>> 583207f3ef9072f3ba6e5f28b4b0a51ca3f4a5c8:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
 
         for i,n in enumerate(node.childs):
             if not n.leaf:
@@ -206,13 +230,22 @@ def create_tree_image(treefile, size, root, T):
     yd = scale[3]-scale[2]
     scale = (xd/size[0],scale[0],yd/size[1],scale[2])
 <<<<<<< HEAD:src/python/displays/make_display.py
+<<<<<<< HEAD:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     points = [[float(i),float(j),0] + [-1]*17  for i in xrange(size[0]) for j in xrange(size[1])]
+<<<<<<< HEAD:src/python/displays/make_display.py
 =======
     points = [[float(i),float(j),-1, 0] for i in xrange(size[0]) for j in xrange(size[1])]
 >>>>>>> 583207f3ef9072f3ba6e5f28b4b0a51ca3f4a5c8:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     print "Computing display"
     draw_node(root,points, T, scale)
 <<<<<<< HEAD:src/python/displays/make_display.py
+<<<<<<< HEAD:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     image = Image.new("RGBA",size)
     global levels
     for level in xrange(levels):
@@ -224,6 +257,7 @@ def create_tree_image(treefile, size, root, T):
             image.putpixel((i,j), tuple(val) )
         print "Saving image"
         image.save("display_"+treefile+"_level_%d.png"%level)
+<<<<<<< HEAD:src/python/displays/make_display.py
 =======
     image = Image.new("L",size)
     for p in points:
@@ -233,6 +267,8 @@ def create_tree_image(treefile, size, root, T):
     print "Saving image"
     image.save("display_"+treefile+".png")
 >>>>>>> 583207f3ef9072f3ba6e5f28b4b0a51ca3f4a5c8:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
 
 def usage():
     print "Usage: %s tree_file"%sys.argv[0]
@@ -246,19 +282,28 @@ def main():
     T = _(treefile+"_pca.pickle",'compute_pca_projection(root)',locals())
     
 <<<<<<< HEAD:src/python/displays/make_display.py
+<<<<<<< HEAD:src/python/displays/make_display.py
 =======
     
 >>>>>>> 583207f3ef9072f3ba6e5f28b4b0a51ca3f4a5c8:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     global levels
 <<<<<<< HEAD:src/python/displays/make_display.py
+<<<<<<< HEAD:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     levels = int(math.log(100000)/math.log(len(root.vecs))+0.5)
     levels = min(levels,13)
     #levels = 2
     print "Branching factor: %d, doing %d levels."%(len(root.vecs),levels)
+<<<<<<< HEAD:src/python/displays/make_display.py
 =======
     levels = int(math.log(512)/math.log(len(root.vecs)))
     print "Doing %d levels."%levels
 >>>>>>> 583207f3ef9072f3ba6e5f28b4b0a51ca3f4a5c8:src/python/displays/make_display.py
+=======
+>>>>>>> b47f8a745407e7d63b9b35a0871dc0c260fd52f9:src/python/displays/make_display.py
     size = (512,512)
     image = create_tree_image(treefile, size, root,T)
 

@@ -452,10 +452,36 @@ void estimateSearchParams(T)(NNIndex index, Dataset!(T) inputDataset, float desi
 		
 		int checks;
 		logger.info("Estimating number of checks");
-		float searchTime = testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
+        
+		float searchTime;
+        KMeansTree!(T) kmeans = cast(KMeansTree!(T)) index;
+        float cb_index;
+
+        if (index !is null) {
+            float bestSearchTime = -1;
+            float best_cb_index = -1;
+            int best_checks = -1;
+            for (cb_index = 0;cb_index<1.1; cb_index+=0.2) {
+                kmeans.cb_index = cb_index;
+                searchTime = testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
+                if (searchTime<bestSearchTime || bestSearchTime == -1) {
+                    bestSearchTime = searchTime;
+                    best_cb_index = cb_index;
+                    best_checks = checks;
+                }
+            }
+            searchTime = bestSearchTime;
+            cb_index = best_cb_index;
+            checks = best_checks;
+        }
+        else {
+            searchTime = testNNIndexPrecision!(T, true,false)(index, inputDataset, testDataset, desiredPrecision, checks, nn, 1);
+        }
+
 		
 		logger.info(sprint("Required number of checks: {} ",checks));;
 		searchParams["checks"] = checks;
 		searchParams["speedup"] = (linear/searchTime);
+        searchParams["cb_index"] = cb_index;
 	}
 }

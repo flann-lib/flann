@@ -158,15 +158,6 @@ abstract class NNIndex
 	
 	
 	/**
-	 * Compute the number of checks required to reach a certain precison,
-	 * for the given test set with teh given precision.
-	 */ 
-	int[] findCheckForPrecision(float[][] vecs, int[][] groundTruth, float[] precisions)
- 	{
- 		throw new FLANNException("Not implemented");
- 	} 	
-	
-	/**
 		Number of features in this index.
 	*/
 	int size();
