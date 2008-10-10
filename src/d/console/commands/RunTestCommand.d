@@ -8,6 +8,7 @@ import console.commands.GenericCommand;
 import console.commands.IndexCommand;
 import nn.Testing;
 import dataset.Dataset;
+import dataset.ComputeGroundTruth;
 import algo.NNIndex;
 import algo.KMeansTree;
 import console.report.Report;
@@ -70,12 +71,13 @@ class RunTestCommand : IndexCommand
 		if (testData is null) {
 			throw new FLANNException("No test data given.");
 		}
-		
+		      
+        int[][] matches;      
 		if (matchFile != "") {
-			testData.readMatches(matchFile);
+			matches = readMatches(matchFile);
 		}
 		
-		if (testData.match is null) {
+		if (matches is null) {
 			throw new FLANNException("There are no correct matches to compare to, aborting test phase.");
 		}
 		report("test_count", testData.rows);
@@ -100,7 +102,7 @@ class RunTestCommand : IndexCommand
 					kmeansIndex.cb_index = r;
 					report("cb_index", r);
 				}
-				testNNIndexPrecisions!(T,true,true)(index,inputData!(T),testData, precisions, nn, skipMatches, maxTime );
+				testNNIndexPrecisions!(T,true,true)(index,inputData!(T),testData, matches, precisions, nn, skipMatches, maxTime );
 			}
 		}
 		else {
@@ -117,7 +119,7 @@ class RunTestCommand : IndexCommand
 					kmeansIndex.cb_index = r;
 				}
 				foreach (c;checks) {
-					testNNIndex!(T,true,true)(index,inputData!(T),testData, c, nn, skipMatches);
+					testNNIndex!(T,true,true)(index,inputData!(T),testData, matches, c, nn, skipMatches);
 				}
 			}
 		}

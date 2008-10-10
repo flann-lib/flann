@@ -9,6 +9,7 @@ import sys
 
 import numpy
 from PIL import Image
+import scipy.weave
 
 
 def project(vec, T):
@@ -91,7 +92,6 @@ def dist(p,v):
     return sum((p-v)**2)
 
 
-
     
 
 def draw_node(node,points, T, scale, level = 0):
@@ -104,7 +104,7 @@ def draw_node(node,points, T, scale, level = 0):
     print "Level: %d\r"%level
 
     for point in points:
-        p = point[0:2]
+        p = numpy.array(point[0:2])
         d1 = dist(p,vecs[0])
         d2 = dist(p,vecs[1])
         i1, i2 = 0,1
