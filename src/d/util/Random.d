@@ -99,11 +99,12 @@ class DistinctRandom
 			v = i;
 		}
 	
-		// permute the element in the array
-		for (int i=0;i<n;++i) {
+		// shuffle the elements in the array
+        // Fisher-Yates shuffle
+		for (int i=n;i>0;--i) {
 // 			int rand = cast(int) (drand48() * n);  
-			int rand = next_random(n);
-			assert(rand >=0 && rand < n);
+			int rand = next_random(i);
+			assert(rand >=0 && rand < i);
 			swap(vals[i], vals[rand]);
 		}
 		

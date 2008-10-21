@@ -46,12 +46,12 @@ def getBaseDir():
 
 def getIncludeDirs():
     basedir = getBaseDir()
-    return [join(basedir, 'src/bindings/c'), '../c','../include']
+    return [join(basedir, 'src/bindings/c'), '../../c','../include']
 
 def getLibDirs():
     basedir = getBaseDir()
     return [ '../lib',
-             '../../../build/lib',
+             '../../../build/i686/lib',
              join(basedir, 'bin/gdc/lib/gcc/i686-pc-linux-gnu/4.1.2')]
 
 def getLibs():

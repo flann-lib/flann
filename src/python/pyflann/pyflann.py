@@ -31,8 +31,6 @@ class FLANN:
     All the computation is done in float32 type, but the imput arrays
     may hold any type that is convertable to float32.
     """
-    # This should ensure thread safety.
-    __nn_lock = threading.Lock()
     
     __rn_lock = threading.Lock()
     __rn_gen = _rn.RandomState()
@@ -129,11 +127,10 @@ class FLANN:
 
         params = self.__get_param_arg_list(kwargs)
 
-        with self.__nn_lock:
-            flann.find_nn(pts_flat, npts, dim,
-                        querypts_flat, nqpts,
-                        result, num_neighbors,
-                        *params)
+        flann.find_nn(pts_flat, npts, dim,
+                    querypts_flat, nqpts,
+                    result, num_neighbors,
+                    *params)
 
         if num_neighbors == 1:
             return result
@@ -165,11 +162,9 @@ class FLANN:
 
         with self.__idx_lock:
             if self.__curindex != None:
-                with self.__nn_lock:
-                    flann.del_index(self.__curindex, *flann_params)
+                flann.del_index(self.__curindex, *flann_params)
             
-            with self.__nn_lock:
-                self.__curindex, index_params = flann.make_index(pts_flat, npts, dim, *params_)
+            self.__curindex, index_params = flann.make_index(pts_flat, npts, dim, *params_)
 
             self.__curindex_data = pts_flat
             self.__curindex_data_shape = pts.shape
@@ -212,11 +207,10 @@ class FLANN:
         checks = self.__get_one_param(kwargs, "checks")
         flann_params = self.__get_flann_param_arg_list(kwargs)
 
-        with self.__nn_lock:
-            flann.find_nn_index(self.__curindex, 
-                        querypts_flat, nqpts,
-                        result, num_neighbors,
-                        checks, *flann_params)
+        flann.find_nn_index(self.__curindex, 
+                    querypts_flat, nqpts,
+                    result, num_neighbors,
+                    checks, *flann_params)
 
         if num_neighbors == 1:
             return result
@@ -234,8 +228,7 @@ class FLANN:
         
         with self.__idx_lock:
             if self.__curindex != None:
-                with self.__nn_lock:
-                    flann.del_index(self.__curindex, *flann_params)
+                flann.del_index(self.__curindex, *flann_params)
 
                 self.__curindex = None
                 self.__curindex_data = None
@@ -372,9 +365,8 @@ class FLANN:
                 from utils import hasEmptyCluster as __hasEmpty
 
                 for i in xrange(max_retries):
-                    with self.__nn_lock:
-                        numclusters = flann.run_kmeans(pts_flat, npts, dim,
-                                                      num_clusters, result_buf, *params)
+                    numclusters = flann.run_kmeans(pts_flat, npts, dim,
+                                                    num_clusters, result_buf, *params)
                     if numclusters <= 0:
                         raise FLANNException('Error occured during clustering procedure, code = %d' % numclusters)
                     
@@ -383,9 +375,8 @@ class FLANN:
 
                 raise FLANNException('Finding cluster with no empty centroids: maximum number of tries exceeded.')
             else:
-                with self.__nn_lock:
-                    numclusters = flann.run_kmeans(pts_flat, npts, dim,
-                                                  num_clusters, result_buf, *params)
+                numclusters = flann.run_kmeans(pts_flat, npts, dim,
+                                                num_clusters, result_buf, *params)
                 if numclusters <= 0:
                     raise FLANNException('Error occured during clustering procedure.')
                 

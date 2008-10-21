@@ -204,7 +204,7 @@ class KMeansTree(T) : NNIndex
 		else {
 			throw new FLANNException("Unknown algorithm for choosing initial centers.");
 		}
-		cb_index = 1;
+		cb_index = 0.5;
 		
 		domain_distances = allocate!(float[])(branching);
 		this.dataset = inputData;	
