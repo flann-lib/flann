@@ -19,7 +19,6 @@ import util.Allocator;
 class Dataset(T = float) {
 
 	T[][] vecs;    
-	int[][] match;         /* indices to correct nearest neighbors. */
 
 	static FormatHandler!(T) handler;
 	
@@ -60,21 +59,10 @@ class Dataset(T = float) {
 	
 	public ~this()
 	{
-		if (match !is null) {
-			free(match);
-		}
 		free(vecs);
 	}
-
-	public void init(U)(Dataset!(U) dataset) 
-	{
-		vecs = allocate!(T[][])(dataset.rows,dataset.cols);
-		foreach (index,vec;dataset.vecs) {
-			array_copy(vecs[index],vec);
-		}			
-	}
 	
-	public int rows() {
+    public int rows() {
 		return vecs.length;
 	}
 	
@@ -85,24 +73,7 @@ class Dataset(T = float) {
 		} else {
 			return vecs[0].length;
 		}
-	}
-	
-
-	
-	public void readMatches(string file)
-	{
-		auto gridData = new DatFormatHandler!(int)();		
-		int[][] values = gridData.read(file);
-		
-		if (values.length >= 1) {
-			match = allocate!(int[][])(values.length, values[0].length-1);
-			foreach (v;values) {
-				match[v[0]][] = v[1..$];
-			}
-		}
-		free(values);
-	}
-	
+	}	
 	
 	public void readFromFile(char[] file)
 	{
@@ -135,12 +106,20 @@ class Dataset(T = float) {
 		
 		return newSet;
 	}
+    
+    Dataset!(S) astype(S)()
+    {
+        auto ret = new Dataset!(S)(rows,cols);
+        foreach (index,vec;vecs) {
+            array_copy(ret.vecs[index],vec);
+        }           
+        return ret;
+    }
 	
-	public void computeGT(U)(Dataset!(U) dataset, int nn, int skip = 0)
-	{
-		match = computeGroundTruth(dataset,this, nn, skip);
-	}
+
 
 }
+
+
 
 

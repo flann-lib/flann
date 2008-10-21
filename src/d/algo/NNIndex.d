@@ -156,7 +156,6 @@ abstract class NNIndex
 	*/
 	void findNeighbors(ResultSet resultSet, float[] vec, int maxCheck);
 	
-	
 	/**
 		Number of features in this index.
 	*/

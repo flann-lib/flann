@@ -6,8 +6,8 @@ module dataset.ComputeGroundTruth;
 
 import algo.dist;
 import dataset.Dataset;
+import dataset.DatFormatHandler;
 import util.defines;
-import util.Logger;
 import util.Utils;
 import util.Allocator;
 
@@ -75,5 +75,21 @@ void writeMatches(string match_file, int[][] matches)
 			writer("\n");
 		}
 	});
+}
+
+public int[][] readMatches(string file)
+{
+    auto gridData = new DatFormatHandler!(int)();       
+    int[][] values = gridData.read(file);
+    int[][] matches;
+    
+    if (values.length >= 1) {
+        matches = allocate!(int[][])(values.length, values[0].length-1);
+        foreach (v;values) {
+            matches[v[0]][] = v[1..$];
+        }
+    }
+    free(values);
+    return matches;
 }
 

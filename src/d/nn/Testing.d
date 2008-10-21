@@ -54,7 +54,7 @@ float computeDistanceRaport(float[] target, int[] neighbors, int[] groundTruth)
 
 float search(int checks, out float time) 
 {
-	if (testData.match[0].length<nn) {
+	if (matches[0].length<nn) {
 		throw new FLANNException("Ground truth is not computed for as many neighbors as requested");
 	}
 	
@@ -70,8 +70,8 @@ float search(int checks, out float time)
 			int[] neighbors = resultSet.getNeighbors();
 			neighbors = neighbors[skipMatches..$];
 					
-			correct += countCorrectMatches(neighbors,testData.match[i]);
-			distR += computeDistanceRaport(target,neighbors,testData.match[i]);
+			correct += countCorrectMatches(neighbors,matches[i]);
+			distR += computeDistanceRaport(target,neighbors,matches[i]);
 		}
 	},0.2);
 	
@@ -91,7 +91,7 @@ float search(int checks, out float time)
 
 
 float testNNIndex(T, bool withOutput, bool withReporting)
-				(NNIndex index, Dataset!(T) inputData, Dataset!(float) testData, int checks, int nn = 1, uint skipMatches = 0)
+				(NNIndex index, Dataset!(T) inputData, Dataset!(float) testData, int[][] matches, int checks, int nn = 1, uint skipMatches = 0)
 {
 	T[][] vecs = inputData.vecs;
 	
@@ -121,7 +121,7 @@ float testNNIndex(T, bool withOutput, bool withReporting)
 
 
 float testNNIndexPrecision(T, bool withOutput, bool withReporting)
-						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
+						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData, int[][] matches, float precision, out int checks, int nn = 1, uint skipMatches = 0)
 {	
 	T[][] vecs = inputData.vecs;
 	
@@ -204,7 +204,7 @@ float testNNIndexPrecision(T, bool withOutput, bool withReporting)
 
 
 float testNNIndexPrecisions(T, bool withOutput, bool withReporting)
-						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData, float[] precisions, int nn = 1, uint skipMatches = 0, float maxTime = 0)
+						(NNIndex index,Dataset!(T) inputData, Dataset!(float) testData,int[][] matches, float[] precisions, int nn = 1, uint skipMatches = 0, float maxTime = 0)
 {	
 	// make sure precisions array is sorted
 	precisions.sort;
@@ -311,7 +311,7 @@ float testNNIndexPrecisions(T, bool withOutput, bool withReporting)
 
 
 float testNNIndexPrecisionAlt(T, bool withOutput, bool withReporting)
-						(NNIndex index, Dataset!(T) inputData, Dataset!(float) testData, float precision, out int checks, int nn = 1, uint skipMatches = 0)
+						(NNIndex index, Dataset!(T) inputData, Dataset!(float) testData, int[][] matches, float precision, out int checks, int nn = 1, uint skipMatches = 0)
 {
 	T[][] vecs = inputData.vecs;
 

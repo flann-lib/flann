@@ -7,11 +7,13 @@ module nn.Autotune;
 import tango.math.Math;
 
 import dataset.Dataset;
+import dataset.ComputeGroundTruth;
 import algo.all;
 import nn.Testing;
 import util.Profile;
 import util.Logger;
 import util.Utils;
+import util.Allocator;
 
 
 
@@ -197,17 +199,26 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		return bestParams;
 	}
 	
-	Dataset!(T) sampledDataset = inputDataset.sample(sampleSize, false);	
-	Dataset!(float) testDataset = new Dataset!(float)();
-	testDataset.init(sampledDataset.sample(testSampleSize,true));
+    // sampling a dataset to use for autotuning
+    Dataset!(T) sampledDataset = inputDataset.sample(sampleSize, false);	
+    scope(exit) delete sampledDataset;
+    
+    // sampling a test(query) set
+    auto sampledTestSet = sampledDataset.sample(testSampleSize,true);
+	Dataset!(float) testDataset = sampledTestSet.astype!(float);
+    delete sampledTestSet;   
+    scope(exit) delete testDataset;
+    
 	logger.info(sprint("Sampled dataset size: {}",sampledDataset.rows));
 	logger.info(sprint("Test dataset size: {}",testDataset.rows));
  	
  	
  	logger.info("Computing ground truth: ");
+    int [][] gt_matches;  
  	float linearTime = profile({
- 		testDataset.computeGT(sampledDataset,1,0);
+        gt_matches = computeGroundTruth(sampledDataset, testDataset, 1, 0);
  	});
+    scope(exit) free(gt_matches);  
 	
 	// Start parameter autotune process
 	logger.info("Autotuning parameters...");
@@ -230,7 +241,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		logger.info(sprint("KMeansTree using params: max_iterations={}, branching={}",p[0],p[1]));
 		KMeansTree!(T) kmeans = new KMeansTree!(T)(sampledDataset,kmeansParams);
 		float buildTime = profile({kmeans.buildIndex();});	
-		float searchTime = executeActions(REPEATS, {return testNNIndexPrecision!(T,true,false)(kmeans, sampledDataset, testDataset, desiredPrecision, checks, nn);});
+		float searchTime = executeActions(REPEATS, {return testNNIndexPrecision!(T,true,false)(kmeans, sampledDataset, testDataset, gt_matches, desiredPrecision, checks, nn);});
 		float datasetMemory = sampledDataset.rows*sampledDataset.cols*T.sizeof;
 		cost.memoryCost = (kmeans.usedMemory+datasetMemory)/datasetMemory;
 		cost.searchTimeCost = searchTime;
@@ -288,7 +299,7 @@ Params estimateBuildIndexParams(T)(Dataset!(T) inputDataset, float desiredPrecis
 		
 		float buildTime = profile({kdtree.buildIndex();});
 		float searchTime = executeActions( REPEATS, { 
-						return testNNIndexPrecision!(T,true,false)(kdtree, sampledDataset, testDataset, desiredPrecision, checks, nn);
+						return testNNIndexPrecision!(T,true,false)(kdtree, sampledDataset, testDataset, gt_matches, desiredPrecision, checks, nn);
 						} );
 		float datasetMemory = sampledDataset.rows*sampledDataset.cols*T.sizeof;
 		cost.memoryCost = (kdtree.usedMemory+datasetMemory)/datasetMemory;
@@ -444,11 +455,17 @@ void estimateSearchParams(T)(NNIndex index, Dataset!(T) inputDataset, float desi
 	
 	int samples = min(inputDataset.rows/10, SAMPLE_COUNT);
 	if (samples>0) {
-		Dataset!(float) testDataset = new Dataset!(float)();
-		testDataset.init(inputDataset.sample(samples,false));
+        auto sampledTestDataset = inputDataset.sample(samples,false);
+        Dataset!(float) testDataset = sampledTestDataset.astype!(float);
+        delete sampledTestDataset;
+        scope(exit) delete testDataset;      
 		logger.info("Computing ground truth");
 		
-		float linear = profile({testDataset.computeGT(inputDataset,1,1);});
+        int[][] gt_matches;
+		float linear = profile({
+            gt_matches = computeGroundTruth(inputDataset, testDataset, 1,1);      
+        });
+        scope(exit) free(gt_matches);
 		
 		int checks;
 		logger.info("Estimating number of checks");
