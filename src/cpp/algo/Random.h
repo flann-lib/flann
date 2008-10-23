@@ -12,49 +12,28 @@
  * License:
  * 
  *************************************************************************/
-module util.Random;
 
-import tango.stdc.time;
-import tango.math.Random;
+#include <stdlib.h>
+#include <algorithm>
+#include <cassert>
 
-import util.Utils;
-import util.Logger;
-
-/**
- * Declaration for random functions from C world.
- */
-// extern (C) {
-// 	double drand48();
-// 	double lrand48();
-// 	double srand48(long);
-// }
-// 
+using namespace std;
 
 
-/**
- * Initialize the random number generator with a random seed
- * using the system time.
- */
-static this() {
-// 	srand48(time(null));
-// 	srand48(0);
-}
 
 
-void seed_random(uint value)
+double rand_double(double high = 1.0, double low=0)
 {
-	Random.shared.seed(value);
+    return low + ((high-low) * (std::rand() / (RAND_MAX + 1.0)));
 }
 
-uint next_random(uint max)
+
+int rand_int(int high = RAND_MAX, int low = 0)
 {
-	return Random.shared.next(max);
+    return low + (int) ( double(high-low) * (std::rand() / (RAND_MAX + 1.0)));    
 }
 
-double next_random()
-{
-	return (cast(double)Random.shared.next())/uint.max;
-}
+
 
 /**
  * Random number generator that returns a distinct number from 
@@ -63,24 +42,26 @@ double next_random()
  * TODO: improve on this to use a generator function instread of an
  * array of randomly permuted numbers
  */
-class DistinctRandom
+class UniqueRandom
 {
-	private int[] vals;
-	private int counter;
+	int* vals;
+    int size;
+	int counter;
 
+public:
 	/**
 	 * Constructor.
 	 * Params:
 	 *     n = the size of the interval from which to generate
 	 *     		random numbers.
 	 */
-	public this(int n) {
+	UniqueRandom(int n) : vals(NULL) {
 		init(n);
 	}
 	
-	public ~this()
+	~UniqueRandom()
 	{
-		delete vals;
+		delete[] vals;
 	}
 	
 	/**
@@ -89,23 +70,25 @@ class DistinctRandom
 	 * 		n = the size of the interval from which to generate
 	 *     		random numbers.
 	 */
-	private void init(int n) 
+	void init(int n) 
 	{	
-		// create and initialize an array of size n
-		if (vals is null) {
-			vals = new int[n];
-		}
-		foreach(i,ref v;vals) {
-			v = i;
+    	// create and initialize an array of size n
+		if (vals == NULL || n!=size) {
+            delete[] vals;
+	        size = n;
+            vals = new int[size];
+    	}
+    	for(size_t i=0;i<size;++i) {
+			vals[i] = i;
 		}
 	
 		// shuffle the elements in the array
         // Fisher-Yates shuffle
-		for (int i=n;i>0;--i) {
+		for (int i=size;i>0;--i) {
 // 			int rand = cast(int) (drand48() * n);  
-			int rand = next_random(i);
-			assert(rand >=0 && rand < i);
-			swap(vals[i-1], vals[rand]);
+			int rnd = rand_int(i);
+			assert(rnd >=0 && rnd < i);
+			swap(vals[i-1], vals[rnd]);
 		}
 		
 		counter = 0;
@@ -116,13 +99,13 @@ class DistinctRandom
 	 * than 'n' on each call. It should be called maximum 'n' times.
 	 * Returns: a random integer
 	 */
-	public int nextRandom() {
-		if (counter==vals.length) {
+	int next() {
+		if (counter==size) {
 			return -1;
 		} else {
 			return vals[counter++];
 		}
 	}
-}
+};
 
 
