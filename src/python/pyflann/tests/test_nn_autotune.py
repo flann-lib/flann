@@ -19,48 +19,48 @@ class Test_PyFLANN_nn(unittest.TestCase):
     def test_nn_2d_10pt_kmeans(self):
         self.__nd_random_test_autotune(2, 2, algorithm='kdtree')
         
-    def test_nn_autotune_2d_1000pt_kmeans(self):
-        self.__nd_random_test_autotune(2, 1000, algorithm='kmeans')
-
-    def test_nn_autotune_100d_1000pt_kmeans(self):
-        self.__nd_random_test_autotune(100, 1000, algorithm='kmeans')
-
-    def test_nn_autotune_500d_100pt_kmeans(self):
-        self.__nd_random_test_autotune(500, 100, algorithm='kmeans')
-
-    def test_nn_autotune_2d_1000pt_kdtree(self):
-        self.__nd_random_test_autotune(2, 1000, algorithm='kdtree')
-
-    def test_nn_autotune_100d_1000pt_kdtree(self):
-        self.__nd_random_test_autotune(100, 1000, algorithm='kdtree')
-
-    def test_nn_autotune_500d_100pt_kdtree(self):
-        self.__nd_random_test_autotune(500, 100, algorithm='kdtree')
-
-    def test_nn_autotune_2d_1000pt_composite(self):
-        self.__nd_random_test_autotune(2, 1000, algorithm='composite')
-
-    def test_nn_autotune_100d_1000pt_composite(self):
-        self.__nd_random_test_autotune(100, 1000, algorithm='composite')
-
-    def test_nn_autotune_500d_100pt_composite(self):
-        self.__nd_random_test_autotune(500, 100, algorithm='composite')
-
-
-    ##########################################################################################
-    # Stress it should handle
-
-    def test_nn_stress_1d_1pt_kmeans_autotune(self):
-        self.__nd_random_test_autotune(1, 1, algorithm='kmeans')
-
-    def test_nn_stress_1d_1pt_kmeans_autotune(self):
-        self.__nd_random_test_autotune(1, 1, algorithm='linear')
-
-    def test_nn_stress_1d_1pt_kdtree_autotune(self):
-        self.__nd_random_test_autotune(1, 1, algorithm='kdtree')
-
-    def test_nn_stress_1d_1pt_composite_autotune(self):
-        self.__nd_random_test_autotune(1, 1, algorithm='composite')
+#    def test_nn_autotune_2d_1000pt_kmeans(self):
+#        self.__nd_random_test_autotune(2, 1000, algorithm='kmeans')
+#
+#    def test_nn_autotune_100d_1000pt_kmeans(self):
+#        self.__nd_random_test_autotune(100, 1000, algorithm='kmeans')
+#
+#    def test_nn_autotune_500d_100pt_kmeans(self):
+#        self.__nd_random_test_autotune(500, 100, algorithm='kmeans')
+#
+#    def test_nn_autotune_2d_1000pt_kdtree(self):
+#        self.__nd_random_test_autotune(2, 1000, algorithm='kdtree')
+#
+#    def test_nn_autotune_100d_1000pt_kdtree(self):
+#        self.__nd_random_test_autotune(100, 1000, algorithm='kdtree')
+#
+#    def test_nn_autotune_500d_100pt_kdtree(self):
+#        self.__nd_random_test_autotune(500, 100, algorithm='kdtree')
+#
+#    def test_nn_autotune_2d_1000pt_composite(self):
+#        self.__nd_random_test_autotune(2, 1000, algorithm='composite')
+#
+#    def test_nn_autotune_100d_1000pt_composite(self):
+#        self.__nd_random_test_autotune(100, 1000, algorithm='composite')
+#
+#    def test_nn_autotune_500d_100pt_composite(self):
+#        self.__nd_random_test_autotune(500, 100, algorithm='composite')
+#
+#
+#    ##########################################################################################
+#    # Stress it should handle
+#
+#    def test_nn_stress_1d_1pt_kmeans_autotune(self):
+#        self.__nd_random_test_autotune(1, 1, algorithm='kmeans')
+#
+#    def test_nn_stress_1d_1pt_kmeans_autotune(self):
+#        self.__nd_random_test_autotune(1, 1, algorithm='linear')
+#
+#    def test_nn_stress_1d_1pt_kdtree_autotune(self):
+#        self.__nd_random_test_autotune(1, 1, algorithm='kdtree')
+#
+#    def test_nn_stress_1d_1pt_composite_autotune(self):
+#        self.__nd_random_test_autotune(1, 1, algorithm='composite')
 
 
 
@@ -76,11 +76,13 @@ class Test_PyFLANN_nn(unittest.TestCase):
         idx = self.nn.nn(x, x[perm], **kwargs)
         self.assert_(all(idx == perm))
 
-        for tp in [70, 80, 90, 99, 100]:
+        for tp in [0.70, 0.80, 0.90, 0.99, 1]:
 
             # Make sure it's okay if we do make all the points equal
             x_mult_nn = concatenate([x for i in xrange(num_neighbors)])
-            nidx = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, target_precision = tp, **kwargs)
+            #savetxt('dataset_%d_%d.dat'%(N,dim),x_mult_nn);
+            #savetxt('testset_%d_%d.dat'%(N,dim),x);
+            nidx = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, log_level="info", target_precision = tp, **kwargs)
 
             correctness = 0.0
 

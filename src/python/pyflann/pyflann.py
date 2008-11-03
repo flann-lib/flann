@@ -3,20 +3,21 @@ from __future__ import with_statement
 import sys
 
 try:
-    import flann_python_base as flann
+    import pyflann_base as flann
 except ImportError, ie:
-    sys.stderr.write('\n\nError importing required flann_python_base module. \n')
-    sys.stderr.write('Please create it by executing create_python_base.py.\n\n')
+    sys.stderr.write('\n\nError importing required pyflann_base module. \n')
     raise ie
 
-from index_type import index_type
-from pyflann_exceptions import *
+
+from util.exceptions import *
 
 import threading
 from numpy import float32, float64, int32, matrix, array, empty
 import numpy.random as _rn
 import pyflann_parameters as params
 from copy import copy
+
+index_type = int32
 
 class FLANN:
     """
@@ -79,22 +80,6 @@ class FLANN:
             self.__default_flann_arg_list = [self.__processed_param_dict[n]
                                             for n, v in params.get_flann_param_args()]
 
-    def getAlgorithmList(self):
-        """
-        Returns a list of the possible algorithms that can be used for
-        doing the nearest neighbor matching.
-        """
-        return get_algorithms()
-
-    def getDefaults(self):
-        """
-        Returns a copy of the dictionary of the current default
-        arguments.
-        """
-
-        with self.__params_lock:
-            return copy(self.__param_dict)
-
         
     ################################################################################
     # actual workhorse functions
@@ -127,7 +112,7 @@ class FLANN:
 
         params = self.__get_param_arg_list(kwargs)
 
-        flann.find_nn(pts_flat, npts, dim,
+        flann.pyflann_find_nearest_neighbors(pts_flat, npts, dim,
                     querypts_flat, nqpts,
                     result, num_neighbors,
                     *params)
@@ -162,9 +147,9 @@ class FLANN:
 
         with self.__idx_lock:
             if self.__curindex != None:
-                flann.del_index(self.__curindex, *flann_params)
+                flann.pyflann_free_index(self.__curindex, *flann_params)
             
-            self.__curindex, index_params = flann.make_index(pts_flat, npts, dim, *params_)
+            self.__curindex, index_params = flann.pyflann_build_index(pts_flat, npts, dim, *params_)
 
             self.__curindex_data = pts_flat
             self.__curindex_data_shape = pts.shape
@@ -207,7 +192,7 @@ class FLANN:
         checks = self.__get_one_param(kwargs, "checks")
         flann_params = self.__get_flann_param_arg_list(kwargs)
 
-        flann.find_nn_index(self.__curindex, 
+        flann.pyflann_find_nearest_neighbors_index(self.__curindex, 
                     querypts_flat, nqpts,
                     result, num_neighbors,
                     checks, *flann_params)
@@ -228,7 +213,7 @@ class FLANN:
         
         with self.__idx_lock:
             if self.__curindex != None:
-                flann.del_index(self.__curindex, *flann_params)
+                flann.pyflann_free_index(self.__curindex, *flann_params)
 
                 self.__curindex = None
                 self.__curindex_data = None
@@ -445,9 +430,6 @@ class FLANN:
         else:
             return [v for n,v in self.__get_flann_params(newargs)]
 
-    def __print_param_arg_list(self, newargs = {}):
-        print 'params: ', self.__get_params(newargs)
-        
     def __get_one_param(self, newargs, pname):
         params.process_param_dict(newargs)
         

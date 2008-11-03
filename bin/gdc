@@ -1,4 +1,0 @@
-#!/bin/bash
-
-DIR=`dirname $0`
-${DIR}/gdc-`uname -m`/bin/gdc $@

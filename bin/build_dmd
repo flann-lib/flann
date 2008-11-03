@@ -1,5 +1,0 @@
-#!/bin/bash
-
-DIR=`dirname $0`
-export PATH=$DIR/dmd/bin:$PATH
-$DIR/rebuild -dc=dmd-posix-tango $@

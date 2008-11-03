@@ -4,7 +4,6 @@ their global defaults are.  Note that the type must be correct, as the
 type is used to create the c binding code.
 """
 
-from pyflann_exceptions import *
 
 __index_param_args =[('algorithm', "default"),
                      ('checks', 32),
@@ -12,7 +11,9 @@ __index_param_args =[('algorithm', "default"),
                      ('branching', 32),
                      ('iterations', 5),
                      ('target_precision', -1.),
-                     ('centers_init', "random")]  
+                     ('centers_init', "random"),
+                     ('build_weight', 0.01),
+                     ('memory_weight', 0.0) ]
 
 __flann_param_args = [('log_level', 'default'),
                      ('random_seed', -1)]
