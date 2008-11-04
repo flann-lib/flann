@@ -712,13 +712,13 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
     py::object return_val;
     int exception_occured = 0;
     PyObject *py_local_dict = NULL;
-    static char *kwlist[] = {"dataset","npts","dim","log_level","random_seed","algorithm","checks","trees","branching","iterations","target_precision","centers_init","build_weight","memory_weight","local_dict", NULL};
-    PyObject *py_dataset, *py_npts, *py_dim, *py_log_level, *py_random_seed, *py_algorithm, *py_checks, *py_trees, *py_branching, *py_iterations, *py_target_precision, *py_centers_init, *py_build_weight, *py_memory_weight;
-    int dataset_used, npts_used, dim_used, log_level_used, random_seed_used, algorithm_used, checks_used, trees_used, branching_used, iterations_used, target_precision_used, centers_init_used, build_weight_used, memory_weight_used;
-    py_dataset = py_npts = py_dim = py_log_level = py_random_seed = py_algorithm = py_checks = py_trees = py_branching = py_iterations = py_target_precision = py_centers_init = py_build_weight = py_memory_weight = NULL;
-    dataset_used= npts_used= dim_used= log_level_used= random_seed_used= algorithm_used= checks_used= trees_used= branching_used= iterations_used= target_precision_used= centers_init_used= build_weight_used= memory_weight_used = 0;
+    static char *kwlist[] = {"dataset","npts","dim","log_level","random_seed","algorithm","checks","cb_index","trees","branching","iterations","target_precision","centers_init","build_weight","memory_weight","sample_fraction","local_dict", NULL};
+    PyObject *py_dataset, *py_npts, *py_dim, *py_log_level, *py_random_seed, *py_algorithm, *py_checks, *py_cb_index, *py_trees, *py_branching, *py_iterations, *py_target_precision, *py_centers_init, *py_build_weight, *py_memory_weight, *py_sample_fraction;
+    int dataset_used, npts_used, dim_used, log_level_used, random_seed_used, algorithm_used, checks_used, cb_index_used, trees_used, branching_used, iterations_used, target_precision_used, centers_init_used, build_weight_used, memory_weight_used, sample_fraction_used;
+    py_dataset = py_npts = py_dim = py_log_level = py_random_seed = py_algorithm = py_checks = py_cb_index = py_trees = py_branching = py_iterations = py_target_precision = py_centers_init = py_build_weight = py_memory_weight = py_sample_fraction = NULL;
+    dataset_used= npts_used= dim_used= log_level_used= random_seed_used= algorithm_used= checks_used= cb_index_used= trees_used= branching_used= iterations_used= target_precision_used= centers_init_used= build_weight_used= memory_weight_used= sample_fraction_used = 0;
     
-    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOO|O:pyflann_build_index",kwlist,&py_dataset, &py_npts, &py_dim, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_local_dict))
+    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOO|O:pyflann_build_index",kwlist,&py_dataset, &py_npts, &py_dim, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_cb_index, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_sample_fraction, &py_local_dict))
        return NULL;
     try                              
     {                                
@@ -752,6 +752,9 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
         py_checks = py_checks;
         int checks = convert_to_int(py_checks,"checks");
         checks_used = 1;
+        py_cb_index = py_cb_index;
+        double cb_index = convert_to_float(py_cb_index,"cb_index");
+        cb_index_used = 1;
         py_trees = py_trees;
         int trees = convert_to_int(py_trees,"trees");
         trees_used = 1;
@@ -773,6 +776,9 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
         py_memory_weight = py_memory_weight;
         double memory_weight = convert_to_float(py_memory_weight,"memory_weight");
         memory_weight_used = 1;
+        py_sample_fraction = py_sample_fraction;
+        double sample_fraction = convert_to_float(py_sample_fraction,"sample_fraction");
+        sample_fraction_used = 1;
         /*<function call here>*/     
         #line 71 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         FLANNParameters flannparams;
@@ -781,6 +787,7 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
         flannparams.log_destination = NULL;IndexParameters idxparams;
         idxparams.algorithm = algorithm; 
         idxparams.checks = checks; 
+        idxparams.cb_index = cb_index; 
         idxparams.trees = trees; 
         idxparams.branching = branching; 
         idxparams.iterations = iterations; 
@@ -788,6 +795,7 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
         idxparams.centers_init = centers_init; 
         idxparams.build_weight = build_weight; 
         idxparams.memory_weight = memory_weight; 
+        idxparams.sample_fraction = sample_fraction; 
         
                     float speedup = 1;
                     py::tuple result(2);
@@ -795,6 +803,7 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
                     py::dict ret_params;
         ret_params["algorithm"] = idxparams.algorithm; 
         ret_params["checks"] = idxparams.checks; 
+        ret_params["cb_index"] = idxparams.cb_index; 
         ret_params["trees"] = idxparams.trees; 
         ret_params["branching"] = idxparams.branching; 
         ret_params["iterations"] = idxparams.iterations; 
@@ -802,6 +811,7 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
         ret_params["centers_init"] = idxparams.centers_init; 
         ret_params["build_weight"] = idxparams.build_weight; 
         ret_params["memory_weight"] = idxparams.memory_weight; 
+        ret_params["sample_fraction"] = idxparams.sample_fraction; 
         
                     ret_params["speedup"] = speedup;
                     result[1] = ret_params;
@@ -890,13 +900,13 @@ static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, P
     py::object return_val;
     int exception_occured = 0;
     PyObject *py_local_dict = NULL;
-    static char *kwlist[] = {"dataset","npts","dim","testset","tcount","result","num_neighbors","log_level","random_seed","algorithm","checks","trees","branching","iterations","target_precision","centers_init","build_weight","memory_weight","local_dict", NULL};
-    PyObject *py_dataset, *py_npts, *py_dim, *py_testset, *py_tcount, *py_result, *py_num_neighbors, *py_log_level, *py_random_seed, *py_algorithm, *py_checks, *py_trees, *py_branching, *py_iterations, *py_target_precision, *py_centers_init, *py_build_weight, *py_memory_weight;
-    int dataset_used, npts_used, dim_used, testset_used, tcount_used, result_used, num_neighbors_used, log_level_used, random_seed_used, algorithm_used, checks_used, trees_used, branching_used, iterations_used, target_precision_used, centers_init_used, build_weight_used, memory_weight_used;
-    py_dataset = py_npts = py_dim = py_testset = py_tcount = py_result = py_num_neighbors = py_log_level = py_random_seed = py_algorithm = py_checks = py_trees = py_branching = py_iterations = py_target_precision = py_centers_init = py_build_weight = py_memory_weight = NULL;
-    dataset_used= npts_used= dim_used= testset_used= tcount_used= result_used= num_neighbors_used= log_level_used= random_seed_used= algorithm_used= checks_used= trees_used= branching_used= iterations_used= target_precision_used= centers_init_used= build_weight_used= memory_weight_used = 0;
+    static char *kwlist[] = {"dataset","npts","dim","testset","tcount","result","num_neighbors","log_level","random_seed","algorithm","checks","cb_index","trees","branching","iterations","target_precision","centers_init","build_weight","memory_weight","sample_fraction","local_dict", NULL};
+    PyObject *py_dataset, *py_npts, *py_dim, *py_testset, *py_tcount, *py_result, *py_num_neighbors, *py_log_level, *py_random_seed, *py_algorithm, *py_checks, *py_cb_index, *py_trees, *py_branching, *py_iterations, *py_target_precision, *py_centers_init, *py_build_weight, *py_memory_weight, *py_sample_fraction;
+    int dataset_used, npts_used, dim_used, testset_used, tcount_used, result_used, num_neighbors_used, log_level_used, random_seed_used, algorithm_used, checks_used, cb_index_used, trees_used, branching_used, iterations_used, target_precision_used, centers_init_used, build_weight_used, memory_weight_used, sample_fraction_used;
+    py_dataset = py_npts = py_dim = py_testset = py_tcount = py_result = py_num_neighbors = py_log_level = py_random_seed = py_algorithm = py_checks = py_cb_index = py_trees = py_branching = py_iterations = py_target_precision = py_centers_init = py_build_weight = py_memory_weight = py_sample_fraction = NULL;
+    dataset_used= npts_used= dim_used= testset_used= tcount_used= result_used= num_neighbors_used= log_level_used= random_seed_used= algorithm_used= checks_used= cb_index_used= trees_used= branching_used= iterations_used= target_precision_used= centers_init_used= build_weight_used= memory_weight_used= sample_fraction_used = 0;
     
-    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOOOO|O:pyflann_find_nearest_neighbors",kwlist,&py_dataset, &py_npts, &py_dim, &py_testset, &py_tcount, &py_result, &py_num_neighbors, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_local_dict))
+    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOOOOOO|O:pyflann_find_nearest_neighbors",kwlist,&py_dataset, &py_npts, &py_dim, &py_testset, &py_tcount, &py_result, &py_num_neighbors, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_cb_index, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_sample_fraction, &py_local_dict))
        return NULL;
     try                              
     {                                
@@ -960,6 +970,9 @@ static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, P
         py_checks = py_checks;
         int checks = convert_to_int(py_checks,"checks");
         checks_used = 1;
+        py_cb_index = py_cb_index;
+        double cb_index = convert_to_float(py_cb_index,"cb_index");
+        cb_index_used = 1;
         py_trees = py_trees;
         int trees = convert_to_int(py_trees,"trees");
         trees_used = 1;
@@ -981,6 +994,9 @@ static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, P
         py_memory_weight = py_memory_weight;
         double memory_weight = convert_to_float(py_memory_weight,"memory_weight");
         memory_weight_used = 1;
+        py_sample_fraction = py_sample_fraction;
+        double sample_fraction = convert_to_float(py_sample_fraction,"sample_fraction");
+        sample_fraction_used = 1;
         /*<function call here>*/     
         #line 91 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         FLANNParameters flannparams;
@@ -989,6 +1005,7 @@ static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, P
         flannparams.log_destination = NULL;IndexParameters idxparams;
         idxparams.algorithm = algorithm; 
         idxparams.checks = checks; 
+        idxparams.cb_index = cb_index; 
         idxparams.trees = trees; 
         idxparams.branching = branching; 
         idxparams.iterations = iterations; 
@@ -996,6 +1013,7 @@ static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, P
         idxparams.centers_init = centers_init; 
         idxparams.build_weight = build_weight; 
         idxparams.memory_weight = memory_weight; 
+        idxparams.sample_fraction = sample_fraction; 
         
                     //printf("npts = %d, dim = %d, tcount = %d\n", npts, dim, tcount);
                     flann_find_nearest_neighbors(dataset, npts, dim, testset, tcount,
@@ -1150,13 +1168,13 @@ static PyObject* run_kmeans(PyObject*self, PyObject* args, PyObject* kywds)
     py::object return_val;
     int exception_occured = 0;
     PyObject *py_local_dict = NULL;
-    static char *kwlist[] = {"dataset","npts","dim","num_clusters","result","log_level","random_seed","algorithm","checks","trees","branching","iterations","target_precision","centers_init","build_weight","memory_weight","local_dict", NULL};
-    PyObject *py_dataset, *py_npts, *py_dim, *py_num_clusters, *py_result, *py_log_level, *py_random_seed, *py_algorithm, *py_checks, *py_trees, *py_branching, *py_iterations, *py_target_precision, *py_centers_init, *py_build_weight, *py_memory_weight;
-    int dataset_used, npts_used, dim_used, num_clusters_used, result_used, log_level_used, random_seed_used, algorithm_used, checks_used, trees_used, branching_used, iterations_used, target_precision_used, centers_init_used, build_weight_used, memory_weight_used;
-    py_dataset = py_npts = py_dim = py_num_clusters = py_result = py_log_level = py_random_seed = py_algorithm = py_checks = py_trees = py_branching = py_iterations = py_target_precision = py_centers_init = py_build_weight = py_memory_weight = NULL;
-    dataset_used= npts_used= dim_used= num_clusters_used= result_used= log_level_used= random_seed_used= algorithm_used= checks_used= trees_used= branching_used= iterations_used= target_precision_used= centers_init_used= build_weight_used= memory_weight_used = 0;
+    static char *kwlist[] = {"dataset","npts","dim","num_clusters","result","log_level","random_seed","algorithm","checks","cb_index","trees","branching","iterations","target_precision","centers_init","build_weight","memory_weight","sample_fraction","local_dict", NULL};
+    PyObject *py_dataset, *py_npts, *py_dim, *py_num_clusters, *py_result, *py_log_level, *py_random_seed, *py_algorithm, *py_checks, *py_cb_index, *py_trees, *py_branching, *py_iterations, *py_target_precision, *py_centers_init, *py_build_weight, *py_memory_weight, *py_sample_fraction;
+    int dataset_used, npts_used, dim_used, num_clusters_used, result_used, log_level_used, random_seed_used, algorithm_used, checks_used, cb_index_used, trees_used, branching_used, iterations_used, target_precision_used, centers_init_used, build_weight_used, memory_weight_used, sample_fraction_used;
+    py_dataset = py_npts = py_dim = py_num_clusters = py_result = py_log_level = py_random_seed = py_algorithm = py_checks = py_cb_index = py_trees = py_branching = py_iterations = py_target_precision = py_centers_init = py_build_weight = py_memory_weight = py_sample_fraction = NULL;
+    dataset_used= npts_used= dim_used= num_clusters_used= result_used= log_level_used= random_seed_used= algorithm_used= checks_used= cb_index_used= trees_used= branching_used= iterations_used= target_precision_used= centers_init_used= build_weight_used= memory_weight_used= sample_fraction_used = 0;
     
-    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOO|O:run_kmeans",kwlist,&py_dataset, &py_npts, &py_dim, &py_num_clusters, &py_result, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_local_dict))
+    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOOOO|O:run_kmeans",kwlist,&py_dataset, &py_npts, &py_dim, &py_num_clusters, &py_result, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_cb_index, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_sample_fraction, &py_local_dict))
        return NULL;
     try                              
     {                                
@@ -1205,6 +1223,9 @@ static PyObject* run_kmeans(PyObject*self, PyObject* args, PyObject* kywds)
         py_checks = py_checks;
         int checks = convert_to_int(py_checks,"checks");
         checks_used = 1;
+        py_cb_index = py_cb_index;
+        double cb_index = convert_to_float(py_cb_index,"cb_index");
+        cb_index_used = 1;
         py_trees = py_trees;
         int trees = convert_to_int(py_trees,"trees");
         trees_used = 1;
@@ -1226,6 +1247,9 @@ static PyObject* run_kmeans(PyObject*self, PyObject* args, PyObject* kywds)
         py_memory_weight = py_memory_weight;
         double memory_weight = convert_to_float(py_memory_weight,"memory_weight");
         memory_weight_used = 1;
+        py_sample_fraction = py_sample_fraction;
+        double sample_fraction = convert_to_float(py_sample_fraction,"sample_fraction");
+        sample_fraction_used = 1;
         /*<function call here>*/     
         #line 107 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         FLANNParameters flannparams;
@@ -1234,6 +1258,7 @@ static PyObject* run_kmeans(PyObject*self, PyObject* args, PyObject* kywds)
         flannparams.log_destination = NULL;IndexParameters idxparams;
         idxparams.algorithm = algorithm; 
         idxparams.checks = checks; 
+        idxparams.cb_index = cb_index; 
         idxparams.trees = trees; 
         idxparams.branching = branching; 
         idxparams.iterations = iterations; 
@@ -1241,6 +1266,7 @@ static PyObject* run_kmeans(PyObject*self, PyObject* args, PyObject* kywds)
         idxparams.centers_init = centers_init; 
         idxparams.build_weight = build_weight; 
         idxparams.memory_weight = memory_weight; 
+        idxparams.sample_fraction = sample_fraction; 
         
                     return_val = flann_compute_cluster_centers(dataset, npts, dim, num_clusters, (float*)result, &idxparams, &flannparams);
         if(py_local_dict)                                  

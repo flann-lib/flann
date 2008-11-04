@@ -98,6 +98,7 @@ public:
 			++count;
 		} 
 		else if (dist < dists[count-1] || (dist == dists[count-1] && index < indices[count-1])) {
+//         else if (dist < dists[count-1]) {
 			indices[count-1] = index;
 			dists[count-1] = dist;
 		}
@@ -108,6 +109,7 @@ public:
 		int i = count-1;
 		// bubble up
 		while (i>=1 && (dists[i]<dists[i-1] || (dists[i]==dists[i-1] && indices[i]<indices[i-1]) ) ) {
+//         while (i>=1 && (dists[i]<dists[i-1]) ) {
 			swap(indices[i],indices[i-1]);
 			swap(dists[i],dists[i-1]);
 			i--;

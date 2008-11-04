@@ -7,13 +7,15 @@ type is used to create the c binding code.
 
 __index_param_args =[('algorithm', "default"),
                      ('checks', 32),
+                     ('cb_index', 0.5),
                      ('trees',  1),
                      ('branching', 32),
                      ('iterations', 5),
                      ('target_precision', -1.),
                      ('centers_init', "random"),
                      ('build_weight', 0.01),
-                     ('memory_weight', 0.0) ]
+                     ('memory_weight', 0.0),
+                     ('sample_fraction', 0.1) ]
 
 __flann_param_args = [('log_level', 'default'),
                      ('random_seed', -1)]

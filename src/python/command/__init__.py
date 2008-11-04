@@ -1,14 +1,19 @@
 
-__all__ = [ "generate_random", "compute_gt", "compute_nn" ]
+__all__ = [ "generate_random", "compute_gt", "compute_nn", "autotune" ]
 
 from optparse import OptionParser
 from string import split
+
+from util.exceptions import *
 
 _commands = {}
 
 def get_command(name):
     exec "import %s"%name
-    return _commands[name]()
+    try:
+        return _commands[name]()
+    except KeyError:
+        raise CommandException("Invalid command")
 
 
 class CommandMetaClass(type):

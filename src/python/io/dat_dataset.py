@@ -11,6 +11,5 @@ def write(dataset, filename):
     numpy.savetxt(filename,dataset, fmt="%g")
 
 def read(filename):
-    
-    raise FLANNException("dat_dataset.write: Not implemented")
-    
+    dataset = numpy.loadtxt(filename, dtype=numpy.float32)
+    return dataset

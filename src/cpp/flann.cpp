@@ -31,6 +31,7 @@ namespace {
 	{
 		Params p;
 		p["checks"] = parameters.checks;
+        p["cb_index"] = parameters.cb_index;
 		p["trees"] = parameters.trees;
 		p["max-iterations"] = parameters.iterations;
 		p["branching"] = parameters.branching;
@@ -46,7 +47,7 @@ namespace {
 		if (parameters.algorithm >=0 && parameters.algorithm<ARRAY_LEN(algos)) {
 			p["algorithm"] = algos[parameters.algorithm];
 		}
-		
+
 		return p;
 	}
 	
@@ -59,11 +60,19 @@ namespace {
 		} catch (...) {
 			p.checks = -1;
 		}
+
+        try {
+            p.cb_index = (float)params["cb_index"];
+        } catch (...) {
+            p.cb_index = 0.5;
+        }
+        
 		try {
 			p.trees = (int)params["trees"];
 		} catch (...) {
 			p.trees = -1;
 		}
+
 		try {
 			p.iterations = (int)params["max-iterations"];
 		} catch (...) {
@@ -122,10 +131,12 @@ namespace {
 void flann_init()
 {
     if (!initialized) {
-        printf("Initializing flann\n");
+        logger.info("Initializing flann\n");
         initialized = true;
-        nn_ids = new NNIndexPtr[64];
-        memset(nn_ids, 0, 64*sizeof(NNIndexPtr));
+        nn_ids_length = 64;
+        nn_ids_count = 0;
+        nn_ids = new NNIndexPtr[nn_ids_length];
+        memset(nn_ids, 0, nn_ids_length*sizeof(NNIndexPtr));
     }
 }
 
@@ -185,6 +196,7 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 		float target_precision = index_params->target_precision;
         float build_weight = index_params->build_weight;
         float memory_weight = index_params->memory_weight;
+        float sample_fraction = index_params->sample_fraction;
 		
 		NNIndex* index = NULL;
 		if (target_precision < 0) {
@@ -205,16 +217,20 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
             if (index_params->memory_weight < 0) {
                 throw FLANNException("The index_params.memory_weight must be positive.");
             }
-            Autotune autotuner(index_params->build_weight, index_params->memory_weight);    
+            Autotune autotuner(index_params->build_weight, index_params->memory_weight, index_params->sample_fraction);    
 			Params params = autotuner.estimateBuildIndexParams(*inputData, target_precision);
 			index = create_index((const char *)params["algorithm"],*inputData,params);
 			index->buildIndex();
 			autotuner.estimateSearchParams(*index,*inputData,target_precision,params);
-			
+
 			*index_params = paramsToParameters(params);
 			index_params->target_precision = target_precision;
             index_params->build_weight = build_weight;
             index_params->memory_weight = memory_weight;
+            index_params->sample_fraction = sample_fraction;
+            
+            logger.info("value of cb_index is: %g\n",index_params->cb_index);
+
 			if (speedup != NULL) {
 				*speedup = float(params["speedup"]);
 			}
@@ -239,24 +255,28 @@ int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* tes
 		
         DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
 		float target_precision = index_params->target_precision;
-				
+
+        StartStopTimer t;
 		NNIndexPtr index;
 		if (target_precision < 0) {
 			Params params = parametersToParams(*index_params);
 			logger.info("Building index");
             index = create_index((const char *)params["algorithm"],*inputData,params);
+            t.start();
  			index->buildIndex();
+            t.stop();
+            logger.info("Building index took: %g\n",t.value);
 		}
 		else {
             logger.info("Build index: %g\n", index_params->build_weight);
-            Autotune autotuner(index_params->build_weight, index_params->memory_weight);    
+            Autotune autotuner(index_params->build_weight, index_params->memory_weight, index_params->sample_fraction);    
             Params params = autotuner.estimateBuildIndexParams(*inputData, target_precision);
             index = create_index((const char *)params["algorithm"],*inputData,params);
             index->buildIndex();
             autotuner.estimateSearchParams(*index,*inputData,target_precision,params);
 			*index_params = paramsToParameters(params);
 		}
-		logger.info("Index created.\n");
+		logger.info("Finished creating the index.\n");
 		
 		logger.info("Searching for nearest neighbors.\n");
         int skipMatches = 0;
@@ -296,6 +316,8 @@ int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int
 			if (index!=NULL) {
 				int length = index->veclen();
 				
+                StartStopTimer t;
+                t.start();
 				int skipMatches = 0;
 				ResultSet resultSet(nn+skipMatches);
 				
@@ -309,6 +331,8 @@ int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int
 					result += nn;
 					testset += length;
 				}
+                t.stop();
+                logger.info("Searching took %g seconds\n",t.value);
 			}
 			else {
 				throw FLANNException("Invalid index ID");

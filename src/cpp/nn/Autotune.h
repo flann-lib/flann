@@ -314,8 +314,9 @@ public:
             bestCost = kdtreeCost;
         }
         
-        logger.info("Best params: \n");
+        logger.info("Best params: ");
         log_params(LOG_INFO, bestParams);
+        logger.info("\n");
         
         delete sampledDataset;
         delete testDataset;
@@ -374,6 +375,7 @@ public:
             }
     
             logger.info("Required number of checks: %d \n",checks);;
+            logger.info("Optimum cb_index: %g\n",cb_index);;
             searchParams["checks"] = checks;
             searchParams["speedup"] = (linear/searchTime);
             searchParams["cb_index"] = cb_index;

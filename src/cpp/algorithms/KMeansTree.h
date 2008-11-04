@@ -532,17 +532,16 @@ public:
         float variance;
         KMeansNode clusters[numClusters];
 
-        //int clusterCount = getMinVarianceClusters(root, clusters, numClusters, variance);
+        int clusterCount = getMinVarianceClusters(root, clusters, numClusters, variance);
 
-//         printf("Clusters requested: %d, returning %d\n",numClusters, clusterCount);
+//         logger.info("Clusters requested: %d, returning %d\n",numClusters, clusterCount);
         
         
-//         for (int i=0;i<clusterCount;++i) {
-//             //memcpy(centers, clusters[i]->pivot, veclen_*sizeof(float));
-//         }
+        for (int i=0;i<clusterCount;++i) {
+            memcpy(centers, clusters[i]->pivot, veclen_*sizeof(float));
+        }
         
-//         return clusterCount;
-        return 0;
+        return clusterCount;
     }
 
 

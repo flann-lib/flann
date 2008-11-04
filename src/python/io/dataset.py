@@ -11,7 +11,12 @@ def read(filename):
     if header[0:6]=="BINARY":
         return binary_dataset.read(filename)
     else:
-        raise FLANNException("Error: Unknown dataset format")
+        import string
+        try:
+            value = float(string.split(header)[0])
+            return dat_dataset.read(filename)
+        except:
+            raise FLANNException("Error: Unknown dataset format")
     
     
 def write(dataset, filename, format = "bin"):

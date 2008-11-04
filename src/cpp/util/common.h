@@ -23,9 +23,14 @@ void log_params(int level, Params p)
 {
     Params::iterator it;
     logger.log(level, "{ ");
+    bool first = true;
     for (it=p.begin(); it!=p.end(); ++it) {
+        if (!first) {
+            logger.info(", ");
+        }
+        first = false;
         logger.log(level, "%s : ",it->first);
-        logger.log(level, "value");
+        logger.log(level, "%s",(it->second).toString().c_str());
     }
     logger.log(level, " }");
 }

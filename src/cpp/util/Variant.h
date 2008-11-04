@@ -2,41 +2,58 @@
 #define VARIANT_H
 
 #include <stdio.h>
+#include <string>
+#include <sstream>
+
+using namespace std;
 
 
 class Variant {
-    public:
+    enum {
+        INT,
+        FLOAT,
+        DOUBLE,
+        STR
+    } type;
+
     union {
         int intVal;
         float floatVal;
         double doubleVal;
         const char* strVal;
     };
+
+    public:
     
 
     Variant()
     {
         doubleVal = 0;
+        type = DOUBLE;        
     };
 
     Variant(int val) 
     {
         intVal = val;
+        type = INT;
     }
     
     Variant(float val) 
     {
         floatVal = val;
+        type = FLOAT;
     }
     
     Variant(double val) 
     {
         doubleVal = val;
+        type = DOUBLE;
     }
     
     Variant(const char* val) 
     {
         strVal = val;
+        type = STR;
     }
     
     operator int()
@@ -61,22 +78,41 @@ class Variant {
 
     bool operator==(int val)
     {
-        return intVal==val;
+        return type==INT && intVal==val;
     }
 
     bool operator==(float val)
     {
-        return floatVal==val;
+        return type==FLOAT && floatVal==val;
     }
 
     bool operator==(double val)
     {
-        return doubleVal==val;
+        return type==DOUBLE && doubleVal==val;
     }
 
     bool operator==(const char* val)
     {
-        return strVal==val;
+        return type==STR && strVal==val;
+    }
+
+    string toString()
+    {
+        ostringstream ss;
+        if (type==INT) {
+            ss << intVal;
+        }
+        else if (type==FLOAT) {
+            ss << floatVal;
+        }
+        else if (type==DOUBLE) {
+            ss << doubleVal;
+        }
+        else if (type==STR) {
+            ss << strVal;
+        }
+
+        return ss.str();
     }
 };
 

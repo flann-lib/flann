@@ -23,6 +23,7 @@ const int LOG_INFO	= 4;
 struct IndexParameters {
 	int algorithm;
 	int checks;
+    float cb_index;
 	int trees;
 	int branching;
 	int iterations;
@@ -30,7 +31,9 @@ struct IndexParameters {
 	float target_precision;
 	float build_weight;
 	float memory_weight;
+    float sample_fraction;
 };
+
 
 struct FLANNParameters {
 	int log_level;

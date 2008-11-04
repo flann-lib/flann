@@ -2,7 +2,7 @@
 import sys
 
 import command
-from util.exceptions import FLANNException
+from util.exceptions import *
 
 def print_help():
     print r"""Usage: %s [command commans_args]
@@ -23,8 +23,8 @@ def main():
         try:
             cmd = command.get_command(sys.argv[1])
             cmd.execute_command(sys.argv[2:])
-        except KeyError:
-            print "Invalid command specified"
+        except CommandException, er:
+            print er
             print_help()
         except FLANNException, ex:
             print ex

@@ -110,6 +110,6 @@ def run_kmeans(dataset = float32_2d, npts = int(0), dim = int(0), num_clusters =
             """ % (idxparam_ptr_code, flannparam_ptr_code)
 
 
-import_str = module._import(verbose=2)
+import_str = module._import(verbose=0)
 
 exec import_str
