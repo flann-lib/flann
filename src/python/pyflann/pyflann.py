@@ -112,7 +112,7 @@ class FLANN:
 
         params = self.__get_param_arg_list(kwargs)
 
-        flann.pyflann_find_nearest_neighbors(pts_flat, npts, dim,
+        flann.find_nearest_neighbors(pts_flat, npts, dim,
                     querypts_flat, nqpts,
                     result, num_neighbors,
                     *params)
@@ -140,16 +140,18 @@ class FLANN:
         npts, dim = pts.shape
         pts_flat = self.__getFlattenedArray(pts)
         
+        kwargs['random_seed'] = 0
         params_ = self.__get_param_arg_list(kwargs)
         flann_params = self.__get_flann_param_arg_list(kwargs)
 
-        kwargs['random_seed'] = self.__getRandomSeed(kwargs)
+        kwargs['random_seed'] = 0
+        #self.__getRandomSeed(kwargs)
 
         with self.__idx_lock:
             if self.__curindex != None:
-                flann.pyflann_free_index(self.__curindex, *flann_params)
+                flann.free_index(self.__curindex, *flann_params)
             
-            self.__curindex, index_params = flann.pyflann_build_index(pts_flat, npts, dim, *params_)
+            self.__curindex, index_params = flann.build_index(pts_flat, npts, dim, *params_)
 
             self.__curindex_data = pts_flat
             self.__curindex_data_shape = pts.shape
@@ -192,7 +194,7 @@ class FLANN:
         checks = self.__get_one_param(kwargs, "checks")
         flann_params = self.__get_flann_param_arg_list(kwargs)
 
-        flann.pyflann_find_nearest_neighbors_index(self.__curindex, 
+        flann.find_nearest_neighbors_index(self.__curindex, 
                     querypts_flat, nqpts,
                     result, num_neighbors,
                     checks, *flann_params)
@@ -213,7 +215,7 @@ class FLANN:
         
         with self.__idx_lock:
             if self.__curindex != None:
-                flann.pyflann_free_index(self.__curindex, *flann_params)
+                flann.free_index(self.__curindex, *flann_params)
 
                 self.__curindex = None
                 self.__curindex_data = None

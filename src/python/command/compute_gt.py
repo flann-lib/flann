@@ -6,7 +6,9 @@ from os.path import isfile
 import numpy
 import time
 
-from nn.misc import *
+
+from pyflann.flann_ctypes import compute_ground_truth
+#from nn.misc import *
 
 class ComputeGroundTruthCommand(BaseCommand):
     

@@ -1,5 +1,5 @@
 function test_flann
-data_path = '../data/';
+data_path = '../../flann/data/';
 outcome = {'FAILED!!!!!!!!!', 'PASSED'};
 
 failed = 0;

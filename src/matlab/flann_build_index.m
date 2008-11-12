@@ -29,15 +29,19 @@ if ~(isstruct(build_params))
 end
 
 if isfield(build_params,'target_precision')
-	build_weigh = 0.01;
-	if isfield(build_params,'build_weigh')
-		build_weigh = build_params.build_weigh;
+	build_weight = 0.01;
+	if isfield(build_params,'build_weight')
+		build_weight = build_params.build_weight;
 	end
-	memory_weigh = 0;
-	if isfield(build_params,'memory_weigh')
-		memory_weigh = build_params.memory_weigh;
+	memory_weight = 0;
+	if isfield(build_params,'memory_weight')
+		memory_weight = build_params.memory_weight;
 	end
-    p = [-1 build_params.target_precision build_weigh memory_weigh];
+    sample_fraction = 0.1;
+	if isfield(build_params,'sample_fraction')
+		sample_fraction = build_params.sample_fraction;
+	end
+    p = [-1 build_params.target_precision build_weight memory_weight sample_fraction];
 elseif isfield(build_params,'algorithm')
 	if strcmp(build_params.algorithm,'kdtree') && ~isfield(build_params,'trees')
 		error('Missing "trees" parameter');

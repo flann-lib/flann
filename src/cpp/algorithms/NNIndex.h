@@ -1,14 +1,21 @@
 #ifndef NNINDEX_H
 #define NNINDEX_H
 
+#include "common.h"
+#include "Dataset.h"
+
 class ResultSet;
+
 
 /**
  * Nearest-neighbor index base class 
  */
 class NNIndex 
 {
-public:    
+public:
+
+    virtual ~NNIndex() {};
+    
 	/**
 		Method responsible with building the index.
 	*/
@@ -17,7 +24,7 @@ public:
 	/**
 		Method that searches for NN
 	*/
-	virtual void findNeighbors(ResultSet& resultSet, float* vec, int maxCheck) = 0;
+	virtual void findNeighbors(ResultSet& resultSet, float* vec, Params searchParams) = 0;
 	
 	/**
 		Number of features in this index.
@@ -38,6 +45,14 @@ public:
     * Algorithm name
     */
     virtual const char* name() const = 0;
+
+
+    /**
+      Estimates the search parameters required in order to get a certain precision.
+      If testset is not given it uses cross-validation.
+    */
+    virtual Params estimateSearchParams(float precision, Dataset<float>* testset = NULL) = 0;
+
 };
 
 #endif //NNINDEX_H

@@ -2,7 +2,8 @@
 import sys
 from os.path import *
 import os
-from pyflann import *
+from pyflann.flann_ctypes import *
+#from pyflann import *
 from copy import copy
 from numpy import *
 from numpy.random import *

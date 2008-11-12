@@ -40,12 +40,19 @@ public:
 		/* nothing to do here for linear search */
 	}
 
-	void findNeighbors(ResultSet& resultSet, float* vec, int maxCheck) 
+	void findNeighbors(ResultSet& resultSet, float* vec, Params searchParams) 
 	{
 		for (int i=0;i<dataset.rows;++i) {
 			resultSet.addPoint(dataset[i],i);
 		}
 	}
+
+    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
+    {
+        Params params;        
+        return params;
+    }
+
 };
 
 #endif // LINEARSEARCH_H

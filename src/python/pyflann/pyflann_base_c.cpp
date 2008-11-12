@@ -21,6 +21,7 @@ extern "C" {
 #include <stdio.h>
 #include "numpy/arrayobject.h"
 #include "flann.h"
+#include "ground_truth.h"
 
 
 
@@ -660,7 +661,7 @@ static PyObject* flatten_double2float(PyObject*self, PyObject* args, PyObject* k
         float* pts_flat = (float*) pts_flat_array->data;
         pts_flat_used = 1;
         /*<function call here>*/     
-        #line 57 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
+        #line 68 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         
             size_t loc = 0;
             for(int i = 0; i < Npts[0]; ++i)
@@ -707,7 +708,7 @@ static PyObject* flatten_double2float(PyObject*self, PyObject* args, PyObject* k
                                   
     return return_val.disown();           
 }                                
-static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* kywds)
+static PyObject* build_index(PyObject*self, PyObject* args, PyObject* kywds)
 {
     py::object return_val;
     int exception_occured = 0;
@@ -718,7 +719,7 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
     py_dataset = py_npts = py_dim = py_log_level = py_random_seed = py_algorithm = py_checks = py_cb_index = py_trees = py_branching = py_iterations = py_target_precision = py_centers_init = py_build_weight = py_memory_weight = py_sample_fraction = NULL;
     dataset_used= npts_used= dim_used= log_level_used= random_seed_used= algorithm_used= checks_used= cb_index_used= trees_used= branching_used= iterations_used= target_precision_used= centers_init_used= build_weight_used= memory_weight_used= sample_fraction_used = 0;
     
-    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOO|O:pyflann_build_index",kwlist,&py_dataset, &py_npts, &py_dim, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_cb_index, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_sample_fraction, &py_local_dict))
+    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOO|O:build_index",kwlist,&py_dataset, &py_npts, &py_dim, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_cb_index, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_sample_fraction, &py_local_dict))
        return NULL;
     try                              
     {                                
@@ -780,7 +781,7 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
         double sample_fraction = convert_to_float(py_sample_fraction,"sample_fraction");
         sample_fraction_used = 1;
         /*<function call here>*/     
-        #line 71 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
+        #line 82 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         FLANNParameters flannparams;
         flannparams.log_level = log_level; 
         flannparams.random_seed = random_seed; 
@@ -844,7 +845,7 @@ static PyObject* pyflann_build_index(PyObject*self, PyObject* args, PyObject* ky
                                   
     return return_val.disown();           
 }                                
-static PyObject* pyflann_free_index(PyObject*self, PyObject* args, PyObject* kywds)
+static PyObject* free_index(PyObject*self, PyObject* args, PyObject* kywds)
 {
     py::object return_val;
     int exception_occured = 0;
@@ -855,7 +856,7 @@ static PyObject* pyflann_free_index(PyObject*self, PyObject* args, PyObject* kyw
     py_index = py_log_level = py_random_seed = NULL;
     index_used= log_level_used= random_seed_used = 0;
     
-    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOO|O:pyflann_free_index",kwlist,&py_index, &py_log_level, &py_random_seed, &py_local_dict))
+    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOO|O:free_index",kwlist,&py_index, &py_log_level, &py_random_seed, &py_local_dict))
        return NULL;
     try                              
     {                                
@@ -869,7 +870,7 @@ static PyObject* pyflann_free_index(PyObject*self, PyObject* args, PyObject* kyw
         int random_seed = convert_to_int(py_random_seed,"random_seed");
         random_seed_used = 1;
         /*<function call here>*/     
-        #line 84 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
+        #line 95 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         FLANNParameters flannparams;
         flannparams.log_level = log_level; 
         flannparams.random_seed = random_seed; 
@@ -895,7 +896,7 @@ static PyObject* pyflann_free_index(PyObject*self, PyObject* args, PyObject* kyw
                                   
     return return_val.disown();           
 }                                
-static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, PyObject* kywds)
+static PyObject* find_nearest_neighbors(PyObject*self, PyObject* args, PyObject* kywds)
 {
     py::object return_val;
     int exception_occured = 0;
@@ -906,7 +907,7 @@ static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, P
     py_dataset = py_npts = py_dim = py_testset = py_tcount = py_result = py_num_neighbors = py_log_level = py_random_seed = py_algorithm = py_checks = py_cb_index = py_trees = py_branching = py_iterations = py_target_precision = py_centers_init = py_build_weight = py_memory_weight = py_sample_fraction = NULL;
     dataset_used= npts_used= dim_used= testset_used= tcount_used= result_used= num_neighbors_used= log_level_used= random_seed_used= algorithm_used= checks_used= cb_index_used= trees_used= branching_used= iterations_used= target_precision_used= centers_init_used= build_weight_used= memory_weight_used= sample_fraction_used = 0;
     
-    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOOOOOO|O:pyflann_find_nearest_neighbors",kwlist,&py_dataset, &py_npts, &py_dim, &py_testset, &py_tcount, &py_result, &py_num_neighbors, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_cb_index, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_sample_fraction, &py_local_dict))
+    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOOOOOOOOOOOOOO|O:find_nearest_neighbors",kwlist,&py_dataset, &py_npts, &py_dim, &py_testset, &py_tcount, &py_result, &py_num_neighbors, &py_log_level, &py_random_seed, &py_algorithm, &py_checks, &py_cb_index, &py_trees, &py_branching, &py_iterations, &py_target_precision, &py_centers_init, &py_build_weight, &py_memory_weight, &py_sample_fraction, &py_local_dict))
        return NULL;
     try                              
     {                                
@@ -998,7 +999,7 @@ static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, P
         double sample_fraction = convert_to_float(py_sample_fraction,"sample_fraction");
         sample_fraction_used = 1;
         /*<function call here>*/     
-        #line 91 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
+        #line 102 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         FLANNParameters flannparams;
         flannparams.log_level = log_level; 
         flannparams.random_seed = random_seed; 
@@ -1062,7 +1063,7 @@ static PyObject* pyflann_find_nearest_neighbors(PyObject*self, PyObject* args, P
                                   
     return return_val.disown();           
 }                                
-static PyObject* pyflann_find_nearest_neighbors_index(PyObject*self, PyObject* args, PyObject* kywds)
+static PyObject* find_nearest_neighbors_index(PyObject*self, PyObject* args, PyObject* kywds)
 {
     py::object return_val;
     int exception_occured = 0;
@@ -1073,7 +1074,7 @@ static PyObject* pyflann_find_nearest_neighbors_index(PyObject*self, PyObject* a
     py_index = py_testset = py_tcount = py_result = py_num_neighbors = py_checks = py_log_level = py_random_seed = NULL;
     index_used= testset_used= tcount_used= result_used= num_neighbors_used= checks_used= log_level_used= random_seed_used = 0;
     
-    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOO|O:pyflann_find_nearest_neighbors_index",kwlist,&py_index, &py_testset, &py_tcount, &py_result, &py_num_neighbors, &py_checks, &py_log_level, &py_random_seed, &py_local_dict))
+    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOOOOOO|O:find_nearest_neighbors_index",kwlist,&py_index, &py_testset, &py_tcount, &py_result, &py_num_neighbors, &py_checks, &py_log_level, &py_random_seed, &py_local_dict))
        return NULL;
     try                              
     {                                
@@ -1120,7 +1121,7 @@ static PyObject* pyflann_find_nearest_neighbors_index(PyObject*self, PyObject* a
         int random_seed = convert_to_int(py_random_seed,"random_seed");
         random_seed_used = 1;
         /*<function call here>*/     
-        #line 100 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
+        #line 111 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         FLANNParameters flannparams;
         flannparams.log_level = log_level; 
         flannparams.random_seed = random_seed; 
@@ -1251,7 +1252,7 @@ static PyObject* run_kmeans(PyObject*self, PyObject* args, PyObject* kywds)
         double sample_fraction = convert_to_float(py_sample_fraction,"sample_fraction");
         sample_fraction_used = 1;
         /*<function call here>*/     
-        #line 107 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
+        #line 118 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
         FLANNParameters flannparams;
         flannparams.log_level = log_level; 
         flannparams.random_seed = random_seed; 
@@ -1305,16 +1306,122 @@ static PyObject* run_kmeans(PyObject*self, PyObject* args, PyObject* kywds)
                                   
     return return_val.disown();           
 }                                
+static PyObject* compute_ground_truth_float(PyObject*self, PyObject* args, PyObject* kywds)
+{
+    py::object return_val;
+    int exception_occured = 0;
+    PyObject *py_local_dict = NULL;
+    static char *kwlist[] = {"dataset","testset","match","skip","local_dict", NULL};
+    PyObject *py_dataset, *py_testset, *py_match, *py_skip;
+    int dataset_used, testset_used, match_used, skip_used;
+    py_dataset = py_testset = py_match = py_skip = NULL;
+    dataset_used= testset_used= match_used= skip_used = 0;
+    
+    if(!PyArg_ParseTupleAndKeywords(args,kywds,"OOOO|O:compute_ground_truth_float",kwlist,&py_dataset, &py_testset, &py_match, &py_skip, &py_local_dict))
+       return NULL;
+    try                              
+    {                                
+        py_dataset = py_dataset;
+        PyArrayObject* dataset_array = convert_to_numpy(py_dataset,"dataset");
+        conversion_numpy_check_type(dataset_array,PyArray_FLOAT,"dataset");
+        #define DATASET1(i) (*((float*)(dataset_array->data + (i)*Sdataset[0])))
+        #define DATASET2(i,j) (*((float*)(dataset_array->data + (i)*Sdataset[0] + (j)*Sdataset[1])))
+        #define DATASET3(i,j,k) (*((float*)(dataset_array->data + (i)*Sdataset[0] + (j)*Sdataset[1] + (k)*Sdataset[2])))
+        #define DATASET4(i,j,k,l) (*((float*)(dataset_array->data + (i)*Sdataset[0] + (j)*Sdataset[1] + (k)*Sdataset[2] + (l)*Sdataset[3])))
+        npy_intp* Ndataset = dataset_array->dimensions;
+        npy_intp* Sdataset = dataset_array->strides;
+        int Ddataset = dataset_array->nd;
+        float* dataset = (float*) dataset_array->data;
+        dataset_used = 1;
+        py_testset = py_testset;
+        PyArrayObject* testset_array = convert_to_numpy(py_testset,"testset");
+        conversion_numpy_check_type(testset_array,PyArray_FLOAT,"testset");
+        #define TESTSET1(i) (*((float*)(testset_array->data + (i)*Stestset[0])))
+        #define TESTSET2(i,j) (*((float*)(testset_array->data + (i)*Stestset[0] + (j)*Stestset[1])))
+        #define TESTSET3(i,j,k) (*((float*)(testset_array->data + (i)*Stestset[0] + (j)*Stestset[1] + (k)*Stestset[2])))
+        #define TESTSET4(i,j,k,l) (*((float*)(testset_array->data + (i)*Stestset[0] + (j)*Stestset[1] + (k)*Stestset[2] + (l)*Stestset[3])))
+        npy_intp* Ntestset = testset_array->dimensions;
+        npy_intp* Stestset = testset_array->strides;
+        int Dtestset = testset_array->nd;
+        float* testset = (float*) testset_array->data;
+        testset_used = 1;
+        py_match = py_match;
+        PyArrayObject* match_array = convert_to_numpy(py_match,"match");
+        conversion_numpy_check_type(match_array,PyArray_LONG,"match");
+        #define MATCH1(i) (*((long*)(match_array->data + (i)*Smatch[0])))
+        #define MATCH2(i,j) (*((long*)(match_array->data + (i)*Smatch[0] + (j)*Smatch[1])))
+        #define MATCH3(i,j,k) (*((long*)(match_array->data + (i)*Smatch[0] + (j)*Smatch[1] + (k)*Smatch[2])))
+        #define MATCH4(i,j,k,l) (*((long*)(match_array->data + (i)*Smatch[0] + (j)*Smatch[1] + (k)*Smatch[2] + (l)*Smatch[3])))
+        npy_intp* Nmatch = match_array->dimensions;
+        npy_intp* Smatch = match_array->strides;
+        int Dmatch = match_array->nd;
+        long* match = (long*) match_array->data;
+        match_used = 1;
+        py_skip = py_skip;
+        int skip = convert_to_int(py_skip,"skip");
+        skip_used = 1;
+        /*<function call here>*/     
+        #line 130 "/home/marius/ubc/flann/src/python/pyflann/pyflann_base.py"
+        
+            Dataset<float> _dataset(Ndataset[0], Ndataset[1], dataset);
+            Dataset<float> _testset(Ntestset[0], Ntestset[1], testset);
+            Dataset<int> _match(Nmatch[0], Nmatch[1], (int*) match);
+            compute_ground_truth(_dataset, _testset, _match, skip);
+        if(py_local_dict)                                  
+        {                                                  
+            py::dict local_dict = py::dict(py_local_dict); 
+        }                                                  
+    
+    }                                
+    catch(...)                       
+    {                                
+        return_val =  py::object();      
+        exception_occured = 1;       
+    }                                
+    /*cleanup code*/                     
+    if(dataset_used)
+    {
+        Py_XDECREF(py_dataset);
+        #undef DATASET1
+        #undef DATASET2
+        #undef DATASET3
+        #undef DATASET4
+    }
+    if(testset_used)
+    {
+        Py_XDECREF(py_testset);
+        #undef TESTSET1
+        #undef TESTSET2
+        #undef TESTSET3
+        #undef TESTSET4
+    }
+    if(match_used)
+    {
+        Py_XDECREF(py_match);
+        #undef MATCH1
+        #undef MATCH2
+        #undef MATCH3
+        #undef MATCH4
+    }
+    if(!(PyObject*)return_val && !exception_occured)
+    {
+                                  
+        return_val = Py_None;            
+    }
+                                  
+    return return_val.disown();           
+}                                
 
 
 static PyMethodDef compiled_methods[] = 
 {
     {"flatten_double2float",(PyCFunction)flatten_double2float , METH_VARARGS|METH_KEYWORDS},
-    {"pyflann_build_index",(PyCFunction)pyflann_build_index , METH_VARARGS|METH_KEYWORDS},
-    {"pyflann_free_index",(PyCFunction)pyflann_free_index , METH_VARARGS|METH_KEYWORDS},
-    {"pyflann_find_nearest_neighbors",(PyCFunction)pyflann_find_nearest_neighbors , METH_VARARGS|METH_KEYWORDS},
-    {"pyflann_find_nearest_neighbors_index",(PyCFunction)pyflann_find_nearest_neighbors_index , METH_VARARGS|METH_KEYWORDS},
+    {"build_index",(PyCFunction)build_index , METH_VARARGS|METH_KEYWORDS},
+    {"free_index",(PyCFunction)free_index , METH_VARARGS|METH_KEYWORDS},
+    {"find_nearest_neighbors",(PyCFunction)find_nearest_neighbors , METH_VARARGS|METH_KEYWORDS},
+    {"find_nearest_neighbors_index",(PyCFunction)find_nearest_neighbors_index , METH_VARARGS|METH_KEYWORDS},
     {"run_kmeans",(PyCFunction)run_kmeans , METH_VARARGS|METH_KEYWORDS},
+    {"compute_ground_truth_float",(PyCFunction)compute_ground_truth_float , METH_VARARGS|METH_KEYWORDS},
     {NULL,      NULL}        /* Sentinel */
 };
 

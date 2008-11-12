@@ -1,0 +1,5 @@
+#!/bin/bash
+
+FLANN_DIR=`dirname $0`/../python
+export PYTHONPATH=$FLANN_DIR:$PYTHONPATH
+python $FLANN_DIR/flann.py $@

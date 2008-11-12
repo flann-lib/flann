@@ -16,13 +16,14 @@ flann = FLANN()
 #nn_indices = flann.nn_index(testset,5, checks=params["checks"]);
 #print nn_indices
 
-params = flann.build_index(dataset, algorithm='linear', trees='8', checks=65536, log_level="info");
+params = flann.build_index(dataset, algorithm='kdtree', trees=8, checks=1024, log_level="info");
 print params
 
 import time
 start = time.clock()
-for i in xrange(10):
+num = 10
+for i in xrange(num):
     nn_indices = flann.nn_index(testset,5, checks=params["checks"]);
-print "It took", (time.clock()-start)/10
+print "It took", (time.clock()-start)/num
 print nn_indices
 savetxt('matches.dat',nn_indices, fmt="%g");

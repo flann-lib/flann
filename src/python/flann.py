@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import os
 
 import command
 from util.exceptions import *
@@ -15,6 +16,7 @@ For command specific help type: %s <command> -h""" % sys.argv[0]
     sys.exit(1)
 
 def main():
+    sys.argv[0] = os.path.basename(sys.argv[0])
     if len(sys.argv)==1:
         print_help()
     elif sys.argv[1]=="-h" or sys.argv[1]=="--help":

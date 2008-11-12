@@ -11,7 +11,7 @@ import unittest
 class Test_PyFLANN_nn(unittest.TestCase):
 
     def setUp(self):
-        self.nn = FLANN()
+        self.nn = FLANN(log_level="info")
 
     ################################################################################
     # The typical
@@ -82,7 +82,7 @@ class Test_PyFLANN_nn(unittest.TestCase):
             x_mult_nn = concatenate([x for i in xrange(num_neighbors)])
             #savetxt('dataset_%d_%d.dat'%(N,dim),x_mult_nn);
             #savetxt('testset_%d_%d.dat'%(N,dim),x);
-            nidx = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, log_level="info", target_precision = tp, **kwargs)
+            nidx = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, target_precision = tp, **kwargs)
 
             correctness = 0.0
 

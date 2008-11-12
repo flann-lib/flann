@@ -79,9 +79,9 @@ int main(int argc, char** argv)
 	fp.log_level = LOG_INFO;
 	fp.log_destination = NULL;
 	
-    p.algorithm = KMEANS;
+    p.algorithm = KDTREE;
     p.checks = 32;
-    p.trees = -1;
+    p.trees = 8;
     p.branching = 32;
     p.iterations = 7;
     p.target_precision = -1;
@@ -93,11 +93,12 @@ int main(int argc, char** argv)
 
 
 	flann_find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks, &fp);
-	
+
 	write_dat_file("results.dat",result, tcount, nn);
 	
     flann_free_index(index_id, &fp);
 	free(dataset);
+    free(testset);
 	free(result);
 	
 	return 0;

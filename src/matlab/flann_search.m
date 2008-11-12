@@ -37,14 +37,18 @@ else
     % create the index now
     if isfield(search_params,'target_precision')
         build_weigh = 0.01;
-        if isfield(search_params,'build_weigh')
-            build_weigh = search_params.build_weigh;
+        if isfield(search_params,'build_weight')
+            build_weight = search_params.build_weight;
         end
-        memory_weigh = 0;
-        if isfield(search_params,'memory_weigh')
-            memory_weigh = search_params.memory_weigh;
+        memory_weight = 0;
+        if isfield(search_params,'memory_weight')
+            memory_weight = search_params.memory_weight;
         end
-        p = [-1 search_params.target_precision build_weigh memory_weigh];
+        sample_fraction = 0.1;
+    	if isfield(search_params,'sample_fraction')
+	    	sample_fraction = search_params.sample_fraction;
+    	end
+        p = [-1 search_params.target_precision build_weight memory_weight sample_fraction];
     elseif isfield(search_params,'algorithm')
         if strcmp(search_params.algorithm,'kdtree') && ~isfield(search_params,'trees')
             error('Missing "trees" parameter');
@@ -81,7 +85,7 @@ else
 
         p = [checks algorithm_id trees branching iterations centers_init];
     else
-        error('Incomplete "build_params" structure');
+        error('Incomplete "search_params" structure');
     end
     result = nearest_neighbors('find_nn', data, testset, n, p);
 end

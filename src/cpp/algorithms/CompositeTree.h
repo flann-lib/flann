@@ -20,7 +20,7 @@ public:
 		kmeans = new KMeansTree(inputData,params);
 	}
 	
-	~CompositeTree()
+	virtual ~CompositeTree()
 	{
 		delete kdtree;
 		delete kmeans;
@@ -58,12 +58,20 @@ public:
 	}
 	
 	
-	void findNeighbors(ResultSet& result, float* vec, int maxCheck)
+	void findNeighbors(ResultSet& result, float* vec, Params searchParams)
 	{
-		kmeans->findNeighbors(result,vec,maxCheck);
-		kdtree->findNeighbors(result,vec,maxCheck);
-		
+		kmeans->findNeighbors(result,vec,searchParams);
+		kdtree->findNeighbors(result,vec,searchParams);
 	}
+
+
+    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
+    {
+        Params params;
+        
+        return params;
+    }
+
 
 };
 

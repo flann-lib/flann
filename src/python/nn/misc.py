@@ -1,10 +1,10 @@
 
 import numpy
-from util.util_c import *
+from pyflann.pyflann_base import compute_ground_truth_float
 
 def compute_ground_truth(dataset, testset, nn):
     match = numpy.empty((testset.shape[0],nn), dtype=numpy.int32)
-    compute_ground_truth_cpp(dataset,testset,match)
+    compute_ground_truth_float(dataset,testset,match, 0)
     return match
 
 

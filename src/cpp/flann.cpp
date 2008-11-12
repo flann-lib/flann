@@ -1,3 +1,5 @@
+#define EXPORT extern "C"
+
 
 #include <stdexcept>
 #include "flann.h"
@@ -88,6 +90,7 @@ namespace {
 		} catch (...) {
 			p.target_precision = -1;
 		}
+        p.centers_init = CENTERS_RANDOM;
         for (size_t algo_id =0; algo_id<ARRAY_LEN(centers_algos); ++algo_id) {
             const char* algo = centers_algos[algo_id];
             try {
@@ -97,6 +100,7 @@ namespace {
 				}
 			} catch (...) {}
 		}
+        p.algorithm = LINEAR;
         for (size_t algo_id =0; algo_id<ARRAY_LEN(algos); ++algo_id) {
             const char* algo = algos[algo_id];
 			if (algo == params["algorithm"] ) {
@@ -175,7 +179,7 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 	try {
 		flann_init();
 		init_flann_parameters(flann_params);
-				
+
 		if (nn_ids_count==nn_ids_length) {
 			// extended indices arrays
             nn_ids_length = 2*nn_ids_count;
@@ -229,8 +233,6 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
             index_params->memory_weight = memory_weight;
             index_params->sample_fraction = sample_fraction;
             
-            logger.info("value of cb_index is: %g\n",index_params->cb_index);
-
 			if (speedup != NULL) {
 				*speedup = float(params["speedup"]);
 			}
@@ -260,7 +262,7 @@ int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* tes
 		NNIndexPtr index;
 		if (target_precision < 0) {
 			Params params = parametersToParams(*index_params);
-			logger.info("Building index");
+			logger.info("Building index\n");
             index = create_index((const char *)params["algorithm"],*inputData,params);
             t.start();
  			index->buildIndex();
@@ -281,11 +283,13 @@ int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* tes
 		logger.info("Searching for nearest neighbors.\n");
         int skipMatches = 0;
         ResultSet resultSet(nn+skipMatches);
-        
+        Params searchParams;
+        searchParams["checks"] = index_params->checks;
+
         for (int i = 0; i < tcount; i++) {
             resultSet.init(testset, cols);
                     
-            index->findNeighbors(resultSet,testset, index_params->checks);
+            index->findNeighbors(resultSet,testset, searchParams);
             
             int* neighbors = resultSet.getNeighbors();
             memcpy(result, neighbors+skipMatches, nn*sizeof(int));
@@ -320,11 +324,13 @@ int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int
                 t.start();
 				int skipMatches = 0;
 				ResultSet resultSet(nn+skipMatches);
+                Params searchParams;
+                searchParams["checks"] = checks;
 				
 				for (int i = 0; i < tcount; i++) {
 					resultSet.init(testset, length);
 							
-					index->findNeighbors(resultSet,testset, checks);					
+					index->findNeighbors(resultSet,testset, searchParams);					
 					int* neighbors = resultSet.getNeighbors();
                     memcpy(result, neighbors+skipMatches, nn*sizeof(int));
 					
@@ -387,4 +393,10 @@ int flann_compute_cluster_centers(float* dataset, int rows, int cols, int cluste
 	}
 }
 
-
+EXPORT void compute_ground_truth_float(float* dataset, int rows, int cols, float* testset, int trows, int* match, int nn, int skip)
+{
+    Dataset<float> _dataset(rows, cols, dataset);
+    Dataset<float> _testset(trows, cols, testset);
+    Dataset<int> _match(trows, nn, (int*) match);
+    compute_ground_truth(_dataset, _testset, _match, skip);
+}

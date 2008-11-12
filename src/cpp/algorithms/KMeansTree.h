@@ -422,7 +422,7 @@ public:
 	 * 
 	 * Release the memory used by the index.
 	 */
-	~KMeansTree()
+	virtual ~KMeansTree()
 	{
 		if (root != NULL) {
 			free_centers(root);
@@ -493,10 +493,17 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet& result, float* vec, int maxCheck)
+    void findNeighbors(ResultSet& result, float* vec, Params searchParams)
     {
+        int maxChecks;
+        if (searchParams.find("checks") == searchParams.end()) {
+            maxChecks = -1;
+        }
+        else {            
+            maxChecks = (int)searchParams["checks"];
+        }
         
-        if (maxCheck==-1) {
+        if (maxChecks<0) {
             findExactNN(root, result, vec);
         }
         else {
@@ -506,7 +513,7 @@ public:
             
             int checks = 0;         
             BranchSt branch;
-            while (heap->popMin(branch) && (++checks<maxCheck || !result.full())) {
+            while (heap->popMin(branch) && (++checks<maxChecks || !result.full())) {
                 KMeansNode node = branch.node;      
                 findNN(node, result, vec);
             }
@@ -538,11 +545,23 @@ public:
         
         
         for (int i=0;i<clusterCount;++i) {
-            memcpy(centers, clusters[i]->pivot, veclen_*sizeof(float));
+            float* center = clusters[i]->pivot;
+            for (int j=0;j<veclen_;++j) {
+                centers[j] = center[j];
+            }
+            centers += veclen_;
         }
         
         return clusterCount;
     }
+
+    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
+    {
+        Params params;
+        
+        return params;
+    }
+
 
 
 private:

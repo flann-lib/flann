@@ -93,7 +93,7 @@ class Variant {
 
     bool operator==(const char* val)
     {
-        return type==STR && strVal==val;
+        return type==STR && strcmp(strVal,val)==0;
     }
 
     string toString()

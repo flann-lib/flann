@@ -67,8 +67,6 @@ void flann_free_index(FLANN_INDEX index_id, struct FLANNParameters* flann_params
 int flann_compute_cluster_centers(float* dataset, int count, int length, int clusters, float* result, struct IndexParameters* index_params, struct FLANNParameters* flann_params);
 
 
-
-
 #ifdef __cplusplus
 }
 #endif

@@ -233,16 +233,6 @@ public:
 		return  pool.usedMemory+pool.wastedMemory+dataset.rows*sizeof(int);   // pool memory and vind array memory
 	}
 	
-	/**
-	 * 
-	 * Returns: vectors in the dataset
-	 */
-// 	private T[][] vecs()
-// 	{
-// 		return dataset.vecs;
-// 	}
-
-
 
     /** 
      * Find set of nearest neighbors to vec. Their indices are stored inside
@@ -253,13 +243,29 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet& result, float* vec, int maxCheck)
+    void findNeighbors(ResultSet& result, float* vec, Params searchParams)
     {
-        if (maxCheck==-1) {
+        int maxChecks;
+        if (searchParams.find("checks") == searchParams.end()) {
+            maxChecks = -1;
+        }
+        else {            
+            maxChecks = (int)searchParams["checks"];
+        }
+        
+        if (maxChecks<0) {
             getExactNeighbors(result, vec);
         } else {
-            getNeighbors(result, vec, maxCheck);
+            getNeighbors(result, vec, maxChecks);
         }
+    }
+
+
+    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
+    {
+        Params params;
+        
+        return params;
     }
 
 

@@ -66,6 +66,7 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 		}
 		p.build_weight = pp[2];
 		p.memory_weight = pp[3];
+        p.sample_fraction = pp[4];
 	}
 	else {
 		/* pp contains index & search parameters */
@@ -190,6 +191,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		}
 		p.build_weight = pp[2];
 		p.memory_weight = pp[3];
+        p.sample_fraction = pp[4];
 	}
 	else {
 		/* pp contains index & search parameters */
@@ -203,6 +205,9 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	}	
 	
 	float speedup = -1;
+    /*FLANNParameters fp;
+    fp.log_level = LOG_INFO;
+    fp.log_destination = NULL; */
 	indexID = flann_build_index(dataset,dcount,length, &speedup, &p, NULL);
 		
 	/* Allocate memory for Output Matrix */ 
@@ -245,6 +250,10 @@ static void _free_index(int nOutArray, mxArray *OutArray[], int nInArray, const 
 
 void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
 {
+
+    flann_log_verbosity(LOG_INFO);
+    flann_log_destination(NULL);
+
 	static int started = 0;
 	if (!started) {
    		flann_init();

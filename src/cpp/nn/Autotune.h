@@ -11,56 +11,7 @@
 #include "Logger.h"
 #include "Testing.h"
 #include "dist.h"
-
-
-void find_nearest(const Dataset<float>& dataset, float* query, int* matches, int nn, int skip = 0) 
-{
-    int n = nn + skip;
-    
-    long* match = new long[n];
-    float* dists = new float[n];
-    
-    dists[0] = squared_dist(dataset[0], query, dataset.cols);
-    int dcnt = 1;
-    
-    for (int i=1;i<dataset.rows;++i) {
-        float tmp = squared_dist(dataset[i], query, dataset.cols);
-        
-        if (dcnt<n) {
-            match[dcnt] = i;   
-            dists[dcnt++] = tmp;
-        } 
-        else if (tmp < dists[dcnt-1]) {
-            dists[dcnt-1] = tmp;
-            match[dcnt-1] = i;
-        } 
-        
-        int j = dcnt-1;
-        // bubble up
-        while (j>=1 && dists[j]<dists[j-1]) {
-            swap(dists[j],dists[j-1]);
-            swap(match[j],match[j-1]);
-            j--;
-        }
-    }
-    
-    for (int i=0;i<nn;++i) {
-        matches[i] = match[i+skip];
-    }   
- 
-    delete[] match;
-    delete[] dists;   
-}
-
-
-void compute_ground_truth(const Dataset<float>& dataset, const Dataset<float>& testset, Dataset<int>& matches, int skip=0)
-{
-    for (int i=0;i<testset.rows;++i) {
-        find_nearest(dataset, testset[i], matches[i], matches.cols, skip);
-    }
-}
-
-
+#include "ground_truth.h"
 
 
 class Autotune {
@@ -80,7 +31,7 @@ class Autotune {
         float buildTimeCost;
         float timeCost;
         float memoryCost;
-        float cost;
+        float totalCost;
         Params params;
     };
 
@@ -101,7 +52,7 @@ class Autotune {
         float buildTime = t.value;
     
         // measure search time
-        float searchTime = testNNIndexPrecision<true>(kmeans, *sampledDataset, *testDataset, *gt_matches, desiredPrecision, checks, nn);;
+        float searchTime = testNNIndexPrecision(kmeans, *sampledDataset, *testDataset, *gt_matches, desiredPrecision, checks, nn);;
     
         float datasetMemory = sampledDataset->rows*sampledDataset->cols*sizeof(float);
         cost.memoryCost = (kmeans.usedMemory()+datasetMemory)/datasetMemory;
@@ -127,7 +78,7 @@ class Autotune {
         float buildTime = t.value;
     
         //measure search time
-        float searchTime = testNNIndexPrecision<true>(kdtree, *sampledDataset, *testDataset, *gt_matches, desiredPrecision, checks, nn);
+        float searchTime = testNNIndexPrecision(kdtree, *sampledDataset, *testDataset, *gt_matches, desiredPrecision, checks, nn);
     
         float datasetMemory = sampledDataset->rows*sampledDataset->cols*sizeof(float);
         cost.memoryCost = (kdtree.usedMemory()+datasetMemory)/datasetMemory;
@@ -159,15 +110,20 @@ public:
     {   
 
         desiredPrecision = desiredPrecision_;
+        logger.info("Enterng autotuning, dataset size: %d\n",inputDataset.rows);
 
         // subsample datasets
         int sampleSize = int(samplePercentage*inputDataset.rows);
         int testSampleSize = min(sampleSize/10, 1000);
 
+        logger.info("sampleSize: %d\n",sampleSize);
+        logger.info("testSampleSize: %d\n",testSampleSize);
+
         Params bestParams;
         float bestCost = numeric_limits<float>::max();
 
         if (testSampleSize<1) {
+            logger.info("Choosing linear, dataset too small\n");
             bestParams["algorithm"] = "linear";
             return bestParams;
         }
@@ -257,10 +213,10 @@ public:
         
         // recompute total costs taking into account the optimum time cost
         for (int i=0;i<kmeansParamSpaceSize;++i) {
-            kmeansCosts[i].cost = (kmeansCosts[i].timeCost/optTimeCost + memoryFactor * kmeansCosts[i].memoryCost);
+            kmeansCosts[i].totalCost = (kmeansCosts[i].timeCost/optTimeCost + memoryFactor * kmeansCosts[i].memoryCost);
             
             int k = i;
-            while (k>0 && kmeansCosts[k].cost < kmeansCosts[k-1].cost) {
+            while (k>0 && kmeansCosts[k].totalCost < kmeansCosts[k-1].totalCost) {
                 swap(kmeansCosts[k],kmeansCosts[k-1]);
                 k--;
             }
@@ -270,12 +226,12 @@ public:
                 int(kmeansCosts[i].params["branching"]), int(kmeansCosts[i].params["max-iterations"]),
             kmeansCosts[i].timeCost,kmeansCosts[i].timeCost/optTimeCost,
             kmeansCosts[i].buildTimeCost, kmeansCosts[i].searchTimeCost,linearTime/kmeansCosts[i].searchTimeCost,
-            kmeansCosts[i].memoryCost,kmeansCosts[i].cost);
+            kmeansCosts[i].memoryCost,kmeansCosts[i].totalCost);
         }   
 
         
 //         float kmeansCost = optimizeSimplexDownhill!(int)(kmeans_params[0..3], &compute_kmeans_cost, costs);*/
-        float kmeansCost = kmeansCosts[0].cost;
+        float kmeansCost = kmeansCosts[0].totalCost;
         Params kmeansParams = kmeansCosts[0].params;
         
         delete[] kmeansCosts;
@@ -287,10 +243,10 @@ public:
         }
         
         for (int i=0;i<kdtreeParamSpaceSize;++i) {
-            kdtreeCosts[i].cost = (kdtreeCosts[i].timeCost/optTimeCost + memoryFactor * kdtreeCosts[i].memoryCost);
+            kdtreeCosts[i].totalCost = (kdtreeCosts[i].timeCost/optTimeCost + memoryFactor * kdtreeCosts[i].memoryCost);
             
             int k = i;
-            while (k>0 && kdtreeCosts[k].cost < kdtreeCosts[k-1].cost) {
+            while (k>0 && kdtreeCosts[k].totalCost < kdtreeCosts[k-1].totalCost) {
                 swap(kdtreeCosts[k],kdtreeCosts[k-1]);
                 k--;
             }       
@@ -299,12 +255,12 @@ public:
             logger.info("kd-tree, trees=%d, time_cost=%g[%g] (build=%g, search=%g[speedup: %g]), memory_cost=%g, cost=%g\n",
             int(kdtreeCosts[i].params["trees"]),kdtreeCosts[i].timeCost,kdtreeCosts[i].timeCost/optTimeCost,
             kdtreeCosts[i].buildTimeCost, kdtreeCosts[i].searchTimeCost, linearTime/kdtreeCosts[i].searchTimeCost,
-            kdtreeCosts[i].memoryCost,kdtreeCosts[i].cost);
+            kdtreeCosts[i].memoryCost,kdtreeCosts[i].totalCost);
         }   
         
         
 //         float kdtreeCost = optimizeSimplexDownhill!(int)(kdtree_params[0..2], &compute_kdtree_cost, kdtre_costs);
-        float kdtreeCost = kdtreeCosts[0].cost;
+        float kdtreeCost = kdtreeCosts[0].totalCost;
         Params kdtreeParams = kdtreeCosts[0].params;
         
         delete[] kdtreeCosts;
@@ -359,7 +315,7 @@ public:
                 int best_checks = -1;
                 for (cb_index = 0;cb_index<1.1; cb_index+=0.2) {
                     kmeans->set_cb_index(cb_index);
-                    searchTime = testNNIndexPrecision<true>(*kmeans, inputDataset, *testDataset, gt_matches, desiredPrecision, checks, nn, 1);
+                    searchTime = testNNIndexPrecision(*kmeans, inputDataset, *testDataset, gt_matches, desiredPrecision, checks, nn, 1);
                     if (searchTime<bestSearchTime || bestSearchTime == -1) {
                         bestSearchTime = searchTime;
                         best_cb_index = cb_index;
@@ -369,9 +325,11 @@ public:
                 searchTime = bestSearchTime;
                 cb_index = best_cb_index;
                 checks = best_checks;
+
+                kmeans->set_cb_index(best_cb_index);
             }
             else {
-                searchTime = testNNIndexPrecision<true>(index, inputDataset, *testDataset, gt_matches, desiredPrecision, checks, nn, 1);
+                searchTime = testNNIndexPrecision(index, inputDataset, *testDataset, gt_matches, desiredPrecision, checks, nn, 1);
             }
     
             logger.info("Required number of checks: %d \n",checks);;

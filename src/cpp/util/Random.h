@@ -23,22 +23,11 @@
 using namespace std;
 
 
-void seed_random(unsigned int seed)
-{
-    srand(seed);    
-}
+void seed_random(unsigned int seed);
 
-double rand_double(double high = 1.0, double low=0)
-{
-    return low + ((high-low) * (std::rand() / (RAND_MAX + 1.0)));
-}
+double rand_double(double high = 1.0, double low=0);
 
-
-int rand_int(int high = RAND_MAX, int low = 0)
-{
-    return low + (int) ( double(high-low) * (std::rand() / (RAND_MAX + 1.0)));    
-}
-
+int rand_int(int high = RAND_MAX, int low = 0);
 
 
 /**
@@ -84,7 +73,7 @@ public:
 	        size = n;
             vals = new int[size];
     	}
-    	for(size_t i=0;i<size;++i) {
+    	for(int i=0;i<size;++i) {
 			vals[i] = i;
 		}
 	

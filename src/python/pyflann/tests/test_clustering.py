@@ -2,9 +2,7 @@
 import sys
 from os.path import *
 from pyflann import *
-from pyflann.utils import *
 import os
-from pyflann.index_type import index_type
 from copy import copy
 from numpy import *
 from numpy.random import *
@@ -62,21 +60,6 @@ class Test_PyFLANN_clustering(unittest.TestCase):
         for m in mindists: self.assertAlmostEqual(m, 0.0, 1)
         
 
-    def testbest_of_n(self):
-        data = rand(1000,2) # Random, so we can get a lot of local minima
-
-        cl1 = self.nn.kmeans(data, 50)
-        cl2 = self.nn.kmeans(data, 50, best_of_n = 100)
-
-        self.assert_(getKMeansObjective(data, cl1) >= getKMeansObjective(data, cl2))
-
-    def testensure_none_empty(self):
-
-        for i in xrange(100):
-            data = rand(1000,2) # Random, so we can get a lot of local minima
-            cl2 = self.nn.kmeans(data, 50, ensure_none_empty = True)
-            self.assert_(hasEmptyCluster(data, cl2) == False)
-
     def testrandomnumber_same(self):
         
         data = rand(1000,2) # Random, so we can get a lot of local minima
@@ -87,43 +70,14 @@ class Test_PyFLANN_clustering(unittest.TestCase):
 
         self.assert_(all(cl1 == cl2))
 
-        cl1 = self.nn.kmeans(data, 50, random_seed = rnseed, best_of_n = 20)
-        cl2 = self.nn.kmeans(data, 50, random_seed = rnseed, best_of_n = 20)
-
-        self.assert_(all(cl1 == cl2))
-
-        cl1 = self.nn.kmeans(data, 50, random_seed = rnseed, ensure_none_empty = True)
-        cl2 = self.nn.kmeans(data, 50, random_seed = rnseed, ensure_none_empty = True)
-
-        self.assert_(all(cl1 == cl2))
-
-        cl1 = self.nn.kmeans(data, 50, random_seed = rnseed, best_of_n = 20, ensure_none_empty = True)
-        cl2 = self.nn.kmeans(data, 50, random_seed = rnseed, best_of_n = 20, ensure_none_empty = True)
-
-        self.assert_(all(cl1 == cl2))
 
     def testrandnumber_different(self):
         
-        data = rand(1000,2) # Random, so we can get a lot of local minima
+        data = rand(1000,100) # Random, so we can get a lot of local minima
 
         rnseed = int(time.time())
-        cl1 = self.nn.kmeans(data, 50)
+        cl1 = self.nn.kmeans(data, 50, random_seed = rnseed)
         cl2 = self.nn.kmeans(data, 50)
-
-        self.assert_(any(cl1 != cl2))
-
-        cl1 = self.nn.kmeans(data, 50, best_of_n = 20)
-        cl2 = self.nn.kmeans(data, 50, best_of_n = 20)
-
-        self.assert_(any(cl1 != cl2))
-
-        cl1 = self.nn.kmeans(data, 50, ensure_none_empty = True)
-        cl2 = self.nn.kmeans(data, 50, ensure_none_empty = True)
-
-        self.assert_(any(cl1 != cl2))
-
-        cl1 = self.nn.kmeans(data, 50, best_of_n = 20, ensure_none_empty = True)
-        cl2 = self.nn.kmeans(data, 50, best_of_n = 20, ensure_none_empty = True)
 
         self.assert_(any(cl1 != cl2))
         

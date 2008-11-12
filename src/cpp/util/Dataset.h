@@ -24,9 +24,9 @@ class Dataset {
     }
 
 public:
-    T* data;
     int rows;
     int cols;
+    T* data;
 
 
 	Dataset(int rows_, int cols_, T* data_ = NULL) : 
