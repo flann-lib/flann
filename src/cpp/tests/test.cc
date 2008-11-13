@@ -1,31 +1,26 @@
 #include <stdio.h>
 #include <map>
+#include <vector>
 
 using namespace std;
 
 
 
-class TestClass
-{
-
-public:
-    TestClass()
-    {
-        printf("Constructor\n");
-    }
-    
-    ~TestClass()
-    {
-        printf("Destructor\n");
-    }
-
-};
 
 
 
 int main()
 {
-    TestClass& c = *(new TestClass());
 
-    delete &c;
+    vector<int> vi(10);
+    vector<int> vi2(10);
+
+    vi[0] = 10;
+    
+    vi2 = vi;
+
+    vi2[0] = 12;
+
+    printf("vi = %d, vi2 = %d \n",vi[0],vi2[0]);
+    
 }

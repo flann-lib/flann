@@ -2,11 +2,14 @@ from pyflann import *
 from numpy import *
 from numpy.random import *
 
-path = './';
+
+print "Load data"
+path = '../../data/';
 dataset = loadtxt(path+'dataset.dat');
 print dataset.shape
 testset = loadtxt(path+'testset.dat');
 print testset.shape
+matches = loadtxt(path+'match.dat', dtype=int32);
 
 
 flann = FLANN()
@@ -21,9 +24,11 @@ print params
 
 import time
 start = time.clock()
-num = 10
-for i in xrange(num):
-    nn_indices = flann.nn_index(testset,5, checks=params["checks"]);
-print "It took", (time.clock()-start)/num
-print nn_indices
-savetxt('matches.dat',nn_indices, fmt="%g");
+nn_indices = flann.nn_index(testset,5, checks=params["checks"]);
+
+print "It took", (time.clock()-start)
+
+checks, time = test_with_precision(flann, dataset, testset, matches, 0.8)
+
+print "Checks: ", checks
+print "Time: ", time

@@ -75,4 +75,6 @@ public:
 
 };
 
+register_index("composite",CompositeTree)
+
 #endif //COMPOSITETREE_H

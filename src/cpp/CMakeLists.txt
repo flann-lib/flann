@@ -3,23 +3,20 @@ INCLUDE_DIRECTORIES(algorithms util nn .)
 
 ADD_SUBDIRECTORY( tests )
 
-SET(SOURCES flann.cpp util/Random.cpp)
+SET(SOURCES flann.cpp util/Random.cpp nn/Testing.cpp algorithms/NNIndex.cpp util/Logger.cpp)
 
 ADD_LIBRARY(flann SHARED ${SOURCES})
-ADD_LIBRARY(flann-static STATIC ${SOURCES})
-SET_TARGET_PROPERTIES(flann-static PROPERTIES OUTPUT_NAME "flann")
-SET_TARGET_PROPERTIES(flann PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-SET_TARGET_PROPERTIES(flann-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+ADD_LIBRARY(flann_s STATIC ${SOURCES})
 
 INSTALL (
-    TARGETS flann flann-static
+    TARGETS flann flann_s
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
 )
 
 INSTALL (
-    TARGETS flann flann-static
+    TARGETS flann flann_s
     ARCHIVE DESTINATION ${PROJECT_SOURCE_DIR}/python
     LIBRARY DESTINATION ${PROJECT_SOURCE_DIR}/python
 )

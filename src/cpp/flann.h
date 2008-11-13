@@ -42,15 +42,11 @@ struct FLANNParameters {
 };
 
 
-typedef int FLANN_INDEX;
+typedef void* FLANN_INDEX;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void flann_init();
-
-void flann_term();
 
 void flann_log_verbosity(int level);
 

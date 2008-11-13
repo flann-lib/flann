@@ -6,8 +6,8 @@
 
 
 #include "Variant.h"
-#include "Logger.h"
 #include <map>
+#include <string>
 #include <stdexcept>
 
 class FLANNException : public std::runtime_error {
@@ -15,24 +15,6 @@ class FLANNException : public std::runtime_error {
    FLANNException(const char* message) : std::runtime_error(message) { }
  };
 
-typedef std::map<const char*,Variant> Params;
-
-
-
-void log_params(int level, Params p)
-{
-    Params::iterator it;
-    logger.log(level, "{ ");
-    bool first = true;
-    for (it=p.begin(); it!=p.end(); ++it) {
-        if (!first) {
-            logger.info(", ");
-        }
-        first = false;
-        logger.log(level, "%s : ",it->first);
-        logger.log(level, "%s",(it->second).toString().c_str());
-    }
-    logger.log(level, " }");
-}
+typedef std::map<std::string,Variant> Params;
 
 #endif //COMMOM_H

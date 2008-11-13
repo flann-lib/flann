@@ -8,11 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 
-extern "C" {
-int __data_start;  // hack to solve unresolved symbol problem
-}
-
-
 void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
 {
 	/* Check the number of input arguments */ 
@@ -117,7 +112,7 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	}
 		
 	const mxArray* indexMat = InArray[0];
-	FLANN_INDEX indexID = (FLANN_INDEX) *mxGetPr(indexMat);
+	FLANN_INDEX indexID = *(FLANN_INDEX*)mxGetData(indexMat);
 	
 	const mxArray* testsetMat = InArray[1];
 	
@@ -201,7 +196,7 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 		p.branching=(int)pp[3];
 		p.iterations=(int)pp[4];
 		p.centers_init = (int) pp[5];
-		p.target_precision = -1;		
+		p.target_precision = -1;
 	}	
 	
 	float speedup = -1;
@@ -209,12 +204,20 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
     fp.log_level = LOG_INFO;
     fp.log_destination = NULL; */
 	indexID = flann_build_index(dataset,dcount,length, &speedup, &p, NULL);
-		
+    
+    mxClassID classID;
+    if (sizeof(FLANN_INDEX)==4) {
+        classID = mxUINT32_CLASS;
+    }
+    else if (sizeof(FLANN_INDEX)==8) {
+        classID = mxUINT64_CLASS;
+    }
+
 	/* Allocate memory for Output Matrix */ 
-	OutArray[0] = mxCreateDoubleMatrix(1, 1, mxREAL);	
+	OutArray[0] = mxCreateNumericMatrix(1, 1, classID, mxREAL);	
 	
 	/* Get pointer to Output matrix and store result*/ 
-	double* pOut = mxGetPr(OutArray[0]);
+	FLANN_INDEX* pOut = (FLANN_INDEX*)mxGetData(OutArray[0]);
 	pOut[0] = indexID;
 
 	if (nOutArray > 1) {
@@ -244,8 +247,8 @@ static void _free_index(int nOutArray, mxArray *OutArray[], int nInArray, const 
 	if(! (nInArray == 1 && (mxGetN(InArray[0])*mxGetM(InArray[0]))==1)) {
 		mexErrMsgTxt("Expecting a single scalar argument: the index ID");
 	}
-	double* indexPtr = mxGetPr(InArray[0]);
-	flann_free_index((FLANN_INDEX)indexPtr[0], NULL);
+	FLANN_INDEX* indexPtr = (FLANN_INDEX*)mxGetData(InArray[0]);
+	flann_free_index(indexPtr[0], NULL);
 }
 
 void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
@@ -253,12 +256,6 @@ void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray
 
     flann_log_verbosity(LOG_INFO);
     flann_log_destination(NULL);
-
-	static int started = 0;
-	if (!started) {
-   		flann_init();
-   		started = 1;
-   	}
 	
 	if(nInArray == 0 || !mxIsChar(InArray[0])) {
 		mexErrMsgTxt("Expecting first argument to be one of:\n"

@@ -3,24 +3,13 @@
 
 
 #include <cstdio>
-#include <cstdarg>
+#include "common.h"
 #include "flann.h"
-#include <sstream>
 
 using namespace std;
 
 
-#define LOG_METHOD(NAME,LEVEL) \
-    int NAME(const char* fmt, ...) \
-    { \
-        int ret; \
-        va_list ap; \
-        va_start(ap, fmt); \
-        ret = log(LEVEL, fmt, ap); \
-        va_end(ap); \
-        return ret; \
-    }
-
+void log_params(int level, Params p);
 
 class Logger
 {
@@ -55,36 +44,19 @@ public:
 
     void setLevel(int level) { logLevel = level; }
 
-    int log(int level, const char* fmt, ...)
-    {
-        if (level > logLevel ) return -1;
+    int log(int level, const char* fmt, ...);
 
-        int ret;
-        va_list arglist;
-        va_start(arglist, fmt);
-        ret = vfprintf(stream, fmt, arglist);
-        va_end(arglist);
+    int log(int level, const char* fmt, va_list arglist);
 
-        return ret;
-    }
+    int fatal(const char* fmt, ...);
 
-    int log(int level, const char* fmt, va_list arglist)
-    {
-        if (level > logLevel ) return -1;
+    int error(const char* fmt, ...);
 
-        int ret;
-        ret = vfprintf(stream, fmt, arglist);
+    int warn(const char* fmt, ...);
 
-        return ret;
-    }
-
-    LOG_METHOD(fatal, LOG_FATAL)
-    LOG_METHOD(error, LOG_ERROR)
-    LOG_METHOD(warn, LOG_WARN)
-    LOG_METHOD(info, LOG_INFO)
-    
+    int info(const char* fmt, ...);    
 };
 
-Logger logger;
+extern Logger logger;
 
 #endif //LOGGER_H

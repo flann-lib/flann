@@ -18,6 +18,7 @@
 #define KMEANSTREE_H
 
 #include <algorithm>
+#include <string>
 #include <map>
 #include <cassert>
 #include <limits>
@@ -31,10 +32,6 @@
 #include "NNIndex.h"
 
 using namespace std;
-
-
-
-extern int num_dist;
 
 
 
@@ -211,7 +208,7 @@ namespace {
     /**
     * Associative array with functions to use for choosing the cluster centers. 
     */
-    map<const char*,centersAlgFunction> centerAlgs;
+    map<string,centersAlgFunction> centerAlgs;
     /**
     * Static initializer. Performs initialization befor the program starts.
     */
@@ -228,7 +225,6 @@ namespace {
     };
     Init __init;
 }
-
 
 
 
@@ -1008,6 +1004,10 @@ private:
 		return clusterCount;
 	}
 };
+
+
+
+register_index("kmeans",KMeansTree)
 
 
 #endif //KMEANSTREE_H

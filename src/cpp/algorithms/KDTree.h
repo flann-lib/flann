@@ -540,4 +540,6 @@ private:
 	
 };   // class KDTree
 
+register_index("kdtree",KDTree)
+
 #endif //KDTREE_H

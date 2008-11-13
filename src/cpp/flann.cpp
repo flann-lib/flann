@@ -2,6 +2,7 @@
 
 
 #include <stdexcept>
+#include <vector>
 #include "flann.h"
 #include "Timer.h"
 #include "common.h"
@@ -11,6 +12,7 @@
 #include "CompositeTree.h"
 #include "LinearSearch.h"
 #include "Autotune.h"
+#include "Testing.h"
 using namespace std;
 
 
@@ -18,13 +20,7 @@ namespace {
 
     typedef NNIndex* NNIndexPtr;
     typedef Dataset<float>* DatasetPtr;
-
-    NNIndexPtr* nn_ids;
-    int nn_ids_length = 0;
-    int nn_ids_count = 0;
     
-    bool initialized = false;
-
     const char* algos[] = { "linear","kdtree", "kmeans", "composite" };
     const char* centers_algos[] = { "random", "gonzales", "kmeanspp" };
 
@@ -110,46 +106,9 @@ namespace {
 		}
 		return p;
 	}
-
-    NNIndexPtr create_index(const char* name, Dataset<float>& dataset, Params params)
-    {
-        if (!strcmp(name,algos[KDTREE])) {
-            return new KDTree(dataset,params);
-        }
-        else if (!strcmp(name,algos[KMEANS])) {
-            return new KMeansTree(dataset,params);
-        }
-        else if (!strcmp(name,algos[COMPOSITE])) {
-            return new CompositeTree(dataset,params);
-        }
-        else if (!strcmp(name,algos[LINEAR])) {
-            return new LinearSearch(dataset,params);
-        }
-
-        return NULL;
-    }
-
 }
 
 
-void flann_init()
-{
-    if (!initialized) {
-        logger.info("Initializing flann\n");
-        initialized = true;
-        nn_ids_length = 64;
-        nn_ids_count = 0;
-        nn_ids = new NNIndexPtr[nn_ids_length];
-        memset(nn_ids, 0, nn_ids_length*sizeof(NNIndexPtr));
-    }
-}
-
-void flann_term()
-{
-    if (initialized) {
-        delete[] nn_ids;
-    }
-}
 
 void init_flann_parameters(FLANNParameters* p)
 {
@@ -177,18 +136,7 @@ void flann_log_destination(char* destination)
 FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FLANNParameters* flann_params)
 {	
 	try {
-		flann_init();
 		init_flann_parameters(flann_params);
-
-		if (nn_ids_count==nn_ids_length) {
-			// extended indices arrays
-            nn_ids_length = 2*nn_ids_count;
-			NNIndexPtr* tmp = new NNIndexPtr[nn_ids_length];
-            memset(tmp,0,nn_ids_length*sizeof(NNIndexPtr));
-            memcpy(tmp, nn_ids, nn_ids_count*sizeof(NNIndexPtr));
-			delete[] nn_ids;
-			nn_ids = tmp;
-		}
 		
 		DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
 		
@@ -237,14 +185,14 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 				*speedup = float(params["speedup"]);
 			}
 		}
-		
-		FLANN_INDEX indexID = nn_ids_count++;
-		nn_ids[indexID] = index;
-		return indexID;
+
+        printf("Index is: %x\n",index);
+
+		return index;
 	}
 	catch (runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
-		return -1;
+		return NULL;
 	}
 }
 
@@ -252,7 +200,6 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FLANNParameters* flann_params)
 {
 	try {
-		flann_init();
 		init_flann_parameters(flann_params);
 		
         DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
@@ -281,22 +228,10 @@ int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* tes
 		logger.info("Finished creating the index.\n");
 		
 		logger.info("Searching for nearest neighbors.\n");
-        int skipMatches = 0;
-        ResultSet resultSet(nn+skipMatches);
         Params searchParams;
         searchParams["checks"] = index_params->checks;
-
-        for (int i = 0; i < tcount; i++) {
-            resultSet.init(testset, cols);
-                    
-            index->findNeighbors(resultSet,testset, searchParams);
-            
-            int* neighbors = resultSet.getNeighbors();
-            memcpy(result, neighbors+skipMatches, nn*sizeof(int));
-            
-            result += nn;
-            testset += cols;
-        }
+        Dataset<int> result_set(tcount, nn, result);
+        search_for_neighbors(*index, Dataset<float>(tcount, cols, testset), result_set, searchParams);
 		
 		delete index;
 		delete inputData;
@@ -309,44 +244,26 @@ int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* tes
 	}
 }
 
-int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int tcount, int* result, int nn, int checks, FLANNParameters* flann_params)
+int flann_find_nearest_neighbors_index(FLANN_INDEX index_ptr, float* testset, int tcount, int* result, int nn, int checks, FLANNParameters* flann_params)
 {
 	try {
-		flann_init();
 		init_flann_parameters(flann_params);
-		
-		if (index_id < nn_ids_count) {
-			NNIndexPtr index = nn_ids[index_id];
-			if (index!=NULL) {
-				int length = index->veclen();
-				
-                StartStopTimer t;
-                t.start();
-				int skipMatches = 0;
-				ResultSet resultSet(nn+skipMatches);
-                Params searchParams;
-                searchParams["checks"] = checks;
-				
-				for (int i = 0; i < tcount; i++) {
-					resultSet.init(testset, length);
-							
-					index->findNeighbors(resultSet,testset, searchParams);					
-					int* neighbors = resultSet.getNeighbors();
-                    memcpy(result, neighbors+skipMatches, nn*sizeof(int));
-					
-					result += nn;
-					testset += length;
-				}
-                t.stop();
-                logger.info("Searching took %g seconds\n",t.value);
-			}
-			else {
-				throw FLANNException("Invalid index ID");
-			}
-		} 
-		else {
-			throw FLANNException("Invalid index ID");
-		}
+        
+        if (index_ptr==NULL) {
+            throw FLANNException("Invalid index");
+        }
+        NNIndexPtr index = NNIndexPtr(index_ptr);
+
+        int length = index->veclen();        
+        StartStopTimer t;
+        t.start();
+        Params searchParams;
+        searchParams["checks"] = checks;
+        Dataset<int> result_set(tcount, nn, result);
+        search_for_neighbors(*index, Dataset<float>(tcount, length, testset), result_set, searchParams);
+        t.stop();
+        logger.info("Searching took %g seconds\n",t.value);
+
 		return 0;
 	}
 	catch(runtime_error& e) {
@@ -356,17 +273,17 @@ int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int
 	
 }
 
-void flann_free_index(FLANN_INDEX index_id, FLANNParameters* flann_params)
+void flann_free_index(FLANN_INDEX index_ptr, FLANNParameters* flann_params)
 {
 	try {
-		flann_init();
 		init_flann_parameters(flann_params);
-		
-		if (index_id >= 0 && index_id < nn_ids_count) {
-			NNIndexPtr index = nn_ids[index_id];
-			nn_ids[index_id] = NULL;
-			delete index;
-		}
+
+        if (index_ptr==NULL) {
+            throw FLANNException("Invalid index");
+        }
+        NNIndexPtr index = NNIndexPtr(index_ptr);
+        delete index;
+        
 	}
 	catch(runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
@@ -376,7 +293,6 @@ void flann_free_index(FLANN_INDEX index_id, FLANNParameters* flann_params)
 int flann_compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, IndexParameters* index_params, FLANNParameters* flann_params)
 {
 	try {
- 		flann_init();
 		init_flann_parameters(flann_params);
 		
         DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
@@ -399,4 +315,21 @@ EXPORT void compute_ground_truth_float(float* dataset, int rows, int cols, float
     Dataset<float> _testset(trows, cols, testset);
     Dataset<int> _match(trows, nn, (int*) match);
     compute_ground_truth(_dataset, _testset, _match, skip);
+}
+
+
+EXPORT float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int rows, int cols, float* testset, int trows, int* matches, int nn,
+             float precision, int* checks, int skip = 0)
+{
+    try {
+        if (index_ptr==NULL) {
+            throw FLANNException("Invalid index");
+        }
+        NNIndexPtr index = (NNIndexPtr)index_ptr;
+        return testNNIndexPrecision(*index, Dataset<float>(rows, cols,dataset), Dataset<float>(trows, cols, testset), 
+                Dataset<int>(trows,nn,matches), precision, *checks, nn, skip);
+    } catch (runtime_error& e) {
+        logger.error("Caught exception: %s\n",e.what());
+        return -1;
+    }
 }

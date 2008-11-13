@@ -73,8 +73,6 @@ int main(int argc, char** argv)
 	int nn = 3;
 	int* result = (int*) malloc(tcount*nn*sizeof(int));
 	
-	flann_init();
-	
 	FLANNParameters fp;
 	fp.log_level = LOG_INFO;
 	fp.log_destination = NULL;
@@ -89,7 +87,7 @@ int main(int argc, char** argv)
 	float speedup;
 	
 	printf("Computing index and optimum parameters.\n");
-	int index_id = flann_build_index(dataset, rows, cols, &speedup, &p, &fp);
+	FLANN_INDEX index_id = flann_build_index(dataset, rows, cols, &speedup, &p, &fp);
 
 
 	flann_find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks, &fp);

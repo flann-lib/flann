@@ -123,11 +123,6 @@ FLANN_INDEX = c_int
 flann = load_library('libflann', root_dir+"/python")
 #CDLL(root_dir+'/python/libflann.so')
 
-flann.flann_init.restype = None
-flann.flann_init.argtypes = []
-
-flann.flann_term.restype = None
-flann.flann_term.argtypes = []
 
 flann.flann_log_verbosity.restype = None
 flann.flann_log_verbosity.argtypes = [ 
@@ -197,10 +192,25 @@ flann.compute_ground_truth_float.argtypes = [
         ndpointer(float32, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
         c_int,  #cols
-        ndpointer(float32, flags='aligned, c_contiguous'), # cols
+        ndpointer(float32, flags='aligned, c_contiguous'), # testset
         c_int, # trows
         ndpointer(int32, flags='aligned, c_contiguous, writeable'), # matches
         c_int, # nn
+        c_int # skip
+]
+
+flann.test_with_precision.restype = c_float
+flann.test_with_precision.argtypes = [
+        c_void_p, 
+        ndpointer(float32, flags='aligned, c_contiguous'), # dataset
+        c_int, # rows
+        c_int,  #cols
+        ndpointer(float32, flags='aligned, c_contiguous'), # testset
+        c_int, # trows
+        ndpointer(int32, flags='aligned, c_contiguous'), # matches
+        c_int, # nn
+        c_float, #precision
+        POINTER(c_int), # checks
         c_int # skip
 ]
 
@@ -220,6 +230,23 @@ def compute_ground_truth(dataset, testset, nn, skip = 0):
     return match
 
 
+def test_with_precision(index, dataset, testset, matches, precision, skip = 0):
+    dataset = require(dataset,float32,default_flags) 
+    testset = require(testset,float32,default_flags) 
+    matches = require(matches,int32,default_flags)
+    
+    rows,cols = dataset.shape
+    trows, tcols = testset.shape    
+    assert( cols == tcols )
+    
+    mrows,nn = matches.shape
+    assert( trows == mrows)
+    
+    checks = c_int(0)
+    time = flann.test_with_precision(index, dataset, rows, cols, testset, trows, matches, nn, precision, byref(checks), skip)
+    
+    return checks.value, time
+    
 
 
 index_type = int32
@@ -229,7 +256,8 @@ class FLANN:
     This class defines a python interface to the FLANN lirary.
     """
     __rn_gen = _rn.RandomState()
-
+    
+    _as_parameter_ = property( lambda self: self.__curindex )
 
     def __init__(self, **kwargs):
         """
@@ -310,7 +338,7 @@ class FLANN:
             flann.flann_free_index(self.__curindex, pointer(flann_params))
                 
         speedup = c_float(0)
-        self.__curindex = flann.flann_build_index(pts, npts, dim, pointer(speedup), pointer(self.__index_parameters), pointer(self.__flann_parameters))
+        self.__curindex = flann.flann_build_index(pts, npts, dim, byref(speedup), pointer(self.__index_parameters), pointer(self.__flann_parameters))
         self.__curindex_data = pts
         
         params = dict(self.__index_parameters)

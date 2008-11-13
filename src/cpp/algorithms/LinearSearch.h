@@ -55,4 +55,6 @@ public:
 
 };
 
+register_index("linear",LinearSearch)
+
 #endif // LINEARSEARCH_H
