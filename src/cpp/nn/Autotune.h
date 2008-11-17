@@ -52,7 +52,7 @@ class Autotune {
         float buildTime = t.value;
     
         // measure search time
-        float searchTime = testNNIndexPrecision(kmeans, *sampledDataset, *testDataset, *gt_matches, desiredPrecision, checks, nn);;
+        float searchTime = test_index_precision(kmeans, *sampledDataset, *testDataset, *gt_matches, desiredPrecision, checks, nn);;
     
         float datasetMemory = sampledDataset->rows*sampledDataset->cols*sizeof(float);
         cost.memoryCost = (kmeans.usedMemory()+datasetMemory)/datasetMemory;
@@ -78,7 +78,7 @@ class Autotune {
         float buildTime = t.value;
     
         //measure search time
-        float searchTime = testNNIndexPrecision(kdtree, *sampledDataset, *testDataset, *gt_matches, desiredPrecision, checks, nn);
+        float searchTime = test_index_precision(kdtree, *sampledDataset, *testDataset, *gt_matches, desiredPrecision, checks, nn);
     
         float datasetMemory = sampledDataset->rows*sampledDataset->cols*sizeof(float);
         cost.memoryCost = (kdtree.usedMemory()+datasetMemory)/datasetMemory;
@@ -315,7 +315,7 @@ public:
                 int best_checks = -1;
                 for (cb_index = 0;cb_index<1.1; cb_index+=0.2) {
                     kmeans->set_cb_index(cb_index);
-                    searchTime = testNNIndexPrecision(*kmeans, inputDataset, *testDataset, gt_matches, desiredPrecision, checks, nn, 1);
+                    searchTime = test_index_precision(*kmeans, inputDataset, *testDataset, gt_matches, desiredPrecision, checks, nn, 1);
                     if (searchTime<bestSearchTime || bestSearchTime == -1) {
                         bestSearchTime = searchTime;
                         best_cb_index = cb_index;
@@ -329,7 +329,7 @@ public:
                 kmeans->set_cb_index(best_cb_index);
             }
             else {
-                searchTime = testNNIndexPrecision(index, inputDataset, *testDataset, gt_matches, desiredPrecision, checks, nn, 1);
+                searchTime = test_index_precision(index, inputDataset, *testDataset, gt_matches, desiredPrecision, checks, nn, 1);
             }
     
             logger.info("Required number of checks: %d \n",checks);;

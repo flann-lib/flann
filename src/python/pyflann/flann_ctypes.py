@@ -96,6 +96,7 @@ class FLANNParameters(CustomStructure):
     _defaults_ = {
         'log_level' : "warning",
         'log_destination' : None,
+        'random_seed' : -1
     }
     _translation_ = {
         "log_level"     : {"none"      : 0, "fatal"     : 1, "error"     : 2, "warning"   : 3, "info"      : 4, "default"   : 2}
@@ -119,8 +120,7 @@ root_dir = find_root()
     
 FLANN_INDEX = c_int
 
-
-flann = load_library('libflann', root_dir+"/python")
+flann = load_library('libflann', root_dir+"/lib")
 #CDLL(root_dir+'/python/libflann.so')
 
 
@@ -214,11 +214,34 @@ flann.test_with_precision.argtypes = [
         c_int # skip
 ]
 
+flann.test_with_checks.restype = c_float
+flann.test_with_checks.argtypes = [
+        c_void_p, 
+        ndpointer(float32, flags='aligned, c_contiguous'), # dataset
+        c_int, # rows
+        c_int,  #cols
+        ndpointer(float32, flags='aligned, c_contiguous'), # testset
+        c_int, # trows
+        ndpointer(int32, flags='aligned, c_contiguous'), # matches
+        c_int, # nn
+        c_int, # checks
+        POINTER(c_float), #precision
+        c_int # skip
+]
+
+
+def ensure_2d_array(array, dtype, flags):
+    array = require(array,dtype,flags) 
+    if len(array.shape) == 1:
+        array.shape = (array.size,-1)
+    return array
+
 
 def compute_ground_truth(dataset, testset, nn, skip = 0):
     
-    dataset = require(dataset,float32,default_flags) 
-    testset = require(testset,float32,default_flags) 
+    dataset = ensure_2d_array(dataset,float32,default_flags) 
+    testset = ensure_2d_array(testset,float32,default_flags) 
+    
     
     rows, cols = dataset.shape
     trows, tcols = testset.shape
@@ -231,9 +254,9 @@ def compute_ground_truth(dataset, testset, nn, skip = 0):
 
 
 def test_with_precision(index, dataset, testset, matches, precision, skip = 0):
-    dataset = require(dataset,float32,default_flags) 
-    testset = require(testset,float32,default_flags) 
-    matches = require(matches,int32,default_flags)
+    dataset = ensure_2d_array(dataset,float32,default_flags) 
+    testset = ensure_2d_array(testset,float32,default_flags) 
+    matches = ensure_2d_array(matches,int32,default_flags)
     
     rows,cols = dataset.shape
     trows, tcols = testset.shape    
@@ -247,6 +270,22 @@ def test_with_precision(index, dataset, testset, matches, precision, skip = 0):
     
     return checks.value, time
     
+def test_with_checks(index, dataset, testset, matches, checks, skip = 0):
+    dataset = ensure_2d_array(dataset,float32,default_flags) 
+    testset = ensure_2d_array(testset,float32,default_flags) 
+    matches = ensure_2d_array(matches,int32,default_flags)
+    
+    rows,cols = dataset.shape
+    trows, tcols = testset.shape    
+    assert( cols == tcols )
+    
+    mrows,nn = matches.shape
+    assert( trows == mrows)
+    
+    precision = c_float(0)
+    time = flann.test_with_checks(index, dataset, rows, cols, testset, trows, matches, nn, checks, byref(precision), skip)
+    
+    return precision.value, time
 
 
 index_type = int32
@@ -265,6 +304,8 @@ class FLANN:
         the flann libraries.  Any keyword arguments passed to __init__
         override the global defaults given.
         """
+        
+        self.__rn_gen.seed()
 
         self.__curindex = None
         self.__curindex_data = None
@@ -289,8 +330,8 @@ class FLANN:
         """
         
         
-        pts = require(pts,float32,default_flags) 
-        qpts = require(qpts,float32,default_flags) 
+        pts = ensure_2d_array(pts,float32,default_flags) 
+        qpts = ensure_2d_array(qpts,float32,default_flags) 
 
         npts, dim = pts.shape
         nqpts = qpts.shape[0]
@@ -326,16 +367,16 @@ class FLANN:
         to float32. 
         """
 
-        pts = require(pts,float32,default_flags) 
+        pts = ensure_2d_array(pts,float32,default_flags) 
         npts, dim = pts.shape
         
-        self.__getRandomSeed(kwargs)
+        self.__ensureRandomSeed(kwargs)
         
         self.__flann_parameters.update(kwargs)
         self.__index_parameters.update(kwargs)
 
         if self.__curindex != None:
-            flann.flann_free_index(self.__curindex, pointer(flann_params))
+            flann.flann_free_index(self.__curindex, pointer(self.__flann_parameters))
                 
         speedup = c_float(0)
         self.__curindex = flann.flann_build_index(pts, npts, dim, byref(speedup), pointer(self.__index_parameters), pointer(self.__flann_parameters))
@@ -363,7 +404,7 @@ class FLANN:
         if qpts.size == dim:
             qpts.reshape(1, dim)
 
-        qpts = require(qpts,float32,default_flags) 
+        qpts = ensure_2d_array(qpts,float32,default_flags) 
 
         nqpts = qpts.shape[0]
 
@@ -468,7 +509,7 @@ class FLANN:
 
 
         # init the arrays and starting values
-        pts = require(pts,float32,default_flags) 
+        pts = ensure_2d_array(pts,float32,default_flags) 
         npts, dim = pts.shape
         num_clusters = (branch_size-1)*num_branches+1;
         
@@ -476,10 +517,12 @@ class FLANN:
 
         # set all the parameters appropriately
         
+        self.__ensureRandomSeed(kwargs)
+        
         params = {"iterations"       : max_iterations,
                     "algorithm"        : 'kmeans',
                     "branching"        : branch_size,
-                    "random_seed"      : self.__getRandomSeed(kwargs)}
+                    "random_seed"      : kwargs['random_seed']}
         
         self.__index_parameters.update(params)
         self.__flann_parameters.update(params)
@@ -499,9 +542,7 @@ class FLANN:
     # internal bookkeeping functions
 
         
-    def __getRandomSeed(self, kwargs):
-        try:
-            return kwargs['random_seed']
-        except KeyError:
-            return self.__rn_gen.randint(2**30)
+    def __ensureRandomSeed(self, kwargs):
+        if not 'random_seed' in kwargs:
+            kwargs['random_seed'] = self.__rn_gen.randint(2**30)
         

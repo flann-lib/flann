@@ -446,7 +446,7 @@ private:
 		}
 	
 		/* Keep searching other branches from heap until finished. */
-		while ( heap->popMin(branch) && (checkCount++ < maxCheck || !result.full() )) {
+		while ( heap->popMin(branch) && (checkCount < maxCheck || !result.full() )) {
 			searchLevel(result, vec, branch.node,branch.mindistsq, maxCheck);
 		}
 		
@@ -471,9 +471,10 @@ private:
 				Once a vector is checked, we set its location in vind to the
 				current checkID.
 			*/
-			if (vind[node->divfeat] == checkID) {
+			if (vind[node->divfeat] == checkID || checkCount>=maxCheck) {
 				return;
 			}
+            checkCount++;
 			vind[node->divfeat] = checkID;
 		
 			result.addPoint(dataset[node->divfeat],node->divfeat);

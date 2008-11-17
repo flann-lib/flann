@@ -504,14 +504,14 @@ public:
         }
         else {
             heap->clear();           
-            
-            findNN(root, result, vec);
-            
             int checks = 0;         
+            
+            findNN(root, result, vec, checks, maxChecks);
+            
             BranchSt branch;
-            while (heap->popMin(branch) && (++checks<maxChecks || !result.full())) {
+            while (heap->popMin(branch) && (checks<maxChecks || !result.full())) {
                 KMeansNode node = branch.node;      
-                findNN(node, result, vec);
+                findNN(node, result, vec, checks, maxChecks);
             }
             assert(result.full());
         }
@@ -802,7 +802,7 @@ private:
 	 * Performs one descent in the hierarchical k-means tree. The branches not
 	 * visited are stored in a priority queue.
 	 */
-	void findNN(KMeansNode node, ResultSet& result, float* vec)
+	void findNN(KMeansNode node, ResultSet& result, float* vec, int& checks, int maxChecks)
 	{
 		// Ignore those clusters that are too far away
 		{
@@ -819,14 +819,18 @@ private:
 			}
 		}
 	
-		if (node->childs==NULL) {			
-			for (int i=0;i<node->size;++i) {		
+		if (node->childs==NULL) {
+            if (checks>=maxChecks) {
+                return;
+            }
+            checks += node->size;
+			for (int i=0;i<node->size;++i) {	
 				result.addPoint(dataset[node->indices[i]], node->indices[i]);
 			}
 		} 
 		else {
 			int closest_center = exploreNodeBranches(node, vec);			
-			findNN(node->childs[closest_center],result,vec);
+			findNN(node->childs[closest_center],result,vec, checks, maxChecks);
 		}		
 	}
 	

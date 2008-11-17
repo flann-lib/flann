@@ -10,6 +10,6 @@ def write(dataset, filename):
         raise FLANNException("Can only save numpy arrays")    
     numpy.savetxt(filename,dataset, fmt="%g")
 
-def read(filename):
-    dataset = numpy.loadtxt(filename, dtype=numpy.float32)
+def read(filename, dtype = numpy.dtype):
+    dataset = numpy.loadtxt(filename, dtype=dtype)
     return dataset

@@ -115,7 +115,9 @@ void init_flann_parameters(FLANNParameters* p)
 	if (p != NULL) {
  		flann_log_verbosity(p->log_level);
 		flann_log_destination(p->log_destination);
-		seed_random(p->random_seed);
+        if (p->random_seed>0) {
+		  seed_random(p->random_seed);
+        }
 	}
 }
 
@@ -185,8 +187,6 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 				*speedup = float(params["speedup"]);
 			}
 		}
-
-        printf("Index is: %x\n",index);
 
 		return index;
 	}
@@ -326,8 +326,24 @@ EXPORT float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int rows
             throw FLANNException("Invalid index");
         }
         NNIndexPtr index = (NNIndexPtr)index_ptr;
-        return testNNIndexPrecision(*index, Dataset<float>(rows, cols,dataset), Dataset<float>(trows, cols, testset), 
+        return test_index_precision(*index, Dataset<float>(rows, cols,dataset), Dataset<float>(trows, cols, testset), 
                 Dataset<int>(trows,nn,matches), precision, *checks, nn, skip);
+    } catch (runtime_error& e) {
+        logger.error("Caught exception: %s\n",e.what());
+        return -1;
+    }
+}
+
+EXPORT float test_with_checks(FLANN_INDEX index_ptr, float* dataset, int rows, int cols, float* testset, int trows, int* matches, int nn,
+             int checks, float* precision, int skip = 0)
+{
+    try {
+        if (index_ptr==NULL) {
+            throw FLANNException("Invalid index");
+        }
+        NNIndexPtr index = (NNIndexPtr)index_ptr;
+        return test_index_checks(*index, Dataset<float>(rows, cols,dataset), Dataset<float>(trows, cols, testset), 
+                Dataset<int>(trows,nn,matches), checks, *precision, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
         return -1;

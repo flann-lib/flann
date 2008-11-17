@@ -7,6 +7,9 @@ from os.path import isfile
 import numpy
 import time
 import sys
+import pickle
+from ConfigParser import *
+
 
 
 class AutotuneCommand(BaseCommand):
@@ -40,5 +43,13 @@ class AutotuneCommand(BaseCommand):
             raise FLANNException("The precision argument must be between 0 and 1.")
         params = self.nn.build_index(self.dataset, target_precision=self.options.precision, build_weight=self.options.build_weight,
                 memory_weight=self.options.memory_weight, sample_fraction=self.options.sample_fraction)
-                
-        print params    
+        
+        if self.options.params_file != None:
+            params_stream = open(self.options.params_file,"w")
+        else:
+            params_stream = sys.stdout
+        configdict = ConfigParser();
+        configdict.add_section('params')
+        for (k,v) in params.items():
+            configdict.set('params',k,v)
+        configdict.write(params_stream)

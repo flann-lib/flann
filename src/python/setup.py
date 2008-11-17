@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 
-from create_python_base import createPythonBase
-from create_utils_c import createUtilsC
 import os
 
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration('pyflann', parent_package, top_path)
 
-    config.add_data_files('flann_python_base.so')
-    config.add_data_files('utils_c.so')
     config.add_data_dir('tests')
     return config
 

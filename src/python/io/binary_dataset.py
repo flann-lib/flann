@@ -20,7 +20,7 @@ def write(dataset, filename):
         fwrite(fd, dataset.size, dataset)
 
 
-def read(filename):
+def read(filename, dtype = numpy.float32):
     
     with open(filename,"rb") as fd:
         header = fd.readline()
