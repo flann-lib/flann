@@ -8,12 +8,24 @@
 #include <stdio.h>
 #include <string.h>
 
+
+
+template <typename T>
+static mxArray* to_mx_array(T value)
+{
+    mxArray* mat = mxCreateDoubleMatrix(1,1,mxREAL);
+    double* ptr = mxGetPr(mat);
+    *ptr = value;
+    
+    return mat;
+}
+
 void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
 {
 	/* Check the number of input arguments */ 
 	if(nInArray != 4) {
 		mexErrMsgTxt("Incorrect number of input arguments, expecting:\n"
-		"selector, dataset, testset, nearest_neighbors, params");
+		"dataset, testset, nearest_neighbors, params");
 	}
 
 	/* Check the number of output arguments */ 
@@ -38,64 +50,68 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
 	
 	const mxArray* nnMat = InArray[2];
 	
-	if (mxGetM(nnMat)!=1 || mxGetN(nnMat)!=1) {
+	if (mxGetM(nnMat)!=1 || mxGetN(nnMat)!=1 || !mxIsNumeric(nnMat)) {
 		mexErrMsgTxt("Number of nearest neighbors should be a scalar.");
 	}
 	int nn = (int)(*mxGetPr(nnMat));		
 
 	float* dataset = (float*) mxGetData(datasetMat);
 	float* testset = (float*) mxGetData(testsetMat);
-	int* result = (int*)malloc(tcount*nn*sizeof(int));
-	
-	const mxArray* pMat = InArray[3];
 
-	int pSize = mxGetN(pMat)*mxGetM(pMat);
-	
-	double* pp = mxGetPr(pMat);
+	const mxArray* pStruct = InArray[3];
 
-	IndexParameters p;
-	if (*pp<0) {
-		p.target_precision = pp[1];
-		if (p.target_precision>1 || p.target_precision<0) {
-			mexErrMsgTxt("Target precision must be between 0 and 1");
-		}
-		p.build_weight = pp[2];
-		p.memory_weight = pp[3];
-        p.sample_fraction = pp[4];
-	}
-	else {
-		/* pp contains index & search parameters */
-		p.checks = (int) pp[0];
-		p.algorithm = (int)pp[1];
-		p.trees=(int)pp[2];
-		p.branching=(int)pp[3];
-		p.iterations=(int)pp[4];
-		p.centers_init = (int) pp[5];
-		p.target_precision = -1;		
-	}	
-	/* do the search */
-	flann_find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p, NULL);
-	
-	/* Allocate memory for Output Matrix */ 
-	OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL);	
-	
-	/* Get pointer to Output matrix and store result*/ 
-	double* pOut = mxGetPr(OutArray[0]);
-	for (int i=0;i<tcount*nn;++i) {
-		pOut[i] = result[i]+1; // matlab uses 1-based indexing
-	}
-	free(result);
+    if (!mxIsStruct(pStruct)) {
+        mexErrMsgTxt("Params must be a struct object.");
+    }
+
+    // set parameters structure
+    IndexParameters p;
+    p.target_precision = (float)*(mxGetPr(mxGetField(pStruct, 0,"target_precision")));
+    p.build_weight = (float)*(mxGetPr(mxGetField(pStruct, 0,"build_weight")));
+    p.memory_weight = (float)*(mxGetPr(mxGetField(pStruct, 0,"memory_weight")));
+    p.sample_fraction = (float)*(mxGetPr(mxGetField(pStruct, 0,"sample_fraction")));
+    p.checks = (int)*(mxGetPr(mxGetField(pStruct, 0,"checks")));
+    p.algorithm = (int)*(mxGetPr(mxGetField(pStruct, 0,"algorithm")));
+    p.trees = (int)*(mxGetPr(mxGetField(pStruct, 0,"trees")));
+    p.branching = (int)*(mxGetPr(mxGetField(pStruct, 0,"branching")));
+    p.iterations = (int)*(mxGetPr(mxGetField(pStruct, 0,"iterations")));
+    p.centers_init = (int)*(mxGetPr(mxGetField(pStruct, 0,"centers_init")));
+
+    /* get flann parameters */
+    FLANNParameters fp;
+    fp.log_level = (int)*(mxGetPr(mxGetField(pStruct, 0,"log_level")));
+    fp.random_seed = (int)*(mxGetPr(mxGetField(pStruct, 0,"random_seed")));
+    fp.log_destination = NULL;
+
+    int* result = (int*)malloc(tcount*nn*sizeof(int));
+
+    /* do the search */
+    flann_find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p, &fp);    
+
+    /* Allocate memory for Output Matrix */ 
+    OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL); 
+    
+    /* Get pointer to Output matrix and store result*/ 
+    double* pOut = mxGetPr(OutArray[0]);
+    for (int i=0;i<tcount*nn;++i) {
+        pOut[i] = result[i]+1; // matlab uses 1-based indexing
+    }
+    free(result);
 	
 	if (nOutArray > 1) {
-		OutArray[1] = mxCreateDoubleMatrix(1, 6, mxREAL);
-		double* pParams = mxGetPr(OutArray[1]);
+
+        const char *fieldnames[] = {"checks", "cb_index", "algorithm", "trees", "branching", "iterations", "centers_init"};
+        
+		OutArray[1] = mxCreateStructMatrix(1, 1, sizeof(fieldnames)/sizeof(const char*), fieldnames);
 		
-		pParams[0] = p.checks;
-		pParams[1] = p.algorithm;
-		pParams[2] = p.trees;
-		pParams[3] = p.branching;
-		pParams[4] = p.iterations;
-		pParams[5] = p.centers_init;
+        int field_no = 0;
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.checks));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.cb_index));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.algorithm));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.trees));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.branching));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.iterations));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.centers_init));
 	}
 }
 
@@ -172,38 +188,33 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	int length = mxGetM(datasetMat);	
 	float* dataset = (float*) mxGetData(datasetMat);
 	
-	const mxArray* pMat = InArray[1];
-	int pSize = mxGetN(pMat)*mxGetM(pMat);
-	
-	double* pp = mxGetPr(pMat);
+	const mxArray* pStruct = InArray[1];
 
 	FLANN_INDEX indexID;
+
+    /* get index parameters */
 	IndexParameters p;
-	if (*pp<0) {
-		p.target_precision = pp[1];
-		if (p.target_precision>1 || p.target_precision<0) {
-			mexErrMsgTxt("Target precision must be between 0 and 1");
-		}
-		p.build_weight = pp[2];
-		p.memory_weight = pp[3];
-        p.sample_fraction = pp[4];
-	}
-	else {
-		/* pp contains index & search parameters */
-		p.checks = (int) pp[0];
-		p.algorithm = (int)pp[1];
-		p.trees=(int)pp[2];
-		p.branching=(int)pp[3];
-		p.iterations=(int)pp[4];
-		p.centers_init = (int) pp[5];
-		p.target_precision = -1;
-	}	
-	
-	float speedup = -1;
-    /*FLANNParameters fp;
-    fp.log_level = LOG_INFO;
-    fp.log_destination = NULL; */
-	indexID = flann_build_index(dataset,dcount,length, &speedup, &p, NULL);
+    p.target_precision = (float)*(mxGetPr(mxGetField(pStruct, 0,"target_precision")));
+    p.build_weight = (float)*(mxGetPr(mxGetField(pStruct, 0,"build_weight")));
+    p.memory_weight = (float)*(mxGetPr(mxGetField(pStruct, 0,"memory_weight")));
+    p.sample_fraction = (float)*(mxGetPr(mxGetField(pStruct, 0,"sample_fraction")));
+    p.checks = (int)*(mxGetPr(mxGetField(pStruct, 0,"checks")));
+    p.algorithm = (int)*(mxGetPr(mxGetField(pStruct, 0,"algorithm")));
+    p.trees = (int)*(mxGetPr(mxGetField(pStruct, 0,"trees")));
+    p.branching = (int)*(mxGetPr(mxGetField(pStruct, 0,"branching")));
+    p.iterations = (int)*(mxGetPr(mxGetField(pStruct, 0,"iterations")));
+    p.centers_init = (int)*(mxGetPr(mxGetField(pStruct, 0,"centers_init")));
+
+    /* get flann parameters */
+    FLANNParameters fp;
+    fp.log_level = (int)*(mxGetPr(mxGetField(pStruct, 0,"log_level")));
+    fp.random_seed = (int)*(mxGetPr(mxGetField(pStruct, 0,"random_seed")));
+    fp.log_destination = NULL;
+
+    float speedup = -1;
+
+	indexID = flann_build_index(dataset,dcount,length, &speedup, &p, &fp);
+
     
     mxClassID classID;
     if (sizeof(FLANN_INDEX)==4) {
@@ -221,15 +232,19 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	pOut[0] = indexID;
 
 	if (nOutArray > 1) {
-		OutArray[1] = mxCreateDoubleMatrix(1, 6, mxREAL);
-		double* pParams = mxGetPr(OutArray[1]);
-		
-		pParams[0] = p.checks;
-		pParams[1] = p.algorithm;
-		pParams[2] = p.trees;
-		pParams[3] = p.branching;
-		pParams[4] = p.iterations;
-		pParams[5] = p.centers_init;
+        const char *fieldnames[] = {"checks", "cb_index", "algorithm", "trees", "branching", "iterations", "centers_init"};
+        
+        OutArray[1] = mxCreateStructMatrix(1, 1, sizeof(fieldnames)/sizeof(const char*), fieldnames);
+        
+        int field_no = 0;
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.checks));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.cb_index));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.algorithm));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.trees));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.branching));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.iterations));
+        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.centers_init));
+
 	}
 	if (nOutArray > 2) {
 		OutArray[2] = mxCreateDoubleMatrix(1, 1, mxREAL);
@@ -251,10 +266,30 @@ static void _free_index(int nOutArray, mxArray *OutArray[], int nInArray, const 
 	flann_free_index(indexPtr[0], NULL);
 }
 
+static void _log_level(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
+{
+    if( !(nInArray == 1 && mxIsChar(InArray[1]))) {
+            mexErrMsgTxt("Expecting a string log_level argument");
+    }
+    char log_level[64];
+    mxGetString(InArray[1],log_level,64);
+
+    const char* levels[] = { "none", "fatal", "error", "warning", "info" };
+
+    for (int i=0;i<5;++i) {
+        if (strcmp(log_level, levels[i])==0) {
+            flann_log_verbosity(i);
+        }
+    }
+
+
+}
+
+
 void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])
 {
 
-    flann_log_verbosity(LOG_INFO);
+    flann_log_verbosity(LOG_ERROR);
     flann_log_destination(NULL);
 	
 	if(nInArray == 0 || !mxIsChar(InArray[0])) {
@@ -280,5 +315,8 @@ void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray
 	else if (strcmp(selector,"free_index")==0) {
 		_free_index(nOutArray,OutArray, nInArray-1, InArray+1);
 	}
+    else if (strcmp(selector,"log_level")==0) {
+        _log_level(nOutArray,OutArray, nInArray-1, InArray+1);
+    }
 	
 }

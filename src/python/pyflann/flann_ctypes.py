@@ -136,7 +136,7 @@ flann.flann_log_destination.argtypes = [
 
 flann.flann_build_index.restype = FLANN_INDEX
 flann.flann_build_index.argtypes = [ 
-        ndpointer(float32, flags='aligned, c_contiguous'), # dataset
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
         c_int, # cols
         POINTER(c_float), # speedup 
@@ -146,12 +146,12 @@ flann.flann_build_index.argtypes = [
                                    
 flann.flann_find_nearest_neighbors.restype = c_int
 flann.flann_find_nearest_neighbors.argtypes = [ 
-        ndpointer(float32, flags='aligned, c_contiguous'), # dataset
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
         c_int, # cols
-        ndpointer(float32, flags='aligned, c_contiguous'), # testset
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
         c_int,  # tcount
-        ndpointer(int32, flags='aligned, c_contiguous, writeable'), # result
+        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
         c_int, # nn
         POINTER(IndexParameters), # index_params 
         POINTER(FLANNParameters)  # flann_params
@@ -161,9 +161,9 @@ flann.flann_find_nearest_neighbors.argtypes = [
 flann.flann_find_nearest_neighbors_index.restype = c_int
 flann.flann_find_nearest_neighbors_index.argtypes = [ 
         FLANN_INDEX, # index_id
-        ndpointer(float32, flags='aligned, c_contiguous'), # testset
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
         c_int,  # tcount
-        ndpointer(int32, flags='aligned, c_contiguous, writeable'), # result
+        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
         c_int, # nn
         c_int, # checks
         POINTER(FLANNParameters) # flann_params
@@ -178,7 +178,7 @@ flann.flann_free_index.argtypes = [
 
 flann.flann_compute_cluster_centers.restype = c_int
 flann.flann_compute_cluster_centers.argtypes = [ 
-        ndpointer(float32, flags='aligned, c_contiguous'), # dataset
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int,  # rows
         c_int,  # cols
         c_int,  # clusters 
@@ -189,25 +189,24 @@ flann.flann_compute_cluster_centers.argtypes = [
 
 flann.compute_ground_truth_float.restype = None
 flann.compute_ground_truth_float.argtypes = [ 
-        ndpointer(float32, flags='aligned, c_contiguous'), # dataset
-        c_int, # rows
-        c_int,  #cols
-        ndpointer(float32, flags='aligned, c_contiguous'), # testset
-        c_int, # trows
-        ndpointer(int32, flags='aligned, c_contiguous, writeable'), # matches
-        c_int, # nn
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int*2, # dshape
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
+        c_int*2, # tshape
+        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # matches
+        c_int * 2, # mshape
         c_int # skip
 ]
 
 flann.test_with_precision.restype = c_float
 flann.test_with_precision.argtypes = [
         c_void_p, 
-        ndpointer(float32, flags='aligned, c_contiguous'), # dataset
-        c_int, # rows
-        c_int,  #cols
-        ndpointer(float32, flags='aligned, c_contiguous'), # testset
-        c_int, # trows
-        ndpointer(int32, flags='aligned, c_contiguous'), # matches
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int*2, # dshape
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
+        c_int*2, # tshape
+        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous'), # matches
+        c_int*2, # mshape
         c_int, # nn
         c_float, #precision
         POINTER(c_int), # checks
@@ -217,12 +216,12 @@ flann.test_with_precision.argtypes = [
 flann.test_with_checks.restype = c_float
 flann.test_with_checks.argtypes = [
         c_void_p, 
-        ndpointer(float32, flags='aligned, c_contiguous'), # dataset
-        c_int, # rows
-        c_int,  #cols
-        ndpointer(float32, flags='aligned, c_contiguous'), # testset
-        c_int, # trows
-        ndpointer(int32, flags='aligned, c_contiguous'), # matches
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int*2, # dshape
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
+        c_int*2, # tshape
+        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous'), # matches
+        c_int*2, # mshape
         c_int, # nn
         c_int, # checks
         POINTER(c_float), #precision
@@ -242,48 +241,40 @@ def compute_ground_truth(dataset, testset, nn, skip = 0):
     dataset = ensure_2d_array(dataset,float32,default_flags) 
     testset = ensure_2d_array(testset,float32,default_flags) 
     
+    assert(dataset.shape[1] == testset.shape[1] )
+    match = empty((testset.shape[0],nn), dtype=int32)
     
-    rows, cols = dataset.shape
-    trows, tcols = testset.shape
-    assert( cols == tcols )
-    
-    match = empty((trows,nn), dtype=int32)
-    
-    flann.compute_ground_truth_float(dataset, rows, cols, testset, trows, match, nn, skip)
+    flann.compute_ground_truth_float(dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, match, match.ctypes.shape, skip)
     return match
 
 
-def test_with_precision(index, dataset, testset, matches, precision, skip = 0):
+def test_with_precision(index, dataset, testset, matches, precision, nn, skip = 0):
     dataset = ensure_2d_array(dataset,float32,default_flags) 
     testset = ensure_2d_array(testset,float32,default_flags) 
     matches = ensure_2d_array(matches,int32,default_flags)
     
-    rows,cols = dataset.shape
-    trows, tcols = testset.shape    
-    assert( cols == tcols )
-    
-    mrows,nn = matches.shape
-    assert( trows == mrows)
+    assert(dataset.shape[1] == testset.shape[1] )
+    assert(testset.shape[0] == matches.shape[0] )
+    assert( nn <= matches.shape[1] )
     
     checks = c_int(0)
-    time = flann.test_with_precision(index, dataset, rows, cols, testset, trows, matches, nn, precision, byref(checks), skip)
+    time = flann.test_with_precision(index, dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, matches, matches.ctypes.shape, 
+                        nn, precision, byref(checks), skip)
     
     return checks.value, time
     
-def test_with_checks(index, dataset, testset, matches, checks, skip = 0):
+def test_with_checks(index, dataset, testset, matches, checks, nn, skip = 0):
     dataset = ensure_2d_array(dataset,float32,default_flags) 
     testset = ensure_2d_array(testset,float32,default_flags) 
     matches = ensure_2d_array(matches,int32,default_flags)
     
-    rows,cols = dataset.shape
-    trows, tcols = testset.shape    
-    assert( cols == tcols )
-    
-    mrows,nn = matches.shape
-    assert( trows == mrows)
+    assert(dataset.shape[1] == testset.shape[1] )
+    assert(testset.shape[0] == matches.shape[0] )
+    assert( nn <= matches.shape[1] )
     
     precision = c_float(0)
-    time = flann.test_with_checks(index, dataset, rows, cols, testset, trows, matches, nn, checks, byref(precision), skip)
+    time = flann.test_with_checks(index, dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, matches, matches.ctypes.shape, 
+                            nn, checks, byref(precision), skip)
     
     return precision.value, time
 

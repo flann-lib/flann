@@ -5,6 +5,12 @@
 using namespace std;
 
 
+int test(int a[2])
+{
+   printf("a = {%d,%d}\n",a[0],a[1]);
+}
+
+
 
 
 
@@ -12,15 +18,31 @@ using namespace std;
 int main()
 {
 
-    vector<int> vi(10);
-    vector<int> vi2(10);
+    int a[2];
 
-    vi[0] = 10;
-    
-    vi2 = vi;
+    int* b;
 
-    vi2[0] = 12;
+    b = a;
 
-    printf("vi = %d, vi2 = %d \n",vi[0],vi2[0]);
+    a[0] = 1;
+    a[1] = 2;
+
+    b[1] = 3;
+
+    test(a);
+    test(b);
+
+    int c[3];
+
+    test(c);
+
+
+    int x = 2;
+    int y = 3;
+
+    int d[] = { x,y};
+
+    test(d);
+ 
     
 }

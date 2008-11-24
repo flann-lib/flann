@@ -62,10 +62,9 @@ class RunTestCommand(BaseCommand):
         testset = read(self.options.test_file)
         
         print 'Reading ground truth from matches from', self.options.test_file
-        matches = read(self.options.match_file)
-        
+        matches = read(self.options.match_file, dtype = int)
         
         if self.options.precision>0:
-            checks, time = test_with_precision(flann, dataset, testset, matches, self.options.precision)
+            checks, time = test_with_precision(flann, dataset, testset, matches, self.options.precision, self.options.nn)
         else:
-            precision, time = test_with_checks(flann, dataset, testset, matches, self.options.checks)
+            precision, time = test_with_checks(flann, dataset, testset, matches, self.options.checks, self.options.nn)

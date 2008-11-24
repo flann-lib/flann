@@ -249,15 +249,15 @@ class KMeansTree : public NNIndex
 	 * clustering
 	 */
 	int max_iter;
-	
-	/**
-	 * Cluster border index. This is used in the tree search phase when determining
-	 * the closest cluster to explore next. A zero value takes into account only
-	 * the cluster centers, a value greater then zero also take into account the size
-	 * of the cluster.
-	 */
-	float cb_index;
-	
+
+     /**
+     * Cluster border index. This is used in the tree search phase when determining
+     * the closest cluster to explore next. A zero value takes into account only
+     * the cluster centers, a value greater then zero also take into account the size
+     * of the cluster.
+     */
+    float cb_index;
+
 	/**
 	 * The dataset used by this index
 	 */
@@ -406,8 +406,8 @@ public:
 		else {
 			throw FLANNException("Unknown algorithm for choosing initial centers.");
 		}
-		cb_index = 0.5;
-		
+        cb_index = 0.4;
+    
 		domain_distances = new float[branching];
  		heap = new Heap<BranchSt>(dataset.rows);
 	}
@@ -446,6 +446,12 @@ public:
         return veclen_;
     }
 
+
+    void set_cb_index( float index)
+    {
+        cb_index = index;
+    }
+
 	
 	/**
 	 * Computes the inde memory usage
@@ -455,14 +461,6 @@ public:
 	{
 		return  pool.usedMemory+pool.wastedMemory+memoryCounter;
 	}
-
-    /**
-    * Set cluster boundary index
-    */
-    void set_cb_index(float cb_index)
-    {
-        this->cb_index = cb_index;
-    }
 
 	/**
 	 * Builds the index
@@ -487,17 +485,23 @@ public:
      * Params:
      *     result = the result object in which the indices of the nearest-neighbors are stored 
      *     vec = the vector for which to search the nearest neighbors
-     *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
+     *     searchParams = parameters that influence the search algorithm (checks, cb_index)
      */
     void findNeighbors(ResultSet& result, float* vec, Params searchParams)
     {
         int maxChecks;
+        float cb_index;
         if (searchParams.find("checks") == searchParams.end()) {
             maxChecks = -1;
         }
         else {            
             maxChecks = (int)searchParams["checks"];
         }
+
+        if (searchParams.find("cb_index") != searchParams.end()) {
+            cb_index = (float)searchParams["cb_index"];
+        }
+
         
         if (maxChecks<0) {
             findExactNN(root, result, vec);
@@ -801,7 +805,16 @@ private:
 	/**
 	 * Performs one descent in the hierarchical k-means tree. The branches not
 	 * visited are stored in a priority queue.
-	 */
+     *
+     * Params:
+     *      node = node to explore
+     *      result = container for the k-nearest neighbors found
+     *      vec = query points
+     *      checks = how many points in the dataset have been checked so far
+     *      maxChecks = maximum dataset points to checks
+     */
+
+
 	void findNN(KMeansNode node, ResultSet& result, float* vec, int& checks, int maxChecks)
 	{
 		// Ignore those clusters that are too far away
@@ -821,7 +834,7 @@ private:
 	
 		if (node->childs==NULL) {
             if (checks>=maxChecks) {
-                return;
+                if (result.full()) return;
             }
             checks += node->size;
 			for (int i=0;i<node->size;++i) {	

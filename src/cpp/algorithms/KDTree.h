@@ -61,11 +61,6 @@ class KDTree : public NNIndex
 	int numTrees;       	
 
 	/**
-	 * Number of neighbors checked in one lookup phase
-	 */
-	int checkCount;
-	
-	/**
 	 *  Array of indices to vectors in the dataset.  When doing lookup, 
 	 *  this is used instead to mark checkID.
 	 */
@@ -436,18 +431,18 @@ private:
 		int i;
 		BranchSt branch;
 		
-		checkCount = 0;
+		int checkCount = 0;
 		heap->clear();
 		checkID -= 1;  /* Set a different unique ID for each search. */
 	
 		/* Search once through each tree down to root. */
 		for (i = 0; i < numTrees; ++i) {
-			searchLevel(result, vec, trees[i], 0.0, maxCheck);
+			searchLevel(result, vec, trees[i], 0.0, checkCount, maxCheck);
 		}
 	
 		/* Keep searching other branches from heap until finished. */
 		while ( heap->popMin(branch) && (checkCount < maxCheck || !result.full() )) {
-			searchLevel(result, vec, branch.node,branch.mindistsq, maxCheck);
+			searchLevel(result, vec, branch.node,branch.mindistsq, checkCount, maxCheck);
 		}
 		
 		assert(result.full());
@@ -459,7 +454,7 @@ private:
 	 *  higher levels, all exemplars below this level must have a distance of
 	 *  at least "mindistsq". 
 	*/
-	void searchLevel(ResultSet& result, float* vec, Tree node, float mindistsq, int maxCheck)
+	void searchLevel(ResultSet& result, float* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
 	{
 		float val, diff;
 		Tree bestChild, otherChild;
@@ -472,7 +467,7 @@ private:
 				current checkID.
 			*/
 			if (vind[node->divfeat] == checkID || checkCount>=maxCheck) {
-				return;
+				if (result.full()) return;
 			}
             checkCount++;
 			vind[node->divfeat] = checkID;
@@ -500,7 +495,7 @@ private:
 		}
 	
 		/* Call recursively to search next level down. */
-		searchLevel(result, vec, bestChild, mindistsq, maxCheck);
+		searchLevel(result, vec, bestChild, mindistsq, checkCount, maxCheck);
 	}
 	
 	/**

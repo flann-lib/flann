@@ -62,7 +62,7 @@ namespace {
         try {
             p.cb_index = (float)params["cb_index"];
         } catch (...) {
-            p.cb_index = 0.5;
+            p.cb_index = 0.4;
         }
         
 		try {
@@ -309,41 +309,49 @@ int flann_compute_cluster_centers(float* dataset, int rows, int cols, int cluste
 	}
 }
 
-EXPORT void compute_ground_truth_float(float* dataset, int rows, int cols, float* testset, int trows, int* match, int nn, int skip)
+
+EXPORT void compute_ground_truth_float(float* dataset, int dshape[2], float* testset, int tshape[2], int* match, int mshape[2], int skip)
 {
-    Dataset<float> _dataset(rows, cols, dataset);
-    Dataset<float> _testset(trows, cols, testset);
-    Dataset<int> _match(trows, nn, (int*) match);
-    compute_ground_truth(_dataset, _testset, _match, skip);
+    assert(dshape[1]==tshape[1]);
+    assert(tshape[0]==mshape[0]);
+
+    Dataset<int> _match(mshape[0], mshape[1], match);
+    compute_ground_truth(Dataset<float>(dshape[0], dshape[1], dataset), Dataset<float>(tshape[0], tshape[1], testset), _match, skip);
 }
 
 
-EXPORT float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int rows, int cols, float* testset, int trows, int* matches, int nn,
-             float precision, int* checks, int skip = 0)
+EXPORT float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int dshape[2], float* testset, int tshape[2], int* matches, int mshape[0],
+             int nn, float precision, int* checks, int skip = 0)
 {
+    assert(dshape[1]==tshape[1]);
+    assert(tshape[0]==mshape[0]);
+
     try {
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
         NNIndexPtr index = (NNIndexPtr)index_ptr;
-        return test_index_precision(*index, Dataset<float>(rows, cols,dataset), Dataset<float>(trows, cols, testset), 
-                Dataset<int>(trows,nn,matches), precision, *checks, nn, skip);
+        return test_index_precision(*index, Dataset<float>(dshape[0], dshape[1],dataset), Dataset<float>(tshape[0], tshape[1], testset), 
+                Dataset<int>(mshape[0],mshape[1],matches), precision, *checks, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
         return -1;
     }
 }
 
-EXPORT float test_with_checks(FLANN_INDEX index_ptr, float* dataset, int rows, int cols, float* testset, int trows, int* matches, int nn,
-             int checks, float* precision, int skip = 0)
+EXPORT float test_with_checks(FLANN_INDEX index_ptr, float* dataset, int dshape[2], float* testset, int tshape[2], int* matches, int mshape[0],
+             int nn, int checks, float* precision, int skip = 0)
 {
+    assert(dshape[1]==tshape[1]);
+    assert(tshape[0]==mshape[0]);
+
     try {
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
         NNIndexPtr index = (NNIndexPtr)index_ptr;
-        return test_index_checks(*index, Dataset<float>(rows, cols,dataset), Dataset<float>(trows, cols, testset), 
-                Dataset<int>(trows,nn,matches), checks, *precision, nn, skip);
+        return test_index_checks(*index, Dataset<float>(dshape[0], dshape[1],dataset), Dataset<float>(tshape[0], tshape[1], testset), 
+                Dataset<int>(mshape[0],mshape[1],matches), checks, *precision, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
         return -1;

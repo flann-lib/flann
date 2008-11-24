@@ -10,6 +10,7 @@ function [index, params, speedup] = flann_build_index(dataset, build_params)
 
     algos = { 'linear', 'kdtree', 'kmeans', 'composite' };
     center_algos = {'random', 'gonzales', 'kmeanspp' };
+    log_levels = {'none', 'fatal', 'error', 'warning', 'info'};
     function value = id2value(array, id)
         value = array(id+1);
     end
@@ -24,68 +25,36 @@ function [index, params, speedup] = flann_build_index(dataset, build_params)
         end            
     end
 
-if ~(isstruct(build_params)) 
-	error('The "build_params" argument should be a structure');
-end
+    default_params = struct('target_precision', -1, 'algorithm', 'kdtree' ,'checks', 32,  'cb_index', 0.4, 'trees', 4, 'branching', 32, 'iterations', 5, 'centers_init', 'random', 'build_weight', 0.01, 'memory_weight', 0, 'sample_fraction', 0.1, 'log_level', 'warning', 'random_seed', 0);
 
-if isfield(build_params,'target_precision')
-	build_weight = 0.01;
-	if isfield(build_params,'build_weight')
-		build_weight = build_params.build_weight;
-	end
-	memory_weight = 0;
-	if isfield(build_params,'memory_weight')
-		memory_weight = build_params.memory_weight;
-	end
-    sample_fraction = 0.1;
-	if isfield(build_params,'sample_fraction')
-		sample_fraction = build_params.sample_fraction;
-	end
-    p = [-1 build_params.target_precision build_weight memory_weight sample_fraction];
-elseif isfield(build_params,'algorithm')
-	if strcmp(build_params.algorithm,'kdtree') && ~isfield(build_params,'trees')
-		error('Missing "trees" parameter');
-	end
-	if strcmp(build_params.algorithm,'kmeans') && ~isfield(build_params,'branching')
-		error('Missing "branching" parameter');
-	end
-	if strcmp(build_params.algorithm,'kmeans') && ~isfield(build_params,'iterations')
-		error('Missing "iterations" parameter');
-	end
-	
-	trees = -1;
-	if isfield(build_params,'trees')
-		trees = build_params.trees;
-	end
-	branching = -1;
-	if isfield(build_params,'branching')
-		branching = build_params.branching;
-	end
-	iterations = -2;
-	if isfield(build_params,'iterations')
-		iterations = build_params.iterations;
-	end
-	checks = 1;
-	if isfield(build_params,'checks')
-		checks = build_params.checks;
-	end
-    centers_init = 0;
-    if isfield(build_params,'centers_init') 
-        centers_init = value2id(center_algos,build_params.centers_init);
+    if ~isstruct(build_params)
+        error('The "build_params" argument must be a structure');
     end
-	
-    algorithm_id = value2id(algos,build_params.algorithm);
 
-    p = [checks algorithm_id trees branching iterations centers_init];
-else
-    error('Incomplete "build_params" structure');
-end
-[index, search_params, speedup] = nearest_neighbors('build_index',dataset,p);
+    params = default_params;
+    fn = fieldnames(build_params);
+    for i = [1:length(fn)],
+        name = cell2mat(fn(i));
+        params.(name) = build_params.(name);
+    end
+    if ~isnumeric(params.algorithm),
+        params.algorithm = value2id(algos,params.algorithm);
+    end
+    if ~isnumeric(params.centers_init),
+        params.centers_init = value2id(center_algos,params.centers_init);
+    end
+    if ~isnumeric(params.log_level),
+        params.log_level = value2id(log_levels,params.log_level);
+    end
 
-params.checks = search_params(1);
-params.algorithm = id2value(algos,search_params(2));
-params.trees = search_params(3);
-params.branching = search_params(4);
-params.iterations = search_params(5);
-params.centers_init = id2value(center_algos,search_params(6));
+    [index, params, speedup] = nearest_neighbors('build_index',dataset, params);
+
+
+
+    if isnumeric(params.algorithm),
+        params.algorithm = id2value(algos,params.algorithm);
+    end
+    if isnumeric(params.centers_init),
+        params.centers_init = id2value(center_algos,params.centers_init);
+    end
 end
