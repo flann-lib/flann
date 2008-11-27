@@ -12,8 +12,14 @@
 #include "Testing.h"
 #include "dist.h"
 #include "ground_truth.h"
+#include "simplex_downhill.h"
 
 
+
+/**
+ This class chooses the best nearest-neighbor algorithm and its optimal
+parameters.
+*/
 class Autotune {
 
     float buildTimeFactor;
@@ -33,6 +39,7 @@ class Autotune {
         float memoryCost;
         float totalCost;
         Params params;
+        
     };
 
 
@@ -88,67 +95,60 @@ class Autotune {
         logger.info("KDTree buildTime=%g, searchTime=%g, timeCost=%g\n",buildTime, searchTime, cost.timeCost);            
     }
     
-
-
-
-
-public:    
-
-    Autotune(float buildTimeFactor_, float memoryFactor_, float samplePercentage_ = 0.1) :
-        buildTimeFactor(buildTimeFactor_), memoryFactor(memoryFactor_), samplePercentage(samplePercentage_)
-    {
-        sampledDataset = NULL;
-        testDataset = NULL;
-    }
-
-    ~Autotune()
-    {
-    }
-
     
-    Params estimateBuildIndexParams(const Dataset<float>& inputDataset, float desiredPrecision_)
-    {   
-
-        desiredPrecision = desiredPrecision_;
-        logger.info("Enterng autotuning, dataset size: %d\n",inputDataset.rows);
-
-        // subsample datasets
-        int sampleSize = int(samplePercentage*inputDataset.rows);
-        int testSampleSize = min(sampleSize/10, 1000);
-
-        logger.info("sampleSize: %d\n",sampleSize);
-        logger.info("testSampleSize: %d\n",testSampleSize);
-
-        Params bestParams;
-        float bestCost = numeric_limits<float>::max();
-
-        if (testSampleSize<1) {
-            logger.info("Choosing linear, dataset too small\n");
-            bestParams["algorithm"] = "linear";
-            return bestParams;
+    struct KMeansSimpleDownhillFunctor {
+        
+        Autotune& autotuner;
+        KMeansSimpleDownhillFunctor(Autotune& autotuner_) : autotuner(autotuner_) {};
+        
+        float operator()(int* params) {
+            
+            float maxFloat = numeric_limits<float>::max();
+            
+            if (params[0]<2) return maxFloat;
+            if (params[1]<0) return maxFloat;
+            
+            CostData c;
+            c.params["algorithm"] = "kmeans";
+            c.params["centers-init"] = "random";
+            c.params["branching"] = params[0];
+            c.params["max-iterations"] = params[1];
+            
+            autotuner.evaluate_kmeans(c);
+            
+            return c.timeCost;
+            
         }
-        // sampling a dataset to use for autotuning
-        sampledDataset = inputDataset.sample(sampleSize);    
-    
-        // sampling a test(query) set
-        testDataset = sampledDataset->sample(testSampleSize,true);
-                
-        logger.info("Sampled dataset size: %d\n",sampledDataset->rows);
-        logger.info("Test dataset size: %d\n",testDataset->rows);
+    };
+
+    struct KDTreeSimpleDownhillFunctor {
         
-        logger.info("Computing ground truth... \n");
-        gt_matches = new Dataset<int>(testDataset->rows, 1);
-        StartStopTimer t;
-        t.start();
-        compute_ground_truth(*sampledDataset, *testDataset, *gt_matches, 0);
-        t.stop();
-        float linearTime = t.value;
+        Autotune& autotuner;
+        KDTreeSimpleDownhillFunctor(Autotune& autotuner_) : autotuner(autotuner_) {};
         
-        // Start parameter autotune process
-        logger.info("Autotuning parameters...\n");
-    
-    
-        // explore kmeans parameters space
+        float operator()(int* params) {
+            float maxFloat = numeric_limits<float>::max();
+            
+            if (params[0]<1) return maxFloat;
+
+            CostData c;
+            c.params["algorithm"] = "kdtree";
+            c.params["trees"] = params[0];
+            
+            autotuner.evaluate_kdtree(c);
+            
+            return c.timeCost;
+            
+        }
+    };
+
+
+
+    CostData optimizeKMeans()
+    {
+        logger.info("KMEANS, Step 1: Exploring parameter space\n");   
+
+        // explore kmeans parameters space using combinations of the parameters below
         int maxIterations[] = { 1, 5, 10, 15 };
         int branchingFactors[] = { 16, 32, 64, 128, 256 };
     
@@ -175,16 +175,68 @@ public:
                 ++cnt;
             }
         }
-        
-        
-        // explore kd-tree parameters space
+
+//         logger.info("KMEANS, Step 2: simplex-downhill optimization\n");   
+//         
+//         const int n = 2;
+//         // choose initial simplex points as the best parameters so far
+//         int kmeansNMPoints[n*(n+1)];
+//         float kmeansVals[n+1];
+//         for (int i=0;i<n+1;++i) {
+//             kmeansNMPoints[i*n] = (int)kmeansCosts[i].params["branching"];
+//             kmeansNMPoints[i*n+1] = (int)kmeansCosts[i].params["max-iterations"];
+//             kmeansVals[i] = kmeansCosts[i].timeCost;
+//         }
+//         KMeansSimpleDownhillFunctor kmeans_cost_func(*this);
+//         // run optimization
+//         optimizeSimplexDownhill(kmeansNMPoints,n,kmeans_cost_func,kmeansVals);
+//         // store results
+//         for (int i=0;i<n+1;++i) {
+//             kmeansCosts[i].params["branching"] = kmeansNMPoints[i*2];
+//             kmeansCosts[i].params["max-iterations"] = kmeansNMPoints[i*2+1];
+//             kmeansCosts[i].timeCost = kmeansVals[i];
+//         }
+
+        float optTimeCost = kmeansCosts[0].timeCost;
+        // recompute total costs factoring in the memory costs
+        for (int i=0;i<kmeansParamSpaceSize;++i) {
+            kmeansCosts[i].totalCost = (kmeansCosts[i].timeCost/optTimeCost + memoryFactor * kmeansCosts[i].memoryCost);
+            
+            int k = i;
+            while (k>0 && kmeansCosts[k].totalCost < kmeansCosts[k-1].totalCost) {
+                swap(kmeansCosts[k],kmeansCosts[k-1]);
+                k--;
+            }
+        }
+        // display the costs obtained 
+        for (int i=0;i<kmeansParamSpaceSize;++i) {
+            logger.info("KMeans, branching=%d, iterations=%d, time_cost=%g[%g] (build=%g, search=%g), memory_cost=%g, cost=%g\n", 
+                int(kmeansCosts[i].params["branching"]), int(kmeansCosts[i].params["max-iterations"]),
+            kmeansCosts[i].timeCost,kmeansCosts[i].timeCost/optTimeCost,
+            kmeansCosts[i].buildTimeCost, kmeansCosts[i].searchTimeCost,
+            kmeansCosts[i].memoryCost,kmeansCosts[i].totalCost);
+        }   
+
+        CostData bestCost = kmeansCosts[0];
+        delete[] kmeansCosts;
+    
+        return bestCost;
+    }
+
+
+    CostData optimizeKDTree()
+    {
+            
+        logger.info("KD-TREE, Step 1: Exploring parameter space\n");   
+
+        // explore kd-tree parameters space using the parameters below
         int testTrees[] = { 1, 4, 8, 16, 32 };
     
         int kdtreeParamSpaceSize = ARRAY_LEN(testTrees);
         CostData* kdtreeCosts = new CostData[kdtreeParamSpaceSize];
         
         // evaluate kdtree for all parameter combinations
-        cnt = 0;
+        int cnt = 0;
         for (int i=0; i<ARRAY_LEN(testTrees); ++i) {
             kdtreeCosts[cnt].params["algorithm"] = "kdtree";
             kdtreeCosts[cnt].params["trees"] = testTrees[i];
@@ -199,49 +251,28 @@ public:
             }
             ++cnt;
         }
-        
-        
-        
-        // get the optimum time cost
-        float optTimeCost = min(kmeansCosts[0].timeCost, kdtreeCosts[0].timeCost);
-        
-        if (optTimeCost<1e-6) {
-            optTimeCost = 1;
-        }
-        
-        logger.info("Optimum Time Cost = %g\n",optTimeCost);
-        
-        // recompute total costs taking into account the optimum time cost
-        for (int i=0;i<kmeansParamSpaceSize;++i) {
-            kmeansCosts[i].totalCost = (kmeansCosts[i].timeCost/optTimeCost + memoryFactor * kmeansCosts[i].memoryCost);
-            
-            int k = i;
-            while (k>0 && kmeansCosts[k].totalCost < kmeansCosts[k-1].totalCost) {
-                swap(kmeansCosts[k],kmeansCosts[k-1]);
-                k--;
-            }
-        }
-        for (int i=0;i<kmeansParamSpaceSize;++i) {
-            logger.info("KMeans, branching=%d, iterations=%d, time_cost=%g[%g] (build=%g, search=%g[speedup: %g]), memory_cost=%g, cost=%g\n", 
-                int(kmeansCosts[i].params["branching"]), int(kmeansCosts[i].params["max-iterations"]),
-            kmeansCosts[i].timeCost,kmeansCosts[i].timeCost/optTimeCost,
-            kmeansCosts[i].buildTimeCost, kmeansCosts[i].searchTimeCost,linearTime/kmeansCosts[i].searchTimeCost,
-            kmeansCosts[i].memoryCost,kmeansCosts[i].totalCost);
-        }   
 
-        
-//         float kmeansCost = optimizeSimplexDownhill!(int)(kmeans_params[0..3], &compute_kmeans_cost, costs);*/
-        float kmeansCost = kmeansCosts[0].totalCost;
-        Params kmeansParams = kmeansCosts[0].params;
-        
-        delete[] kmeansCosts;
+//         logger.info("KD-TREE, Step 2: simplex-downhill optimization\n");   
+//         
+//         const int n = 1;
+//         // choose initial simplex points as the best parameters so far
+//         int kdtreeNMPoints[n*(n+1)];
+//         float kdtreeVals[n+1];
+//         for (int i=0;i<n+1;++i) {
+//             kdtreeNMPoints[i] = (int)kdtreeCosts[i].params["trees"];
+//             kdtreeVals[i] = kdtreeCosts[i].timeCost;
+//         }
+//         KDTreeSimpleDownhillFunctor kdtree_cost_func(*this);
+//         // run optimization
+//         optimizeSimplexDownhill(kdtreeNMPoints,n,kdtree_cost_func,kdtreeVals);
+//         // store results
+//         for (int i=0;i<n+1;++i) {
+//             kdtreeCosts[i].params["trees"] = kdtreeNMPoints[i];
+//             kdtreeCosts[i].timeCost = kdtreeVals[i];
+//         }
 
-            
-        if (kmeansCost<bestCost) {
-            bestParams = kmeansParams;
-            bestCost = kmeansCost;
-        }
-        
+        float optTimeCost = kdtreeCosts[0].timeCost;
+        // recompute costs for kd-tree factoring in memory cost
         for (int i=0;i<kdtreeParamSpaceSize;++i) {
             kdtreeCosts[i].totalCost = (kdtreeCosts[i].timeCost/optTimeCost + memoryFactor * kdtreeCosts[i].memoryCost);
             
@@ -251,29 +282,99 @@ public:
                 k--;
             }       
         }
+        // display costs obtained
         for (int i=0;i<kdtreeParamSpaceSize;++i) {
-            logger.info("kd-tree, trees=%d, time_cost=%g[%g] (build=%g, search=%g[speedup: %g]), memory_cost=%g, cost=%g\n",
+            logger.info("kd-tree, trees=%d, time_cost=%g[%g] (build=%g, search=%g), memory_cost=%g, cost=%g\n",
             int(kdtreeCosts[i].params["trees"]),kdtreeCosts[i].timeCost,kdtreeCosts[i].timeCost/optTimeCost,
-            kdtreeCosts[i].buildTimeCost, kdtreeCosts[i].searchTimeCost, linearTime/kdtreeCosts[i].searchTimeCost,
+            kdtreeCosts[i].buildTimeCost, kdtreeCosts[i].searchTimeCost,
             kdtreeCosts[i].memoryCost,kdtreeCosts[i].totalCost);
         }   
-        
-        
-//         float kdtreeCost = optimizeSimplexDownhill!(int)(kdtree_params[0..2], &compute_kdtree_cost, kdtre_costs);
-        float kdtreeCost = kdtreeCosts[0].totalCost;
-        Params kdtreeParams = kdtreeCosts[0].params;
-        
+
+        CostData bestCost = kdtreeCosts[0];
         delete[] kdtreeCosts;
-        
-        if (kdtreeCost<bestCost) {
-            bestParams = kdtreeParams;
-            bestCost = kdtreeCost;
+
+        return bestCost;
+    }
+
+
+public:    
+
+    Autotune(float buildTimeFactor_, float memoryFactor_, float samplePercentage_ = 0.1) :
+        buildTimeFactor(buildTimeFactor_), memoryFactor(memoryFactor_), samplePercentage(samplePercentage_)
+    {
+        sampledDataset = NULL;
+        testDataset = NULL;
+    }
+
+    ~Autotune()
+    {
+    }
+
+    
+    /**
+        Chooses the best nearest-neighbor algorithm and estimates the optimal 
+        parameters to use when building the index (for a given precision).
+        Returns a dictionary with the optimal parameters.
+    */
+    Params estimateBuildIndexParams(const Dataset<float>& inputDataset, float desiredPrecision_)
+    {   
+
+        desiredPrecision = desiredPrecision_;
+        Params bestParams;
+        float bestCost = numeric_limits<float>::max();
+
+        int sampleSize = int(samplePercentage*inputDataset.rows);
+        int testSampleSize = min(sampleSize/10, 1000);
+
+        logger.info("Enterng autotuning, dataset size: %d, sampleSize: %d, testSampleSize: %d\n",inputDataset.rows, sampleSize, testSampleSize);
+
+        // For a very small dataset, it makes no sense to build any fancy index, just
+        // use linear search
+        if (testSampleSize<1) {
+            logger.info("Choosing linear, dataset too small\n");
+            bestParams["algorithm"] = "linear";
+            return bestParams;
         }
+
+        // We use a fraction of the original dataset to speedup the autotune algorithm
+        sampledDataset = inputDataset.sample(sampleSize);    
+        // We use a cross-validation approach, first we sample a testset from the dataset
+        testDataset = sampledDataset->sample(testSampleSize,true);
+
+        // We compute the ground truth using linear search
+        logger.info("Computing ground truth... \n");
+        gt_matches = new Dataset<int>(testDataset->rows, 1);
+        StartStopTimer t;
+        t.start();
+        compute_ground_truth(*sampledDataset, *testDataset, *gt_matches, 0);
+        t.stop();
+        float linearTime = t.value;
         
+        // Start parameter autotune process
+        logger.info("Autotuning parameters...\n");
+    
+
+        CostData kmeansCost = optimizeKMeans();
+
+        if (kmeansCost.totalCost<bestCost) {
+            bestParams = kmeansCost.params;
+            bestCost = kmeansCost.totalCost;
+        }
+
+        CostData kdtreeCost = optimizeKDTree();
+
+        if (kdtreeCost.totalCost<bestCost) {
+            bestParams = kdtreeCost.params;
+            bestCost = kdtreeCost.totalCost;
+        }
+
+        
+        // display best parameters
         logger.info("Best params: ");
         log_params(LOG_INFO, bestParams);
         logger.info("\n");
         
+        // free the memory used by the datasets we sampled
         delete sampledDataset;
         delete testDataset;
         delete gt_matches;
@@ -283,6 +384,11 @@ public:
 
 
     
+    /**
+        Estimates the search time parameters needed to get the desired precision.
+        Precondition: the index is built
+        Postcondition: the searchParams will have the optimum params set, also the speedup obtained over linear search.
+    */
     void estimateSearchParams(NNIndex& index, Dataset<float>& inputDataset, float desiredPrecision, Params& searchParams)
     {
         const int nn = 1;
@@ -294,6 +400,7 @@ public:
 
             logger.info("Computing ground truth\n");
             
+            // we need to compute teh ground truth first
             Dataset<int> gt_matches(testDataset->rows,1);
             StartStopTimer t;
             t.start();
@@ -305,7 +412,7 @@ public:
             logger.info("Estimating number of checks\n");
             
             float searchTime;
-            float cb_index;    
+            float cb_index;
             if (strcmp(index.name(),"kmeans") == 0) {
 
                 logger.info("KMeans algorithm, estimating cluster border factor\n");

@@ -22,6 +22,6 @@ INSTALL (
 # )
 
 INSTALL (
-    FILES flann.h
+    FILES flann.h constants.h
     DESTINATION include
 )

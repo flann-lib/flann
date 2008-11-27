@@ -49,11 +49,8 @@ the exact searches.
 
 FLANN (Fast Library for Approximate Nearest Neighbors) is a library for
 performing fast approximate nearest neighbor searches. FLANN is written in
-the D programming language (D is a C/C++ like language with a cleaner
-syntax, more features and that compiles to native code achieving the same
- performnace as C/C++). FLANN can be easily used in many contexts
-through the C, MATLAB and Python bindings provided with the library. It
-can also be used as a standalone console application.
+the C++ programming language. FLANN can be easily used in many contexts
+through the C, MATLAB and Python bindings provided with the library.
 
 
 
@@ -155,14 +152,13 @@ result = flann.nn(dataset,testset,5,algorithm="kmeans",
 \begin{Verbatim}[fontsize=\scriptsize,frame=single]
 $ flann compute_nn --input-file=dataset.dat --test-file=testset.dat 
 --algorithm=kdtree --trees=8 --checks=64 --nn=5 --output-file=nn.dat
-Info  log - Reading input data from dataset.dat
-Info  log - Algorithm: kdtree
-Info  log - Building index...
-Info  log - Time to build 8 trees for 10000 vectors: 0.57 seconds
-Info  log - Reading test data from testset.dat...
-Info  log - Searching...
-Info  log - Time to search 1000 vectors: 0.07 seconds
-Info  log - Wrote the nearest neighbors to nn.dat
+Reading input dataset from dataset.dat
+Building index
+Building index took: 0.76
+Reading test dataset from testset.dat
+Searching for nearest neighbors
+Searching took 0.06 seconds
+Writing matches to nn.dat
 \end{Verbatim}
 
 \end{itemize}
@@ -179,24 +175,34 @@ FLANN can be downloaded from the following address:
 After downloading and unpacking, the following files and directories should
 be present:
 \begin{itemize}
-\item \texttt{Makefile}: makefile used to compile the application/library.
 \item \texttt{src}: directory containg the source files
 \item \texttt{doc}: directory containg this documentation
-\item \texttt{bin}: directory containg the gdc D compiler and build tools.
-Since not many system have the gdc compiler installed by default, it is
-distributed with the library.
+\item \texttt{bin}: directory various for scripts and binary files
 \item \texttt{build}: directory where the compiled application, library, C
 bindings and matlab wrapper functions are stored. It has the following
 subdirectories:
 \begin{itemize}
 \item \texttt{bin}: contains the command line application (\texttt{flann})
-\item \texttt{lib}: contains the compiled library (\texttt{libflann.a})
+\item \texttt{lib}: contains the compiled library (\texttt{libflann.so} and \texttt{libflann\_s.a})
 \item \texttt{include}: contains the C bindings for the library (\texttt{flann.h})
 \item \texttt{matlab}: contains the MATLAB wrapper functions and a MEX (Matlab EXecutable) file
 \item \texttt{python}: contains the python bindings
 \end{itemize}
 
 \end{itemize}
+
+To compile the flann library the \textit{CMake} build system is required\footnote{http://www.cmake.org/}.
+Below is an example of how the flann library can be compiled (replace x.y with the corresponding version number).
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+$ cd flann-x.y-src
+$ mkdir tmp
+$ cd tmp
+$ cmake ../src
+$ CMAKE_BUILD_TYPE=release make install
+\end{Verbatim}
+
+
+
 
 \section{Using FLANN}
 
@@ -312,7 +318,7 @@ convergence. This parameter is required only when the algorithm used is
 centers when performing a kmeans clustering step. The possible values are
 'random' (picks the initial cluster centers randomly), 'gonzales' (picks the
 initial centers using the Gonzales algorithm) and 'kmeanspp' (picks the initial
-centers using the algorithm suggested in \cite{arthur_kmeanspp_2007}). If this
+centers using thealgorithm suggested in \cite{arthur_kmeanspp_2007}). If this
 parameters is omitted, the default value is 'random'.
 
 \end{description}
@@ -458,35 +464,19 @@ adding the \texttt{build/include} directory to the compiler include path
 (all the paths in this document are specified relative to the library main
 directory). The directory can be added to the compiler include
 path using the \texttt{-I} compiler flag (on most Unix/Linux systems). When
-linking the C/C++ application the \texttt{libflann.a} and
-\texttt{libgphobos.a} libraries must be linked in. This is done using the
-\texttt{-l} compiler flag followed by the library name
+linking the C/C++ application the \texttt{libflann\_s.a} (for linking statically) or
+the \texttt{libflann.so} (for linking dynamically) libraries must be linked in. 
+This is done using the \texttt{-l} compiler flag followed by the library name
 (eg. \texttt{-lflann}) and by specifying the library search path
 (\texttt{build/lib}) with the \texttt{-L} flag. The entire compile command
 that must be used will look like this:
 \begin{Verbatim}[fontsize=\footnotesize]
 g++ flann_example.cc -I build/include -L build/lib -o flann_example \
--lflann -lgphobos
+-lflann
 \end{Verbatim}
 
 The following section describes the C bindings offered by the FLANN
 library:
-
-\paragraph{flann\_init()}
-
-\begin{Verbatim}[fontsize=\footnotesize,frame=single]
-void flann_init();
-\end{Verbatim}
-This function performs various initializations needed by the library. It
-must be called before any other function from the library is called.
-
-\paragraph{flann\_term()}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single]
-void nn_term();
-\end{Verbatim}
-This is the pair of \texttt{flann\_init()} and runs finalization
-operations, such as freeing memory used by the library.
-
 
 \paragraph{flann\_build\_index()}
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
@@ -625,8 +615,7 @@ build/python directory:
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
 $ python setup.py install
 \end{Verbatim}
-The python bindings also require the numpy and scipy.weave packages to be
-installed.
+The python bindings also require the numpy package to be installed.
 
 To use the python FLANN bindings the package \texttt{pyflann} must be imported
 (see the python example in section \ref{sec:quickstart}). This package contains
@@ -701,63 +690,68 @@ The command line application takes a command name as the first argument and
 then the arguments for that command:
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
 $ flann
-Usage: flann [command command_options]
+Usage: flann.py [command commans_args]
 
-Commands:
-        autotune_params
-        sample
-        help
-        compute_clusters
-        compute_nn
-        generate_random
-        run_test
-        compute_gt
-        convert
+Comamnds:
+      generate_random
+      compute_gt
+      compute_nn
+      autotune
+      sample_dataset
+      cluster
+      run_test
 
-For more info type: flann help [command]
+For command specific help type: flann.py <command> -h
 \end{Verbatim}
 
 To see the possible arguments for each command, use \texttt{flann help
 <command>}. For example:
 
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-$ flann help compute_nn
-Command: compute_nn [options]
-Builds an index from a dataset and searches that index for the nearest
-neighbors of all the features in a testset.
+$ flann run_test -h
+Usage: flann.py [command command_args]
 
 Options:
-  --verbosity, -v             The program verbosity (trace > info > warn > error
-> fatal > none) (Default: info)
-  --reporters, -e             Comma-delimited list of reporters to use.
-  --help, -h                  Display help message
-  --input-file, -i            Name of file with input dataset.
-  --params-file, -p           File containing 'optimum' input dataset
-parameters.
-  --algorithm, -a             The algorithm to use when constructing the index
-(kdtree, kmeans...).
-  --trees, -r                 Number of parallel trees to use (where available,
-for example kdtree).
-  --branching, -b             Branching factor (where applicable, for example
-kmeans) (default: 2).
-  --byte-features, -B         Use byte-sized feature elements.
-  --centers-init, -C          Hot to choose the initial cluster centers for
-kmeans (random, gonzales) (default: random).
-  --max-iterations, -M        Max iterations to perform for kmeans (default:
-until convergence).
-  --test-file, -t             Name of file with test dataset.
-  --output-file, -o           Output file to save the features to.
-  --nn, -n                    Number of nearest neighbors to search for.
-  --checks, -c                Number of times to restart search (in
-best-bin-first manner).
-  --skip-matches, -K          Skip the first NUM matches at test phase.
+  -h, --help            show this help message and exit
+  -i FILE, --input-file=FILE
+                        Name of file with input dataset
+  -a ALGORITHM, --algorithm=ALGORITHM
+                        The algorithm to use when constructing the index
+                        (kdtree, kmeans...)
+  -r TREES, --trees=TREES
+                        Number of parallel trees to use (where available, for
+                        example kdtree)
+  -b BRANCHING, --branching=BRANCHING
+                        Branching factor (where applicable, for example
+                        kmeans) (default: 2)
+  -C CENTERS_INIT, --centers-init=CENTERS_INIT
+                        How to choose the initial cluster centers for kmeans
+                        (random, gonzales) (default: random)
+  -M MAX_ITERATIONS, --max-iterations=MAX_ITERATIONS
+                        Max iterations to perform for kmeans (default: until
+                        convergence)
+  -l LOG_LEVEL, --log-level=LOG_LEVEL
+                        Log level (none < fatal < error < warning < info)
+                        (Default: info)
+  -t FILE, --test-file=FILE
+                        Name of file with test dataset
+  -m FILE, --match-file=FILE
+                        File with ground truth matches
+  -n NN, --nn=NN        Number of nearest neighbors to search for
+  -c CHECKS, --checks=CHECKS
+                        Number of times to restart search (in best-bin-first
+                        manner)
+  -P PRECISION, --precision=PRECISION
+                        Run the test until reaching this precision
+  -K NUM, --skip-matches=NUM
+                        Skip the first NUM matches at test phase
 
 \end{Verbatim}
 
 
 \section{Acknowledgments}
 
-Many thanks to Hoyt Koepke for his work on the python bindings.
+Many thanks to Hoyt Koepke for his initial work on the python bindings.
 
 
 

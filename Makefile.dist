@@ -1,5 +1,5 @@
-VER=1.01
-
+VER=1.1
+CPU=i686
 
 
 dist: dist-bin-linux dist-src dist-gdc
@@ -9,9 +9,6 @@ dist-bin-linux:
 	rm -rf dist/flann-${VER}-linux-${CPU}*
 	@mkdir -p dist/flann-${VER}-linux-${CPU}
 	cp -r build/* dist/flann-${VER}-linux-${CPU}
-	rm -rf dist/flann-${VER}-linux-${CPU}/python/*utils*
-	rm -rf dist/flann-${VER}-linux-${CPU}/python/tests/*utils*
-	rm -rf dist/flann-${VER}-linux-${CPU}/python/tests/*memusage*
 	mkdir -p dist/flann-${VER}-linux-${CPU}/doc
 	cp doc/manual.pdf dist/flann-${VER}-linux-${CPU}/doc
 	cp README dist/flann-${VER}-linux-${CPU}
@@ -24,26 +21,10 @@ dist-src:
 	rm -rf dist/flann-${VER}-src*
 	@mkdir -p dist/flann-${VER}-src
 	cp -r src dist/flann-${VER}-src
+	rm -rf dist/flann-${VER}-src/src/cpp/tests/test*
+	rm -rf dist/flann-${VER}-src/src/python/_tests
 	mkdir -p dist/flann-${VER}-src/doc
 	cp doc/manual.pdf dist/flann-${VER}-src/doc
-	mkdir -p dist/flann-${VER}-src/bin
-	(cd bin; cp -r `ls | grep -v gdc` ../dist/flann-${VER}-src/bin)
-	cp bin/gdc dist/flann-${VER}-src/bin
-	cp Makefile dist/flann-${VER}-src
+	cp -r bin dist/flann-${VER}-src
 	cp README dist/flann-${VER}-src
-	-rm flann-${VER}-src.zip
 	(cd dist; zip -r -9 flann-${VER}-src.zip flann-${VER}-src)
-
-dist-gdc-i686:
-	rm -rf dist/gdc-i686
-	@mkdir -p dist
-	cp -r bin/gdc-i686 dist
-	-rm gdc-i686.zip
-	(cd dist; zip -r -9 gdc-i686.zip gdc-i686)
-
-dist-gdc-x86_64:
-	rm -rf dist/gdc-x86_64
-	@mkdir -p dist
-	cp -r bin/gdc-x86_64 dist
-	-rm gdc-x86_64.zip
-	(cd dist; zip -r -9 gdc-x86_64.zip gdc-x86_64)

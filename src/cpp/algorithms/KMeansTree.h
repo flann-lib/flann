@@ -667,7 +667,10 @@ private:
 		
 	 	float radiuses[branching];
 		int count[branching];
-        memset(count,0,branching*sizeof(int));
+        for (int i=0;i<branching;++i) {
+            radiuses[i] = 0;
+            count[i] = 0;
+        }
 		
         //	assign points to clusters
 		int belongs_to[indices_length];
@@ -682,6 +685,9 @@ private:
 					sq_dist = new_sq_dist;
 				}
 			}
+            if (sq_dist>radiuses[belongs_to[i]]) {
+                radiuses[belongs_to[i]] = sq_dist;
+            }
 			count[belongs_to[i]]++;
 		}
 		
@@ -694,6 +700,7 @@ private:
 			// compute the new cluster centers
 			for (int i=0;i<branching;++i) {
                 memset(dcenters[i],0,sizeof(double)*veclen_);
+                radiuses[i] = 0;
 			}
             for (size_t i=0;i<indices_length;++i) {
 				float* vec = dataset[indices[i]];
@@ -709,7 +716,6 @@ private:
                 }
 			}
 		    
-            memset(radiuses,0,branching*sizeof(float));
 			// reassign points to clusters
 			for (int i=0;i<indices_length;++i) {
 				float sq_dist = squared_dist(dataset[indices[i]],dcenters[0], veclen_); 
@@ -762,7 +768,7 @@ private:
  			centers[i] = new float[veclen_];
  			memoryCounter += veclen_*sizeof(float);
             for (size_t k=0; k<veclen_; ++k) {
-                centers[i][k] = double(dcenters[i][k]);
+                centers[i][k] = dcenters[i][k];
             }
  		}	
 	
@@ -929,12 +935,6 @@ private:
 	 */
 	void getCenterOrdering(KMeansNode node, float* q, int* sort_indices)
 	{
-		
-//		static float[] domain_distances;
-//		if (domain_distances is null) {
-//			domain_distances = new float[nc];
-//		}
-		
 		for (int i=0;i<branching;++i) {
 			float dist = squared_dist(q,node->childs[i]->pivot,veclen_);
 			
