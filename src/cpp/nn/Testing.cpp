@@ -113,7 +113,7 @@ void search_for_neighbors(NNIndex& index, const Dataset<float>& testset, Dataset
 
 }
 
-float test_index_checks(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches, int checks, float& precision, int nn, uint skipMatches)
+float test_index_checks(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches, int checks, float& precision, int nn, int skipMatches)
 {
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
     logger.info("---------------------------------------------------------\n");
@@ -127,7 +127,7 @@ float test_index_checks(NNIndex& index, const Dataset<float>& inputData, const D
 
 
 float test_index_precision(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches,
-             float precision, int& checks, int nn, uint skipMatches)
+             float precision, int& checks, int nn, int skipMatches)
 {       
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
     logger.info("---------------------------------------------------------\n");
@@ -194,7 +194,7 @@ float test_index_precision(NNIndex& index, const Dataset<float>& inputData, cons
 
 
 float test_index_precisions(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches,
-                    float* precisions, int precisions_length, int nn, uint skipMatches, float maxTime)
+                    float* precisions, int precisions_length, int nn, int skipMatches, float maxTime)
 {   
     // make sure precisions array is sorted 
     sort(precisions, precisions+precisions_length);

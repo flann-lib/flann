@@ -1,14 +1,14 @@
-from command import BaseCommand
-from util.exceptions import FLANNException
+from pyflann.command import BaseCommand
+from pyflann.exceptions import FLANNException
 from pyflann import *
+from pyflann.io.dataset import read,write
 
-from io.dataset import read,write
 import sys
 
 
 
 
-class RunTestCommand(BaseCommand):
+class ComputeNearestNeighborsCommand(BaseCommand):
     
     def __init__(self):
         
@@ -28,14 +28,12 @@ class RunTestCommand(BaseCommand):
                   help="Log level (none < fatal < error < warning < info) (Default: info)")
         self.parser.add_option("-t", "--test-file", 
                   help="Name of file with test dataset", metavar="FILE")
-        self.parser.add_option("-m", "--match-file", 
-                  help="File with ground truth matches", metavar="FILE")
+        self.parser.add_option("-o", "--output-file", 
+                  help="Output file to save the features to", metavar="FILE")
         self.parser.add_option("-n", "--nn", type="int", default=1,
                   help="Number of nearest neighbors to search for")
         self.parser.add_option("-c", "--checks", type="int", default=32,
                   help="Number of times to restart search (in best-bin-first manner)")
-        self.parser.add_option("-P", "--precision", type="float", default=-1,
-                  help="Run the test until reaching this precision")
         self.parser.add_option("-K", "--skip-matches", type="int", default=0,
                   help="Skip the first NUM matches at test phase", metavar="NUM")
 
@@ -47,8 +45,8 @@ class RunTestCommand(BaseCommand):
             raise FLANNException("No algorithm specified")
         if self.options.test_file == None:
             raise FLANNException("No test file given.")
-        if self.options.match_file == None:
-            raise FLANNException("No match file given.")
+        if self.options.output_file == None:
+            raise FLANNException("No output file given.")
         
         print 'Reading input dataset from', self.options.input_file
         dataset = read(self.options.input_file)
@@ -61,10 +59,8 @@ class RunTestCommand(BaseCommand):
         print 'Reading test dataset from', self.options.test_file
         testset = read(self.options.test_file)
         
-        print 'Reading ground truth from matches from', self.options.test_file
-        matches = read(self.options.match_file, dtype = int)
-        
-        if self.options.precision>0:
-            checks, time = test_with_precision(flann, dataset, testset, matches, self.options.precision, self.options.nn)
-        else:
-            precision, time = test_with_checks(flann, dataset, testset, matches, self.options.checks, self.options.nn)
+        print "Searching for nearest neighbors"
+        matches = flann.nn_index(testset, self.options.nn, checks = self.options.checks)
+
+        print "Writing matches to", self.options.output_file
+        write(matches, self.options.output_file, format="dat")

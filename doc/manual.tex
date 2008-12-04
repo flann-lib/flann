@@ -165,7 +165,7 @@ Writing matches to nn.dat
 
 
 
-\section{Getting and compiling FLANN}
+\section{Downloading and compiling FLANN}
 
 FLANN can be downloaded from the following address:
 \begin{center}
@@ -178,30 +178,39 @@ be present:
 \item \texttt{src}: directory containg the source files
 \item \texttt{doc}: directory containg this documentation
 \item \texttt{bin}: directory various for scripts and binary files
-\item \texttt{build}: directory where the compiled application, library, C
-bindings and matlab wrapper functions are stored. It has the following
-subdirectories:
+\end{itemize}
+
+In addition, the FLANN libary will install itself in the directory
+\texttt{build} (unless overridden by the \texttt{CMAKE\_INSTALL\_PREFIX} variable).
+The \texttt{build} directory will have the following structure:
 \begin{itemize}
-\item \texttt{bin}: contains the command line application (\texttt{flann})
-\item \texttt{lib}: contains the compiled library (\texttt{libflann.so} and \texttt{libflann\_s.a})
-\item \texttt{include}: contains the C bindings for the library (\texttt{flann.h})
+\item \texttt{bin}: contains the command line application (\texttt{flann}) and other binary files
+\item \texttt{lib}: contains the compiled libraries (\texttt{libflann.so} and \texttt{libflann\_s.a} for linux)
+\item \texttt{include}: contains the C header files
 \item \texttt{matlab}: contains the MATLAB wrapper functions and a MEX (Matlab EXecutable) file
 \item \texttt{python}: contains the python bindings
 \end{itemize}
 
-\end{itemize}
 
-To compile the flann library the \textit{CMake} build system is required\footnote{http://www.cmake.org/}.
-Below is an example of how the flann library can be compiled (replace x.y with the corresponding version number).
+To compile the flann library the \textit{CMake}\footnote{http://www.cmake.org/} build system is required.
+Below is an example of how the FLANN library can be compiled on Linux (replace x.y with the corresponding version number).
 \begin{Verbatim}[fontsize=\scriptsize,frame=single]
 $ cd flann-x.y-src
 $ mkdir tmp
 $ cd tmp
-$ cmake ../src
-$ CMAKE_BUILD_TYPE=release make install
+$ cmake ../src -DCMAKE_BUILD_TYPE=release
+$ make install
 \end{Verbatim}
 
+On windows the steps are similar:
 
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+> cd flann-x.y-src
+> md tmp
+> cd tmp
+> cmake ..\src -G ``NMake Makefiles'' -DCMAKE_BUILD_TYPE=release
+> nmake install
+\end{Verbatim}
 
 
 \section{Using FLANN}
@@ -216,6 +225,11 @@ creates a search index from the dataset points, \texttt{flann\_search} uses
 this index to perform nearest-neighbor searches and
 \texttt{flann\_free\_index} deletes the index and releases the memory it
 uses.
+
+Note that in the binary distribution of FLANN the MEX file is linked against
+the shared version of FLANN (\texttt{flann.so} or \texttt{flann.dll}), so on Linux you must set the 
+LD\_LIBRARY\_PATH environment variable accordingly prior to starting MATLAB. On Windows is enough
+to have \texttt{flann.dll} in the same directory with the MEX file.
 
 The following sections describe in more detail the FLANN matlab wrapper
 functions and show examples of how they may be used.
@@ -471,8 +485,7 @@ This is done using the \texttt{-l} compiler flag followed by the library name
 (\texttt{build/lib}) with the \texttt{-L} flag. The entire compile command
 that must be used will look like this:
 \begin{Verbatim}[fontsize=\footnotesize]
-g++ flann_example.cc -I build/include -L build/lib -o flann_example \
--lflann
+g++ flann_example.cc -I build/include -L build/lib -o flann_example -lflann
 \end{Verbatim}
 
 The following section describes the C bindings offered by the FLANN

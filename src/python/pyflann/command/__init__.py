@@ -4,7 +4,7 @@ __all__ = [ "generate_random", "compute_gt", "compute_nn", "autotune", "sample_d
 from optparse import OptionParser
 from string import split
 
-from util.exceptions import *
+from pyflann.exceptions import *
 
 _commands = {}
 

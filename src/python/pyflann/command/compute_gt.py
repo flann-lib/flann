@@ -1,14 +1,12 @@
-from command import BaseCommand
-from util.exceptions import FLANNException
+from pyflann.command import BaseCommand
+from pyflann.exceptions import FLANNException
+from pyflann.io.dataset import read,write
 
-from io.dataset import read,write
 from os.path import isfile
 import numpy
 import time
 
-
-from pyflann.flann_ctypes import compute_ground_truth
-#from nn.misc import *
+from pyflann import compute_ground_truth
 
 class ComputeGroundTruthCommand(BaseCommand):
     

@@ -165,7 +165,6 @@ ok = 1;
         [index, search_params, speedup ] = flann_build_index(dataset,struct('target_precision',0.95,...
                                                           'build_weight',0.01,...
                                                           'memory_weight',0));
-        search_params
         result = flann_search(index, testset, 10, search_params);
         n = size(match,2);      
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;

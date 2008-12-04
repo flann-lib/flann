@@ -1,10 +1,10 @@
 
-from command import BaseCommand
-from util.exceptions import FLANNException
+from pyflann.command import BaseCommand
+from pyflann.exceptions import FLANNException
+from pyflann.io.dataset import write
 
 from numpy.random import random
 from numpy import float32
-from io.dataset import write
 from sys import stdout
 
 

@@ -73,9 +73,18 @@ public:
 };
 
 
+
 typedef NNIndex* (*IndexCreator)(Dataset<float>& dataset, Params indexParams);
 
-void register_index_creator(const char* name, IndexCreator creator);
+struct IndexRegistryEntry
+{
+    const char* name;
+    IndexCreator creator;
+    IndexRegistryEntry* next;
+};
+
+
+IndexRegistryEntry* register_index_creator(const char* name, IndexCreator creator);
 
 NNIndex* create_index(const char* name, Dataset<float>& dataset, Params params);
 

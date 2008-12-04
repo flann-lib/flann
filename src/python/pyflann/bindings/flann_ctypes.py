@@ -4,7 +4,8 @@ from numpy import float32, float64, int32, matrix, array, empty, reshape, requir
 from numpy.ctypeslib import load_library, ndpointer
 import numpy.random as _rn
 import os
-from util.exceptions import *
+from pyflann.exceptions import FLANNException
+import sys
 
 STRING = c_char_p
 
@@ -106,22 +107,15 @@ class FLANNParameters(CustomStructure):
     
 default_flags = ['C_CONTIGUOUS', 'ALIGNED']
    
-    
-    
-def find_root(directory = None):
-    if directory == None:
-        directory = os.path.dirname(__file__)
-    if os.path.isfile(directory+"/flann.py"):
-        return os.path.abspath(directory+"/..")
-    else:
-        return find_root(os.path.abspath(directory+"/.."))
 
-root_dir = find_root()
+root_dir = os.path.abspath(os.path.dirname(__file__))
     
 FLANN_INDEX = c_int
 
-flann = load_library('libflann', root_dir+"/lib")
-#CDLL(root_dir+'/python/libflann.so')
+libname = 'libflann'
+if sys.platform == 'win32':
+    libname = 'flann'
+flann = load_library(libname, root_dir)
 
 
 flann.flann_log_verbosity.restype = None

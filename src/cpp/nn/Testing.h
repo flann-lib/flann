@@ -12,13 +12,13 @@ using namespace std;
 void search_for_neighbors(NNIndex& index, const Dataset<float>& testset, Dataset<int>& result, Params searchParams, int skip = 0);
 
 float test_index_checks(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches, 
-            int checks, float& precision, int nn = 1, uint skipMatches = 0);
+            int checks, float& precision, int nn = 1, int skipMatches = 0);
 
 float test_index_precision(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches,
-             float precision, int& checks, int nn = 1, uint skipMatches = 0);
+             float precision, int& checks, int nn = 1, int skipMatches = 0);
 
 float test_index_precisions(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches,
-                    float* precisions, int precisions_length, int nn = 1, uint skipMatches = 0, float maxTime = 0);
+                    float* precisions, int precisions_length, int nn = 1, int skipMatches = 0, float maxTime = 0);
 
 
 

@@ -1,6 +1,3 @@
-#define EXPORT extern "C"
-
-
 #include <stdexcept>
 #include <vector>
 #include "flann.h"
@@ -14,6 +11,16 @@
 #include "Autotune.h"
 #include "Testing.h"
 using namespace std;
+
+
+
+#include "flann.h"
+
+#ifdef WIN32
+#define EXPORTED extern "C" __declspec(dllexport)
+#else
+#define EXPORTED extern "C"
+#endif
 
 
 namespace {
@@ -122,20 +129,20 @@ void init_flann_parameters(FLANNParameters* p)
 }
 
 
-void flann_log_verbosity(int level)
+EXPORTED void flann_log_verbosity(int level)
 {
     if (level>=0) {
         logger.setLevel(level);
     }
 }
 
-void flann_log_destination(char* destination)
+EXPORTED void flann_log_destination(char* destination)
 {
     logger.setDestination(destination);
 }
 
 
-FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FLANNParameters* flann_params)
+EXPORTED FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FLANNParameters* flann_params)
 {	
 	try {
 		init_flann_parameters(flann_params);
@@ -197,7 +204,7 @@ FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup
 }
 
 
-int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FLANNParameters* flann_params)
+EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* testset, int tcount, int* result, int nn, IndexParameters* index_params, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
@@ -244,7 +251,7 @@ int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* tes
 	}
 }
 
-int flann_find_nearest_neighbors_index(FLANN_INDEX index_ptr, float* testset, int tcount, int* result, int nn, int checks, FLANNParameters* flann_params)
+EXPORTED int flann_find_nearest_neighbors_index(FLANN_INDEX index_ptr, float* testset, int tcount, int* result, int nn, int checks, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
@@ -273,7 +280,7 @@ int flann_find_nearest_neighbors_index(FLANN_INDEX index_ptr, float* testset, in
 	
 }
 
-void flann_free_index(FLANN_INDEX index_ptr, FLANNParameters* flann_params)
+int flann_free_index(FLANN_INDEX index_ptr, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
@@ -283,14 +290,16 @@ void flann_free_index(FLANN_INDEX index_ptr, FLANNParameters* flann_params)
         }
         NNIndexPtr index = NNIndexPtr(index_ptr);
         delete index;
-        
+     
+        return 0;   
 	}
 	catch(runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
+        return -1;
 	}
 }
 
-int flann_compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, IndexParameters* index_params, FLANNParameters* flann_params)
+EXPORTED int flann_compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, IndexParameters* index_params, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
@@ -310,7 +319,7 @@ int flann_compute_cluster_centers(float* dataset, int rows, int cols, int cluste
 }
 
 
-EXPORT void compute_ground_truth_float(float* dataset, int dshape[2], float* testset, int tshape[2], int* match, int mshape[2], int skip)
+EXPORTED void compute_ground_truth_float(float* dataset, int dshape[], float* testset, int tshape[], int* match, int mshape[], int skip)
 {
     assert(dshape[1]==tshape[1]);
     assert(tshape[0]==mshape[0]);
@@ -320,7 +329,7 @@ EXPORT void compute_ground_truth_float(float* dataset, int dshape[2], float* tes
 }
 
 
-EXPORT float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int dshape[2], float* testset, int tshape[2], int* matches, int mshape[0],
+EXPORTED float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int dshape[], float* testset, int tshape[], int* matches, int mshape[],
              int nn, float precision, int* checks, int skip = 0)
 {
     assert(dshape[1]==tshape[1]);
@@ -339,7 +348,7 @@ EXPORT float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int dsha
     }
 }
 
-EXPORT float test_with_checks(FLANN_INDEX index_ptr, float* dataset, int dshape[2], float* testset, int tshape[2], int* matches, int mshape[0],
+EXPORTED float test_with_checks(FLANN_INDEX index_ptr, float* dataset, int dshape[], float* testset, int tshape[], int* matches, int mshape[],
              int nn, int checks, float* precision, int skip = 0)
 {
     assert(dshape[1]==tshape[1]);

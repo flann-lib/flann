@@ -1,33 +1,14 @@
 #!/usr/bin/env python
 
-import os
+from distutils.core import setup
 
-def configuration(parent_package='',top_path=None):
-    from numpy.distutils.misc_util import Configuration
-    config = Configuration('pyflann', parent_package, top_path)
-
-    config.add_data_dir('tests')
-    return config
-
-if __name__ == '__main__':
-    from numpy.distutils.core import setup
-
-    createUtilsC()
-    createPythonBase()
-
-    setup(**configuration(top_path='').todict())
-
-    def try_remove(f):
-        try:
-            os.remove(f)
-        except OSError:
-            pass
-    
-    # Clean up
-    try_remove('utils_c.cpp')
-    try_remove('utils_c.so')
-    try_remove('flann_python_base.cpp')
-    try_remove('flann_python_base.so')
-        
-
-
+setup(name='flann',
+      version='1.2',
+      description='Fast Library for Approximate Nearest Neighbors',
+      author='Marius Muja',
+      author_email='mariusm@cs.ubc.ca',
+      url='http://www.cs.ubc.ca/~mariusm/flann/',
+      packages=['pyflann','pyflann.command', 'pyflann.io', 'pyflann.bindings', 'pyflann.util'],
+      scripts=['flann'],
+      package_data={'pyflann.bindings' : ['libflann.so','flann.dll']},
+)

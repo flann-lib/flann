@@ -1,6 +1,6 @@
 from __future__ import with_statement
 
-from util.exceptions import FLANNException
+from pyflann.exceptions import FLANNException
 import binary_dataset
 import dat_dataset
 

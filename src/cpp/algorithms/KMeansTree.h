@@ -143,7 +143,7 @@ void chooseCentersKMeanspp(int k, Dataset<float>& vecs, int* indices, int indice
     int n = indices_length;
     
     double currentPot = 0;
-    double closestDistSq[n];
+    double* closestDistSq = new double[n];
 
     // Choose one random center and set the closestDistSq values
     int index = rand_int(n);  
@@ -197,6 +197,8 @@ void chooseCentersKMeanspp(int k, Dataset<float>& vecs, int* indices, int indice
     }
 
     centers_length = centerCount;
+
+	delete[] closestDistSq;
 }
 
 
@@ -537,7 +539,7 @@ public:
         }       
 
         float variance;
-        KMeansNode clusters[numClusters];
+        KMeansNode* clusters = new KMeansNode[numClusters];
 
         int clusterCount = getMinVarianceClusters(root, clusters, numClusters, variance);
 
@@ -551,6 +553,7 @@ public:
             }
             centers += veclen_;
         }
+		delete[] clusters;
         
         return clusterCount;
     }
@@ -574,7 +577,7 @@ private:
     {
         delete[] node->pivot;
         if (node->childs!=NULL) {
-            for (size_t k=0;k<branching;++k) {
+            for (int k=0;k<branching;++k) {
                 free_centers(node->childs[k]);
             }
         }
@@ -598,7 +601,7 @@ private:
 		
 		for (int i=0;i<size_;++i) {
 			float* vec = dataset[indices[i]];
-            for (size_t j=0;j<veclen_;++j) {
+            for (int j=0;j<veclen_;++j) {
                 mean[j] += vec[j];
             }
 			variance += squared_dist(vec,veclen_);
@@ -646,7 +649,7 @@ private:
 			return;
 		}
 		
-		float* initial_centers[branching];
+		float** initial_centers = new float*[branching];
         int centers_length;
  		chooseCenters(branching, dataset, indices, indices_length, initial_centers, centers_length); 
 
@@ -659,21 +662,22 @@ private:
 		
 
         Dataset<double> dcenters(branching,veclen_);		
-        for (size_t i=0; i<centers_length; ++i) {
-            for (size_t k=0; k<veclen_; ++k) {
+        for (int i=0; i<centers_length; ++i) {
+            for (int k=0; k<veclen_; ++k) {
                 dcenters[i][k] = double(initial_centers[i][k]);
             }
         }
+		delete[] initial_centers;
 		
-	 	float radiuses[branching];
-		int count[branching];
+	 	float* radiuses = new float[branching];
+		int* count = new int[branching];
         for (int i=0;i<branching;++i) {
             radiuses[i] = 0;
             count[i] = 0;
         }
 		
         //	assign points to clusters
-		int belongs_to[indices_length];
+		int* belongs_to = new int[indices_length];
 		for (int i=0;i<indices_length;++i) {
 
 			float sq_dist = squared_dist(dataset[indices[i]],dcenters[0], veclen_); 
@@ -702,16 +706,16 @@ private:
                 memset(dcenters[i],0,sizeof(double)*veclen_);
                 radiuses[i] = 0;
 			}
-            for (size_t i=0;i<indices_length;++i) {
+            for (int i=0;i<indices_length;++i) {
 				float* vec = dataset[indices[i]];
 				double* center = dcenters[belongs_to[i]];
-				for (size_t k=0;k<veclen_;++k) {
+				for (int k=0;k<veclen_;++k) {
 					center[k] += vec[k];
  				}
 			}
-			for (size_t i=0;i<branching;++i) {
+			for (int i=0;i<branching;++i) {
                 int cnt = count[i];
-                for (size_t k=0;k<veclen_;++k) {
+                for (int k=0;k<veclen_;++k) {
                     dcenters[i][k] /= cnt;
                 }
 			}
@@ -762,12 +766,12 @@ private:
 
 		}
         
-        float* centers[branching];
+        float** centers = new float*[branching];
 
-        for (size_t i=0; i<branching; ++i) {
+        for (int i=0; i<branching; ++i) {
  			centers[i] = new float[veclen_];
  			memoryCounter += veclen_*sizeof(float);
-            for (size_t k=0; k<veclen_; ++k) {
+            for (int k=0; k<veclen_; ++k) {
                 centers[i][k] = dcenters[i][k];
             }
  		}	
@@ -804,6 +808,11 @@ private:
 			computeClustering(node->childs[c],indices+start, end-start, branching, level+1);
 			start=end;
 		}
+
+		delete[] centers;
+		delete[] radiuses;
+		delete[] count;
+		delete[] belongs_to;
 	}
 	
 	
@@ -917,13 +926,15 @@ private:
 			}	
 		} 
 		else {
-			int sort_indices[branching];
+			int* sort_indices = new int[branching];
 			
 			getCenterOrdering(node, vec, sort_indices);
 
 			for (int i=0; i<branching; ++i) {
  				findExactNN(node->childs[sort_indices[i]],result,vec);
 			}
+
+			delete[] sort_indices;
 		}		
 	}
 
