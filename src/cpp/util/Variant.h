@@ -1,8 +1,8 @@
 #ifndef VARIANT_H
 #define VARIANT_H
 
-#include <stdio.h>
 #include <string>
+#include <cstring>
 #include <sstream>
 
 using namespace std;
