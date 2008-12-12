@@ -3,7 +3,7 @@ import sys
 import os
 
 from pyflann import command
-from pyflann.util.exceptions import *
+from pyflann.exceptions import *
 
 def print_help():
     print r"""Usage: %s [command commans_args]

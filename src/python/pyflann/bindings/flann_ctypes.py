@@ -83,7 +83,7 @@ class IndexParameters(CustomStructure):
         'sample_fraction' : 0.1
     }
     _translation_ = {
-        "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "default"   : 1},
+        "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "vptree" : 4, "default"   : 1},
         "centers_init"  : {"random"    : 0, "gonzales"  : 1, "kmeanspp"  : 2, "default"   : 0},
     }
 

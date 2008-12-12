@@ -456,6 +456,11 @@ private:
 	*/
 	void searchLevel(ResultSet& result, float* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
 	{
+		if (result.worstDist()<mindistsq) {
+//			printf("Ignoring branch, too far\n");
+			return;
+		}
+
 		float val, diff;
 		Tree bestChild, otherChild;
 

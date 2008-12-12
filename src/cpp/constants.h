@@ -8,6 +8,7 @@ const int LINEAR    = 0;
 const int KDTREE    = 1;
 const int KMEANS    = 2;
 const int COMPOSITE = 3;
+const int VPTREE = 3;
 
 const int CENTERS_RANDOM = 0;
 const int CENTERS_GONZALES = 1;

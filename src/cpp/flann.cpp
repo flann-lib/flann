@@ -7,6 +7,7 @@
 #include "KDTree.h"
 #include "KMeansTree.h"
 #include "CompositeTree.h"
+#include "VPTree.h"
 #include "LinearSearch.h"
 #include "Autotune.h"
 #include "Testing.h"
@@ -27,11 +28,11 @@ namespace {
 
     typedef NNIndex* NNIndexPtr;
     typedef Dataset<float>* DatasetPtr;
-    
-    const char* algos[] = { "linear","kdtree", "kmeans", "composite" };
+
+    const char* algos[] = { "linear","kdtree", "kmeans", "composite", "vptree" };
     const char* centers_algos[] = { "random", "gonzales", "kmeanspp" };
 
-	
+
 	Params parametersToParams(IndexParameters parameters)
 	{
 		Params p;
@@ -41,25 +42,25 @@ namespace {
 		p["max-iterations"] = parameters.iterations;
 		p["branching"] = parameters.branching;
 		p["target-precision"] = parameters.target_precision;
-		
+
 		if (parameters.centers_init >=0 && parameters.centers_init<ARRAY_LEN(centers_algos)) {
 			p["centers-init"] = centers_algos[parameters.centers_init];
 		}
 		else {
 			p["centers-init"] = "random";
 		}
-		
+
 		if (parameters.algorithm >=0 && parameters.algorithm<ARRAY_LEN(algos)) {
 			p["algorithm"] = algos[parameters.algorithm];
 		}
 
 		return p;
 	}
-	
+
 	IndexParameters paramsToParameters(Params params)
 	{
 		IndexParameters p;
-		
+
 		try {
 			p.checks = (int)params["checks"];
 		} catch (...) {
@@ -71,7 +72,7 @@ namespace {
         } catch (...) {
             p.cb_index = 0.4;
         }
-        
+
 		try {
 			p.trees = (int)params["trees"];
 		} catch (...) {
@@ -143,22 +144,22 @@ EXPORTED void flann_log_destination(char* destination)
 
 
 EXPORTED FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float* speedup, IndexParameters* index_params, FLANNParameters* flann_params)
-{	
+{
 	try {
 		init_flann_parameters(flann_params);
-		
+
 		DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
-		
+
 		if (index_params == NULL) {
 			throw FLANNException("The index_params agument must be non-null");
 		}
 
-		
+
 		float target_precision = index_params->target_precision;
         float build_weight = index_params->build_weight;
         float memory_weight = index_params->memory_weight;
         float sample_fraction = index_params->sample_fraction;
-		
+
 		NNIndex* index = NULL;
 		if (target_precision < 0) {
 			Params params = parametersToParams(*index_params);
@@ -174,11 +175,11 @@ EXPORTED FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float
             if (index_params->build_weight < 0) {
                 throw FLANNException("The index_params.build_weight must be positive.");
             }
-            
+
             if (index_params->memory_weight < 0) {
                 throw FLANNException("The index_params.memory_weight must be positive.");
             }
-            Autotune autotuner(index_params->build_weight, index_params->memory_weight, index_params->sample_fraction);    
+            Autotune autotuner(index_params->build_weight, index_params->memory_weight, index_params->sample_fraction);
 			Params params = autotuner.estimateBuildIndexParams(*inputData, target_precision);
 			index = create_index((const char *)params["algorithm"],*inputData,params);
 			index->buildIndex();
@@ -189,7 +190,7 @@ EXPORTED FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float
             index_params->build_weight = build_weight;
             index_params->memory_weight = memory_weight;
             index_params->sample_fraction = sample_fraction;
-            
+
 			if (speedup != NULL) {
 				*speedup = float(params["speedup"]);
 			}
@@ -208,7 +209,7 @@ EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, f
 {
 	try {
 		init_flann_parameters(flann_params);
-		
+
         DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
 		float target_precision = index_params->target_precision;
 
@@ -225,7 +226,7 @@ EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, f
 		}
 		else {
             logger.info("Build index: %g\n", index_params->build_weight);
-            Autotune autotuner(index_params->build_weight, index_params->memory_weight, index_params->sample_fraction);    
+            Autotune autotuner(index_params->build_weight, index_params->memory_weight, index_params->sample_fraction);
             Params params = autotuner.estimateBuildIndexParams(*inputData, target_precision);
             index = create_index((const char *)params["algorithm"],*inputData,params);
             index->buildIndex();
@@ -233,16 +234,16 @@ EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, f
 			*index_params = paramsToParameters(params);
 		}
 		logger.info("Finished creating the index.\n");
-		
+
 		logger.info("Searching for nearest neighbors.\n");
         Params searchParams;
         searchParams["checks"] = index_params->checks;
         Dataset<int> result_set(tcount, nn, result);
         search_for_neighbors(*index, Dataset<float>(tcount, cols, testset), result_set, searchParams);
-		
+
 		delete index;
 		delete inputData;
-		
+
 		return 0;
 	}
 	catch(runtime_error& e) {
@@ -255,13 +256,13 @@ EXPORTED int flann_find_nearest_neighbors_index(FLANN_INDEX index_ptr, float* te
 {
 	try {
 		init_flann_parameters(flann_params);
-        
+
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
         NNIndexPtr index = NNIndexPtr(index_ptr);
 
-        int length = index->veclen();        
+        int length = index->veclen();
         StartStopTimer t;
         t.start();
         Params searchParams;
@@ -277,7 +278,7 @@ EXPORTED int flann_find_nearest_neighbors_index(FLANN_INDEX index_ptr, float* te
 		logger.error("Caught exception: %s\n",e.what());
 		return -1;
 	}
-	
+
 }
 
 int flann_free_index(FLANN_INDEX index_ptr, FLANNParameters* flann_params)
@@ -290,8 +291,8 @@ int flann_free_index(FLANN_INDEX index_ptr, FLANNParameters* flann_params)
         }
         NNIndexPtr index = NNIndexPtr(index_ptr);
         delete index;
-     
-        return 0;   
+
+        return 0;
 	}
 	catch(runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
@@ -303,7 +304,7 @@ EXPORTED int flann_compute_cluster_centers(float* dataset, int rows, int cols, i
 {
 	try {
 		init_flann_parameters(flann_params);
-		
+
         DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
         Params params = parametersToParams(*index_params);
         KMeansTree kmeans(*inputData, params);
@@ -340,7 +341,7 @@ EXPORTED float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int ds
             throw FLANNException("Invalid index");
         }
         NNIndexPtr index = (NNIndexPtr)index_ptr;
-        return test_index_precision(*index, Dataset<float>(dshape[0], dshape[1],dataset), Dataset<float>(tshape[0], tshape[1], testset), 
+        return test_index_precision(*index, Dataset<float>(dshape[0], dshape[1],dataset), Dataset<float>(tshape[0], tshape[1], testset),
                 Dataset<int>(mshape[0],mshape[1],matches), precision, *checks, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
@@ -359,7 +360,7 @@ EXPORTED float test_with_checks(FLANN_INDEX index_ptr, float* dataset, int dshap
             throw FLANNException("Invalid index");
         }
         NNIndexPtr index = (NNIndexPtr)index_ptr;
-        return test_index_checks(*index, Dataset<float>(dshape[0], dshape[1],dataset), Dataset<float>(tshape[0], tshape[1], testset), 
+        return test_index_checks(*index, Dataset<float>(dshape[0], dshape[1],dataset), Dataset<float>(tshape[0], tshape[1], testset),
                 Dataset<int>(mshape[0],mshape[1],matches), checks, *precision, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
