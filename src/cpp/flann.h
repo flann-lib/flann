@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
 /**
-Sets the log level used for all flann functions (unless 
+Sets the log level used for all flann functions (unless
 specified in FLANNParameters for each call
 
 Params:
@@ -92,24 +92,24 @@ Params:
     cols = number of columns in the dataset (feature dimensionality)
     testset = pointer to a query set stored in row major order
     trows = number of rows (features) in the query dataset (same dimensionality as features in the dataset)
-    result = pointer to matrix for the indices of the nearest neighbors of the testset features in the dataset
+    indices = pointer to matrix for the indices of the nearest neighbors of the testset features in the dataset
             (must have trows number of rows and nn number of columns)
     nn = how many nearest neighbors to return
     index_params = index related parameters
     flann_params = generic flann parameters
 
-Returns: zero or NULL for error    
+Returns: zero or NULL for error
 */
-LIBSPEC int flann_find_nearest_neighbors(float* dataset, int rows, int cols, float* testset, int trows, int* result, int nn, struct IndexParameters* index_params, struct FLANNParameters* flann_params);
+LIBSPEC int flann_find_nearest_neighbors(float* dataset, int rows, int cols, float* testset, int trows, int* indices, float* dists,  int nn, struct IndexParameters* index_params, struct FLANNParameters* flann_params);
 
 /**
-Searches for nearest neighbors using the index provided 
+Searches for nearest neighbors using the index provided
 
 Params:
     index_id = the index (constructed previously using flann_build_index).
     testset = pointer to a query set stored in row major order
     trows = number of rows (features) in the query dataset (same dimensionality as features in the dataset)
-    result = pointer to matrix for the indices of the nearest neighbors of the testset features in the dataset
+    indices = pointer to matrix for the indices of the nearest neighbors of the testset features in the dataset
             (must have trows number of rows and nn number of columns)
     nn = how many nearest neighbors to return
     checks = number of checks to perform before the search is stopped
@@ -117,7 +117,7 @@ Params:
 
 Returns: zero or a number <0 for error
 */
-LIBSPEC int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int trows, int* result, int nn, int checks, struct FLANNParameters* flann_params);
+LIBSPEC int flann_find_nearest_neighbors_index(FLANN_INDEX index_id, float* testset, int trows, int* indices, float* dists, int nn, int checks, struct FLANNParameters* flann_params);
 
 /**
 Deletes an index and releases the memory used by it.
@@ -143,8 +143,8 @@ Params:
     result = memory buffer where the output cluster centers are storred
     index_params = used to specify the kmeans tree parameters (branching factor, max number of iterations to use)
     flann_params = generic flann parameters
-    
-Returns: number of clusters computed or a number <0 for error. This number can be different than the number of clusters requested, due to the 
+
+Returns: number of clusters computed or a number <0 for error. This number can be different than the number of clusters requested, due to the
     way hierarchical clusters are computed. The number of clusters returned will be the highest number of the form
     (branch_size-1)*K+1 smaller than the number of clusters requested.
 */

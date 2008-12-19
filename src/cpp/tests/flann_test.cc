@@ -72,6 +72,7 @@ int main(int argc, char** argv)
 		
 	int nn = 3;
 	int* result = (int*) malloc(tcount*nn*sizeof(int));
+    float* dists = (float*) malloc(tcount*nn*sizeof(float));
 	
 	FLANNParameters fp;
 	fp.log_level = LOG_INFO;
@@ -90,7 +91,7 @@ int main(int argc, char** argv)
 	FLANN_INDEX index_id = flann_build_index(dataset, rows, cols, &speedup, &p, &fp);
 
 
-	flann_find_nearest_neighbors_index(index_id, testset, tcount, result, nn, p.checks, &fp);
+	flann_find_nearest_neighbors_index(index_id, testset, tcount, result, dists, nn, p.checks, &fp);
 
 	write_dat_file("results.dat",result, tcount, nn);
 	
@@ -98,6 +99,7 @@ int main(int argc, char** argv)
 	free(dataset);
     free(testset);
 	free(result);
+    free(dists);
 	
 	return 0;
 }

@@ -84,9 +84,10 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
     fp.log_destination = NULL;
 
     int* result = (int*)malloc(tcount*nn*sizeof(int));
+    float* dists = (float*)malloc(tcount*nn*sizeof(float));
 
     /* do the search */
-    flann_find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, nn, &p, &fp);    
+    flann_find_nearest_neighbors(dataset,dcount,length,testset, tcount, result, dists, nn, &p, &fp);    
 
     /* Allocate memory for Output Matrix */ 
     OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL); 
@@ -97,21 +98,33 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
         pOut[i] = result[i]+1; // matlab uses 1-based indexing
     }
     free(result);
+
+    if (nOutArray > 1) {
+        /* Allocate memory for Output Matrix */ 
+        OutArray[1] = mxCreateDoubleMatrix(nn, tcount, mxREAL); 
+        
+        /* Get pointer to Output matrix and store result*/ 
+        double* pDists = mxGetPr(OutArray[1]);
+        for (int i=0;i<tcount*nn;++i) {
+            pDists[i] = dists[i]; // matlab uses 1-based indexing
+        }
+    }
+    free(dists);
 	
-	if (nOutArray > 1) {
+	if (nOutArray > 2) {
 
         const char *fieldnames[] = {"checks", "cb_index", "algorithm", "trees", "branching", "iterations", "centers_init"};
         
-		OutArray[1] = mxCreateStructMatrix(1, 1, sizeof(fieldnames)/sizeof(const char*), fieldnames);
+		OutArray[2] = mxCreateStructMatrix(1, 1, sizeof(fieldnames)/sizeof(const char*), fieldnames);
 		
         int field_no = 0;
-        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.checks));
-        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.cb_index));
-        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.algorithm));
-        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.trees));
-        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.branching));
-        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.iterations));
-        mxSetField(OutArray[1], 0,  fieldnames[field_no++], to_mx_array(p.centers_init));
+        mxSetField(OutArray[2], 0,  fieldnames[field_no++], to_mx_array(p.checks));
+        mxSetField(OutArray[2], 0,  fieldnames[field_no++], to_mx_array(p.cb_index));
+        mxSetField(OutArray[2], 0,  fieldnames[field_no++], to_mx_array(p.algorithm));
+        mxSetField(OutArray[2], 0,  fieldnames[field_no++], to_mx_array(p.trees));
+        mxSetField(OutArray[2], 0,  fieldnames[field_no++], to_mx_array(p.branching));
+        mxSetField(OutArray[2], 0,  fieldnames[field_no++], to_mx_array(p.iterations));
+        mxSetField(OutArray[2], 0,  fieldnames[field_no++], to_mx_array(p.centers_init));
 	}
 }
 
@@ -123,8 +136,8 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 	}
 
 	/* Check if there is one Output matrix */ 
-	if(nOutArray != 1) {
-		mexErrMsgTxt("One output required.");
+	if(nOutArray > 2) {
+		mexErrMsgTxt("One or two outputs required.");
 	}
 		
 	const mxArray* indexMat = InArray[0];
@@ -147,13 +160,14 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 
 	float* testset = (float*) mxGetData(testsetMat);
 	int* result = (int*)malloc(tcount*nn*sizeof(int));
+    float* dists = (float*)malloc(tcount*nn*sizeof(float));
 	
 	const mxArray* pMat = InArray[3];
 
 	int ppSize = mxGetN(pMat)*mxGetM(pMat);
 	double* pp = mxGetPr(pMat);
 
-	flann_find_nearest_neighbors_index(indexID,testset, tcount, result, nn, (int)pp[0], NULL);
+	flann_find_nearest_neighbors_index(indexID,testset, tcount, result, dists, nn, (int)pp[0], NULL);
 		
 	/* Allocate memory for Output Matrix */ 
 	OutArray[0] = mxCreateDoubleMatrix(nn, tcount, mxREAL);	
@@ -164,6 +178,17 @@ void _find_nearest_neighbors_index(int nOutArray, mxArray *OutArray[], int nInAr
 		pOut[i] = result[i]+1; // matlab uses 1-based indexing
 	}
 	free(result);
+    if (nOutArray > 1) {
+        /* Allocate memory for Output Matrix */ 
+        OutArray[1] = mxCreateDoubleMatrix(nn, tcount, mxREAL); 
+        
+        /* Get pointer to Output matrix and store result*/ 
+        double* pDists = mxGetPr(OutArray[1]);
+        for (int i=0;i<tcount*nn;++i) {
+            pDists[i] = dists[i]; // matlab uses 1-based indexing
+        }
+    }
+    free(dists);
 }
 
 static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray *InArray[])

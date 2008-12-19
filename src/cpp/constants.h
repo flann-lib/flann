@@ -20,4 +20,11 @@ const int LOG_ERROR = 2;
 const int LOG_WARN  = 3;
 const int LOG_INFO  = 4;
 
+
+
+enum distance_type {
+	EUCLIDEAN = 1
+};
+
+
 #endif  // CONSTANTS_H

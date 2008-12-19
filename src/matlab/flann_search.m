@@ -1,4 +1,4 @@
-function result = flann_search(data, testset, n, search_params)
+function [indices, dists] = flann_search(data, testset, n, search_params)
 %NN_SEARCH  Fast approximate nearest neighbors search
 %
 % Performs a fast approximate nearest neighbor search using an
@@ -49,9 +49,9 @@ function result = flann_search(data, testset, n, search_params)
 
     if (size(data,1)==1 && size(data,2)==1)
         % we already have an index
-        result = nearest_neighbors('index_find_nn', data, testset, n, params.checks);
+        [indices,dists] = nearest_neighbors('index_find_nn', data, testset, n, params.checks);
     else
         % create the index now
-        result = nearest_neighbors('find_nn', data, testset, n, params);
+        [indices,dists] = nearest_neighbors('find_nn', data, testset, n, params);
     end
 end

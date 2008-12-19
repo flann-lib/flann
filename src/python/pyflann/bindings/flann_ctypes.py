@@ -146,6 +146,7 @@ flann.flann_find_nearest_neighbors.argtypes = [
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
         c_int,  # tcount
         ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous, writeable'), # dists
         c_int, # nn
         POINTER(IndexParameters), # index_params 
         POINTER(FLANNParameters)  # flann_params
@@ -158,6 +159,7 @@ flann.flann_find_nearest_neighbors_index.argtypes = [
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
         c_int,  # tcount
         ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous, writeable'), # dists
         c_int, # nn
         c_int, # checks
         POINTER(FLANNParameters) # flann_params
@@ -325,18 +327,19 @@ class FLANN:
         assert(npts >= num_neighbors)
 
         result = empty( (nqpts, num_neighbors), dtype=index_type)
+        dists = empty( (nqpts, num_neighbors), dtype=float32)
                 
         self.__flann_parameters.update(kwargs)
         self.__index_parameters.update(kwargs)
         
         flann.flann_find_nearest_neighbors(pts, npts, dim, 
-            qpts, nqpts, result, num_neighbors, 
+            qpts, nqpts, result, dists, num_neighbors, 
             pointer(self.__index_parameters), pointer(self.__flann_parameters))
 
         if num_neighbors == 1:
-            return result.reshape( nqpts )
+            return (result.reshape( nqpts ), dists.reshape(npts))
         else:
-            return result
+            return (result,dists)
 
 
     def build_index(self, pts, **kwargs):
@@ -397,6 +400,7 @@ class FLANN:
         assert(npts >= num_neighbors)
         
         result = empty( (nqpts, num_neighbors), dtype=index_type)
+        dists = empty( (nqpts, num_neighbors), dtype=float32)
 
         self.__flann_parameters.update(kwargs)
         self.__index_parameters.update(kwargs)
@@ -405,13 +409,13 @@ class FLANN:
 
         flann.flann_find_nearest_neighbors_index(self.__curindex, 
                     qpts, nqpts,
-                    result, num_neighbors,
+                    result, dists, num_neighbors,
                     checks, pointer(self.__flann_parameters))
 
         if num_neighbors == 1:
-            return result.reshape( nqpts )
+            return (result.reshape( nqpts ), dists.reshape( nqpts ))
         else:
-            return result
+            return (result,dists)
 
     def delete_index(self, **kwargs):
         """

@@ -89,12 +89,12 @@ class Test_PyFLANN_nn(unittest.TestCase):
         x = rand(N, dim)
         perm = permutation(N)
         
-        idx = self.nn.nn(x, x[perm], **kwargs)
+        idx,dists = self.nn.nn(x, x[perm], **kwargs)
         self.assert_(all(idx == perm))
 
         # Make sure it's okay if we do make all the points equal
         x_mult_nn = concatenate([x for i in xrange(num_neighbors)])
-        nidx = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, **kwargs)
+        nidx,ndists = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, **kwargs)
 
         correctness = 0.0
 
@@ -106,7 +106,7 @@ class Test_PyFLANN_nn(unittest.TestCase):
 
         # now what happens if they are slightly off
         x_mult_nn += randn(x_mult_nn.shape[0], x_mult_nn.shape[1])*0.0001/dim
-        n2idx = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, **kwargs)
+        n2idx,n2dists = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, **kwargs)
 
         for i in xrange(N):
             correctness += float(len(set(n2idx[i]).intersection([i + n*N for n in xrange(num_neighbors)])))/num_neighbors
