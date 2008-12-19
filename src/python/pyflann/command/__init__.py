@@ -1,5 +1,5 @@
 
-__all__ = [ "generate_random", "compute_gt", "compute_nn", "autotune", "sample_dataset", "cluster", "run_test" ]
+__all__ = [ "generate_random", "compute_gt", "compute_nn", "autotune", "sample_dataset", "cluster", "run_test", "convert" ]
 
 from optparse import OptionParser
 from string import split
