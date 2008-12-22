@@ -30,10 +30,11 @@ int countCorrectMatches(int* neighbors, int* groundTruth, int n)
 
 float computeDistanceRaport(const Dataset<float>& inputData, float* target, int* neighbors, int* groundTruth, int veclen, int n)
 {
+	float* target_end = target + veclen;
     float ret = 0;
     for (int i=0;i<n;++i) {
-        float den = squared_dist(target,inputData[groundTruth[i]], veclen);
-        float num = squared_dist(target,inputData[neighbors[i]], veclen);
+        float den = flann_dist(target,target_end, inputData[groundTruth[i]]);
+        float num = flann_dist(target,target_end, inputData[neighbors[i]]);
 
 //        printf("den=%g,num=%g\n",den,num);
 

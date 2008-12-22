@@ -6,29 +6,31 @@
 
 
 template <typename T>
-void find_nearest(const Dataset<T>& dataset, T* query, int* matches, int nn, int skip = 0) 
+void find_nearest(const Dataset<T>& dataset, T* query, int* matches, int nn, int skip = 0)
 {
     int n = nn + skip;
-    
+
+    T* query_end = query + dataset.cols;
+
     long* match = new long[n];
     T* dists = new T[n];
-    
-    dists[0] = squared_dist(dataset[0], query, dataset.cols);
+
+    dists[0] = flann_dist(query, query_end, dataset[0]);
     match[0] = 0;
     int dcnt = 1;
-    
+
     for (int i=1;i<dataset.rows;++i) {
-        T tmp = squared_dist(dataset[i], query, dataset.cols);
-        
+        T tmp = flann_dist(query, query_end, dataset[i]);
+
         if (dcnt<n) {
-            match[dcnt] = i;   
+            match[dcnt] = i;
             dists[dcnt++] = tmp;
-        } 
+        }
         else if (tmp < dists[dcnt-1]) {
             dists[dcnt-1] = tmp;
             match[dcnt-1] = i;
-        } 
-        
+        }
+
         int j = dcnt-1;
         // bubble up
         while (j>=1 && dists[j]<dists[j-1]) {
@@ -37,13 +39,13 @@ void find_nearest(const Dataset<T>& dataset, T* query, int* matches, int nn, int
             j--;
         }
     }
-    
+
     for (int i=0;i<nn;++i) {
         matches[i] = match[i+skip];
-    }   
- 
+    }
+
     delete[] match;
-    delete[] dists;   
+    delete[] dists;
 }
 
 

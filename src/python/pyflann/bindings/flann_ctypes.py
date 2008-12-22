@@ -55,7 +55,7 @@ class CustomStructure(Structure):
                     return tk
         return v        
 
-class IndexParameters(CustomStructure):
+class FLANNParameters(CustomStructure):
     _fields_ = [
         ('algorithm', c_int),
         ('checks', c_int),
@@ -68,6 +68,9 @@ class IndexParameters(CustomStructure):
         ('build_weight', c_float),
         ('memory_weight', c_float),
         ('sample_fraction', c_float),
+        ('log_level', c_int),
+        ('log_destination', STRING),
+        ('random_seed', c_long),
     ]
     _defaults_ = {
         'algorithm' : 'kdtree',
@@ -80,29 +83,16 @@ class IndexParameters(CustomStructure):
         'target_precision' : -1,
         'build_weight' : 0.01,
         'memory_weight' : 0.0,
-        'sample_fraction' : 0.1
-    }
-    _translation_ = {
-        "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "default"   : 1},
-        "centers_init"  : {"random"    : 0, "gonzales"  : 1, "kmeanspp"  : 2, "default"   : 0},
-    }
-
-
-class FLANNParameters(CustomStructure):
-    _fields_ = [
-        ('log_level', c_int),
-        ('log_destination', STRING),
-        ('random_seed', c_long),
-    ]
-    _defaults_ = {
+        'sample_fraction' : 0.1,
         'log_level' : "warning",
         'log_destination' : None,
         'random_seed' : -1
-    }
+  }
     _translation_ = {
+        "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "default"   : 1},
+        "centers_init"  : {"random"    : 0, "gonzales"  : 1, "kmeanspp"  : 2, "default"   : 0},
         "log_level"     : {"none"      : 0, "fatal"     : 1, "error"     : 2, "warning"   : 3, "info"      : 4, "default"   : 2}
     }
-
     
     
 default_flags = ['C_CONTIGUOUS', 'ALIGNED']
@@ -128,13 +118,19 @@ flann.flann_log_destination.argtypes = [
         STRING # destination
 ]
 
+flann.flann_set_distance_type.restype = None
+flann.flann_set_distance_type.argtypes = [ 
+        c_int,
+        c_int,        
+]
+
+
 flann.flann_build_index.restype = FLANN_INDEX
 flann.flann_build_index.argtypes = [ 
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
         c_int, # cols
         POINTER(c_float), # speedup 
-        POINTER(IndexParameters), # index_params
         POINTER(FLANNParameters)  # flann_params
 ]
                                    
@@ -148,7 +144,6 @@ flann.flann_find_nearest_neighbors.argtypes = [
         ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous, writeable'), # dists
         c_int, # nn
-        POINTER(IndexParameters), # index_params 
         POINTER(FLANNParameters)  # flann_params
 ]
 
@@ -179,7 +174,6 @@ flann.flann_compute_cluster_centers.argtypes = [
         c_int,  # cols
         c_int,  # clusters 
         ndpointer(float32, flags='aligned, c_contiguous, writeable'), # result
-        POINTER(IndexParameters), # index_params
         POINTER(FLANNParameters)  # flann_params
 ]
 
@@ -209,20 +203,18 @@ flann.test_with_precision.argtypes = [
         c_int # skip
 ]
 
-flann.test_with_checks.restype = c_float
-flann.test_with_checks.argtypes = [
-        c_void_p, 
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
-        c_int*2, # dshape
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
-        c_int*2, # tshape
-        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous'), # matches
-        c_int*2, # mshape
-        c_int, # nn
+flann.flann_radius_search.restype = c_int
+flann.flann_radius_search.argtypes = [ 
+        FLANN_INDEX, # index_id
+        ndpointer(float32, ndim = 1, flags='aligned, c_contiguous'), # query
+        ndpointer(int32, ndim = 1, flags='aligned, c_contiguous, writeable'), # indices
+        ndpointer(float32, ndim = 1, flags='aligned, c_contiguous, writeable'), # dists
+        c_int, # max_nn
+        c_float, # radius
         c_int, # checks
-        POINTER(c_float), #precision
-        c_int # skip
+        POINTER(FLANNParameters) # flann_params
 ]
+
 
 
 def ensure_2d_array(array, dtype, flags):
@@ -275,6 +267,7 @@ def test_with_checks(index, dataset, testset, matches, checks, nn, skip = 0):
     return precision.value, time
 
 
+
 index_type = int32
 
 class FLANN:
@@ -298,10 +291,7 @@ class FLANN:
         self.__curindex_data = None
         
         self.__flann_parameters = FLANNParameters()        
-        self.__index_parameters = IndexParameters()
-        
         self.__flann_parameters.update(kwargs)
-        self.__index_parameters.update(kwargs)
 
     def __del__(self):
         self.delete_index()
@@ -309,6 +299,16 @@ class FLANN:
         
     ################################################################################
     # actual workhorse functions
+
+
+    def set_distance_type(self, distance_type, order = 0):
+        """
+        Sets the distance type used. Possible values: euclidean, manhattan, minkowski.
+        """
+        
+        distance_translation = { "euclidean" : 1, "manhattan" : 2, "minkowski" : 3}
+        flann.flann_set_distance_type(distance_translation[distance_type],order)
+
 
     def nn(self, pts, qpts, num_neighbors = 1, **kwargs):
         """
@@ -330,11 +330,10 @@ class FLANN:
         dists = empty( (nqpts, num_neighbors), dtype=float32)
                 
         self.__flann_parameters.update(kwargs)
-        self.__index_parameters.update(kwargs)
         
         flann.flann_find_nearest_neighbors(pts, npts, dim, 
             qpts, nqpts, result, dists, num_neighbors, 
-            pointer(self.__index_parameters), pointer(self.__flann_parameters))
+            pointer(self.__flann_parameters))
 
         if num_neighbors == 1:
             return (result.reshape( nqpts ), dists.reshape(npts))
@@ -361,16 +360,15 @@ class FLANN:
         self.__ensureRandomSeed(kwargs)
         
         self.__flann_parameters.update(kwargs)
-        self.__index_parameters.update(kwargs)
 
         if self.__curindex != None:
             flann.flann_free_index(self.__curindex, pointer(self.__flann_parameters))
                 
         speedup = c_float(0)
-        self.__curindex = flann.flann_build_index(pts, npts, dim, byref(speedup), pointer(self.__index_parameters), pointer(self.__flann_parameters))
+        self.__curindex = flann.flann_build_index(pts, npts, dim, byref(speedup), pointer(self.__flann_parameters))
         self.__curindex_data = pts
         
-        params = dict(self.__index_parameters)
+        params = dict(self.__flann_parameters)
         params["speedup"] = speedup.value
         
         return params
@@ -403,9 +401,7 @@ class FLANN:
         dists = empty( (nqpts, num_neighbors), dtype=float32)
 
         self.__flann_parameters.update(kwargs)
-        self.__index_parameters.update(kwargs)
-
-        checks = self.__index_parameters['checks']
+        checks = self.__flann_parameters['checks']
 
         flann.flann_find_nearest_neighbors_index(self.__curindex, 
                     qpts, nqpts,
@@ -416,6 +412,31 @@ class FLANN:
             return (result.reshape( nqpts ), dists.reshape( nqpts ))
         else:
             return (result,dists)
+        
+        
+    def nn_radius(self, query, radius, checks, **kwargs):
+        
+        if self.__curindex == None:
+            raise FLANNException("build_index(...) method not called first or current index deleted.")
+
+        npts, dim = self.__curindex_data.shape
+        
+        query = require(query,float32,default_flags)
+        assert(query.shape[0]==dim)
+        
+        result = empty( npts, dtype=index_type)
+        dists = empty( npts, dtype=float32)
+        
+        self.__flann_parameters.update(kwargs)
+
+        nn = flann.flann_radius_search(self.__curindex, query, 
+                                         result, dists, npts,
+                                         radius, checks, pointer(self.__flann_parameters))
+        
+        
+        return (result[0:nn],dists[0:nn])
+        
+        
 
     def delete_index(self, **kwargs):
         """
@@ -513,12 +534,11 @@ class FLANN:
                     "branching"        : branch_size,
                     "random_seed"      : kwargs['random_seed']}
         
-        self.__index_parameters.update(params)
         self.__flann_parameters.update(params)
         
         numclusters = flann.flann_compute_cluster_centers(pts, npts, dim,
                                         num_clusters, result, 
-                                        pointer(self.__index_parameters), pointer(self.__flann_parameters))
+                                        pointer(self.__flann_parameters))
         if numclusters <= 0:
             raise FLANNException('Error occured during clustering procedure.')
 

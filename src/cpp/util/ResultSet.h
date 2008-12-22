@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 #include "dist.h"
 
 using namespace std;
@@ -42,20 +43,23 @@ class ResultSet
 {
 protected:
 	float* target;
+	float* target_end;
     int veclen;
 
 public:
 
 	ResultSet(float* target_ = NULL, int veclen_ = 0) :
-		target(target_), veclen(veclen_) {}
+		target(target_), veclen(veclen_) { target_end = target + veclen;}
 
 	virtual ~ResultSet() {}
 
 	virtual void init(float* target_, int veclen_) = 0;
 
-	virtual int* getNeighbors() const = 0;
+	virtual int* getNeighbors() = 0;
 
-	virtual float* getDistances() const = 0;
+	virtual float* getDistances() = 0;
+
+	virtual int size() const = 0;
 
 	virtual bool full() const = 0;
 
@@ -92,18 +96,24 @@ public:
 	{
         target = target_;
         veclen = veclen_;
+        target_end = target + veclen;
         count = 0;
 	}
 
 
-	int* getNeighbors() const
+	int* getNeighbors()
 	{
 		return indices;
 	}
 
-    float* getDistances() const
+    float* getDistances()
     {
         return dists;
+    }
+
+    int size() const
+    {
+    	return count;
     }
 
 	bool full() const
@@ -117,7 +127,7 @@ public:
 		for (int i=0;i<count;++i) {
 			if (indices[i]==index) return false;
 		}
-		float dist = squared_dist(target,point,veclen);
+		float dist = flann_dist(target, target_end, point);
 
 		if (count<capacity) {
 			indices[count] = index;
@@ -151,6 +161,118 @@ public:
 	}
 };
 
+
+/**
+ * A result-set class used when performing a radius based search.
+ */
+class RadiusResultSet : public ResultSet
+{
+	struct Item {
+		int index;
+		int dist;
+
+		bool operator<(Item rhs) {
+			return dist<rhs.dist;
+		}
+	};
+
+	vector<Item> items;
+	float radius;
+
+	bool sorted;
+	int* indices;
+	float* dists;
+	int count;
+
+private:
+	void resize_vecs()
+	{
+		if (items.size()>count) {
+			if (indices!=NULL) delete[] indices;
+			if (dists!=NULL) delete[] dists;
+			count = items.size();
+			indices = new int[count];
+			dists = new float[count];
+		}
+	}
+
+public:
+	RadiusResultSet(float radius_) :
+		radius(radius_), indices(NULL), dists(NULL)
+	{
+		sorted = false;
+		items.reserve(16);
+		count = 0;
+	}
+
+	~RadiusResultSet()
+	{
+		if (indices!=NULL) delete[] indices;
+		if (dists!=NULL) delete[] dists;
+	}
+
+	void init(float* target_, int veclen_)
+	{
+        target = target_;
+        veclen = veclen_;
+        target_end = target + veclen;
+        items.clear();
+        sorted = false;
+	}
+
+	int* getNeighbors()
+	{
+		if (!sorted) {
+			sorted = true;
+			sort_heap(items.begin(), items.end());
+		}
+		resize_vecs();
+		for (int i=0;i<items.size();++i) {
+			indices[i] = items[i].index;
+		}
+		return indices;
+	}
+
+    float* getDistances()
+    {
+		if (!sorted) {
+			sorted = true;
+			sort_heap(items.begin(), items.end());
+		}
+		resize_vecs();
+		for (int i=0;i<items.size();++i) {
+			dists[i] = items[i].dist;
+		}
+        return dists;
+    }
+
+    int size() const
+    {
+    	return items.size();
+    }
+
+	bool full() const
+	{
+		return true;
+	}
+
+	bool addPoint(float* point, int index)
+	{
+		Item it;
+		it.index = index;
+		it.dist = flann_dist(target, target_end, point);
+		if (it.dist<=radius) {
+			items.push_back(it);
+			push_heap(items.begin(), items.end());
+		}
+	}
+
+	float worstDist() const
+	{
+		return radius;
+	}
+
+};
 
 
 #endif //RESULTSET_H
