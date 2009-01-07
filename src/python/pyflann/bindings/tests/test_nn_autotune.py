@@ -73,7 +73,7 @@ class Test_PyFLANN_nn(unittest.TestCase):
         x = rand(N, dim)
         perm = permutation(N)
         
-        idx = self.nn.nn(x, x[perm], **kwargs)
+        idx, dist = self.nn.nn(x, x[perm], **kwargs)
         self.assert_(all(idx == perm))
 
         for tp in [0.70, 0.80, 0.90, 0.99, 1]:
@@ -82,7 +82,7 @@ class Test_PyFLANN_nn(unittest.TestCase):
             x_mult_nn = concatenate([x for i in xrange(num_neighbors)])
             #savetxt('dataset_%d_%d.dat'%(N,dim),x_mult_nn);
             #savetxt('testset_%d_%d.dat'%(N,dim),x);
-            nidx = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, target_precision = tp, **kwargs)
+            nidx,ndist = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, target_precision = tp, **kwargs)
 
             correctness = 0.0
 
@@ -94,7 +94,7 @@ class Test_PyFLANN_nn(unittest.TestCase):
 
             # now what happens if they are slightly off
             x_mult_nn += randn(x_mult_nn.shape[0], x_mult_nn.shape[1])*0.00001/dim
-            n2idx = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, **kwargs)
+            n2idx,n2dist = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, **kwargs)
 
             for i in xrange(N):
                 correctness += float(len(set(n2idx[i]).intersection([i + n*N for n in xrange(num_neighbors)])))/num_neighbors

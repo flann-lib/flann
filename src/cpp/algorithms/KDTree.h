@@ -413,7 +413,7 @@ private:
 		checkID -= 1;  /* Set a different unique ID for each search. */
 
 		if (numTrees > 1) {
-            fprintf(stderr,"Doesn't make any sense to use more than one tree for exact search");
+            fprintf(stderr,"It doesn't make any sense to use more than one tree for exact search");
 		}
 		if (numTrees>0) {
 			searchLevelExact(result, vec, trees[0], 0.0);
@@ -478,7 +478,6 @@ private:
 			vind[node->divfeat] = checkID;
 
 			result.addPoint(dataset[node->divfeat],node->divfeat);
-			//CheckNeighbor(result, node.divfeat, vec);
 			return;
 		}
 
@@ -495,8 +494,11 @@ private:
 			adding more branches to heap after halfway point, as cost of
 			adding exceeds their value.
 		*/
-		if (2 * checkCount < maxCheck  ||  !result.full()) {
-			heap->insert( BranchSt::make_branch(otherChild, mindistsq + diff * diff) );
+
+		double new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
+//		if (2 * checkCount < maxCheck  ||  !result.full()) {
+		if (new_distsq < result.worstDist() ||  !result.full()) {
+			heap->insert( BranchSt::make_branch(otherChild, new_distsq) );
 		}
 
 		/* Call recursively to search next level down. */
@@ -508,6 +510,10 @@ private:
 	 */
 	void searchLevelExact(ResultSet& result, float* vec, Tree node, float mindistsq)
 	{
+		if (mindistsq>result.worstDist()) {
+			return;
+		}
+
 		float val, diff;
 		Tree bestChild, otherChild;
 
@@ -523,7 +529,6 @@ private:
 			vind[node->divfeat] = checkID;
 
 			result.addPoint(dataset[node->divfeat],node->divfeat);
-			//CheckNeighbor(result, node.divfeat, vec);
 			return;
 		}
 
@@ -536,7 +541,8 @@ private:
 
 		/* Call recursively to search next level down. */
 		searchLevelExact(result, vec, bestChild, mindistsq);
-		searchLevelExact(result, vec, otherChild, mindistsq+diff * diff);
+		double new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
+		searchLevelExact(result, vec, otherChild, new_distsq);
 	}
 
 };   // class KDTree

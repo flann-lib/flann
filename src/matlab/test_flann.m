@@ -49,37 +49,40 @@ ok = 1;
     run_test('Load data',@test_load_data);
 
 	match = [];
+    dists = [];
     function test_linear_search
-        match = flann_search(dataset, testset, 10, struct('algorithm','linear'));
+        [match,dists] = flann_search(dataset, testset, 10, struct('algorithm','linear'));
         assert(size(match,1) ==10 && size(match,2) == size(testset,2));
     end
     run_test('Linear search',@test_linear_search);
 
     function test_kdtree_search
-        result = flann_search(dataset, testset, 10, struct('algorithm','kdtree',...
+        [result, ndists] = flann_search(dataset, testset, 10, struct('algorithm','kdtree',...
                                                           'trees',8,...
                                                           'checks',64));
         n = size(match,2);
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('kd-tree search',@test_kdtree_search);
     
     function test_kmeans_search
-        result = flann_search(dataset, testset, 10, struct('algorithm','kmeans',...
+        [result, ndists] = flann_search(dataset, testset, 10, struct('algorithm','kmeans',...
                                                           'branching',32,...
                                                           'iterations',3,...
                                                           'checks',120));
         n = size(match,2);
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('k-means search',@test_kmeans_search);
 
     
     
     function test_composite_search
-        result = flann_search(dataset, testset, 10, struct('algorithm','composite',...
+        [result, ndists] = flann_search(dataset, testset, 10, struct('algorithm','composite',...
                                                           'branching',32,...
                                                           'iterations',3,...
                                                           'trees', 1,...
@@ -87,26 +90,29 @@ ok = 1;
         n = size(match,2);
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('composite search',@test_composite_search);
     
     function test_autotune_search
-        result = flann_search(dataset, testset, 10, struct('target_precision',0.95,...
+        [result, ndists] = flann_search(dataset, testset, 10, struct('target_precision',0.95,...
                                                           'build_weight',0.01,...
                                                           'memory_weight',0));
         n = size(match,2);
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('search with autotune',@test_autotune_search);
     
     function test_index_kdtree_search
         [index, search_params ] = flann_build_index(dataset, struct('algorithm','kdtree', 'trees',8,...
                                                           'checks',64));                                             
-        result = flann_search(index, testset, 10, search_params);
+        [result, ndists] = flann_search(index, testset, 10, search_params);
         n = size(match,2);      
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('index kd-tree search',@test_index_kdtree_search);
     
@@ -115,10 +121,11 @@ ok = 1;
                                                           'branching',32,...
                                                           'iterations',3,...
                                                           'checks',120));                                             
-        result = flann_search(index, testset, 10, search_params);
+        [result, ndists] = flann_search(index, testset, 10, search_params);
         n = size(match,2);      
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('index kmeans search',@test_index_kmeans_search);
     
@@ -128,10 +135,11 @@ ok = 1;
                                                           'iterations',3,...
                                                           'checks',120,...
                                                           'centers_init','gonzales'));                                             
-        result = flann_search(index, testset, 10, search_params);
+        [result, ndists] = flann_search(index, testset, 10, search_params);
         n = size(match,2);      
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('index kmeans search gonzales',@test_index_kmeans_search_gonzales);
     
@@ -141,10 +149,11 @@ ok = 1;
                                                           'iterations',3,...
                                                           'checks',120,...
                                                           'centers_init','kmeanspp'));                                             
-        result = flann_search(index, testset, 10, search_params);
+        [result, ndists] = flann_search(index, testset, 10, search_params);
         n = size(match,2);      
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('index kmeans search kmeanspp',@test_index_kmeans_search_kmeanspp);
 
@@ -154,10 +163,11 @@ ok = 1;
                                                           'iterations',3,...
                                                           'trees', 1,...
                                                           'checks',64));                                             
-        result = flann_search(index, testset, 10, search_params);
+        [result, ndists] = flann_search(index, testset, 10, search_params);
         n = size(match,2);      
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('index composite search',@test_index_composite_search);
     
@@ -165,10 +175,11 @@ ok = 1;
         [index, search_params, speedup ] = flann_build_index(dataset,struct('target_precision',0.95,...
                                                           'build_weight',0.01,...
                                                           'memory_weight',0));
-        result = flann_search(index, testset, 10, search_params);
+        [result, ndists] = flann_search(index, testset, 10, search_params);
         n = size(match,2);      
         precision = (n-sum(abs(result(1,:)-match(1,:))>0))/n;
         assert(precision>0.9);
+        assert(sum(~(match(1,:)-result(1,:)).*(dists(1,:)-ndists(1,:)))==0);
     end
     run_test('index autotune search',@test_index_autotune_search);    
     

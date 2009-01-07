@@ -32,7 +32,7 @@ using namespace std;
 
 float sqdist(float* a, float* b, int len)
 {
-	return squared_dist(a,b,len);
+	return flann_dist(a, a+len ,b);
 }
 
 /**
@@ -266,7 +266,7 @@ private:
 		VPComparator(const Dataset<float>& _dataset, int _vp): d(_dataset),vp(_vp) {};
 
 		bool operator()(int lhs, int rhs) {
-			return squared_dist(d[vp],d[lhs], d.cols)<squared_dist(d[vp],d[rhs], d.cols);
+			return flann_dist(d[vp], d[vp]+d.cols, d[lhs])<flann_dist(d[vp], d[vp]+d.cols, d[rhs]);
 		}
 	};
 
@@ -293,7 +293,7 @@ private:
 		VPComparator comparator(dataset, node->idx);
 		nth_element(vind+first, vind+middle, vind+last, comparator);
 
-		node->divval = squared_dist(dataset[vind[middle]],dataset[node->idx], veclen_);
+		node->divval = flann_dist(dataset[vind[middle]], dataset[vind[middle]] + veclen_, dataset[node->idx]);
 
 		divideTree(& node->child1, first, middle - 1);
 		divideTree(& node->child2, middle, last);
@@ -371,7 +371,7 @@ private:
 		}
 
 		/* Which child branch should be taken first? */
-		float qdist = squared_dist(vec,dataset[node->idx],veclen_);
+		float qdist = flann_dist(vec, vec+veclen_, dataset[node->idx]);
 
 		if (qdist < node->divval) {
 			bestChild = node->child1;

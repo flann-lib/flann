@@ -25,7 +25,8 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
         nn = FLANN()
         nn.build_index(x)
         
-        correct = all(nn.nn_index(x) == arange(N, dtype = index_type))
+        nnidx, nndist = nn.nn_index(x)
+        correct = all(nnidx == arange(N, dtype = index_type))
                 
         nn.delete_index()
         self.assert_(correct)
@@ -51,7 +52,8 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
                nns[i].nn(x[i], x[i])
 
         for i in permutation(numtests):
-            correct[i] = all(nns[i].nn_index(x[i]) == arange(N, dtype = index_type))
+            nnidx,nndist = nns[i].nn_index(x[i])
+            correct[i] = all(nnidx == arange(N, dtype = index_type))
 
         for i in reversed(xrange(numtests)):
             if rand() < 0.5:
