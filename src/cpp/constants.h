@@ -8,7 +8,8 @@ enum flann_algorithm_t {
 	KDTREE = 1,
 	KMEANS = 2,
 	COMPOSITE = 3,
-    VPTREE = 4
+    VPTREE = 4,
+    BBSEARCH = 5
 };
 
 enum flann_centers_init_t {

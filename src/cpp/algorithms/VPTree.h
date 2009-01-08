@@ -20,6 +20,7 @@
 #include <map>
 #include <cassert>
 #include "Heap.h"
+#include "constants.h"
 #include "common.h"
 #include "Allocator.h"
 #include "Dataset.h"
@@ -123,9 +124,9 @@ class VPTree : public NNIndex
 
 public:
 
-    const char* name() const
+    flann_algorithm_t getType() const
     {
-        return "vptree";
+        return VPTREE;
     }
 
 	/**
@@ -400,6 +401,6 @@ private:
 
 };   // class VPTree
 
-register_index("vptree",VPTree)
+register_index(VPTREE,VPTree)
 
 #endif //VPTREE_H

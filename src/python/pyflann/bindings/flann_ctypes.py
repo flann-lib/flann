@@ -316,7 +316,6 @@ class FLANN:
         in testset.
         """
         
-        
         pts = ensure_2d_array(pts,float32,default_flags) 
         qpts = ensure_2d_array(qpts,float32,default_flags) 
 

@@ -29,10 +29,6 @@ namespace {
     typedef NNIndex* NNIndexPtr;
     typedef Dataset<float>* DatasetPtr;
 
-    const char* algos[] = { "linear","kdtree", "kmeans", "composite", "vptree" };
-    const char* centers_algos[] = { "random", "gonzales", "kmeanspp" };
-
-
 	Params parametersToParams(FLANNParameters parameters)
 	{
 		Params p;
@@ -42,77 +38,44 @@ namespace {
 		p["max-iterations"] = parameters.iterations;
 		p["branching"] = parameters.branching;
 		p["target-precision"] = parameters.target_precision;
-
-		if (parameters.centers_init >=0 && parameters.centers_init<ARRAY_LEN(centers_algos)) {
-			p["centers-init"] = centers_algos[parameters.centers_init];
-		}
-		else {
-			p["centers-init"] = "random";
-		}
-
-		if (parameters.algorithm >=0 && parameters.algorithm<ARRAY_LEN(algos)) {
-			p["algorithm"] = algos[parameters.algorithm];
-		}
+		p["centers-init"] = parameters.centers_init;
+		p["algorithm"] = parameters.algorithm;
 
 		return p;
 	}
 
-	FLANNParameters paramsToParameters(Params params)
+	FLANNParameters paramsToParameters(Params params, FLANNParameters* p)
 	{
-		FLANNParameters p;
-
-		try {
-			p.checks = (int)params["checks"];
-		} catch (...) {
-			p.checks = -1;
-		}
-
-        try {
-            p.cb_index = (float)params["cb_index"];
-        } catch (...) {
-            p.cb_index = 0.4;
+        if (params.find("checks")!=params.end()) {
+        	p->checks = (int)params["checks"];
+        }
+        if (params.find("cb_index")!=params.end()) {
+        	p->cb_index = (int)params["cb_index"];
         }
 
-		try {
-			p.trees = (int)params["trees"];
-		} catch (...) {
-			p.trees = -1;
-		}
+        if (params.find("trees")!=params.end()) {
+			p->trees = (int)params["trees"];
+        }
 
-		try {
-			p.iterations = (int)params["max-iterations"];
-		} catch (...) {
-			p.iterations = -1;
-		}
-		try {
-			p.branching = (int)params["branching"];
-		} catch (...) {
-			p.branching = -1;
-		}
-		try {
-  			p.target_precision = (float)params["target-precision"];
-		} catch (...) {
-			p.target_precision = -1;
-		}
-        p.centers_init = CENTERS_RANDOM;
-        for (size_t algo_id =0; algo_id<ARRAY_LEN(centers_algos); ++algo_id) {
-            const char* algo = centers_algos[algo_id];
-            try {
-				if (algo == params["centers-init"] ) {
-					p.centers_init = (flann_centers_init_t)algo_id;
-					break;
-				}
-			} catch (...) {}
-		}
-        p.algorithm = LINEAR;
-        for (size_t algo_id =0; algo_id<ARRAY_LEN(algos); ++algo_id) {
-            const char* algo = algos[algo_id];
-			if (algo == params["algorithm"] ) {
-				p.algorithm = (flann_algorithm_t)algo_id;
-				break;
-			}
-		}
-		return p;
+        if (params.find("max-iterations")!=params.end()) {
+			p->iterations = (int)params["max-iterations"];
+        }
+
+        if (params.find("branching")!=params.end()) {
+			p->branching = (int)params["branching"];
+        }
+
+        if (params.find("target-precision")!=params.end()) {
+  			p->target_precision = (float)params["target-precision"];
+        }
+
+        if (params.find("centers-init")!=params.end()) {
+        	p->centers_init = (flann_centers_init_t)(int)params["centers-init"];
+        }
+
+        if (params.find("algorithm")!=params.end()) {
+        	p->algorithm = (flann_algorithm_t)(int)params["algorithm"];
+        }
 	}
 }
 
@@ -158,17 +121,13 @@ EXPORTED FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float
 		init_flann_parameters(flann_params);
 
 		DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
-
 		float target_precision = flann_params->target_precision;
-        float build_weight = flann_params->build_weight;
-        float memory_weight = flann_params->memory_weight;
-        float sample_fraction = flann_params->sample_fraction;
 
 		NNIndex* index = NULL;
-		if (target_precision < 0) {
+		if (flann_params->target_precision < 0) {
 			Params params = parametersToParams(*flann_params);
 			logger.info("Building index\n");
-			index = create_index((const char *)params["algorithm"],*inputData,params);
+			index = create_index((flann_algorithm_t)(int)params["algorithm"],*inputData,params);
             StartStopTimer t;
             t.start();
             index->buildIndex();
@@ -185,15 +144,10 @@ EXPORTED FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float
             }
             Autotune autotuner(flann_params->build_weight, flann_params->memory_weight, flann_params->sample_fraction);
 			Params params = autotuner.estimateBuildIndexParams(*inputData, target_precision);
-			index = create_index((const char *)params["algorithm"],*inputData,params);
+			index = create_index((flann_algorithm_t)(int)params["algorithm"],*inputData,params);
 			index->buildIndex();
 			autotuner.estimateSearchParams(*index,*inputData,target_precision,params);
-
-			*flann_params = paramsToParameters(params);
-			flann_params->target_precision = target_precision;
-			flann_params->build_weight = build_weight;
-			flann_params->memory_weight = memory_weight;
-			flann_params->sample_fraction = sample_fraction;
+			paramsToParameters(params, flann_params);
 
 			if (speedup != NULL) {
 				*speedup = float(params["speedup"]);
@@ -222,7 +176,7 @@ EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, f
 		if (target_precision < 0) {
 			Params params = parametersToParams(*flann_params);
 			logger.info("Building index\n");
-            index = create_index((const char *)params["algorithm"],*inputData,params);
+            index = create_index((flann_algorithm_t)(int)params["algorithm"],*inputData,params);
             t.start();
  			index->buildIndex();
             t.stop();
@@ -232,10 +186,10 @@ EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, f
             logger.info("Build index: %g\n", flann_params->build_weight);
             Autotune autotuner(flann_params->build_weight, flann_params->memory_weight, flann_params->sample_fraction);
             Params params = autotuner.estimateBuildIndexParams(*inputData, target_precision);
-            index = create_index((const char *)params["algorithm"],*inputData,params);
+            index = create_index((flann_algorithm_t)(int)params["algorithm"],*inputData,params);
             index->buildIndex();
             autotuner.estimateSearchParams(*index,*inputData,target_precision,params);
-			*flann_params = paramsToParameters(params);
+			paramsToParameters(params, flann_params);
 		}
 		logger.info("Finished creating the index.\n");
 

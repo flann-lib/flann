@@ -23,6 +23,7 @@
 #include <cassert>
 #include <limits>
 #include <cmath>
+#include "constants.h"
 #include "common.h"
 #include "Heap.h"
 #include "Allocator.h"
@@ -210,16 +211,16 @@ namespace {
     /**
     * Associative array with functions to use for choosing the cluster centers.
     */
-    map<string,centersAlgFunction> centerAlgs;
+    map<flann_centers_init_t,centersAlgFunction> centerAlgs;
     /**
     * Static initializer. Performs initialization befor the program starts.
     */
 
     void centers_init()
     {
-        centerAlgs["random"] = &chooseCentersRandom;
-        centerAlgs["gonzales"] = &chooseCentersGonzales;
-        centerAlgs["kmeanspp"] = &chooseCentersKMeanspp;
+        centerAlgs[CENTERS_RANDOM] = &chooseCentersRandom;
+        centerAlgs[CENTERS_GONZALES] = &chooseCentersGonzales;
+        centerAlgs[CENTERS_KMEANSPP] = &chooseCentersKMeanspp;
     }
 
     struct Init {
@@ -371,9 +372,9 @@ class KMeansTree : public NNIndex
 public:
 
 
-    const char* name() const
+    flann_algorithm_t getType() const
     {
-        return "kmeans";
+        return KMEANS;
     }
 
 	/**
@@ -401,7 +402,7 @@ public:
 		}
 		max_iter = iterations;
 
-		const char* centersInit = (const char*)params["centers-init"];
+		flann_centers_init_t centersInit = (flann_centers_init_t)(int)params["centers-init"];
 		if ( centerAlgs.find(centersInit) != centerAlgs.end() ) {
 			chooseCenters = centerAlgs[centersInit];
 		}
@@ -1035,7 +1036,7 @@ private:
 
 
 
-register_index("kmeans",KMeansTree)
+register_index(KMEANS,KMeansTree)
 
 
 #endif //KMEANSTREE_H

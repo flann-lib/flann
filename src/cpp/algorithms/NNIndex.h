@@ -1,6 +1,7 @@
 #ifndef NNINDEX_H
 #define NNINDEX_H
 
+#include "constants.h"
 #include "common.h"
 #include "Dataset.h"
 #include <map>
@@ -26,14 +27,14 @@ namespace {\
 class ResultSet;
 
 /**
- * Nearest-neighbor index base class 
+ * Nearest-neighbor index base class
  */
-class NNIndex 
+class NNIndex
 {
 public:
 
     virtual ~NNIndex() {};
-    
+
 	/**
 		Method responsible with building the index.
 	*/
@@ -48,12 +49,12 @@ public:
 		Number of features in this index.
 	*/
 	virtual int size() const = 0;
-	
+
 	/**
 		The length of each vector in this index.
 	*/
 	virtual int veclen() const = 0;
-	
+
 	/**
 	 The amount of memory (in bytes) this index uses.
 	*/
@@ -62,7 +63,7 @@ public:
     /**
     * Algorithm name
     */
-    virtual const char* name() const = 0;
+    virtual flann_algorithm_t getType() const = 0;
 
     /**
       Estimates the search parameters required in order to get a certain precision.
@@ -78,15 +79,15 @@ typedef NNIndex* (*IndexCreator)(Dataset<float>& dataset, Params indexParams);
 
 struct IndexRegistryEntry
 {
-    const char* name;
+	flann_algorithm_t algorithm;
     IndexCreator creator;
     IndexRegistryEntry* next;
 };
 
 
-IndexRegistryEntry* register_index_creator(const char* name, IndexCreator creator);
+IndexRegistryEntry* register_index_creator(flann_algorithm_t algorithm, IndexCreator creator);
 
-NNIndex* create_index(const char* name, Dataset<float>& dataset, Params params);
+NNIndex* create_index(flann_algorithm_t algorithm, Dataset<float>& dataset, Params params);
 
 
 #endif //NNINDEX_H

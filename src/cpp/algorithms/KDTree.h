@@ -21,6 +21,7 @@
 #include <cassert>
 #include "Heap.h"
 #include "common.h"
+#include "constants.h"
 #include "Allocator.h"
 #include "Dataset.h"
 #include "ResultSet.h"
@@ -135,9 +136,9 @@ class KDTree : public NNIndex
 
 public:
 
-    const char* name() const
+    flann_algorithm_t getType() const
     {
-        return "kdtree";
+        return KDTREE;
     }
 
 	/**
@@ -547,6 +548,6 @@ private:
 
 };   // class KDTree
 
-register_index("kdtree",KDTree)
+register_index(KDTREE,KDTree)
 
 #endif //KDTREE_H
