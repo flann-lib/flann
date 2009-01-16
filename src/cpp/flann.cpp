@@ -8,6 +8,7 @@
 #include "KMeansTree.h"
 #include "CompositeTree.h"
 #include "VPTree.h"
+#include "BFSearch.h"
 #include "LinearSearch.h"
 #include "Autotune.h"
 #include "Testing.h"

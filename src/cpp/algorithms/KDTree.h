@@ -257,6 +257,22 @@ public:
     }
 
 
+	void continueSearch(ResultSet& result, float* vec, int maxCheck)
+	{
+		int i;
+		BranchSt branch;
+
+		int checkCount = 0;
+
+		/* Keep searching other branches from heap until finished. */
+		while ( heap->popMin(branch) && (checkCount < maxCheck || !result.full() )) {
+			searchLevel(result, vec, branch.node,branch.mindistsq, checkCount, maxCheck);
+		}
+
+		assert(result.full());
+	}
+
+
     Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
     {
         Params params;

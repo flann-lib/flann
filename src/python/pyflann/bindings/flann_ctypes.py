@@ -89,7 +89,7 @@ class FLANNParameters(CustomStructure):
         'random_seed' : -1
   }
     _translation_ = {
-        "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "default"   : 1},
+        "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "vptree" : 4, "bfsearch" : 5, "default"   : 1},
         "centers_init"  : {"random"    : 0, "gonzales"  : 1, "kmeanspp"  : 2, "default"   : 0},
         "log_level"     : {"none"      : 0, "fatal"     : 1, "error"     : 2, "warning"   : 3, "info"      : 4, "default"   : 2}
     }
@@ -202,6 +202,23 @@ flann.test_with_precision.argtypes = [
         POINTER(c_int), # checks
         c_int # skip
 ]
+
+
+flann.test_with_checks.restype = c_float
+flann.test_with_checks.argtypes = [
+        c_void_p, 
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int*2, # dshape
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
+        c_int*2, # tshape
+        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous'), # matches
+        c_int*2, # mshape
+        c_int, # nn
+        c_int, # checks
+        POINTER(c_float), #precision
+        c_int # skip
+]
+
 
 flann.flann_radius_search.restype = c_int
 flann.flann_radius_search.argtypes = [ 
