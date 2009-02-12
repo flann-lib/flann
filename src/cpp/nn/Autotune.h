@@ -393,8 +393,8 @@ public:
     void estimateSearchParams(NNIndex& index, Dataset<float>& inputDataset, float desiredPrecision, Params& searchParams)
     {
         const int nn = 1;
-        const int SAMPLE_COUNT = 1000;
-
+        const long SAMPLE_COUNT = 1000;
+        
         int samples = min(inputDataset.rows/10, SAMPLE_COUNT);
         if (samples>0) {
             Dataset<float>* testDataset = inputDataset.sample(samples, false);
