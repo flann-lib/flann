@@ -24,12 +24,12 @@ class Dataset {
     }
 
 public:
-    int rows;
-    int cols;
+    long rows;
+    long cols;
     T* data;
 
 
-	Dataset(int rows_, int cols_, T* data_ = NULL) : 
+	Dataset(long rows_, long cols_, T* data_ = NULL) : 
         rows(rows_), cols(cols_), data(data_), ownData(false)
 	{
         if (data_==NULL) {
@@ -61,35 +61,35 @@ public:
     /**
     * Operator that return a (pointer to a) row of the data.
     */
-    T* operator[](int index) 
+    T* operator[](long index) 
     {
         return data+index*cols;
     }	
 
-    T* operator[](int index) const
+    T* operator[](long index) const
     {
         return data+index*cols;
     }   
 
 
 
-    Dataset<T>* sample(int size, bool remove = false)
+    Dataset<T>* sample(long size, bool remove = false)
     {
         UniqueRandom rand(rows);
         Dataset<T> *newSet = new Dataset<T>(size,cols);
         
         T *src,*dest;
-        for (int i=0;i<size;++i) {
-            int r = rand.next();
+        for (long i=0;i<size;++i) {
+            long r = rand.next();
             dest = (*newSet)[i];
             src = (*this)[r];
-            for (int j=0;j<cols;++j) {
+            for (long j=0;j<cols;++j) {
                 dest[j] = src[j];
             }
             if (remove) {
                 dest = (*this)[rows-i-1];
                 src = (*this)[r];
-                for (int j=0;j<cols;++j) {
+                for (long j=0;j<cols;++j) {
                     swap(*src,*dest);
                     src++;
                     dest++;
@@ -104,17 +104,17 @@ public:
         return newSet;
     }
 
-    Dataset<T>* sample(int size) const
+    Dataset<T>* sample(long size) const
     {
         UniqueRandom rand(rows);
         Dataset<T> *newSet = new Dataset<T>(size,cols);
         
         T *src,*dest;
-        for (int i=0;i<size;++i) {
-            int r = rand.next();
+        for (long i=0;i<size;++i) {
+            long r = rand.next();
             dest = (*newSet)[i];
             src = (*this)[r];
-            for (int j=0;j<cols;++j) {
+            for (long j=0;j<cols;++j) {
                 dest[j] = src[j];
             }
         }
