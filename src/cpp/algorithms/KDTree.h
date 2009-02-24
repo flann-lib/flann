@@ -1,18 +1,30 @@
-/************************************************************************
- * KDTree approximate nearest neighbor search
- *
- * This module finds the nearest-neighbors of vectors in high dimensional
- * spaces using a search of multiple randomized k-d trees.
- *
- * Authors: David Lowe, initial implementation
- * 			Marius Muja, further changes
- *
- * Version: 1.0
- *
- * License: LGPL
- *
- *************************************************************************/
+/*
+Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
+Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
 
+THE BSD LICENSE
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 #ifndef KDTREE_H
 #define KDTREE_H
 
@@ -32,23 +44,6 @@ using namespace std;
 
 
 /**
-    * To improve efficiency, only SAMPLE_MEAN random values are used to
-    * compute the mean and variance at each level when building a tree.
-    * A value of 100 seems to perform as well as using all values.
-    */
-const int SAMPLE_MEAN = 100;
-
-/**
-    * Top random dimensions to consider
-    *
-    * When creating random trees, the dimension on which to subdivide is
-    * selected at random from among the top RAND_DIM dimensions with the
-    * highest variance.  A value of 5 works well.
-    */
-const int RAND_DIM=5;
-
-
-/**
  * Randomized kd-tree index
  *
  * Contains the k-d trees and other information for indexing a set of points
@@ -56,6 +51,25 @@ const int RAND_DIM=5;
  */
 class KDTree : public NNIndex
 {
+
+	enum {
+		/**
+		 * To improve efficiency, only SAMPLE_MEAN random values are used to
+		 * compute the mean and variance at each level when building a tree.
+		 * A value of 100 seems to perform as well as using all values.
+		 */
+		SAMPLE_MEAN = 100,
+		/**
+		 * Top random dimensions to consider
+		 *
+		 * When creating random trees, the dimension on which to subdivide is
+		 * selected at random from among the top RAND_DIM dimensions with the
+		 * highest variance.  A value of 5 works well.
+		 */
+		RAND_DIM=5
+	};
+
+
 	/**
 	 * Number of randomized trees that are used
 	 */

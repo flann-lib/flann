@@ -1,3 +1,31 @@
+/*
+Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
+Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
+
+THE BSD LICENSE
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #ifndef SIMPLEX_DOWNHILL_H
 #define SIMPLEX_DOWNHILL_H
 
@@ -37,15 +65,15 @@ template <typename T, typename F>
 float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
 {
     const int MAX_ITERATIONS = 10;
-    
+
     assert(n>0);
-    
+
     T* p_o = new T[n];
     T* p_r = new T[n];
     T* p_e = new T[n];
-    
+
     int alpha = 1;
-    
+
     int iterations = 0;
 
     bool ownVals = false;
@@ -60,9 +88,9 @@ float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
     int nn = n*n;
 
     while (true) {
-    
+
         if (iterations++ > MAX_ITERATIONS) break;
-    
+
         // compute average of simplex points (except the highest point)
         for (int j=0;j<n;++j) {
             p_o[j] = 0;
@@ -73,7 +101,7 @@ float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
         for (int i=0;i<n;++i) {
             p_o[i] /= n;
         }
-        
+
         bool converged = true;
         for (int i=0;i<n;++i) {
             if (p_o[i] != points[nn+i]) {
@@ -82,7 +110,7 @@ float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
         }
         if (converged) break;
 
-        // trying a reflection        
+        // trying a reflection
         for (int i=0;i<n;++i) {
             p_r[i] = p_o[i] + alpha*(p_o[i]-points[nn+i]);
         }
@@ -95,7 +123,7 @@ float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
             addValue(n, val_r,vals, p_r, points, n);
             continue;
         }
-    
+
         if (val_r<vals[0]) {
             // value is smaller than smalest in simplex
 
@@ -104,7 +132,7 @@ float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
                 p_e[i] = 2*p_r[i]-p_o[i];
             }
             float val_e = func(p_e);
-            
+
             if (val_e<val_r) {
                 logger.info("Choosing reflection and expansion\n");
                 addValue(n, val_e,vals,p_e,points,n);
@@ -120,7 +148,7 @@ float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
                 p_e[i] = (p_o[i]+points[nn+i])/2;
             }
             float val_e = func(p_e);
-            
+
             if (val_e<vals[n]) {
                 logger.info("Choosing contraction\n");
                 addValue(n,val_e,vals,p_e,points,n);
@@ -138,14 +166,14 @@ float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
             }
         }
     }
-    
+
     float bestVal = vals[0];
-    
+
     delete[] p_r;
     delete[] p_o;
     delete[] p_e;
     if (ownVals) delete[] vals;
-    
+
     return bestVal;
 }
 
