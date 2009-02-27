@@ -71,7 +71,7 @@ namespace {
 		return p;
 	}
 
-	FLANNParameters paramsToParameters(Params params, FLANNParameters* p)
+	void paramsToParameters(Params params, FLANNParameters* p)
 	{
         if (params.find("checks")!=params.end()) {
         	p->checks = (int)params["checks"];

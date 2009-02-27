@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static IndexRegistryEntry* index_list = NULL;
 
 
-IndexRegistryEntry* register_index_creator(flann_algorithm_t algorithm, IndexCreator creator)
+void register_index_creator(flann_algorithm_t algorithm, IndexCreator creator)
 {
     IndexRegistryEntry* node = new IndexRegistryEntry();
     node->algorithm = algorithm;

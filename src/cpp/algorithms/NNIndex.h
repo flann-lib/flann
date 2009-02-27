@@ -113,7 +113,7 @@ struct IndexRegistryEntry
 };
 
 
-IndexRegistryEntry* register_index_creator(flann_algorithm_t algorithm, IndexCreator creator);
+void register_index_creator(flann_algorithm_t algorithm, IndexCreator creator);
 
 NNIndex* create_index(flann_algorithm_t algorithm, Dataset<float>& dataset, Params params);
 
