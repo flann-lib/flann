@@ -86,7 +86,7 @@ class ComputeNearestNeighborsCommand(BaseCommand):
         testset = read(self.options.test_file)
         
         print "Searching for nearest neighbors"
-        matches = flann.nn_index(testset, self.options.nn, checks = self.options.checks)
+        matches,dists = flann.nn_index(testset, self.options.nn, checks = self.options.checks)
 
         print "Writing matches to", self.options.output_file
         write(matches, self.options.output_file, format="dat")
