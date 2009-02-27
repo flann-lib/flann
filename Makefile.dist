@@ -47,14 +47,3 @@ dist-bin-win32:
 	-rm flann-${VER}-win32.zip
 	(cd dist; zip -r -9 flann-${VER}-win32.zip flann-${VER}-win32)
 
-dist-src:
-	-rm -rf dist/flann-${VER}-src*
-	@mkdir -p dist/flann-${VER}-src
-	cp -r src dist/flann-${VER}-src
-	rm -rf dist/flann-${VER}-src/src/cpp/tests/test*
-	rm -rf dist/flann-${VER}-src/src/python/_tests
-	mkdir -p dist/flann-${VER}-src/doc
-	cp doc/manual.pdf dist/flann-${VER}-src/doc
-	cp -r bin dist/flann-${VER}-src
-	cp README dist/flann-${VER}-src
-	(cd dist; zip -r -9 flann-${VER}-src.zip flann-${VER}-src)
