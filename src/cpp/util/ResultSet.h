@@ -292,7 +292,9 @@ public:
 		if (it.dist<=radius) {
 			items.push_back(it);
 			push_heap(items.begin(), items.end());
+            return true;
 		}
+        return false;
 	}
 
 	float worstDist() const

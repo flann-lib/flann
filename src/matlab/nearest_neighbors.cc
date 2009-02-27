@@ -94,14 +94,14 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
     p.memory_weight = (float)*(mxGetPr(mxGetField(pStruct, 0,"memory_weight")));
     p.sample_fraction = (float)*(mxGetPr(mxGetField(pStruct, 0,"sample_fraction")));
     p.checks = (int)*(mxGetPr(mxGetField(pStruct, 0,"checks")));
-    p.algorithm = (flann_algorithm_t)*(mxGetPr(mxGetField(pStruct, 0,"algorithm")));
+    p.algorithm = (flann_algorithm_t)(int)*(mxGetPr(mxGetField(pStruct, 0,"algorithm")));
     p.trees = (int)*(mxGetPr(mxGetField(pStruct, 0,"trees")));
     p.branching = (int)*(mxGetPr(mxGetField(pStruct, 0,"branching")));
     p.iterations = (int)*(mxGetPr(mxGetField(pStruct, 0,"iterations")));
-    p.centers_init = (flann_centers_init_t)*(mxGetPr(mxGetField(pStruct, 0,"centers_init")));
+    p.centers_init = (flann_centers_init_t)(int)*(mxGetPr(mxGetField(pStruct, 0,"centers_init")));
 
     /* get flann parameters */
-    p.log_level = (flann_log_level_t)*(mxGetPr(mxGetField(pStruct, 0,"log_level")));
+    p.log_level = (flann_log_level_t)(int)*(mxGetPr(mxGetField(pStruct, 0,"log_level")));
     p.random_seed = (int)*(mxGetPr(mxGetField(pStruct, 0,"random_seed")));
     p.log_destination = NULL;
 
@@ -246,14 +246,14 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
     p.memory_weight = (float)*(mxGetPr(mxGetField(pStruct, 0,"memory_weight")));
     p.sample_fraction = (float)*(mxGetPr(mxGetField(pStruct, 0,"sample_fraction")));
     p.checks = (int)*(mxGetPr(mxGetField(pStruct, 0,"checks")));
-    p.algorithm = (flann_algorithm_t)*(mxGetPr(mxGetField(pStruct, 0,"algorithm")));
+    p.algorithm = (flann_algorithm_t)(int)*(mxGetPr(mxGetField(pStruct, 0,"algorithm")));
     p.trees = (int)*(mxGetPr(mxGetField(pStruct, 0,"trees")));
     p.branching = (int)*(mxGetPr(mxGetField(pStruct, 0,"branching")));
     p.iterations = (int)*(mxGetPr(mxGetField(pStruct, 0,"iterations")));
-    p.centers_init = (flann_centers_init_t)*(mxGetPr(mxGetField(pStruct, 0,"centers_init")));
+    p.centers_init = (flann_centers_init_t)(int)*(mxGetPr(mxGetField(pStruct, 0,"centers_init")));
 
     /* get flann parameters */
-    p.log_level = (flann_log_level_t)*(mxGetPr(mxGetField(pStruct, 0,"log_level")));
+    p.log_level = (flann_log_level_t)(int)*(mxGetPr(mxGetField(pStruct, 0,"log_level")));
     p.random_seed = (int)*(mxGetPr(mxGetField(pStruct, 0,"random_seed")));
     p.log_destination = NULL;
 
