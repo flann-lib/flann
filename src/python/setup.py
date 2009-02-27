@@ -10,5 +10,5 @@ setup(name='flann',
       url='http://www.cs.ubc.ca/~mariusm/flann/',
       packages=['pyflann','pyflann.command', 'pyflann.io', 'pyflann.bindings', 'pyflann.util'],
       scripts=['flann'],
-      package_data={'pyflann.bindings' : ['libflann.so','flann.dll']},
+      package_data={'pyflann.bindings' : ['libflann.so','flann.dll', 'libflann.dylib']},
 )
