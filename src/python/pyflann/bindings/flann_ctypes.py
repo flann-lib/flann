@@ -380,7 +380,7 @@ class FLANN:
             pointer(self.__flann_parameters))
 
         if num_neighbors == 1:
-            return (result.reshape( nqpts ), dists.reshape(npts))
+            return (result.reshape( nqpts ), dists.reshape(nqpts))
         else:
             return (result,dists)
 
