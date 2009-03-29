@@ -263,7 +263,7 @@ flann.flann_radius_search.argtypes = [
 def ensure_2d_array(array, dtype, flags):
     array = require(array,dtype,flags) 
     if len(array.shape) == 1:
-        array.shape = (array.size,-1)
+        array.shape = (-1,array.size)
     return array
 
 
