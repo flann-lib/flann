@@ -126,7 +126,7 @@ default_flags = ['C_CONTIGUOUS', 'ALIGNED']
 
 root_dir = os.path.abspath(os.path.dirname(__file__))
     
-FLANN_INDEX = c_int
+FLANN_INDEX = c_void_p
 
 libname = 'libflann'
 if sys.platform == 'win32':
