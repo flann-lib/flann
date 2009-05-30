@@ -123,11 +123,26 @@ LIBSPEC FLANN_INDEX flann_build_index(float* dataset,
 
 
 
+/**
+ * Saves the index to a file. Only the index is saved into the file, the dataset corresponding to the index is not saved.
+ *
+ * @param index_id The index that should be saved
+ * @param filename The filename the index should be saved to
+ * @return Returns 0 on success, negative value on error.
+ */
 LIBSPEC int flann_save_index(FLANN_INDEX index_id,
 							 char* filename);
 
 
-
+/**
+ * Loads an index from a file.
+ *
+ * @param filename File to load the index from.
+ * @param dataset The dataset corresponding to the index.
+ * @param rows Dataset tors
+ * @param cols Dataset columns
+ * @return
+ */
 LIBSPEC FLANN_INDEX flann_load_index(char* filename,
 									 float* dataset,
 									 int rows,

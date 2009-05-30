@@ -206,6 +206,8 @@ EXPORTED int flann_save_index(FLANN_INDEX index_ptr, char* filename)
 		}
 		index->saveIndex(fout);
 		fclose(fout);
+
+		return 0;
 	}
 	catch(runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
