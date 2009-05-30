@@ -87,6 +87,17 @@ public:
 	}
 
 
+    void saveIndex(FILE* stream)
+    {
+
+    }
+
+
+    void loadIndex(FILE* stream)
+    {
+
+    }
+
 	void findNeighbors(ResultSet& result, float* vec, Params searchParams)
 	{
 		kmeans->findNeighbors(result,vec,searchParams);

@@ -26,39 +26,42 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+
+#include "common.h"
+#include "Saving.h"
+#include "NNIndex.h"
+#include <cstdio>
+
+const char FLANN_SIGNATURE[] = "FLANN_INDEX";
+
+void save_header(FILE* stream, const NNIndex& index)
+{
+	IndexHeader header;
+	memset(header.signature, 0 , sizeof(header.signature));
+	strcpy(header.signature, FLANN_SIGNATURE);
+	header.flann_version = FLANN_VERSION;
+	header.index_type = index.getType();
+	header.rows = index.size();
+	header.cols = index.veclen();
+
+	std::fwrite(&header, sizeof(header),1,stream);
+}
 
 
-const int FLANN_VERSION = 1.20;
 
-/* Nearest neighbour index algorithms */
-enum flann_algorithm_t {
-	LINEAR = 0,
-	KDTREE = 1,
-	KMEANS = 2,
-	COMPOSITE = 3,
-};
+IndexHeader load_header(FILE* stream)
+{
+	IndexHeader header;
+	int read_size = fread(&header,sizeof(header),1,stream);
 
-enum flann_centers_init_t {
-	CENTERS_RANDOM = 0,
-	CENTERS_GONZALES = 1,
-	CENTERS_KMEANSPP = 2
-};
+	if (read_size!=1) {
+		throw FLANNException("Invalid index file, cannot read");
+	}
 
+	if (strcmp(header.signature,FLANN_SIGNATURE)!=0) {
+		throw FLANNException("Invalid index file, wrong signature");
+	}
 
-enum flann_log_level_t {
-	LOG_NONE = 0,
-	LOG_FATAL = 1,
-	LOG_ERROR = 2,
-	LOG_WARN = 3,
-	LOG_INFO = 4
-};
+	return header;
 
-enum flann_distance_t {
-	EUCLIDEAN = 1,
-	MANHATTAN = 2,
-	MINKOWSKI = 3
-};
-
-#endif  // CONSTANTS_H
+}

@@ -68,6 +68,16 @@ public:
 	*/
 	virtual void buildIndex() = 0;
 
+    /**
+        Saves the index to a stream
+    */
+    virtual void saveIndex(FILE* stream) = 0;
+
+    /**
+        Loads the index from a stream
+    */
+    virtual void loadIndex(FILE* stream) = 0;
+
 	/**
 		Method that searches for nearest-neighbors
 	*/
@@ -116,6 +126,9 @@ struct IndexRegistryEntry
 void register_index_creator(flann_algorithm_t algorithm, IndexCreator creator);
 
 NNIndex* create_index(flann_algorithm_t algorithm, Dataset<float>& dataset, Params params);
+
+
+void saveHeader(FILE* stream);
 
 
 #endif //NNINDEX_H

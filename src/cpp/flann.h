@@ -120,6 +120,21 @@ LIBSPEC FLANN_INDEX flann_build_index(float* dataset,
 									  struct FLANNParameters* flann_params);
 
 
+
+
+
+LIBSPEC int flann_save_index(FLANN_INDEX index_id,
+							 char* filename);
+
+
+
+LIBSPEC FLANN_INDEX flann_load_index(char* filename,
+									 float* dataset,
+									 int rows,
+									 int cols);
+
+
+
 /**
 Builds an index and uses it to find nearest neighbors.
 

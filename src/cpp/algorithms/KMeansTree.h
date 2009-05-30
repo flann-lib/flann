@@ -367,12 +367,6 @@ class KMeansTree : public NNIndex
 	int memoryCounter;
 
 
-	/**
-	 * Array with distances to the kmeans domains of a node.
-	 * Used during search phase.
-	 */
-	float* domain_distances;
-
     /**
     * The function used for choosing the cluster centers.
     */
@@ -403,17 +397,31 @@ public:
         veclen_ = dataset.cols;
 
 		// get algorithm parameters
-		branching = (int)params["branching"];
-		if (branching<2) {
-			throw FLANNException("Branching factor must be at least 2");
-		}
-		int iterations = (int)params["max-iterations"];
-		if (iterations<0) {
-			iterations =  numeric_limits<int>::max();
-		}
-		max_iter = iterations;
+        if (params.find("branching") != params.end()) {
+        	branching = (int)params["branching"];
+        }
+        else {
+        	branching = -1;
+        }
 
-		flann_centers_init_t centersInit = (flann_centers_init_t)(int)params["centers-init"];
+        if (params.find("max-iterations") != params.end()) {
+        	max_iter = (int)params["max-iterations"];
+        	if (max_iter<0) {
+        		max_iter = numeric_limits<int>::max();
+        	}
+        }
+        else {
+        	max_iter = numeric_limits<int>::max();
+        }
+
+        flann_centers_init_t centersInit;
+        if (params.find("centers-init") != params.end()) {
+        	centersInit = (flann_centers_init_t)(int)params["centers-init"];
+        }
+        else {
+        	centersInit = CENTERS_RANDOM;
+        }
+
 		if ( centerAlgs.find(centersInit) != centerAlgs.end() ) {
 			chooseCenters = centerAlgs[centersInit];
 		}
@@ -422,7 +430,7 @@ public:
 		}
         cb_index = 0.4;
 
-		domain_distances = new float[branching];
+
  		heap = new Heap<BranchSt>(dataset.rows);
 	}
 
@@ -441,7 +449,6 @@ public:
         if (indices!=NULL) {
 		  delete[] indices;
         }
-		delete[] domain_distances;
 	}
 
     /**
@@ -481,6 +488,10 @@ public:
 	 */
 	void buildIndex()
 	{
+		if (branching<2) {
+			throw FLANNException("Branching factor must be at least 2");
+		}
+
 		indices = new int[size_];
 		for (int i=0;i<size_;++i) {
 			indices[i] = i;
@@ -490,6 +501,44 @@ public:
 		computeNodeStatistics(root, indices, size_);
 		computeClustering(root, indices, size_, branching,0);
 	}
+
+
+    void saveIndex(FILE* stream)
+    {
+    	save_header(stream, *this);
+    	save_value(stream, branching);
+    	save_value(stream, max_iter);
+    	save_value(stream, memoryCounter);
+    	save_value(stream, cb_index);
+    	save_value(stream, *indices, size_);
+
+   		save_tree(stream, root);
+
+    }
+
+
+    void loadIndex(FILE* stream)
+    {
+    	IndexHeader header = load_header(stream);
+
+    	if (header.rows!=size() || header.cols!=veclen()) {
+    		throw FLANNException("The index saved belongs to a different dataset");
+    	}
+    	load_value(stream, branching);
+    	load_value(stream, max_iter);
+    	load_value(stream, memoryCounter);
+    	load_value(stream, cb_index);
+    	if (indices!=NULL) {
+    		delete[] indices;
+    	}
+		indices = new int[size_];
+    	load_value(stream, *indices, size_);
+
+    	if (root!=NULL) {
+    		free_centers(root);
+    	}
+   		load_tree(stream, root);
+    }
 
 
     /**
@@ -580,6 +629,42 @@ public:
 
 
 private:
+
+
+    void save_tree(FILE* stream, KMeansNode node)
+    {
+    	save_value(stream, *node);
+    	save_value(stream, *(node->pivot), veclen_);
+    	if (node->childs==NULL) {
+    		int indices_offset = node->indices - indices;
+    		save_value(stream, indices_offset);
+    	}
+    	else {
+    		for(int i=0; i<branching; ++i) {
+    			save_tree(stream, node->childs[i]);
+    		}
+    	}
+    }
+
+
+    void load_tree(FILE* stream, KMeansNode& node)
+    {
+    	node = pool.allocate<KMeansNodeSt>();
+    	load_value(stream, *node);
+    	node->pivot = new float[veclen_];
+    	load_value(stream, *(node->pivot), veclen_);
+    	if (node->childs==NULL) {
+    		int indices_offset;
+    		load_value(stream, indices_offset);
+    		node->indices = indices + indices_offset;
+    	}
+    	else {
+    		node->childs = pool.allocate<KMeansNode>(branching);
+    		for(int i=0; i<branching; ++i) {
+    			load_tree(stream, node->childs[i]);
+    		}
+    	}
+    }
 
 
     /**
@@ -817,6 +902,7 @@ private:
 			node->childs[c]->pivot = centers[c];
 			node->childs[c]->variance = variance;
 			node->childs[c]->mean_radius = mean_radius;
+			node->childs[c]->indices = NULL;
 			computeClustering(node->childs[c],indices+start, end-start, branching, level+1);
 			start=end;
 		}
@@ -869,7 +955,9 @@ private:
 			}
 		}
 		else {
-			int closest_center = exploreNodeBranches(node, vec);
+			float* domain_distances = new float[branching];
+			int closest_center = exploreNodeBranches(node, vec, domain_distances);
+			delete[] domain_distances;
 			findNN(node->childs[closest_center],result,vec, checks, maxChecks);
 		}
 	}
@@ -882,7 +970,7 @@ private:
 	 *     distances = array with the distances to each child node.
 	 * Returns:
 	 */
-	int exploreNodeBranches(KMeansNode node, float* q)
+	int exploreNodeBranches(KMeansNode node, float* q, float* domain_distances)
 	{
 
 		int best_index = 0;
@@ -958,6 +1046,7 @@ private:
 	 */
 	void getCenterOrdering(KMeansNode node, float* q, int* sort_indices)
 	{
+		float* domain_distances = new float[branching];
 		for (int i=0;i<branching;++i) {
 			float dist = flann_dist(q, q+veclen_, node->childs[i]->pivot);
 
@@ -970,6 +1059,7 @@ private:
 			domain_distances[j] = dist;
 			sort_indices[j] = i;
 		}
+		delete[] domain_distances;
 	}
 
 	/**

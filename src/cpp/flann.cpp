@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "LinearSearch.h"
 #include "Autotune.h"
 #include "Testing.h"
+#include "Saving.h"
 using namespace std;
 
 
@@ -188,6 +189,56 @@ EXPORTED FLANN_INDEX flann_build_index(float* dataset, int rows, int cols, float
 		return NULL;
 	}
 }
+
+
+
+EXPORTED int flann_save_index(FLANN_INDEX index_ptr, char* filename)
+{
+	try {
+		if (index_ptr==NULL) {
+			throw FLANNException("Invalid index");
+		}
+		NNIndexPtr index = NNIndexPtr(index_ptr);
+
+		FILE* fout = fopen(filename, "wb");
+		if (fout==NULL) {
+			return -2;   // if cannot open file return error code
+		}
+		index->saveIndex(fout);
+		fclose(fout);
+	}
+	catch(runtime_error& e) {
+		logger.error("Caught exception: %s\n",e.what());
+		return -1;
+	}
+}
+
+
+EXPORTED FLANN_INDEX flann_load_index(char* filename, float* dataset, int rows, int cols)
+{
+	try {
+		DatasetPtr inputData = new Dataset<float>(rows,cols,dataset);
+		NNIndex* index = NULL;
+
+		FILE* fin = fopen(filename, "rb");
+		if (fin==NULL) {
+			return NULL;
+		}
+		IndexHeader header = load_header(fin);
+		rewind(fin);
+		Params params;
+		index = create_index(header.index_type,*inputData,params);
+		index->loadIndex(fin);
+		fclose(fin);
+
+		return index;
+	}
+	catch(runtime_error& e) {
+		logger.error("Caught exception: %s\n",e.what());
+		return NULL;
+	}
+}
+
 
 
 EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)

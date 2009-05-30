@@ -69,6 +69,17 @@ public:
 		/* nothing to do here for linear search */
 	}
 
+    void saveIndex(FILE* stream)
+    {
+		/* nothing to do here for linear search */
+    }
+
+
+    void loadIndex(FILE* stream)
+    {
+		/* nothing to do here for linear search */
+    }
+
 	void findNeighbors(ResultSet& resultSet, float* vec, Params searchParams)
 	{
 		for (int i=0;i<dataset.rows;++i) {

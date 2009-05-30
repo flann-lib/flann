@@ -3,7 +3,7 @@ INCLUDE_DIRECTORIES(algorithms util nn .)
 
 ADD_SUBDIRECTORY( tests )
 
-SET(SOURCES flann.cpp util/Random.cpp nn/Testing.cpp algorithms/NNIndex.cpp algorithms/dist.cpp util/Logger.cpp)
+SET(SOURCES flann.cpp util/Random.cpp nn/Testing.cpp algorithms/NNIndex.cpp algorithms/dist.cpp util/Logger.cpp util/Saving.cpp)
 
 ADD_LIBRARY(flann SHARED ${SOURCES})
 ADD_LIBRARY(flann_s STATIC ${SOURCES})

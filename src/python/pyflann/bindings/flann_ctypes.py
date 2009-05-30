@@ -159,6 +159,23 @@ flann.flann_build_index.argtypes = [
         POINTER(c_float), # speedup 
         POINTER(FLANNParameters)  # flann_params
 ]
+
+
+flann.flann_save_index.restype = None
+flann.flann_save_index.argtypes = [
+        FLANN_INDEX, # index_id
+        c_char_p #filename                                   
+] 
+
+
+flann.flann_load_index.restype = FLANN_INDEX
+flann.flann_load_index.argtypes = [
+        c_char_p, #filename                                   
+        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int, # rows
+        c_int, # cols
+] 
+
                                    
 flann.flann_find_nearest_neighbors.restype = c_int
 flann.flann_find_nearest_neighbors.argtypes = [ 
@@ -407,6 +424,7 @@ class FLANN:
 
         if self.__curindex != None:
             flann.flann_free_index(self.__curindex, pointer(self.__flann_parameters))
+            self.__curindex = None
                 
         speedup = c_float(0)
         self.__curindex = flann.flann_build_index(pts, npts, dim, byref(speedup), pointer(self.__flann_parameters))
@@ -417,6 +435,21 @@ class FLANN:
         
         return params
 
+
+    def save_index(self, filename):
+        if self.__curindex != None:
+            flann.flann_save_index(self.__curindex, c_char_p(filename))
+
+    def load_index(self, filename, pts):
+        pts = ensure_2d_array(pts,float32,default_flags) 
+        npts, dim = pts.shape
+
+        if self.__curindex != None:
+            flann.flann_free_index(self.__curindex, pointer(self.__flann_parameters))
+            self.__curindex = None
+        
+        self.__curindex = flann.flann_load_index(c_char_p(filename), pts, npts, dim)
+        self.__curindex_data = pts
 
     def nn_index(self, qpts, num_neighbors = 1, **kwargs):
         """

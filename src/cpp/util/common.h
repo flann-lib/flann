@@ -45,4 +45,5 @@ class FLANNException : public std::runtime_error {
 
 typedef std::map<std::string,Variant> Params;
 
+
 #endif //COMMOM_H

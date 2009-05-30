@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ResultSet.h"
 #include "Random.h"
 #include "NNIndex.h"
+#include "Saving.h"
 
 using namespace std;
 
@@ -168,9 +169,14 @@ public:
         veclen_ = dataset.cols;
 
 		// get the parameters
-		numTrees = (int)params["trees"];
-
-		trees = new Tree[numTrees];
+        if (params.find("trees") != params.end()) {
+        	numTrees = (int)params["trees"];
+        	trees = new Tree[numTrees];
+        }
+        else {
+        	numTrees = -1;
+        	trees = NULL;
+        }
 		heap = new Heap<BranchSt>(size_);
 		checkID = -1000;
 
@@ -190,7 +196,9 @@ public:
 	~KDTree()
 	{
 		delete[] vind;
-        delete[] trees;
+		if (trees!=NULL) {
+			delete[] trees;
+		}
 		delete heap;
         delete[] mean;
         delete[] var;
@@ -215,6 +223,38 @@ public:
 			divideTree(&trees[i], 0, size_ - 1);
 		}
 	}
+
+
+
+    void saveIndex(FILE* stream)
+    {
+    	save_header(stream, *this);
+    	save_value(stream, numTrees);
+    	for (int i=0;i<numTrees;++i) {
+    		save_tree(stream, trees[i]);
+    	}
+    }
+
+
+
+    void loadIndex(FILE* stream)
+    {
+    	IndexHeader header = load_header(stream);
+
+    	if (header.rows!=size() || header.cols!=veclen()) {
+    		throw FLANNException("The index saved belongs to a different dataset");
+    	}
+    	load_value(stream, numTrees);
+
+    	if (trees!=NULL) {
+    		delete[] trees;
+    	}
+    	trees = new Tree[numTrees];
+    	for (int i=0;i<numTrees;++i) {
+    		load_tree(stream,trees[i]);
+    	}
+    }
+
 
 
     /**
@@ -296,6 +336,32 @@ public:
 
 
 private:
+
+
+    void save_tree(FILE* stream, Tree tree)
+    {
+    	save_value(stream, *tree);
+    	if (tree->child1!=NULL) {
+    		save_tree(stream, tree->child1);
+    	}
+    	if (tree->child2!=NULL) {
+    		save_tree(stream, tree->child2);
+    	}
+    }
+
+
+    void load_tree(FILE* stream, Tree& tree)
+    {
+    	tree = pool.allocate<TreeSt>();
+    	load_value(stream, *tree);
+    	if (tree->child1!=NULL) {
+    		load_tree(stream, tree->child1);
+    	}
+    	if (tree->child2!=NULL) {
+    		load_tree(stream, tree->child2);
+    	}
+    }
+
 
 	/**
 	 * Create a tree node that subdivides the list of vecs from vind[first]

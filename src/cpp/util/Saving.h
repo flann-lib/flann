@@ -26,39 +26,57 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef SAVING_H_
+#define SAVING_H_
+
+#include "constants.h"
+#include "NNIndex.h"
 
 
-const int FLANN_VERSION = 1.20;
-
-/* Nearest neighbour index algorithms */
-enum flann_algorithm_t {
-	LINEAR = 0,
-	KDTREE = 1,
-	KMEANS = 2,
-	COMPOSITE = 3,
+/**
+ * Structure representing the index header.
+ */
+struct IndexHeader
+{
+	char signature[16];
+	int flann_version;
+	flann_algorithm_t index_type;
+	int rows;
+	int cols;
 };
 
-enum flann_centers_init_t {
-	CENTERS_RANDOM = 0,
-	CENTERS_GONZALES = 1,
-	CENTERS_KMEANSPP = 2
-};
+/**
+ * Saves index header to stream
+ *
+ * @param stream - Stream to save to
+ * @param index - The index to save
+ */
+void save_header(FILE* stream, const NNIndex& index);
 
 
-enum flann_log_level_t {
-	LOG_NONE = 0,
-	LOG_FATAL = 1,
-	LOG_ERROR = 2,
-	LOG_WARN = 3,
-	LOG_INFO = 4
-};
+/**
+ *
+ * @param stream - Stream to load from
+ * @return Index header
+ */
+IndexHeader load_header(FILE* stream);
 
-enum flann_distance_t {
-	EUCLIDEAN = 1,
-	MANHATTAN = 2,
-	MINKOWSKI = 3
-};
 
-#endif  // CONSTANTS_H
+template<typename T>
+void save_value(FILE* stream, const T& value, int count = 1)
+{
+	fwrite(&value, sizeof(value),count, stream);
+}
+
+
+template<typename T>
+void load_value(FILE* stream, T& value, int count = 1)
+{
+	int read_cnt = fread(&value, sizeof(value),count, stream);
+	if (read_cnt!=count) {
+		throw FLANNException("Cannot read from file");
+	}
+}
+
+
+#endif /* SAVING_H_ */
