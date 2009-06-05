@@ -197,7 +197,7 @@ class RadiusResultSet : public ResultSet
 {
 	struct Item {
 		int index;
-		int dist;
+		float dist;
 
 		bool operator<(Item rhs) {
 			return dist<rhs.dist;
