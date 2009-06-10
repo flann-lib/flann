@@ -5,7 +5,7 @@
 
 #ADD_EXECUTABLE(test_autotune test_autotune.cc)
 
-ADD_EXECUTABLE(test_dist test_dist.cc)
+#ADD_EXECUTABLE(test_dist test_dist.cc)
 
 ADD_EXECUTABLE(flann_test flann_test.cc)
 TARGET_LINK_LIBRARIES(flann_test flann)
