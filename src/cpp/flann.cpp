@@ -78,7 +78,7 @@ namespace {
         	p->checks = (int)params["checks"];
         }
         if (params.find("cb_index")!=params.end()) {
-        	p->cb_index = (int)params["cb_index"];
+        	p->cb_index = (float)params["cb_index"];
         }
 
         if (params.find("trees")!=params.end()) {
