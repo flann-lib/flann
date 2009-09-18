@@ -36,7 +36,7 @@ using namespace std;
 
 #include "constants.h"
 
-namespace FLANN
+namespace flann
 {
 
 /**

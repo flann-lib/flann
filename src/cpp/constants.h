@@ -41,7 +41,7 @@ enum flann_algorithm_t {
 	KMEANS = 2,
 	COMPOSITE = 3,
 	SAVED = 254,
-	AUTOTUNE = 255,
+	AUTOTUNED = 255,
 };
 
 enum flann_centers_init_t {

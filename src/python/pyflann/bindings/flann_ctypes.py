@@ -115,7 +115,7 @@ class FLANNParameters(CustomStructure):
         'random_seed' : -1
   }
     _translation_ = {
-        "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "default"   : 1},
+        "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "autotuned" : 255, "default"   : 1},
         "centers_init"  : {"random"    : 0, "gonzales"  : 1, "kmeanspp"  : 2, "default"   : 0},
         "log_level"     : {"none"      : 0, "fatal"     : 1, "error"     : 2, "warning"   : 3, "info"      : 4, "default"   : 2}
     }
@@ -139,10 +139,10 @@ flann.flann_log_verbosity.argtypes = [
         c_int # level
 ]
 
-flann.flann_log_destination.restype = None
-flann.flann_log_destination.argtypes = [ 
-        STRING # destination
-]
+#flann.flann_log_destination.restype = None
+#flann.flann_log_destination.argtypes = [ 
+#        STRING # destination
+#]
 
 flann.flann_set_distance_type.restype = None
 flann.flann_set_distance_type.argtypes = [ 

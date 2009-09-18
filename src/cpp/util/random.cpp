@@ -31,7 +31,7 @@
 #include "random.h"
 
 
-namespace FLANN
+namespace flann
 {
 
 void seed_random(unsigned int seed)

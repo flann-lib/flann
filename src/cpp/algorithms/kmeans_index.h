@@ -49,7 +49,7 @@
 using namespace std;
 
 
-namespace FLANN
+namespace flann
 {
 
 /**
@@ -280,7 +280,7 @@ class KMeansIndex : public NNIndex
 	/**
 	 * The dataset used by this index
 	 */
-    const Matrix<float>& dataset;
+    const Matrix<float> dataset;
 
     /**
     * Number of features in the dataset.
@@ -536,7 +536,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     searchParams = parameters that influence the search algorithm (checks, cb_index)
      */
-    void findNeighbors(ResultSet& result, float* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams)
     {
         int maxChecks = searchParams.checks;
 
@@ -567,8 +567,9 @@ public:
      *     numClusters = number of clusters to have in the clustering computed
      * Returns: number of cluster centers
      */
-    int getClusterCenters(int numClusters, float* centers)
+    int getClusterCenters(Matrix<float>& centers)
     {
+        int numClusters = centers.rows;
         if (numClusters<1) {
             throw FLANNException("Number of clusters must be at least 1");
         }
@@ -584,9 +585,8 @@ public:
         for (int i=0;i<clusterCount;++i) {
             float* center = clusters[i]->pivot;
             for (int j=0;j<veclen_;++j) {
-                centers[j] = center[j];
+                centers[i][j] = center[j];
             }
-            centers += veclen_;
         }
 		delete[] clusters;
 
@@ -902,7 +902,7 @@ private:
      */
 
 
-	void findNN(KMeansNode node, ResultSet& result, float* vec, int& checks, int maxChecks)
+	void findNN(KMeansNode node, ResultSet& result, const float* vec, int& checks, int maxChecks)
 	{
 		// Ignore those clusters that are too far away
 		{
@@ -944,7 +944,7 @@ private:
 	 *     distances = array with the distances to each child node.
 	 * Returns:
 	 */
-	int exploreNodeBranches(KMeansNode node, float* q, float* domain_distances)
+	int exploreNodeBranches(KMeansNode node, const float* q, float* domain_distances)
 	{
 
 		int best_index = 0;
@@ -956,7 +956,7 @@ private:
 			}
 		}
 
-		float* best_center = node->childs[best_index]->pivot;
+//		float* best_center = node->childs[best_index]->pivot;
 		for (int i=0;i<branching;++i) {
 			if (i != best_index) {
 				domain_distances[i] -= cb_index*node->childs[i]->variance;
@@ -976,7 +976,7 @@ private:
 	/**
 	 * Function the performs exact nearest neighbor search by traversing the entire tree.
 	 */
-	void findExactNN(KMeansNode node, ResultSet& result, float* vec)
+	void findExactNN(KMeansNode node, ResultSet& result, const float* vec)
 	{
 		// Ignore those clusters that are too far away
 		{
@@ -1018,7 +1018,7 @@ private:
 	 *
 	 * I computes the order in which to traverse the child nodes of a particular node.
 	 */
-	void getCenterOrdering(KMeansNode node, float* q, int* sort_indices)
+	void getCenterOrdering(KMeansNode node, const float* q, int* sort_indices)
 	{
 		float* domain_distances = new float[branching];
 		for (int i=0;i<branching;++i) {

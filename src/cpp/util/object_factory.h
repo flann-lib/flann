@@ -28,60 +28,66 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef SAVING_H_
-#define SAVING_H_
+#ifndef OBJECT_FACTORY_H_
+#define OBJECT_FACTORY_H_
 
-#include "constants.h"
-#include "nn_index.h"
-
+#include <map>
 
 namespace flann
 {
 
-/**
- * Structure representing the index header.
- */
-struct IndexHeader
+template<typename BaseClass, typename DerivedClass>
+BaseClass* createObject()
 {
-	char signature[16];
-	int flann_version;
-	flann_algorithm_t index_type;
-	int rows;
-	int cols;
+	return new DerivedClass();
+}
+
+template<typename BaseClass, typename UniqueIdType>
+class ObjectFactory
+{
+	typedef BaseClass* (*CreateObjectFunc)();
+	std::map<UniqueIdType, CreateObjectFunc> object_registry;
+
+	// singleton class, private constructor
+	ObjectFactory() {};
+
+public:
+   typedef typename std::map<UniqueIdType, CreateObjectFunc>::iterator Iterator;
+
+
+   template<typename DerivedClass>
+   bool register_(UniqueIdType id)
+   {
+      if (object_registry.find(id) != object_registry.end())
+               return false;
+
+      object_registry[id] = &createObject<BaseClass, DerivedClass>;
+      return true;
+   }
+
+   bool unregister(UniqueIdType id)
+   {
+      return (object_registry.erase(id) == 1);
+   }
+
+   BaseClass* create(UniqueIdType id)
+   {
+      Iterator iter = object_registry.find(id);
+
+      if (iter == object_registry.end())
+         return NULL;
+
+      return ((*iter).second)();
+   }
+
+   static ObjectFactory<BaseClass,UniqueIdType>& instance()
+   {
+	   static ObjectFactory<BaseClass,UniqueIdType> the_factory;
+	   return the_factory;
+   }
+
 };
 
-/**
- * Saves index header to stream
- *
- * @param stream - Stream to save to
- * @param index - The index to save
- */
-void save_header(FILE* stream, const NNIndex& index);
-
-
-/**
- *
- * @param stream - Stream to load from
- * @return Index header
- */
-IndexHeader load_header(FILE* stream);
-
-
-template<typename T>
-void save_value(FILE* stream, const T& value, int count = 1)
-{
-	fwrite(&value, sizeof(value),count, stream);
 }
 
-
-template<typename T>
-void load_value(FILE* stream, T& value, int count = 1)
-{
-	int read_cnt = fread(&value, sizeof(value),count, stream);
-	if (read_cnt!=count) {
-		throw FLANNException("Cannot read from file");
-	}
-}
-}
-
-#endif /* SAVING_H_ */
+#endif /* OBJECT_FACTORY_H_ */

@@ -35,7 +35,7 @@
 #include <stdio.h>
 
 
-namespace FLANN
+namespace flann
 {
 
 /**
@@ -68,8 +68,8 @@ T* allocate(size_t count = 1)
  *
  */
 
-const  int     WORDSIZE=16;
-const  int     BLOCKSIZE=8192;
+const size_t     WORDSIZE=16;
+const  size_t     BLOCKSIZE=8192;
 
 class PooledAllocator
 {

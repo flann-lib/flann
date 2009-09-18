@@ -34,7 +34,7 @@
 #include "constants.h"
 #include "nn_index.h"
 
-namespace FLANN
+namespace flann
 {
 
 class CompositeIndex : public NNIndex
@@ -42,7 +42,7 @@ class CompositeIndex : public NNIndex
 	KMeansIndex* kmeans;
 	KDTreeIndex* kdtree;
 
-    const Matrix<float>& dataset;
+    const Matrix<float> dataset;
 
 
 public:
@@ -106,7 +106,7 @@ public:
 
     }
 
-	void findNeighbors(ResultSet& result, float* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams)
 	{
 		kmeans->findNeighbors(result,vec,searchParams);
 		kdtree->findNeighbors(result,vec,searchParams);

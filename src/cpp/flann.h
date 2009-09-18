@@ -53,6 +53,7 @@
 
 struct FLANNParameters {
 	flann_algorithm_t algorithm; // the algorithm to use (see constants.h)
+
 	int checks;                // how many leafs (features) to check in one search
     float cb_index;            // cluster boundary index. Used when searching the kmeans tree
 	int trees;                 // number of randomized trees to use (for kdtree)
@@ -71,12 +72,10 @@ struct FLANNParameters {
 
 
 
-typedef void* FLANN_INDEX;
+typedef void* FLANN_INDEX; // deprecated
+typedef void* flann_index_t;
 
 #ifdef __cplusplus
-
-#include "flann.hpp"
-
 extern "C" {
 #endif
 
@@ -88,15 +87,6 @@ Params:
     level = verbosity level (defined in constants.h)
 */
 LIBSPEC void flann_log_verbosity(int level);
-
-/**
-Configures where the log output should go
-
-Params:
-    destination = destination file, NULL for console
-*/
-LIBSPEC void flann_log_destination(char* destination);
-
 
 
 /**
@@ -278,6 +268,10 @@ LIBSPEC int flann_compute_cluster_centers(float* dataset,
 
 #ifdef __cplusplus
 };
+
+
+#include "flann.hpp"
+
 #endif
 
 

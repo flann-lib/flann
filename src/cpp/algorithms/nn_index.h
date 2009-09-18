@@ -40,7 +40,7 @@
 
 using namespace std;
 
-namespace FLANN
+namespace flann
 {
 
 class ResultSet;
@@ -72,7 +72,7 @@ public:
 	/**
 	Method that searches for nearest-neighbors
 	*/
-	virtual void findNeighbors(ResultSet& result, float* vec, const SearchParams& searchParams) = 0;
+	virtual void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams) = 0;
 
 	/**
 	Number of features in this index.

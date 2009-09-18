@@ -33,7 +33,7 @@
 #include "nn_index.h"
 #include <cstdio>
 
-namespace FLANN
+namespace flann
 {
 
 const char FLANN_SIGNATURE[] = "FLANN_INDEX";

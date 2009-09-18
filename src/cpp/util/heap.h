@@ -35,7 +35,7 @@
 #include <algorithm>
 using namespace std;
 
-namespace FLANN
+namespace flann
 {
 
 /**

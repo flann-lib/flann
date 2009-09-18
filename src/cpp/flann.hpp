@@ -35,39 +35,60 @@
 #include <string>
 
 #include "constants.h"
+#include "common.h"
 #include "matrix.h"
 
-namespace FLANN
+#include "flann.h"
+
+namespace flann
 {
 
 class NNIndex;
 
-
 class IndexFactory
 {
 public:
-	virtual NNIndex* create(const Matrix<float>& dataset) = 0;
+	virtual NNIndex* createIndex(const Matrix<float>& dataset) const = 0;
 };
-
 
 struct IndexParams : public IndexFactory {
 protected:
 	IndexParams() {};
-};
 
+public:
+
+	static IndexParams* createFromParameters(const FLANNParameters& p);
+
+	void fromParameters(const FLANNParameters& p) {};
+	void toParameters(FLANNParameters& p) { };
+};
 
 struct LinearIndexParams : public IndexParams {
 	LinearIndexParams() {};
 
-	NNIndex* create(const Matrix<float>& dataset);
+	NNIndex* createIndex(const Matrix<float>& dataset) const;
 };
+
+
 
 struct KDTreeIndexParams : public IndexParams {
 	KDTreeIndexParams(int trees_ = 4) : trees(trees_) {};
 
 	int trees;                 // number of randomized trees to use (for kdtree)
 
-	NNIndex* create(const Matrix<float>& dataset);
+	NNIndex* createIndex(const Matrix<float>& dataset) const;
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		trees = p.trees;
+	}
+
+	void toParameters(FLANNParameters& p)
+	{
+		p.algorithm = KDTREE;
+		p.trees = trees;
+	};
+
 };
 
 struct KMeansIndexParams : public IndexParams {
@@ -84,7 +105,25 @@ struct KMeansIndexParams : public IndexParams {
     float cb_index;            // cluster boundary index. Used when searching the kmeans tree
 
 
-    NNIndex* create(const Matrix<float>& dataset);
+    NNIndex* createIndex(const Matrix<float>& dataset) const;
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		branching = p.branching;
+		iterations = p.iterations;
+		centers_init = p.centers_init;
+		cb_index = p.cb_index;
+	}
+
+	void toParameters(FLANNParameters& p)
+	{
+		p.algorithm = KMEANS;
+		p.branching = branching;
+		p.iterations = iterations;
+		p.centers_init = centers_init;
+		p.cb_index = cb_index;
+	};
+
 };
 
 
@@ -103,7 +142,26 @@ struct CompositeIndexParams : public IndexParams {
 	flann_centers_init_t centers_init;          // algorithm used for picking the initial cluster centers for kmeans tree
     float cb_index;            // cluster boundary index. Used when searching the kmeans tree
 
-    NNIndex* create(const Matrix<float>& dataset);
+    NNIndex* createIndex(const Matrix<float>& dataset) const;
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		trees = p.trees;
+		branching = p.branching;
+		iterations = p.iterations;
+		centers_init = p.centers_init;
+		cb_index = p.cb_index;
+	}
+
+	void toParameters(FLANNParameters& p)
+	{
+		p.algorithm = COMPOSITE;
+		p.trees = trees;
+		p.branching = branching;
+		p.iterations = iterations;
+		p.centers_init = centers_init;
+		p.cb_index = cb_index;
+	};
 };
 
 
@@ -120,16 +178,36 @@ struct AutotunedIndexParams : public IndexParams {
 	float memory_weight;       // index memory weighting factor
     float sample_fraction;     // what fraction of the dataset to use for autotuning
 
-    NNIndex* create(const Matrix<float>& dataset);
+    NNIndex* createIndex(const Matrix<float>& dataset) const;
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		target_precision = p.target_precision;
+		build_weight = p.build_weight;
+		memory_weight = p.memory_weight;
+		sample_fraction = p.sample_fraction;
+	}
+
+	void toParameters(FLANNParameters& p)
+	{
+		p.algorithm = AUTOTUNED;
+		p.target_precision = target_precision;
+		p.build_weight = build_weight;
+		p.memory_weight = memory_weight;
+		p.sample_fraction = sample_fraction;
+	};
 };
 
 
 struct SavedIndexParams : public IndexParams {
-	SavedIndexParams(std::string filename_) : filename(filename_) {};
+	SavedIndexParams() {
+		throw FLANNException("I don't know which index to load");
+	}
+	SavedIndexParams(std::string filename_) : filename(filename_) {}
 
 	std::string filename;		// filename of the stored index
 
-	NNIndex* create(const Matrix<float>& dataset);
+	NNIndex* createIndex(const Matrix<float>& dataset) const;
 };
 
 
@@ -147,14 +225,21 @@ class Index {
 public:
 	Index(const Matrix<float>& features, const IndexParams& params);
 
+	~Index();
+
 	void knnSearch(const Matrix<float>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& params);
 
-	void knnSearch(const std::vector<float>& query, std::vector<int> indices, std::vector<float> dists, int knn, const SearchParams& params);
-
-	void radiusSearch(const std::vector<float>& query, std::vector<int> indices, std::vector<float> dists, float radius, const SearchParams& params);
+	int radiusSearch(const Matrix<float>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& params);
 
 	void save(std::string filename);
+
+	int veclen() const;
+
+	int size() const;
 };
+
+
+int hierarchicalClustering(const Matrix<float>& features, Matrix<float>& centers, const KMeansIndexParams& params);
 
 
 }

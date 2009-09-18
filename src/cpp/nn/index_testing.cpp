@@ -39,7 +39,7 @@
 #include <math.h>
 
 
-namespace FLANN
+namespace flann
 {
 
 const float SEARCH_EPS = 0.001;
@@ -59,7 +59,7 @@ int countCorrectMatches(int* neighbors, int* groundTruth, int n)
 }
 
 
-float computeDistanceRaport(const Dataset<float>& inputData, float* target, int* neighbors, int* groundTruth, int veclen, int n)
+float computeDistanceRaport(const Matrix<float>& inputData, float* target, int* neighbors, int* groundTruth, int veclen, int n)
 {
 	float* target_end = target + veclen;
     float ret = 0;
@@ -79,7 +79,7 @@ float computeDistanceRaport(const Dataset<float>& inputData, float* target, int*
     return ret;
 }
 
-float search_with_ground_truth(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches, int nn, int checks, float& time, float& dist, int skipMatches)
+float search_with_ground_truth(NNIndex& index, const Matrix<float>& inputData, const Matrix<float>& testData, const Matrix<int>& matches, int nn, int checks, float& time, float& dist, int skipMatches)
 {
     if (matches.cols<nn) {
         logger.info("matches.cols=%d, nn=%d\n",matches.cols,nn);
@@ -88,8 +88,7 @@ float search_with_ground_truth(NNIndex& index, const Dataset<float>& inputData, 
     }
 
     KNNResultSet resultSet(nn+skipMatches);
-    Params searchParams;
-    searchParams["checks"] = checks;
+    SearchParams searchParams(checks);
 
     int correct;
     float distR;
@@ -125,13 +124,13 @@ float search_with_ground_truth(NNIndex& index, const Dataset<float>& inputData, 
     return precicion;
 }
 
-
-void search_for_neighbors(NNIndex& index, const Dataset<float>& testset, Dataset<int>& result,  Dataset<float>& dists, Params searchParams, int skip)
+void search_for_neighbors(NNIndex& index, const Matrix<float>& testset, Matrix<int>& result,  Matrix<float>& dists, const SearchParams& searchParams, int skip)
 {
     assert(testset.rows == result.rows);
 
     int nn = result.cols;
     KNNResultSet resultSet(nn+skip);
+
 
     for (int i = 0; i < testset.rows; i++) {
         float* target = testset[i];
@@ -147,7 +146,7 @@ void search_for_neighbors(NNIndex& index, const Dataset<float>& testset, Dataset
 
 }
 
-float test_index_checks(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches, int checks, float& precision, int nn, int skipMatches)
+float test_index_checks(NNIndex& index, const Matrix<float>& inputData, const Matrix<float>& testData, const Matrix<int>& matches, int checks, float& precision, int nn, int skipMatches)
 {
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
     logger.info("---------------------------------------------------------\n");
@@ -160,7 +159,7 @@ float test_index_checks(NNIndex& index, const Dataset<float>& inputData, const D
 }
 
 
-float test_index_precision(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches,
+float test_index_precision(NNIndex& index, const Matrix<float>& inputData, const Matrix<float>& testData, const Matrix<int>& matches,
              float precision, int& checks, int nn, int skipMatches)
 {
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
@@ -168,7 +167,7 @@ float test_index_precision(NNIndex& index, const Dataset<float>& inputData, cons
 
     int c2 = 1;
     float p2;
-    int c1;
+    int c1 = 1;
     float p1;
     float time;
     float dist;
@@ -227,7 +226,7 @@ float test_index_precision(NNIndex& index, const Dataset<float>& inputData, cons
 }
 
 
-float test_index_precisions(NNIndex& index, const Dataset<float>& inputData, const Dataset<float>& testData, const Dataset<int>& matches,
+float test_index_precisions(NNIndex& index, const Matrix<float>& inputData, const Matrix<float>& testData, const Matrix<int>& matches,
                     float* precisions, int precisions_length, int nn, int skipMatches, float maxTime)
 {
     // make sure precisions array is sorted
@@ -242,7 +241,7 @@ float test_index_precisions(NNIndex& index, const Dataset<float>& inputData, con
     int c2 = 1;
     float p2;
 
-    int c1;
+    int c1 = 1;
     float p1;
 
     float time;

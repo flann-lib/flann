@@ -38,15 +38,13 @@
 
 using namespace std;
 
-namespace FLANN
+namespace flann
 {
 
 class Logger
 {
-    int logLevel;
-
     FILE* stream;
-
+    int logLevel;
 
 public:
 

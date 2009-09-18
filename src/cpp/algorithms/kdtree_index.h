@@ -48,7 +48,7 @@
 using namespace std;
 
 
-namespace FLANN
+namespace flann
 {
 
 
@@ -98,7 +98,7 @@ class KDTreeIndex : public NNIndex
 	/**
 	 * The dataset used by this index
 	 */
-	const Matrix<float>& dataset;
+	const Matrix<float> dataset;
 
     int size_;
     int veclen_;
@@ -304,7 +304,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet& result, float* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams)
     {
         int maxChecks = searchParams.checks;
 
@@ -318,7 +318,6 @@ public:
 
 	void continueSearch(ResultSet& result, float* vec, int maxCheck)
 	{
-		int i;
 		BranchSt branch;
 
 		int checkCount = 0;
@@ -510,7 +509,7 @@ private:
 	 * Performs an exact nearest neighbor search. The exact search performs a full
 	 * traversal of the tree.
 	 */
-	void getExactNeighbors(ResultSet& result, float* vec)
+	void getExactNeighbors(ResultSet& result, const float* vec)
 	{
 		checkID -= 1;  /* Set a different unique ID for each search. */
 
@@ -528,7 +527,7 @@ private:
 	 * because the tree traversal is abandoned after a given number of descends in
 	 * the tree.
 	 */
-	void getNeighbors(ResultSet& result, float* vec, int maxCheck)
+	void getNeighbors(ResultSet& result, const float* vec, int maxCheck)
 	{
 		int i;
 		BranchSt branch;
@@ -556,7 +555,7 @@ private:
 	 *  higher levels, all exemplars below this level must have a distance of
 	 *  at least "mindistsq".
 	*/
-	void searchLevel(ResultSet& result, float* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
+	void searchLevel(ResultSet& result, const float* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
 	{
 		if (result.worstDist()<mindistsq) {
 //			printf("Ignoring branch, too far\n");
@@ -610,7 +609,7 @@ private:
 	/**
 	 * Performs an exact search in the tree starting from a node.
 	 */
-	void searchLevelExact(ResultSet& result, float* vec, Tree node, float mindistsq)
+	void searchLevelExact(ResultSet& result, const float* vec, Tree node, float mindistsq)
 	{
 		if (mindistsq>result.worstDist()) {
 			return;

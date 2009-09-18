@@ -17,19 +17,19 @@ class Test_PyFLANN_nn(unittest.TestCase):
     # The typical
     
     def test_nn_2d_10pt_kmeans(self):
-        self.__nd_random_test_autotune(2, 2, algorithm='kdtree')
+        self.__nd_random_test_autotune(2, 2, algorithm='autotuned')
         
     def test_nn_autotune_2d_1000pt_kmeans(self):
-        self.__nd_random_test_autotune(2, 1000, algorithm='kmeans')
+        self.__nd_random_test_autotune(2, 1000, algorithm='autotuned')
 
     def test_nn_autotune_100d_1000pt_kmeans(self):
-        self.__nd_random_test_autotune(100, 1000, algorithm='kmeans')
+        self.__nd_random_test_autotune(100, 1000, algorithm='autotuned')
     
     def test_nn_autotune_500d_100pt_kmeans(self):
-        self.__nd_random_test_autotune(500, 100, algorithm='kmeans')
+        self.__nd_random_test_autotune(500, 100, algorithm='autotuned')
     
     def test_nn_autotune_2d_1000pt_kdtree(self):
-        self.__nd_random_test_autotune(2, 1000, algorithm='kdtree')
+        self.__nd_random_test_autotune(2, 1000, algorithm='autotuned')
     
     def test_nn_autotune_100d_1000pt_kdtree(self):
         self.__nd_random_test_autotune(100, 1000, algorithm='kdtree')
@@ -51,16 +51,16 @@ class Test_PyFLANN_nn(unittest.TestCase):
     #    # Stress it should handle
     #
     def test_nn_stress_1d_1pt_kmeans_autotune(self):
-        self.__nd_random_test_autotune(1, 1, algorithm='kmeans')
+        self.__nd_random_test_autotune(1, 1, algorithm='autotuned')
     
     def test_nn_stress_1d_1pt_kmeans_autotune(self):
-        self.__nd_random_test_autotune(1, 1, algorithm='linear')
+        self.__nd_random_test_autotune(1, 1, algorithm='autotuned')
     
     def test_nn_stress_1d_1pt_kdtree_autotune(self):
-        self.__nd_random_test_autotune(1, 1, algorithm='kdtree')
+        self.__nd_random_test_autotune(1, 1, algorithm='autotuned')
     
     def test_nn_stress_1d_1pt_composite_autotune(self):
-        self.__nd_random_test_autotune(1, 1, algorithm='composite')
+        self.__nd_random_test_autotune(1, 1, algorithm='autotuned')
     
     
 

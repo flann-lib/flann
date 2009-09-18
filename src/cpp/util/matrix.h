@@ -32,10 +32,10 @@
 #define DATASET_H
 
 #include <stdio.h>
-#include <random.h>
+#include "random.h"
 
 
-namespace FLANN
+namespace flann
 {
 /**
 * Class implementing a generic rectangular dataset.
@@ -63,7 +63,7 @@ public:
 
 
     Matrix(long rows_, long cols_, T* data_ = NULL) :
-        rows(rows_), cols(cols_), data(data_), ownData(false)
+    	 ownData(false), rows(rows_), cols(cols_), data(data_)
 	{
         if (data_==NULL) {
 		    data = new T[rows*cols];

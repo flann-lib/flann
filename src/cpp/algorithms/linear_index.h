@@ -34,12 +34,12 @@
 #include "constants.h"
 #include "nn_index.h"
 
-namespace FLANN
+namespace flann
 {
 
 class LinearIndex : public NNIndex {
 
-	const Matrix<float>& dataset;
+	const Matrix<float> dataset;
 
 public:
 
@@ -85,7 +85,7 @@ public:
 		/* nothing to do here for linear search */
     }
 
-	void findNeighbors(ResultSet& resultSet, float* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet& resultSet, const float* vec, const SearchParams& searchParams)
 	{
 		for (int i=0;i<dataset.rows;++i) {
 			resultSet.addPoint(dataset[i],i);

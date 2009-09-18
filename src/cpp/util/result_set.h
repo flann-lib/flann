@@ -40,7 +40,7 @@
 using namespace std;
 
 
-namespace FLANN
+namespace flann
 {
 
 /* This record represents a branch point when finding neighbors in
@@ -75,8 +75,8 @@ struct BranchStruct {
 class ResultSet
 {
 protected:
-	float* target;
-	float* target_end;
+	const float* target;
+	const float* target_end;
     int veclen;
 
 public:
@@ -86,7 +86,7 @@ public:
 
 	virtual ~ResultSet() {}
 
-	virtual void init(float* target_, int veclen_) = 0;
+	virtual void init(const float* target_, int veclen_) = 0;
 
 	virtual int* getNeighbors() = 0;
 
@@ -125,7 +125,7 @@ public:
 		delete[] dists;
 	}
 
-	void init(float* target_, int veclen_)
+	void init(const float* target_, int veclen_)
 	{
         target = target_;
         veclen = veclen_;
@@ -215,7 +215,7 @@ class RadiusResultSet : public ResultSet
 	bool sorted;
 	int* indices;
 	float* dists;
-	int count;
+	size_t count;
 
 private:
 	void resize_vecs()
@@ -244,7 +244,7 @@ public:
 		if (dists!=NULL) delete[] dists;
 	}
 
-	void init(float* target_, int veclen_)
+	void init(const float* target_, int veclen_)
 	{
         target = target_;
         veclen = veclen_;
@@ -260,7 +260,7 @@ public:
 			sort_heap(items.begin(), items.end());
 		}
 		resize_vecs();
-		for (int i=0;i<items.size();++i) {
+		for (size_t i=0;i<items.size();++i) {
 			indices[i] = items[i].index;
 		}
 		return indices;
@@ -273,7 +273,7 @@ public:
 			sort_heap(items.begin(), items.end());
 		}
 		resize_vecs();
-		for (int i=0;i<items.size();++i) {
+		for (size_t i=0;i<items.size();++i) {
 			dists[i] = items[i].dist;
 		}
         return dists;
