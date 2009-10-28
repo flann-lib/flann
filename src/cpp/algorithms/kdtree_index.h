@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <map>
 #include <cassert>
+#include <cstring>
 
 #include "heap.h"
 #include "common.h"
@@ -175,8 +176,8 @@ public:
 	{
         size_ = dataset.rows;
         veclen_ = dataset.cols;
-
         numTrees = params.trees;
+
         trees = new Tree[numTrees];
 
 		// get the parameters
@@ -306,6 +307,7 @@ public:
      */
     void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams)
     {
+
         int maxChecks = searchParams.checks;
 
         if (maxChecks<0) {

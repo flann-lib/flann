@@ -79,17 +79,23 @@ class RunTestCommand(BaseCommand):
         print 'Reading input dataset from', self.options.input_file
         dataset = read(self.options.input_file)
         
+        import time
+        print 'Creating index'
+        start_time = time.clock()
         flann = FLANN(log_level=self.options.log_level)
         flann.build_index(dataset, algorithm = self.options.algorithm,
                 trees=self.options.trees, branching=self.options.branching,
-                iterations=self.options.max_iterations, centers_init=self.options.centers_init)        
+                iterations=self.options.max_iterations, centers_init=self.options.centers_init)
+        print 'Index creation took', time.clock()-start_time         
         
         print 'Reading test dataset from', self.options.test_file
         testset = read(self.options.test_file)
         
-        print 'Reading ground truth from matches from', self.options.test_file
+        print 'Reading ground truth from matches from', self.options.match_file
         matches = read(self.options.match_file, dtype = int)
-        
+        if len(matches.shape)==1:
+            matches.shape = (matches.shape[0],1)
+
         if self.options.precision>0:
             checks, time = test_with_precision(flann, dataset, testset, matches, self.options.precision, self.options.nn)
         else:

@@ -32,6 +32,7 @@
 #include "saving.h"
 #include "nn_index.h"
 #include <cstdio>
+#include <cstring>
 
 namespace flann
 {

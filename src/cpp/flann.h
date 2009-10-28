@@ -111,7 +111,7 @@ Params:
 
 Returns: the newly created index or a number <0 for error
 */
-LIBSPEC FLANN_INDEX flann_build_index(float* dataset,
+LIBSPEC flann_index_t flann_build_index(float* dataset,
 									  int rows,
 									  int cols,
 									  float* speedup,
@@ -128,7 +128,7 @@ LIBSPEC FLANN_INDEX flann_build_index(float* dataset,
  * @param filename The filename the index should be saved to
  * @return Returns 0 on success, negative value on error.
  */
-LIBSPEC int flann_save_index(FLANN_INDEX index_id,
+LIBSPEC int flann_save_index(flann_index_t index_id,
 							 char* filename);
 
 
@@ -141,7 +141,7 @@ LIBSPEC int flann_save_index(FLANN_INDEX index_id,
  * @param cols Dataset columns
  * @return
  */
-LIBSPEC FLANN_INDEX flann_load_index(char* filename,
+LIBSPEC flann_index_t flann_load_index(char* filename,
 									 float* dataset,
 									 int rows,
 									 int cols);
@@ -192,7 +192,7 @@ Params:
 
 Returns: zero or a number <0 for error
 */
-LIBSPEC int flann_find_nearest_neighbors_index(FLANN_INDEX index_id,
+LIBSPEC int flann_find_nearest_neighbors_index(flann_index_t index_id,
 											   float* testset,
 											   int trows,
 											   int* indices,
@@ -217,7 +217,7 @@ LIBSPEC int flann_find_nearest_neighbors_index(FLANN_INDEX index_id,
  * a higher search speedup at the cost of potentially not returning all the
  * neighbours in the specified radius.
  */
-LIBSPEC int flann_radius_search(FLANN_INDEX index_ptr, /* the index */
+LIBSPEC int flann_radius_search(flann_index_t index_ptr, /* the index */
 										float* query,	/* query point */
 										int* indices, /* array for storing the indices found (will be modified) */
 										float* dists, /* similar, but for storing distances */
@@ -236,7 +236,7 @@ Params:
 
 Returns: zero or a number <0 for error
 */
-LIBSPEC int flann_free_index(FLANN_INDEX index_id,
+LIBSPEC int flann_free_index(flann_index_t index_id,
 		                     struct FLANNParameters* flann_params);
 
 /**

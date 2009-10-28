@@ -39,14 +39,13 @@
 #include "object_factory.h"
 // index types
 #include "kdtree_index.h"
+#include "kdtree_mt_index.h"
 #include "kmeans_index.h"
 #include "composite_index.h"
 #include "linear_index.h"
 #include "autotuned_index.h"
 
-#include <typeinfo>
 using namespace std;
-
 
 
 #include "flann.h"
@@ -81,6 +80,11 @@ NNIndex* LinearIndexParams::createIndex(const Matrix<float>& dataset) const
 NNIndex* KDTreeIndexParams::createIndex(const Matrix<float>& dataset) const
 {
 	return new KDTreeIndex(dataset, *this);
+}
+
+NNIndex* KDTreeMTIndexParams::createIndex(const Matrix<float>& dataset) const
+{
+	return new KDTreeMTIndex(dataset, *this);
 }
 
 NNIndex* KMeansIndexParams::createIndex(const Matrix<float>& dataset) const
@@ -127,6 +131,7 @@ public:
 	{
 		ParamsFactory::instance().register_<LinearIndexParams>(LINEAR);
 		ParamsFactory::instance().register_<KDTreeIndexParams>(KDTREE);
+		ParamsFactory::instance().register_<KDTreeMTIndexParams>(KDTREE_MT);
 		ParamsFactory::instance().register_<KMeansIndexParams>(KMEANS);
 		ParamsFactory::instance().register_<CompositeIndexParams>(COMPOSITE);
 		ParamsFactory::instance().register_<AutotunedIndexParams>(AUTOTUNED);
@@ -226,7 +231,7 @@ int hierarchicalClustering(const Matrix<float>& features, Matrix<float>& centers
 
 using namespace flann;
 
-typedef NNIndex* NNIndexPtr;
+typedef Index* IndexPtr;
 typedef Matrix<float>* MatrixPtr;
 
 
@@ -259,6 +264,7 @@ EXPORTED void flann_set_distance_type(flann_distance_t distance_type, int order)
 EXPORTED flann_index_t flann_build_index(float* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
 {
 	try {
+
 		init_flann_parameters(flann_params);
 		if (flann_params == NULL) {
 			throw FLANNException("The flann_params argument must be non-null");
@@ -295,7 +301,7 @@ EXPORTED int flann_save_index(flann_index_t index_ptr, char* filename)
 }
 
 
-EXPORTED FLANN_INDEX flann_load_index(char* filename, float* dataset, int rows, int cols)
+EXPORTED flann_index_t flann_load_index(char* filename, float* dataset, int rows, int cols)
 {
 	try {
 		Index* index = new Index(Matrix<float>(rows,cols,dataset), SavedIndexParams(filename));
@@ -357,7 +363,7 @@ EXPORTED int flann_find_nearest_neighbors_index(flann_index_t index_ptr, float* 
 }
 
 
-EXPORTED int flann_radius_search(FLANN_INDEX index_ptr,
+EXPORTED int flann_radius_search(flann_index_t index_ptr,
 										float* query,
 										int* indices,
 										float* dists,
@@ -390,7 +396,7 @@ EXPORTED int flann_radius_search(FLANN_INDEX index_ptr,
 }
 
 
-EXPORTED int flann_free_index(FLANN_INDEX index_ptr, FLANNParameters* flann_params)
+EXPORTED int flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
@@ -437,7 +443,7 @@ EXPORTED void compute_ground_truth_float(float* dataset, int dshape[], float* te
 }
 
 
-EXPORTED float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int dshape[], float* testset, int tshape[], int* matches, int mshape[],
+EXPORTED float test_with_precision(flann_index_t index_ptr, float* dataset, int dshape[], float* testset, int tshape[], int* matches, int mshape[],
              int nn, float precision, int* checks, int skip = 0)
 {
     assert(dshape[1]==tshape[1]);
@@ -447,8 +453,10 @@ EXPORTED float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int ds
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
-        NNIndexPtr index = (NNIndexPtr)index_ptr;
-        return test_index_precision(*index, Matrix<float>(dshape[0], dshape[1],dataset), Matrix<float>(tshape[0], tshape[1], testset),
+
+        IndexPtr index = (IndexPtr)index_ptr;
+        NNIndex* nn_index = index->index();
+        return test_index_precision(*nn_index, Matrix<float>(dshape[0], dshape[1],dataset), Matrix<float>(tshape[0], tshape[1], testset),
                 Matrix<int>(mshape[0],mshape[1],matches), precision, *checks, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
@@ -456,7 +464,7 @@ EXPORTED float test_with_precision(FLANN_INDEX index_ptr, float* dataset, int ds
     }
 }
 
-EXPORTED float test_with_checks(FLANN_INDEX index_ptr, float* dataset, int dshape[], float* testset, int tshape[], int* matches, int mshape[],
+EXPORTED float test_with_checks(flann_index_t index_ptr, float* dataset, int dshape[], float* testset, int tshape[], int* matches, int mshape[],
              int nn, int checks, float* precision, int skip = 0)
 {
     assert(dshape[1]==tshape[1]);
@@ -466,8 +474,9 @@ EXPORTED float test_with_checks(FLANN_INDEX index_ptr, float* dataset, int dshap
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
-        NNIndexPtr index = (NNIndexPtr)index_ptr;
-        return test_index_checks(*index, Matrix<float>(dshape[0], dshape[1],dataset), Matrix<float>(tshape[0], tshape[1], testset),
+        IndexPtr index = (IndexPtr)index_ptr;
+        NNIndex* nn_index = index->index();
+        return test_index_checks(*nn_index, Matrix<float>(dshape[0], dshape[1],dataset), Matrix<float>(tshape[0], tshape[1], testset),
                 Matrix<int>(mshape[0],mshape[1],matches), checks, *precision, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());

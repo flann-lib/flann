@@ -59,8 +59,8 @@ public:
 
 	static IndexParams* createFromParameters(const FLANNParameters& p);
 
-	void fromParameters(const FLANNParameters& p) {};
-	void toParameters(FLANNParameters& p) { };
+	virtual void fromParameters(const FLANNParameters& p) {};
+	virtual void toParameters(FLANNParameters& p) { };
 };
 
 struct LinearIndexParams : public IndexParams {
@@ -90,6 +90,28 @@ struct KDTreeIndexParams : public IndexParams {
 	};
 
 };
+
+
+struct KDTreeMTIndexParams : public IndexParams {
+	KDTreeMTIndexParams(int trees_ = 4) : trees(trees_) {};
+
+	int trees;                 // number of randomized trees to use (for kdtree)
+
+	NNIndex* createIndex(const Matrix<float>& dataset) const;
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		trees = p.trees;
+	}
+
+	void toParameters(FLANNParameters& p)
+	{
+		p.algorithm = KDTREE_MT;
+		p.trees = trees;
+	};
+
+};
+
 
 struct KMeansIndexParams : public IndexParams {
 	KMeansIndexParams(int branching_ = 32, int iterations_ = 11,
@@ -236,6 +258,8 @@ public:
 	int veclen() const;
 
 	int size() const;
+
+	NNIndex* index() { return nnIndex; }
 };
 
 

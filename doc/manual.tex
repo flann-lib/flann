@@ -279,12 +279,12 @@ must contain the following fields:
 percentage of the approximate nearest-neighbor searches that return the
 exact nearest-neighbor. Using a higher value for this parameter gives
 more
-accurate results, but the searching takes longer. The optimum value
+accurate results, but the search takes longer. The optimum value
 usually
 depends on the application.
 
 \item[\texttt{build\_weight}] - specifies the importance of the
-index build time reported to the nearest-neighbor search time. In some
+index build time raported to the nearest-neighbor search time. In some
 applications it's acceptable for the index build step to take a long time
 if the subsequent searches in the index can be performed very fast. In
 other applications it's required that the index be build as fast as
@@ -342,7 +342,7 @@ convergence. This parameter is required only when the algorithm used is
 centers when performing a kmeans clustering step. The possible values are
 'random' (picks the initial cluster centers randomly), 'gonzales' (picks the
 initial centers using the Gonzales algorithm) and 'kmeanspp' (picks the initial
-centers using thealgorithm suggested in \cite{arthur_kmeanspp_2007}). If this
+centers using the algorithm suggested in \cite{arthur_kmeanspp_2007}). If this
 parameters is omitted, the default value is 'random'.
 
 \item[\texttt{cb\_index}] - this parameter (cluster boundary index) influences the

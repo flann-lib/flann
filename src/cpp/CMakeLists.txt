@@ -87,7 +87,7 @@ INSTALL (
 # )
 
 INSTALL (
-    FILES flann.h constants.h
+    FILES flann.h flann.hpp constants.h util/matrix.h util/common.h util/random.h
     DESTINATION include
 )
 

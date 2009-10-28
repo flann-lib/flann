@@ -10,7 +10,10 @@
 ADD_EXECUTABLE(flann_test flann_test.cc)
 TARGET_LINK_LIBRARIES(flann_test flann)
 
+
+
+
 INSTALL (
-    TARGETS flann_test
+    TARGETS  flann_test
     RUNTIME DESTINATION bin
 )

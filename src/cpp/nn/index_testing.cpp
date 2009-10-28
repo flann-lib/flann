@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <math.h>
+#include <cstring>
 
 
 namespace flann

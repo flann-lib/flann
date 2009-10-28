@@ -46,7 +46,6 @@ def read(filename, dtype = numpy.float32):
         tmp = numpy.save
     except:
         raise FLANNException("Format not supported. You need at least numpy version 1.1")
-    
-    data = numpy.load(filename)    
+    data = numpy.load(filename)
     return data
     
