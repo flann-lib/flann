@@ -462,12 +462,12 @@ class FLANN:
         if self.__curindex == None:
             raise FLANNException("build_index(...) method not called first or current index deleted.")
 
+        qpts = ensure_2d_array(qpts,float32,default_flags) 
+
         npts, dim = self.__curindex_data.shape
 
         if qpts.size == dim:
             qpts.reshape(1, dim)
-
-        qpts = ensure_2d_array(qpts,float32,default_flags) 
 
         nqpts = qpts.shape[0]
 
