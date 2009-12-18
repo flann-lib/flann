@@ -75,7 +75,6 @@ int main(int argc, char** argv)
     float* dists = (float*) malloc(tcount*nn*sizeof(float));
 
 	p.log_level = LOG_INFO;
-	p.log_destination = NULL;
 
     p.algorithm = KDTREE;
     p.checks = 32;

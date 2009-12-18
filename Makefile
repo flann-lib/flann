@@ -3,7 +3,7 @@
 
 flann:
 	-mkdir -p build
-	cd build; cmake ../src; make
+	cd build; cmake ../src; make; make install
 
 flann_clean:
 	-rm -rf build

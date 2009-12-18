@@ -103,7 +103,6 @@ void _find_nearest_neighbors(int nOutArray, mxArray *OutArray[], int nInArray, c
     /* get flann parameters */
     p.log_level = (flann_log_level_t)(int)*(mxGetPr(mxGetField(pStruct, 0,"log_level")));
     p.random_seed = (int)*(mxGetPr(mxGetField(pStruct, 0,"random_seed")));
-    p.log_destination = NULL;
 
     int* result = (int*)malloc(tcount*nn*sizeof(int));
     float* dists = (float*)malloc(tcount*nn*sizeof(float));
@@ -255,7 +254,6 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
     /* get flann parameters */
     p.log_level = (flann_log_level_t)(int)*(mxGetPr(mxGetField(pStruct, 0,"log_level")));
     p.random_seed = (int)*(mxGetPr(mxGetField(pStruct, 0,"random_seed")));
-    p.log_destination = NULL;
 
     float speedup = -1;
 
@@ -361,7 +359,6 @@ void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray
 {
 
     flann_log_verbosity(LOG_ERROR);
-    flann_log_destination(NULL);
 
 	if(nInArray == 0 || !mxIsChar(InArray[0])) {
 		mexErrMsgTxt("Expecting first argument to be one of:\n"

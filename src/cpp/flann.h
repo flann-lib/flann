@@ -66,7 +66,6 @@ struct FLANNParameters {
     float sample_fraction;     // what fraction of the dataset to use for autotuning
 
     flann_log_level_t log_level;             // determines the verbosity of each flann function
-	char* log_destination;     // file where the output should go, NULL for the console
 	long random_seed;          // random seed to use
 };
 
