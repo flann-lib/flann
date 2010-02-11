@@ -4,8 +4,6 @@
  * Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
  * Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
  *
- * THE BSD LICENSE
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -30,9 +28,11 @@
 
 #include <stdexcept>
 #include <vector>
-#include "flann.h"
+
+#include "flann/flann.h"
+#include "flann/common.h"
+
 #include "timer.h"
-#include "common.h"
 #include "logger.h"
 #include "index_testing.h"
 #include "saving.h"
@@ -47,15 +47,13 @@
 
 using namespace std;
 
-
-#include "flann.h"
-
 #ifdef WIN32
 #define EXPORTED extern "C" __declspec(dllexport)
 #else
 #define EXPORTED extern "C"
 #endif
 
+struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { KDTREE, 32, 0.2, 4, 32, 11, CENTERS_RANDOM, -1, 0.01, 0, 0.1, LOG_NONE, 0 };
 
 namespace flann
 {
@@ -84,7 +82,7 @@ NNIndex* KDTreeIndexParams::createIndex(const Matrix<float>& dataset) const
 
 NNIndex* KDTreeMTIndexParams::createIndex(const Matrix<float>& dataset) const
 {
-	return new KDTreeMTIndex(dataset, *this);
+	return new KDTreeMTIndex<float>(dataset, *this);
 }
 
 NNIndex* KMeansIndexParams::createIndex(const Matrix<float>& dataset) const

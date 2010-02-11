@@ -50,7 +50,6 @@
 
 
 
-
 struct FLANNParameters {
 	flann_algorithm_t algorithm; // the algorithm to use (see constants.h)
 
@@ -69,7 +68,7 @@ struct FLANNParameters {
 	long random_seed;          // random seed to use
 };
 
-
+extern struct FLANNParameters DEFAULT_FLANN_PARAMETERS;
 
 typedef void* FLANN_INDEX; // deprecated
 typedef void* flann_index_t;
@@ -266,7 +265,7 @@ LIBSPEC int flann_compute_cluster_centers(float* dataset,
 
 
 #ifdef __cplusplus
-};
+}
 
 
 #include "flann.hpp"

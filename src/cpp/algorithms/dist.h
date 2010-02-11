@@ -34,7 +34,7 @@
 #include <cmath>
 using namespace std;
 
-#include "constants.h"
+#include "flann/constants.h"
 
 namespace flann
 {

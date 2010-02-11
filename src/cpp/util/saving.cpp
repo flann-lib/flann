@@ -28,7 +28,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#include "common.h"
+#include "flann/common.h"
 #include "saving.h"
 #include "nn_index.h"
 #include <cstdio>

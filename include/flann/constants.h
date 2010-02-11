@@ -28,81 +28,42 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef NNINDEX_H
-#define NNINDEX_H
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
-#include "flann/flann.hpp"
-#include "flann/constants.h"
-#include "flann/common.h"
-#include "flann/matrix.h"
 
-#include <string>
+const int FLANN_VERSION = 1.20;
 
-using namespace std;
+/* Nearest neighbor index algorithms */
+enum flann_algorithm_t {
+	LINEAR = 0,
+	KDTREE = 1,
+	KMEANS = 2,
+	COMPOSITE = 3,
+	KDTREE_MT = 4,
+	SAVED = 254,
+	AUTOTUNED = 255
+};
 
-namespace flann
-{
-
-class ResultSet;
-
-/**
-* Nearest-neighbor index base class
-*/
-class NNIndex
-{
-public:
-
-	virtual ~NNIndex() {};
-
-	/**
-	Method responsible with building the index.
-	*/
-	virtual void buildIndex() = 0;
-
-	/**
-	Saves the index to a stream
-	*/
-	virtual void saveIndex(FILE* stream) = 0;
-
-	/**
-	Loads the index from a stream
-	*/
-	virtual void loadIndex(FILE* stream) = 0;
-
-	/**
-	Method that searches for nearest-neighbors
-	*/
-	virtual void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams) = 0;
-
-	/**
-	Number of features in this index.
-	*/
-	virtual int size() const = 0;
-
-	/**
-	The length of each vector in this index.
-	*/
-	virtual int veclen() const = 0;
-
-	/**
-	The amount of memory (in bytes) this index uses.
-	*/
-	virtual int usedMemory() const = 0;
-
-	/**
-	* Algorithm name
-	*/
-	virtual flann_algorithm_t getType() const = 0;
-
-	/**
-	Estimates the search parameters required in order to get a certain precision.
-	If testset is not given it uses cross-validation.
-	*/
-//	virtual Params estimateSearchParams(float precision, Matrix<float>* testset = NULL) = 0;
-
+enum flann_centers_init_t {
+	CENTERS_RANDOM = 0,
+	CENTERS_GONZALES = 1,
+	CENTERS_KMEANSPP = 2
 };
 
 
-}
+enum flann_log_level_t {
+	LOG_NONE = 0,
+	LOG_FATAL = 1,
+	LOG_ERROR = 2,
+	LOG_WARN = 3,
+	LOG_INFO = 4
+};
 
-#endif //NNINDEX_H
+enum flann_distance_t {
+	EUCLIDEAN = 1,
+	MANHATTAN = 2,
+	MINKOWSKI = 3
+};
+
+#endif  // CONSTANTS_H

@@ -32,13 +32,11 @@
 #define DATASET_H
 
 #include <stdio.h>
-#include "random.h"
-
 
 namespace flann
 {
 /**
-* Class implementing a generic rectangular dataset.
+* Class implementing a simple generic rectangular matrix.
 */
 template <typename T>
 class Matrix {
@@ -61,6 +59,9 @@ public:
     long cols;
     T* data;
 
+    Matrix() : ownData(false), rows(0), cols(0), data(NULL)
+    {
+    }
 
     Matrix(long rows_, long cols_, T* data_ = NULL) :
     	 ownData(false), rows(rows_), cols(cols_), data(data_)
@@ -103,58 +104,6 @@ public:
     {
         return data+index*cols;
     }
-
-
-
-    Matrix<T>* sample(long size, bool remove = false)
-    {
-        UniqueRandom rand(rows);
-        Matrix<T> *newSet = new Matrix<T>(size,cols);
-
-        T *src,*dest;
-        for (long i=0;i<size;++i) {
-            long r = rand.next();
-            dest = (*newSet)[i];
-            src = (*this)[r];
-            for (long j=0;j<cols;++j) {
-                dest[j] = src[j];
-            }
-            if (remove) {
-                dest = (*this)[rows-i-1];
-                src = (*this)[r];
-                for (long j=0;j<cols;++j) {
-                    swap(*src,*dest);
-                    src++;
-                    dest++;
-                }
-            }
-        }
-
-        if (remove) {
-            rows -= size;
-        }
-
-        return newSet;
-    }
-
-    Matrix<T>* sample(long size) const
-    {
-        UniqueRandom rand(rows);
-        Matrix<T> *newSet = new Matrix<T>(size,cols);
-
-        T *src,*dest;
-        for (long i=0;i<size;++i) {
-            long r = rand.next();
-            dest = (*newSet)[i];
-            src = (*this)[r];
-            for (long j=0;j<cols;++j) {
-                dest[j] = src[j];
-            }
-        }
-
-        return newSet;
-    }
-
 };
 
 

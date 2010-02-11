@@ -28,16 +28,18 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
+#include <algorithm>
+#include <math.h>
+#include <cstring>
+#include <cassert>
+
+#include "flann/common.h"
+
 #include "index_testing.h"
 #include "result_set.h"
 #include "timer.h"
 #include "logger.h"
 #include "dist.h"
-#include "common.h"
-
-#include <algorithm>
-#include <math.h>
-#include <cstring>
 
 
 namespace flann

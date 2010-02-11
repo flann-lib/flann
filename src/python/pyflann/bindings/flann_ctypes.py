@@ -124,14 +124,32 @@ class FLANNParameters(CustomStructure):
 default_flags = ['C_CONTIGUOUS', 'ALIGNED']
    
 
-root_dir = os.path.abspath(os.path.dirname(__file__))
-    
 FLANN_INDEX = c_void_p
 
-libname = 'libflann'
-if sys.platform == 'win32':
-    libname = 'flann'
-flann = load_library(libname, root_dir)
+
+def load_flann_library():
+
+    root_dir = os.path.abspath(os.path.dirname(__file__))
+    
+    libname = 'libflann'
+    if sys.platform == 'win32':
+        libname = 'flann'
+
+    flann = None
+    loaded = False
+    while (not loaded) and root_dir!="/":
+        try:
+            flann = load_library(libname, os.path.join(root_dir,'lib'))
+            loaded = True
+        except:
+            root_dir = os.path.dirname(root_dir)
+
+    return flann
+
+flann = load_flann_library()
+if flann == None:
+    print 'Cannot load dynamic library. Did you compile FLANN?'
+    sys.exit(1)
 
 
 flann.flann_log_verbosity.restype = None

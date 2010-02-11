@@ -31,7 +31,7 @@
 #ifndef LINEARSEARCH_H
 #define LINEARSEARCH_H
 
-#include "constants.h"
+#include "flann/constants.h"
 #include "nn_index.h"
 
 namespace flann

@@ -45,50 +45,49 @@ set_target_properties(${the_target}
    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/3rdparty/lib"
    )
 
-ELSE()
+else(DEFINED OPENCV_VERSION)
+#-----------------------------------------
 
-INCLUDE_DIRECTORIES(algorithms util nn .)
-
-ADD_SUBDIRECTORY( tests )
+include_directories(${CMAKE_SOURCE_DIR}/include algorithms util nn .)
 
 file(GLOB_RECURSE SOURCES *.cpp)
 #SET(SOURCES flann.cpp util/Random.cpp nn/Testing.cpp algorithms/NNIndex.cpp algorithms/dist.cpp util/Logger.cpp util/Saving.cpp)
 
-ADD_LIBRARY(flann SHARED ${SOURCES})
-ADD_LIBRARY(flann_s STATIC ${SOURCES})
+add_library(flann SHARED ${SOURCES})
+add_library(flann_s STATIC ${SOURCES})
 
-IF(WIN32)
-INSTALL (
-    TARGETS flann
-    RUNTIME DESTINATION matlab 
-)
-INSTALL (
-    TARGETS flann
-    RUNTIME DESTINATION python/pyflann/bindings
-)
-ELSE(WIN32)
-INSTALL (
-    TARGETS flann
-    LIBRARY DESTINATION python/pyflann/bindings
-)
-ENDIF(WIN32)
+if(WIN32)
+    install (
+        TARGETS flann
+        RUNTIME DESTINATION matlab 
+    )
+    install (
+        TARGETS flann
+        RUNTIME DESTINATION python/pyflann/bindings
+    )
+else(WIN32)
+    install (
+        TARGETS flann
+        LIBRARY DESTINATION python/pyflann/bindings
+    )
+endif(WIN32)
 
-INSTALL (
+install (
     TARGETS flann flann_s
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
 )
 
-# INSTALL (
+# install (
 #     TARGETS flann flann_s
 #     ARCHIVE DESTINATION ${PROJECT_SOURCE_DIR}/python
 #     LIBRARY DESTINATION ${PROJECT_SOURCE_DIR}/python
 # )
 
-INSTALL (
+install (
     FILES flann.h flann.hpp constants.h util/matrix.h util/common.h util/random.h
     DESTINATION include
 )
 
-ENDIF()
+endif(DEFINED OPENCV_VERSION)

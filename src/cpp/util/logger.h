@@ -33,8 +33,8 @@
 
 
 #include <cstdio>
-#include "common.h"
-#include "flann.h"
+#include "flann/flann.h"
+#include "flann/common.h"
 
 using namespace std;
 

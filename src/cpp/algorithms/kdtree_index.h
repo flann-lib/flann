@@ -36,11 +36,12 @@
 #include <cassert>
 #include <cstring>
 
+#include "flann/constants.h"
+#include "flann/common.h"
+#include "flann/matrix.h"
+
 #include "heap.h"
-#include "common.h"
-#include "constants.h"
 #include "allocator.h"
-#include "matrix.h"
 #include "result_set.h"
 #include "random.h"
 #include "nn_index.h"
@@ -103,7 +104,6 @@ class KDTreeIndex : public NNIndex
 
     int size_;
     int veclen_;
-
 
     float* mean;
     float* var;
@@ -222,6 +222,8 @@ public:
 	 */
 	void buildIndex()
 	{
+		StartStopTimer t;
+		t.start();
 		/* Construct the randomized trees. */
 		for (int i = 0; i < numTrees; i++) {
 			/* Randomize the order of vectors to allow for unbiased sampling. */
@@ -234,6 +236,9 @@ public:
 			trees[i] = NULL;
 			divideTree(&trees[i], 0, size_ - 1);
 		}
+		t.stop();
+		logger.info("Time to build index: %g", t.value);
+
 	}
 
 

@@ -49,3 +49,4 @@ ZeroIterator<float> zero;
 int flann_minkowski_order;
 
 }
+

@@ -4,8 +4,6 @@
  * Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
  * Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
  *
- * THE BSD LICENSE
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -31,7 +29,7 @@
 #ifndef SAVING_H_
 #define SAVING_H_
 
-#include "constants.h"
+#include "flann/constants.h"
 #include "nn_index.h"
 
 

@@ -4,8 +4,6 @@
  * Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
  * Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
  *
- * THE BSD LICENSE
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -28,42 +26,69 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+
+#ifndef SAMPLING_H_
+#define SAMPLING_H_
 
 
-const int FLANN_VERSION = 1.20;
+#include "flann/matrix.h"
 
-/* Nearest neighbor index algorithms */
-enum flann_algorithm_t {
-	LINEAR = 0,
-	KDTREE = 1,
-	KMEANS = 2,
-	COMPOSITE = 3,
-	KDTREE_MT = 4,
-	SAVED = 254,
-	AUTOTUNED = 255,
-};
+#include "random.h"
 
-enum flann_centers_init_t {
-	CENTERS_RANDOM = 0,
-	CENTERS_GONZALES = 1,
-	CENTERS_KMEANSPP = 2
-};
+namespace flann
+{
 
+template<typename T>
+Matrix<T> random_sample(Matrix<T>& srcMatrix, long size, bool remove = false)
+{
+    UniqueRandom rand(srcMatrix.rows);
+    Matrix<T> newSet(size,srcMatrix.cols);
 
-enum flann_log_level_t {
-	LOG_NONE = 0,
-	LOG_FATAL = 1,
-	LOG_ERROR = 2,
-	LOG_WARN = 3,
-	LOG_INFO = 4
-};
+    T *src,*dest;
+    for (long i=0;i<size;++i) {
+        long r = rand.next();
+        dest = newSet[i];
+        src = srcMatrix[r];
+        for (long j=0;j<srcMatrix.cols;++j) {
+            dest[j] = src[j];
+        }
+        if (remove) {
+            dest = srcMatrix[srcMatrix.rows-i-1];
+            src = srcMatrix[r];
+            for (long j=0;j<srcMatrix.cols;++j) {
+                swap(*src,*dest);
+                src++;
+                dest++;
+            }
+        }
+    }
 
-enum flann_distance_t {
-	EUCLIDEAN = 1,
-	MANHATTAN = 2,
-	MINKOWSKI = 3
-};
+    if (remove) {
+    	srcMatrix.rows -= size;
+    }
 
-#endif  // CONSTANTS_H
+    return newSet;
+}
+
+template<typename T>
+Matrix<T> random_sample(const Matrix<T>& srcMatrix, long size)
+{
+    UniqueRandom rand(srcMatrix.rows);
+    Matrix<T> newSet(size,srcMatrix.cols);
+
+    T *src,*dest;
+    for (long i=0;i<size;++i) {
+        long r = rand.next();
+        dest = newSet[i];
+        src = srcMatrix[r];
+        for (long j=0;j<srcMatrix.cols;++j) {
+            dest[j] = src[j];
+        }
+    }
+
+    return newSet;
+}
+
+} // namespace
+
+#endif /* SAMPLING_H_ */

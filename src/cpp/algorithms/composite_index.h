@@ -31,7 +31,7 @@
 #ifndef COMPOSITETREE_H
 #define COMPOSITETREE_H
 
-#include "constants.h"
+#include "flann/constants.h"
 #include "nn_index.h"
 
 namespace flann

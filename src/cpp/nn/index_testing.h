@@ -31,9 +31,9 @@
 #ifndef TESTING_H
 #define TESTING_H
 
+#include "flann/matrix.h"
 
 #include "nn_index.h"
-#include "matrix.h"
 
 
 using namespace std;

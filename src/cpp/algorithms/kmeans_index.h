@@ -37,11 +37,13 @@
 #include <cassert>
 #include <limits>
 #include <cmath>
-#include "constants.h"
-#include "common.h"
+
+#include "flann/constants.h"
+#include "flann/common.h"
+#include "flann/matrix.h"
+
 #include "heap.h"
 #include "allocator.h"
-#include "matrix.h"
 #include "result_set.h"
 #include "random.h"
 #include "nn_index.h"

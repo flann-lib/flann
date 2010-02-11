@@ -31,7 +31,8 @@
 #ifndef GROUND_TRUTH_H
 #define GROUND_TRUTH_H
 
-#include "matrix.h"
+#include "flann/matrix.h"
+
 #include "dist.h"
 
 namespace flann
