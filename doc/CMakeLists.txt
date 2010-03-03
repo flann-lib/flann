@@ -13,7 +13,6 @@ if (EXISTS ${PDFLATEX_COMPILER} AND EXISTS ${BIBTEX_COMPILER})
         VERBATIM
     )
     
-
     add_custom_command(
         OUTPUT    ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.bbl
         DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.aux
@@ -37,7 +36,7 @@ if (EXISTS ${PDFLATEX_COMPILER} AND EXISTS ${BIBTEX_COMPILER})
         DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.bbl
                   ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.pdf
         COMMAND   ${PDFLATEX_COMPILER}
-        ARGS      -interaction=batchmode ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}
+        ARGS      -interaction=batchmode ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET} 
         COMMENT   "Latex (third pass)"
     )
     # Eventually trigger the whole process

@@ -42,7 +42,7 @@ template<typename T>
 Matrix<T> random_sample(Matrix<T>& srcMatrix, long size, bool remove = false)
 {
     UniqueRandom rand(srcMatrix.rows);
-    Matrix<T> newSet(size,srcMatrix.cols);
+    Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
 
     T *src,*dest;
     for (long i=0;i<size;++i) {
@@ -74,7 +74,7 @@ template<typename T>
 Matrix<T> random_sample(const Matrix<T>& srcMatrix, long size)
 {
     UniqueRandom rand(srcMatrix.rows);
-    Matrix<T> newSet(size,srcMatrix.cols);
+    Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
 
     T *src,*dest;
     for (long i=0;i<size;++i) {

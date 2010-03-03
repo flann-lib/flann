@@ -71,13 +71,13 @@ IndexParams* IndexParams::createFromParameters(const FLANNParameters& p)
 
 NNIndex* LinearIndexParams::createIndex(const Matrix<float>& dataset) const
 {
-	return new LinearIndex(dataset, *this);
+	return new LinearIndex<float>(dataset, *this);
 }
 
 
 NNIndex* KDTreeIndexParams::createIndex(const Matrix<float>& dataset) const
 {
-	return new KDTreeIndex(dataset, *this);
+	return new KDTreeIndex<float>(dataset, *this);
 }
 
 NNIndex* KDTreeMTIndexParams::createIndex(const Matrix<float>& dataset) const
@@ -87,19 +87,19 @@ NNIndex* KDTreeMTIndexParams::createIndex(const Matrix<float>& dataset) const
 
 NNIndex* KMeansIndexParams::createIndex(const Matrix<float>& dataset) const
 {
-	return new KMeansIndex(dataset, *this);
+	return new KMeansIndex<float>(dataset, *this);
 }
 
 
 NNIndex* CompositeIndexParams::createIndex(const Matrix<float>& dataset) const
 {
-	return new CompositeIndex(dataset, *this);
+	return new CompositeIndex<float>(dataset, *this);
 }
 
 
 NNIndex* AutotunedIndexParams::createIndex(const Matrix<float>& dataset) const
 {
-	return new AutotunedIndex(dataset, *this);
+	return new AutotunedIndex<float>(dataset, *this);
 }
 
 
@@ -143,7 +143,6 @@ StaticInit __init;
 Index::Index(const Matrix<float>& dataset, const IndexParams& params)
 {
 	nnIndex = params.createIndex(dataset);
-	nnIndex->buildIndex();
 }
 
 Index::~Index()
@@ -151,6 +150,10 @@ Index::~Index()
 	delete nnIndex;
 }
 
+void Index::buildIndex()
+{
+	nnIndex->buildIndex();
+}
 
 void Index::knnSearch(const Matrix<float>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& searchParams)
 {
@@ -216,7 +219,7 @@ int Index::veclen() const
 
 int hierarchicalClustering(const Matrix<float>& features, Matrix<float>& centers, const KMeansIndexParams& params)
 {
-    KMeansIndex kmeans(features, params);
+    KMeansIndex<float> kmeans(features, params);
 	kmeans.buildIndex();
 
     int clusterNum = kmeans.getClusterCenters(centers);
@@ -268,7 +271,8 @@ EXPORTED flann_index_t flann_build_index(float* dataset, int rows, int cols, flo
 			throw FLANNException("The flann_params argument must be non-null");
 		}
 		IndexParams* params = IndexParams::createFromParameters(*flann_params);
-		Index* index = new Index(Matrix<float>(rows,cols,dataset), *params);
+		Index* index = new Index(Matrix<float>(dataset,rows,cols), *params);
+		index->buildIndex();
 
 		return index;
 	}
@@ -302,7 +306,7 @@ EXPORTED int flann_save_index(flann_index_t index_ptr, char* filename)
 EXPORTED flann_index_t flann_load_index(char* filename, float* dataset, int rows, int cols)
 {
 	try {
-		Index* index = new Index(Matrix<float>(rows,cols,dataset), SavedIndexParams(filename));
+		Index* index = new Index(Matrix<float>(dataset,rows,cols), SavedIndexParams(filename));
 		return index;
 	}
 	catch(runtime_error& e) {
@@ -319,10 +323,11 @@ EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, f
 		init_flann_parameters(flann_params);
 
 		IndexParams* params = IndexParams::createFromParameters(*flann_params);
-		Index* index = new Index(Matrix<float>(rows,cols,dataset), *params);
-		Matrix<int> m_indices(tcount, nn, result);
-		Matrix<float> m_dists(tcount, nn, dists);
-		index->knnSearch(Matrix<float>(tcount, index->veclen(), testset),
+		Index* index = new Index(Matrix<float>(dataset,rows,cols), *params);
+		index->buildIndex();
+		Matrix<int> m_indices(result,tcount, nn);
+		Matrix<float> m_dists(dists,tcount, nn);
+		index->knnSearch(Matrix<float>(testset, tcount, index->veclen()),
 						m_indices,
 						m_dists, nn, SearchParams(flann_params->checks) );
 		return 0;
@@ -345,9 +350,9 @@ EXPORTED int flann_find_nearest_neighbors_index(flann_index_t index_ptr, float* 
 		}
 		Index* index = (Index*) index_ptr;
 
-		Matrix<int> m_indices(tcount, nn, result);
-		Matrix<float> m_dists(tcount, nn, dists);
-		index->knnSearch(Matrix<float>(tcount, index->veclen(), testset),
+		Matrix<int> m_indices(result,tcount, nn);
+		Matrix<float> m_dists(dists, tcount, nn);
+		index->knnSearch(Matrix<float>(testset, tcount, index->veclen()),
 						m_indices,
 						m_dists, nn, SearchParams(checks) );
 
@@ -377,9 +382,9 @@ EXPORTED int flann_radius_search(flann_index_t index_ptr,
 		}
 		Index* index = (Index*) index_ptr;
 
-		Matrix<int> m_indices(1, max_nn, indices);
-		Matrix<float> m_dists(1, max_nn, dists);
-		int count = index->radiusSearch(Matrix<float>(1, index->veclen(), query),
+		Matrix<int> m_indices(indices, 1, max_nn);
+		Matrix<float> m_dists(dists, 1, max_nn);
+		int count = index->radiusSearch(Matrix<float>(query, 1, index->veclen()),
 						m_indices,
 						m_dists, radius, SearchParams(checks) );
 
@@ -418,9 +423,9 @@ EXPORTED int flann_compute_cluster_centers(float* dataset, int rows, int cols, i
 	try {
 		init_flann_parameters(flann_params);
 
-        MatrixPtr inputData = new Matrix<float>(rows,cols,dataset);
+        MatrixPtr inputData = new Matrix<float>(dataset,rows,cols);
         KMeansIndexParams params(flann_params->branching, flann_params->iterations, flann_params->centers_init, flann_params->cb_index);
-		Matrix<float> centers(clusters, cols, result);
+		Matrix<float> centers(result,clusters, cols);
         int clusterNum = hierarchicalClustering(*inputData,centers, params);
 
 		return clusterNum;
@@ -436,8 +441,8 @@ EXPORTED void compute_ground_truth_float(float* dataset, int dshape[], float* te
     assert(dshape[1]==tshape[1]);
     assert(tshape[0]==mshape[0]);
 
-    Matrix<int> _match(mshape[0], mshape[1], match);
-    compute_ground_truth(Matrix<float>(dshape[0], dshape[1], dataset), Matrix<float>(tshape[0], tshape[1], testset), _match, skip);
+    Matrix<int> _match(match, mshape[0], mshape[1]);
+    compute_ground_truth(Matrix<float>(dataset, dshape[0], dshape[1]), Matrix<float>(testset,tshape[0], tshape[1]), _match, skip);
 }
 
 
@@ -454,8 +459,8 @@ EXPORTED float test_with_precision(flann_index_t index_ptr, float* dataset, int 
 
         IndexPtr index = (IndexPtr)index_ptr;
         NNIndex* nn_index = index->index();
-        return test_index_precision(*nn_index, Matrix<float>(dshape[0], dshape[1],dataset), Matrix<float>(tshape[0], tshape[1], testset),
-                Matrix<int>(mshape[0],mshape[1],matches), precision, *checks, nn, skip);
+        return test_index_precision(*nn_index, Matrix<float>(dataset, dshape[0], dshape[1]), Matrix<float>(testset, tshape[0], tshape[1]),
+                Matrix<int>(matches, mshape[0],mshape[1]), precision, *checks, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
         return -1;
@@ -474,8 +479,8 @@ EXPORTED float test_with_checks(flann_index_t index_ptr, float* dataset, int dsh
         }
         IndexPtr index = (IndexPtr)index_ptr;
         NNIndex* nn_index = index->index();
-        return test_index_checks(*nn_index, Matrix<float>(dshape[0], dshape[1],dataset), Matrix<float>(tshape[0], tshape[1], testset),
-                Matrix<int>(mshape[0],mshape[1],matches), checks, *precision, nn, skip);
+        return test_index_checks(*nn_index, Matrix<float>(dataset, dshape[0], dshape[1]), Matrix<float>(testset, tshape[0], tshape[1]),
+                Matrix<int>(matches, mshape[0],mshape[1]), checks, *precision, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
         return -1;

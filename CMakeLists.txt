@@ -24,7 +24,8 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 
 add_custom_target(tests)
@@ -44,7 +45,7 @@ macro(flann_add_gtest exe)
                     COMMAND ${exe}
                     ARGS --gtest_print_time
                     DEPENDS ${exe}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
                     VERBATIM
                     COMMENT "Runnint gtest test(s) ${exe}")
     # add dependency to 'test' target
@@ -54,13 +55,14 @@ endmacro(flann_add_gtest)
 
 
 macro(flann_add_pyunit file)
-
+    # find test file
     set(_file_name _file_name-NOTFOUND)
     find_file(_file_name ${file} ${CMAKE_CURRENT_SOURCE_DIR})
     if(NOT _file_name)
         message(FATAL_ERROR "Can't find pyunit file \"${file}\"")
     endif(NOT _file_name)
 
+    # find python
     find_package(PythonInterp REQUIRED)
     
     # add target for running test
@@ -68,12 +70,28 @@ macro(flann_add_pyunit file)
     add_custom_target(pyunit_${_testname}
                     COMMAND ${PYTHON_EXECUTABLE} ${_file_name}
                     DEPENDS ${_file_name}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
                     VERBATIM
                     COMMENT "Running pyunit test(s) ${file}" )
     # add dependency to 'test' target
     add_dependencies(test pyunit_${_testname})
 endmacro(flann_add_pyunit)
+
+
+macro(flann_download_test_data _name _md5)
+    string(REPLACE "/" "_" _dataset_name dataset_${_name})
+    
+    # find python
+    find_package(PythonInterp REQUIRED)
+    
+    add_custom_target(${_dataset_name}
+        COMMAND ${PROJECT_SOURCE_DIR}/bin/download_checkmd5.py http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/${_name} ${TEST_OUTPUT_PATH}/${_name} ${_md5}
+        VERBATIM)
+
+    # Also make sure that downloads are done before we run any tests
+    add_dependencies(tests ${_dataset_name})
+
+endmacro(flann_download_test_data)
 
 # require proper c++
 add_definitions( "-Wall -ansi -pedantic" )
@@ -81,3 +99,4 @@ add_definitions( "-Wall -ansi -pedantic" )
 
 add_subdirectory( src )
 add_subdirectory( test )
+add_subdirectory( doc )

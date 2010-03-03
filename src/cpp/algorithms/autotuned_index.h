@@ -41,6 +41,7 @@
 namespace flann
 {
 
+template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
 class AutotunedIndex : public NNIndex
 {
 	NNIndex* bestIndex;
@@ -49,14 +50,14 @@ class AutotunedIndex : public NNIndex
 
     Matrix<float> sampledDataset;
     Matrix<float> testDataset;
-    Matrix<int>* gt_matches;
+    Matrix<int> gt_matches;
 
     float speedup;
 
 	/**
 	 * The dataset used by this index
 	 */
-    const Matrix<float> dataset;
+    const Matrix<ELEM_TYPE> dataset;
 
     /**
      * Index parameters
@@ -76,7 +77,7 @@ class AutotunedIndex : public NNIndex
 
 public:
 
-    AutotunedIndex(const Matrix<float>& inputData, const AutotunedIndexParams& params_ = AutotunedIndexParams() ) :
+    AutotunedIndex(const Matrix<ELEM_TYPE>& inputData, const AutotunedIndexParams& params_ = AutotunedIndexParams() ) :
     	dataset(inputData), params(params_)
 	{
         size_ = dataset.rows;
@@ -191,7 +192,7 @@ private:
         const int nn = 1;
 
         logger.info("KMeansTree using params: max_iterations=%d, branching=%d\n", kmeans_params.iterations, kmeans_params.branching);
-        KMeansIndex kmeans(sampledDataset, kmeans_params);
+        KMeansIndex<float> kmeans(sampledDataset, kmeans_params);
         // measure index build time
         t.start();
         kmeans.buildIndex();
@@ -199,7 +200,7 @@ private:
         float buildTime = t.value;
 
         // measure search time
-        float searchTime = test_index_precision(kmeans, sampledDataset, testDataset, *gt_matches, params.target_precision, checks, nn);;
+        float searchTime = test_index_precision(kmeans, sampledDataset, testDataset, gt_matches, params.target_precision, checks, nn);;
 
         float datasetMemory = sampledDataset.rows*sampledDataset.cols*sizeof(float);
         cost.memoryCost = (kmeans.usedMemory()+datasetMemory)/datasetMemory;
@@ -217,7 +218,7 @@ private:
         const int nn = 1;
 
         logger.info("KDTree using params: trees=%d\n",kdtree_params.trees);
-        KDTreeIndex kdtree(sampledDataset, kdtree_params);
+        KDTreeIndex<float> kdtree(sampledDataset, kdtree_params);
 
         t.start();
         kdtree.buildIndex();
@@ -225,7 +226,7 @@ private:
         float buildTime = t.value;
 
         //measure search time
-        float searchTime = test_index_precision(kdtree, sampledDataset, testDataset, *gt_matches, params.target_precision, checks, nn);
+        float searchTime = test_index_precision(kdtree, sampledDataset, testDataset, gt_matches, params.target_precision, checks, nn);
 
         float datasetMemory = sampledDataset.rows*sampledDataset.cols*sizeof(float);
         cost.memoryCost = (kdtree.usedMemory()+datasetMemory)/datasetMemory;
@@ -458,10 +459,10 @@ private:
 
         // We compute the ground truth using linear search
         logger.info("Computing ground truth... \n");
-        gt_matches = new Matrix<int>(testDataset.rows, 1);
+        gt_matches = Matrix<int>(new int[testDataset.rows],testDataset.rows, 1);
         StartStopTimer t;
         t.start();
-        compute_ground_truth(sampledDataset, testDataset, *gt_matches, 0);
+        compute_ground_truth(sampledDataset, testDataset, gt_matches, 0);
         t.stop();
         float bestCost = t.value;
         IndexParams* bestParams = new LinearIndexParams();
@@ -484,8 +485,9 @@ private:
             bestCost = kdtreeCost.first.totalCost;
         }
 
-        // free the memory used by the datasets we sampled
-        delete gt_matches;
+        gt_matches.free();
+        sampledDataset.free();
+        testDataset.free();
 
         return bestParams;
     }
@@ -513,7 +515,7 @@ private:
             logger.info("Computing ground truth\n");
 
             // we need to compute the ground truth first
-            Matrix<int> gt_matches(testDataset.rows,1);
+            Matrix<int> gt_matches(new int[testDataset.rows],testDataset.rows,1);
             StartStopTimer t;
             t.start();
             compute_ground_truth(dataset, testDataset, gt_matches,1);
@@ -528,7 +530,7 @@ private:
             if (bestIndex->getType() == KMEANS) {
 
                 logger.info("KMeans algorithm, estimating cluster border factor\n");
-                KMeansIndex* kmeans = (KMeansIndex*)bestIndex;
+                KMeansIndex<float>* kmeans = (KMeansIndex<float>*)bestIndex;
                 float bestSearchTime = -1;
                 float best_cb_index = -1;
                 int best_checks = -1;
@@ -557,6 +559,8 @@ private:
             searchParams.checks = checks;
 
             speedup = linear/searchTime;
+
+            gt_matches.free();
         }
 
         return speedup;

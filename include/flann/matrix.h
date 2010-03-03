@@ -33,63 +33,39 @@
 
 #include <stdio.h>
 
-namespace flann
-{
+namespace flann {
+
+
 /**
-* Class implementing a simple generic rectangular matrix.
+* Class that implements a simple rectangular matrix stored in a memory buffer and
+* provides convenient matrix-like access using the [] operators.
 */
 template <typename T>
 class Matrix {
-
-    /**
-    * Flag showing if the class owns its data storage.
-    */
-    bool ownData;
-
-    void shallow_copy(const Matrix& rhs)
-    {
-        data = rhs.data;
-        rows = rhs.rows;
-        cols = rhs.cols;
-        ownData = false;
-    }
-
 public:
     long rows;
     long cols;
     T* data;
 
-    Matrix() : ownData(false), rows(0), cols(0), data(NULL)
+    Matrix() : rows(0), cols(0), data(NULL)
     {
     }
 
-    Matrix(long rows_, long cols_, T* data_ = NULL) :
-    	 ownData(false), rows(rows_), cols(cols_), data(data_)
+    Matrix(T* data_, long rows_, long cols_) :
+    	 rows(rows_), cols(cols_), data(data_)
 	{
-        if (data_==NULL) {
-		    data = new T[rows*cols];
-            ownData = true;
-        }
 	}
 
-    Matrix(const Matrix& d)
+    /**
+     * Convenience function for deallocating the storage data.
+     */
+    void free()
     {
-        shallow_copy(d);
-    }
-
-    const Matrix& operator=(const Matrix& rhs)
-    {
-        if (this!=&rhs) {
-            shallow_copy(rhs);
-        }
-        return *this;
+    	delete[] data;
     }
 
 	~Matrix()
 	{
-        if (ownData) {
-		  delete[] data;
-        }
 	}
 
     /**

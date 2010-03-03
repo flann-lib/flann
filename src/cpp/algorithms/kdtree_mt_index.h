@@ -56,17 +56,7 @@ namespace flann
 {
 
 
-template <typename ELEM_TYPE>
-struct DistType
-{
-	typedef ELEM_TYPE type;
-};
 
-template <>
-struct DistType<char>
-{
-	typedef float type;
-};
 
 /**
  * Randomized kd-tree index
@@ -74,11 +64,9 @@ struct DistType<char>
  * Contains the k-d trees and other information for indexing a set of points
  * for nearest-neighbor matching.
  */
-template <typename ELEM_TYPE>
+template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
 class KDTreeMTIndex : public NNIndex
 {
-
-	typedef typename DistType<ELEM_TYPE>::type DIST_TYPE;
 
 	enum {
 		/**
@@ -529,6 +517,8 @@ private:
 			searchLevel(result, vec, branch.node, branch.mindistsq, checkCount, maxCheck, heap, checked);
 		}
 
+		delete heap;
+
 		assert(result.full());
 	}
 
@@ -577,7 +567,7 @@ private:
 			adding exceeds their value.
 		*/
 
-		double new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
+		DIST_TYPE new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
 //		if (2 * checkCount < maxCheck  ||  !result.full()) {
 		if (new_distsq < result.worstDist() ||  !result.full()) {
 			heap->insert( BranchSt::make_branch(otherChild, new_distsq) );
@@ -620,7 +610,7 @@ private:
 
 		/* Call recursively to search next level down. */
 		searchLevelExact(result, vec, bestChild, mindistsq);
-		double new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
+		DIST_TYPE new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
 		searchLevelExact(result, vec, otherChild, new_distsq);
 	}
 

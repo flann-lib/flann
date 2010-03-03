@@ -37,23 +37,24 @@
 namespace flann
 {
 
+template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
 class CompositeIndex : public NNIndex
 {
-	KMeansIndex* kmeans;
-	KDTreeIndex* kdtree;
+	KMeansIndex<ELEM_TYPE, DIST_TYPE>* kmeans;
+	KDTreeIndex<ELEM_TYPE, DIST_TYPE>* kdtree;
 
     const Matrix<float> dataset;
 
 
 public:
 
-	CompositeIndex(const Matrix<float>& inputData, const CompositeIndexParams& params = CompositeIndexParams() ) : dataset(inputData)
+	CompositeIndex(const Matrix<ELEM_TYPE>& inputData, const CompositeIndexParams& params = CompositeIndexParams() ) : dataset(inputData)
 	{
 		KDTreeIndexParams kdtree_params(params.trees);
 		KMeansIndexParams kmeans_params(params.branching, params.iterations, params.centers_init, params.cb_index);
 
-		kdtree = new KDTreeIndex(inputData,kdtree_params);
-		kmeans = new KMeansIndex(inputData,kmeans_params);
+		kdtree = new KDTreeIndex<ELEM_TYPE, DIST_TYPE>(inputData,kdtree_params);
+		kmeans = new KMeansIndex<ELEM_TYPE, DIST_TYPE>(inputData,kmeans_params);
 
 	}
 
@@ -106,7 +107,7 @@ public:
 
     }
 
-	void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
 	{
 		kmeans->findNeighbors(result,vec,searchParams);
 		kdtree->findNeighbors(result,vec,searchParams);

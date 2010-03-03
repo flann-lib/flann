@@ -37,13 +37,14 @@
 namespace flann
 {
 
+template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
 class LinearIndex : public NNIndex {
 
-	const Matrix<float> dataset;
+	const Matrix<ELEM_TYPE> dataset;
 
 public:
 
-	LinearIndex(const Matrix<float>& inputData, const LinearIndexParams& params = LinearIndexParams() ) : dataset(inputData)
+	LinearIndex(const Matrix<ELEM_TYPE>& inputData, const LinearIndexParams& params = LinearIndexParams() ) : dataset(inputData)
 	{
 	}
 
@@ -85,7 +86,7 @@ public:
 		/* nothing to do here for linear search */
     }
 
-	void findNeighbors(ResultSet& resultSet, const float* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet& resultSet, const ELEM_TYPE* vec, const SearchParams& searchParams)
 	{
 		for (int i=0;i<dataset.rows;++i) {
 			resultSet.addPoint(dataset[i],i);

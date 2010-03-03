@@ -1,26 +1,29 @@
 .PHONY: flann tests test doc all clean
 
-
 flann:
 	@-mkdir -p build
-	@cd build && cmake .. && make all
-
-tests:
-	@-mkdir -p build
-	@cd build && cmake .. && make tests
+	@cd build && cmake .. && make $@
 
 test:
 	@-mkdir -p build
-	@cd build && cmake .. && make test
+	@cd build && cmake .. && make $@
+
+tests:
+	@-mkdir -p build
+	@cd build && cmake .. && make $@
 
 doc:
 	@-mkdir -p build
-	@cd build && cmake .. && make doc
+	@cd build && cmake .. && make $@
+
+all:
+	@-mkdir -p build
+	@cd build && cmake .. && make all doc
 
 clean:
 	-cd build && make clean
 	-rm -rf build
 
-
-all: flann doc
-
+%:
+	@-mkdir -p build
+	@cd build && cmake .. && make $@

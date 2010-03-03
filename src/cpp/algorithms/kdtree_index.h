@@ -60,6 +60,7 @@ namespace flann
  * Contains the k-d trees and other information for indexing a set of points
  * for nearest-neighbor matching.
  */
+template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
 class KDTreeIndex : public NNIndex
 {
 
@@ -100,13 +101,13 @@ class KDTreeIndex : public NNIndex
 	/**
 	 * The dataset used by this index
 	 */
-	const Matrix<float> dataset;
+	const Matrix<ELEM_TYPE> dataset;
 
     int size_;
     int veclen_;
 
-    float* mean;
-    float* var;
+    DIST_TYPE* mean;
+    DIST_TYPE* var;
 
 
 	/*--------------------- Internal Data Structures --------------------------*/
@@ -127,7 +128,7 @@ class KDTreeIndex : public NNIndex
 		/**
 		 * The value used for subdivision.
 		 */
-		float divval;
+		DIST_TYPE divval;
 		/**
 		 * The child nodes.
 		 */
@@ -198,8 +199,8 @@ public:
 			vind[i] = i;
 		}
 
-        mean = new float[veclen_];
-        var = new float[veclen_];
+        mean = new DIST_TYPE[veclen_];
+        var = new DIST_TYPE[veclen_];
 	}
 
 	/**
@@ -410,8 +411,8 @@ private:
 	 */
 	void chooseDivision(Tree node, int first, int last)
 	{
-        memset(mean,0,veclen_*sizeof(float));
-        memset(var,0,veclen_*sizeof(float));
+        memset(mean,0,veclen_*sizeof(DIST_TYPE));
+        memset(var,0,veclen_*sizeof(DIST_TYPE));
 
 		/* Compute mean values.  Only the first SAMPLE_MEAN values need to be
 			sampled to get a good estimate.
@@ -419,7 +420,7 @@ private:
 		int end = min(first + SAMPLE_MEAN, last);
 		int count = end - first + 1;
 		for (int j = first; j <= end; ++j) {
-			float* v = dataset[vind[j]];
+			ELEM_TYPE* v = dataset[vind[j]];
             for (int k=0; k<veclen_; ++k) {
                 mean[k] += v[k];
             }
@@ -430,9 +431,9 @@ private:
 
 		/* Compute variances (no need to divide by count). */
 		for (int j = first; j <= end; ++j) {
-			float* v = dataset[vind[j]];
+			ELEM_TYPE* v = dataset[vind[j]];
             for (int k=0; k<veclen_; ++k) {
-                float dist = v[k] - mean[k];
+                DIST_TYPE dist = v[k] - mean[k];
                 var[k] += dist * dist;
             }
 		}
@@ -489,7 +490,7 @@ private:
 		int j = last;
 		while (i <= j) {
 			int ind = vind[i];
-			float val = dataset[ind][node->divfeat];
+			ELEM_TYPE val = dataset[ind][node->divfeat];
 			if (val < node->divval) {
 				++i;
 			} else {
@@ -516,7 +517,7 @@ private:
 	 * Performs an exact nearest neighbor search. The exact search performs a full
 	 * traversal of the tree.
 	 */
-	void getExactNeighbors(ResultSet& result, const float* vec)
+	void getExactNeighbors(ResultSet& result, const ELEM_TYPE* vec)
 	{
 		checkID -= 1;  /* Set a different unique ID for each search. */
 
@@ -534,7 +535,7 @@ private:
 	 * because the tree traversal is abandoned after a given number of descends in
 	 * the tree.
 	 */
-	void getNeighbors(ResultSet& result, const float* vec, int maxCheck)
+	void getNeighbors(ResultSet& result, const ELEM_TYPE* vec, int maxCheck)
 	{
 		int i;
 		BranchSt branch;
@@ -562,15 +563,12 @@ private:
 	 *  higher levels, all exemplars below this level must have a distance of
 	 *  at least "mindistsq".
 	*/
-	void searchLevel(ResultSet& result, const float* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
+	void searchLevel(ResultSet& result, const ELEM_TYPE* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
 	{
 		if (result.worstDist()<mindistsq) {
 //			printf("Ignoring branch, too far\n");
 			return;
 		}
-
-		float val, diff;
-		Tree bestChild, otherChild;
 
 		/* If this is a leaf node, then do check and return. */
 		if (node->child1 == NULL  &&  node->child2 == NULL) {
@@ -590,10 +588,10 @@ private:
 		}
 
 		/* Which child branch should be taken first? */
-		val = vec[node->divfeat];
-		diff = val - node->divval;
-		bestChild = (diff < 0) ? node->child1 : node->child2;
-		otherChild = (diff < 0) ? node->child2 : node->child1;
+		ELEM_TYPE val = vec[node->divfeat];
+		DIST_TYPE diff = val - node->divval;
+		Tree bestChild = (diff < 0) ? node->child1 : node->child2;
+		Tree otherChild = (diff < 0) ? node->child2 : node->child1;
 
 		/* Create a branch record for the branch not taken.  Add distance
 			of this feature boundary (we don't attempt to correct for any
@@ -603,7 +601,7 @@ private:
 			adding exceeds their value.
 		*/
 
-		double new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
+		DIST_TYPE new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
 //		if (2 * checkCount < maxCheck  ||  !result.full()) {
 		if (new_distsq < result.worstDist() ||  !result.full()) {
 			heap->insert( BranchSt::make_branch(otherChild, new_distsq) );
@@ -622,9 +620,6 @@ private:
 			return;
 		}
 
-		float val, diff;
-		Tree bestChild, otherChild;
-
 		/* If this is a leaf node, then do check and return. */
 		if (node->child1 == NULL  &&  node->child2 == NULL) {
 
@@ -641,15 +636,15 @@ private:
 		}
 
 		/* Which child branch should be taken first? */
-		val = vec[node->divfeat];
-		diff = val - node->divval;
-		bestChild = (diff < 0) ? node->child1 : node->child2;
-		otherChild = (diff < 0) ? node->child2 : node->child1;
+		ELEM_TYPE val = vec[node->divfeat];
+		DIST_TYPE diff = val - node->divval;
+		Tree bestChild = (diff < 0) ? node->child1 : node->child2;
+		Tree otherChild = (diff < 0) ? node->child2 : node->child1;
 
 
 		/* Call recursively to search next level down. */
 		searchLevelExact(result, vec, bestChild, mindistsq);
-		double new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
+		DIST_TYPE new_distsq = flann_dist(&val, &val+1, &node->divval, mindistsq);
 		searchLevelExact(result, vec, otherChild, new_distsq);
 	}
 

@@ -38,9 +38,25 @@
 
 namespace flann
 {
+
+template <typename ELEM_TYPE>
+struct DistType
+{
+	typedef ELEM_TYPE type;
+};
+
+template <>
+struct DistType<char>
+{
+	typedef float type;
+};
+
+
 class FLANNException : public std::runtime_error {
  public:
    FLANNException(const char* message) : std::runtime_error(message) { }
+
+   FLANNException(const std::string& message) : std::runtime_error(message) { }
  };
 
 }

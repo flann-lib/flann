@@ -227,11 +227,11 @@ namespace {
 
     typedef void (*centersAlgFunction)(int, const Matrix<float>&, int*, int, float**, int&);
     /**
-    * Associative array with functions to use for choosing the cluster centers.
+    * Associative array with functions to use for choosing the cluster centres.
     */
     map<flann_centers_init_t,centersAlgFunction> centerAlgs;
     /**
-    * Static initializer. Performs initialization befor the program starts.
+    * Static initialiser. Performs initialisation before the program starts.
     */
 
     void centers_init()
@@ -255,8 +255,9 @@ namespace {
  * Hierarchical kmeans index
  *
  * Contains a tree constructed through a hierarchical kmeans clustering
- * and other information for indexing a set of points for nearest-neighbor matching.
+ * and other information for indexing a set of points for nearest-neighbour matching.
  */
+template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
 class KMeansIndex : public NNIndex
 {
 
@@ -274,7 +275,7 @@ class KMeansIndex : public NNIndex
      /**
      * Cluster border index. This is used in the tree search phase when determining
      * the closest cluster to explore next. A zero value takes into account only
-     * the cluster centers, a value greater then zero also take into account the size
+     * the cluster centres, a value greater then zero also take into account the size
      * of the cluster.
      */
     float cb_index;
@@ -282,7 +283,7 @@ class KMeansIndex : public NNIndex
 	/**
 	 * The dataset used by this index
 	 */
-    const Matrix<float> dataset;
+    const Matrix<ELEM_TYPE> dataset;
 
     /**
     * Number of features in the dataset.
@@ -302,19 +303,19 @@ class KMeansIndex : public NNIndex
 		/**
 		 * The cluster center.
 		 */
-		float* pivot;
+		DIST_TYPE* pivot;
 		/**
 		 * The cluster radius.
 		 */
-		float radius;
+		DIST_TYPE radius;
 		/**
 		 * The cluster mean radius.
 		 */
-		float mean_radius;
+		DIST_TYPE mean_radius;
 		/**
 		 * The cluster variance.
 		 */
-		float variance;
+		DIST_TYPE variance;
 		/**
 		 * The cluster size (number of points in the cluster)
 		 */
@@ -396,7 +397,7 @@ public:
 	 * 		inputData = dataset with the input features
 	 * 		params = parameters passed to the hierarchical k-means algorithm
 	 */
-	KMeansIndex(const Matrix<float>& inputData, const KMeansIndexParams& params = KMeansIndexParams() )
+	KMeansIndex(const Matrix<ELEM_TYPE>& inputData, const KMeansIndexParams& params = KMeansIndexParams() )
 		: dataset(inputData), root(NULL), indices(NULL)
 	{
 		memoryCounter = 0;
@@ -538,7 +539,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     searchParams = parameters that influence the search algorithm (checks, cb_index)
      */
-    void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
     {
         int maxChecks = searchParams.checks;
 
@@ -569,7 +570,7 @@ public:
      *     numClusters = number of clusters to have in the clustering computed
      * Returns: number of cluster centers
      */
-    int getClusterCenters(Matrix<float>& centers)
+    int getClusterCenters(Matrix<DIST_TYPE>& centers)
     {
         int numClusters = centers.rows;
         if (numClusters<1) {
@@ -585,7 +586,7 @@ public:
 
 
         for (int i=0;i<clusterCount;++i) {
-            float* center = clusters[i]->pivot;
+            DIST_TYPE* center = clusters[i]->pivot;
             for (int j=0;j<veclen_;++j) {
                 centers[i][j] = center[j];
             }
@@ -627,7 +628,7 @@ private:
     {
     	node = pool.allocate<KMeansNodeSt>();
     	load_value(stream, *node);
-    	node->pivot = new float[veclen_];
+    	node->pivot = new DIST_TYPE[veclen_];
     	load_value(stream, *(node->pivot), veclen_);
     	if (node->childs==NULL) {
     		int indices_offset;
@@ -665,10 +666,10 @@ private:
 	 */
 	void computeNodeStatistics(KMeansNode node, int* indices, int indices_length) {
 
-		float radius = 0;
-		float variance = 0;
-		float* mean = new float[veclen_];
-		memoryCounter += veclen_*sizeof(float);
+		DIST_TYPE radius = 0;
+		DIST_TYPE variance = 0;
+		DIST_TYPE* mean = new DIST_TYPE[veclen_];
+		memoryCounter += veclen_*sizeof(DIST_TYPE);
 
         memset(mean,0,veclen_*sizeof(float));
 
@@ -685,7 +686,7 @@ private:
 		variance /= size_;
 		variance -= flann_dist(mean,mean+veclen_,zero);
 
-		float tmp = 0;
+		DIST_TYPE tmp = 0;
 		for (int i=0;i<indices_length;++i) {
 			tmp = flann_dist(mean, mean + veclen_, dataset[indices[i]]);
 			if (tmp>radius) {
@@ -734,7 +735,7 @@ private:
 		}
 
 
-        Matrix<double> dcenters(branching,veclen_);
+        Matrix<double> dcenters(new double[branching*veclen_],branching,veclen_);
         for (int i=0; i<centers_length; ++i) {
             for (int k=0; k<veclen_; ++k) {
                 dcenters[i][k] = double(initial_centers[i][k]);
@@ -883,6 +884,7 @@ private:
 			start=end;
 		}
 
+		delete[] dcenters.data;
 		delete[] centers;
 		delete[] radiuses;
 		delete[] count;
@@ -904,16 +906,16 @@ private:
      */
 
 
-	void findNN(KMeansNode node, ResultSet& result, const float* vec, int& checks, int maxChecks)
+	void findNN(KMeansNode node, ResultSet& result, const ELEM_TYPE* vec, int& checks, int maxChecks)
 	{
 		// Ignore those clusters that are too far away
 		{
-			float bsq = flann_dist(vec, vec+veclen_, node->pivot);
-			float rsq = node->radius;
-			float wsq = result.worstDist();
+			DIST_TYPE bsq = flann_dist(vec, vec+veclen_, node->pivot);
+			DIST_TYPE rsq = node->radius;
+			DIST_TYPE wsq = result.worstDist();
 
-			float val = bsq-rsq-wsq;
-			float val2 = val*val-4*rsq*wsq;
+			DIST_TYPE val = bsq-rsq-wsq;
+			DIST_TYPE val2 = val*val-4*rsq*wsq;
 
 	 		//if (val>0) {
 			if (val>0 && val2>0) {

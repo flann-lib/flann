@@ -249,6 +249,8 @@ public:
 
 	~Index();
 
+	void buildIndex();
+
 	void knnSearch(const Matrix<float>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& params);
 
 	int radiusSearch(const Matrix<float>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& params);

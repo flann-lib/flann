@@ -46,7 +46,7 @@ namespace flann
 class ResultSet;
 
 /**
-* Nearest-neighbor index base class
+* Nearest-neighbour index base class
 */
 class NNIndex
 {
