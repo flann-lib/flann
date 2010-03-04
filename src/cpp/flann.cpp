@@ -182,7 +182,7 @@ int Index::radiusSearch(const Matrix<float>& query, Matrix<int>& indices, Matrix
 	// TODO: optimize here
 	int* neighbors = resultSet.getNeighbors();
 	float* distances = resultSet.getDistances();
-	int count_nn = min((long)resultSet.size(), indices.cols);
+	int count_nn = min(resultSet.size(), indices.cols);
 
 	assert (dists.cols>=count_nn);
 

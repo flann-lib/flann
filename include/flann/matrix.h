@@ -33,7 +33,10 @@
 
 #include <stdio.h>
 
+#include "constants.h"
+
 namespace flann {
+
 
 
 /**
@@ -43,8 +46,8 @@ namespace flann {
 template <typename T>
 class Matrix {
 public:
-    long rows;
-    long cols;
+    size_t rows;
+    size_t cols;
     T* data;
 
     Matrix() : rows(0), cols(0), data(NULL)
@@ -71,16 +74,43 @@ public:
     /**
     * Operator that return a (pointer to a) row of the data.
     */
-    T* operator[](long index)
+    T* operator[](size_t index)
     {
         return data+index*cols;
     }
 
-    T* operator[](long index) const
+    T* operator[](size_t index) const
     {
         return data+index*cols;
     }
 };
+
+
+class UntypedMatrix
+{
+public:
+	size_t rows;
+	size_t cols;
+    void* data;
+    flann_datatype_t type;
+
+    UntypedMatrix(void* data_, long rows_, long cols_) :
+    	 rows(rows_), cols(cols_), data(data_)
+	{
+	}
+
+    ~UntypedMatrix()
+    {
+    }
+
+
+    template<typename T>
+    Matrix<T> as()
+    {
+    	return Matrix<T>((T*)data, rows, cols);
+    }
+};
+
 
 
 }

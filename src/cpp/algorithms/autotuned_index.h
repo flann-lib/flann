@@ -502,7 +502,7 @@ private:
     float estimateSearchParams(SearchParams& searchParams)
     {
         const int nn = 1;
-        const long SAMPLE_COUNT = 1000;
+        const size_t SAMPLE_COUNT = 1000;
 
         assert(bestIndex!=NULL);   // must have a valid index
 

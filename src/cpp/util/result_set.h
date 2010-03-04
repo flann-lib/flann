@@ -92,7 +92,7 @@ public:
 
 	virtual float* getDistances() = 0;
 
-	virtual int size() const = 0;
+	virtual size_t size() const = 0;
 
 	virtual bool full() const = 0;
 
@@ -144,7 +144,7 @@ public:
         return dists;
     }
 
-    int size() const
+    size_t size() const
     {
     	return count;
     }
@@ -279,7 +279,7 @@ public:
         return dists;
     }
 
-    int size() const
+    size_t size() const
     {
     	return items.size();
     }

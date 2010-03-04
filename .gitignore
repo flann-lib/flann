@@ -1,6 +1,5 @@
 *~
 *.save
 .*
-test
 tmp
 *.pyc

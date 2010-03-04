@@ -51,11 +51,18 @@ PredType get_hdf5_type()
 	throw FLANNException("Unsupported type for IO operations");
 }
 
-template<>
-PredType get_hdf5_type<float>()
-{
-	return PredType::NATIVE_FLOAT;
-}
+template<> PredType get_hdf5_type<char>() { return PredType::NATIVE_CHAR; }
+template<> PredType get_hdf5_type<unsigned char>() { return PredType::NATIVE_UCHAR; }
+template<> PredType get_hdf5_type<short int>() { return PredType::NATIVE_SHORT; }
+template<> PredType get_hdf5_type<unsigned short int>() { return PredType::NATIVE_USHORT; }
+template<> PredType get_hdf5_type<int>() { return PredType::NATIVE_INT; }
+template<> PredType get_hdf5_type<unsigned int>() { return PredType::NATIVE_UINT; }
+template<> PredType get_hdf5_type<long>() { return PredType::NATIVE_LONG; }
+template<> PredType get_hdf5_type<unsigned long>() { return PredType::NATIVE_ULONG; }
+template<> PredType get_hdf5_type<float>() { return PredType::NATIVE_FLOAT; }
+template<> PredType get_hdf5_type<double>() { return PredType::NATIVE_DOUBLE; }
+template<> PredType get_hdf5_type<long double>() { return PredType::NATIVE_LDOUBLE; }
+
 }
 
 
@@ -88,17 +95,10 @@ void save_to_file(const flann::Matrix<T>& flann_dataset, const std::string& file
 		DataSpace dataspace( 2, dimsf );
 
 		/*
-		 * Define datatype for the data in the file.
-		 * We will store little endian INT numbers.
-		 */
-		IntType datatype( get_hdf5_type<T>() );
-		datatype.setOrder( H5T_ORDER_LE );
-
-		/*
 		 * Create a new dataset within the file using defined dataspace and
 		 * datatype and default dataset creation properties.
 		 */
-		DataSet dataset = file.createDataSet( name, datatype, dataspace );
+		DataSet dataset = file.createDataSet( name, get_hdf5_type<T>(), dataspace );
 
 		/*
 		 * Write the data to the dataset using default memory space, file
@@ -112,7 +112,9 @@ void save_to_file(const flann::Matrix<T>& flann_dataset, const std::string& file
 	}
 }
 
-void load_from_file(flann::Matrix<float>& flann_dataset, const std::string& filename, const std::string& name = "dataset")
+
+template<typename T>
+void load_from_file(flann::Matrix<T>& flann_dataset, const std::string& filename, const std::string& name = "dataset")
 {
 	try
 	{
@@ -122,11 +124,10 @@ void load_from_file(flann::Matrix<float>& flann_dataset, const std::string& file
 		DataSet dataset = file.openDataSet( name );
 
 		/*
-		 * Get the class of the datatype that is used by the dataset.
+		 * Check the type used by the dataset matches
 		 */
-		H5T_class_t type_class = dataset.getTypeClass();
-		if( type_class != H5T_FLOAT ) {
-			throw FLANNException("Can only read float datasets for now");
+		if (!(dataset.getDataType()==get_hdf5_type<T>())) {
+			throw FLANNException("Dataset matrix type does not match the type to be read.");
 		}
 
 		/*
@@ -143,9 +144,9 @@ void load_from_file(flann::Matrix<float>& flann_dataset, const std::string& file
 
 		flann_dataset.rows = dims_out[0];
 		flann_dataset.cols = dims_out[1];
-		flann_dataset.data = new float[flann_dataset.rows*flann_dataset.cols];
+		flann_dataset.data = new T[flann_dataset.rows*flann_dataset.cols];
 
-		dataset.read( flann_dataset.data, PredType::NATIVE_FLOAT );
+		dataset.read( flann_dataset.data, get_hdf5_type<T>() );
 	}  // end of try block
 	catch( H5::Exception &error )
 	{

@@ -139,11 +139,11 @@ def load_flann_library():
     loaded = False
     while (not loaded) and root_dir!="/":
         try:
-            print "Trying ",os.path.join(root_dir,'lib')
+           # print "Trying ",os.path.join(root_dir,'lib')
             flann = load_library(libname, os.path.join(root_dir,'lib'))
             loaded = True
         except Exception as e:
-            print e
+           # print e
             root_dir = os.path.dirname(root_dir)
 
     return flann
