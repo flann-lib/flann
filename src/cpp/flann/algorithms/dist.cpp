@@ -28,81 +28,25 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef NNINDEX_H
-#define NNINDEX_H
-
-#include "flann/flann.hpp"
-#include "flann/constants.h"
-#include "flann/common.h"
-#include "flann/matrix.h"
-
-#include <string>
-
-using namespace std;
+#include "flann/algorithms/dist.h"
 
 namespace flann
 {
 
-class ResultSet;
+/** Global variable indicating the distance metric
+ * to be used.
+ */
+flann_distance_t flann_distance_type = EUCLIDEAN;
 
 /**
-* Nearest-neighbour index base class
-*/
-class NNIndex
-{
-public:
+ * Zero iterator that emulates a zero feature.
+ */
+ZeroIterator<float> zero;
 
-	virtual ~NNIndex() {};
-
-	/**
-	Method responsible with building the index.
-	*/
-	virtual void buildIndex() = 0;
-
-	/**
-	Saves the index to a stream
-	*/
-	virtual void saveIndex(FILE* stream) = 0;
-
-	/**
-	Loads the index from a stream
-	*/
-	virtual void loadIndex(FILE* stream) = 0;
-
-	/**
-	Method that searches for nearest-neighbors
-	*/
-	virtual void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams) = 0;
-
-	/**
-	Number of features in this index.
-	*/
-	virtual int size() const = 0;
-
-	/**
-	The length of each vector in this index.
-	*/
-	virtual int veclen() const = 0;
-
-	/**
-	The amount of memory (in bytes) this index uses.
-	*/
-	virtual int usedMemory() const = 0;
-
-	/**
-	* Algorithm name
-	*/
-	virtual flann_algorithm_t getType() const = 0;
-
-	/**
-	Estimates the search parameters required in order to get a certain precision.
-	If testset is not given it uses cross-validation.
-	*/
-//	virtual Params estimateSearchParams(float precision, Matrix<float>* testset = NULL) = 0;
-
-};
-
+/**
+ * Order of Minkowski distance to use.
+ */
+int flann_minkowski_order;
 
 }
 
-#endif //NNINDEX_H

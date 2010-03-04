@@ -32,11 +32,10 @@
 #define AUTOTUNEDINDEX_H_
 
 #include "flann/constants.h"
-
-#include "nn_index.h"
-#include "ground_truth.h"
-#include "index_testing.h"
-#include "sampling.h"
+#include "flann/algorithms/nn_index.h"
+#include "flann/nn/ground_truth.h"
+#include "flann/nn/index_testing.h"
+#include "flann/util/sampling.h"
 
 namespace flann
 {

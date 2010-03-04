@@ -28,102 +28,65 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef COMPOSITETREE_H
-#define COMPOSITETREE_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
+
+#include <cstdio>
 #include "flann/constants.h"
-#include "nn_index.h"
+#include "flann/util/common.h"
+
+using namespace std;
 
 namespace flann
 {
 
-template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
-class CompositeIndex : public NNIndex
+class Logger
 {
-	KMeansIndex<ELEM_TYPE, DIST_TYPE>* kmeans;
-	KDTreeIndex<ELEM_TYPE, DIST_TYPE>* kdtree;
-
-    const Matrix<float> dataset;
-
+    FILE* stream;
+    int logLevel;
 
 public:
 
-	CompositeIndex(const Matrix<ELEM_TYPE>& inputData, const CompositeIndexParams& params = CompositeIndexParams() ) : dataset(inputData)
-	{
-		KDTreeIndexParams kdtree_params(params.trees);
-		KMeansIndexParams kmeans_params(params.branching, params.iterations, params.centers_init, params.cb_index);
+    Logger() : stream(stdout), logLevel(LOG_WARN) {};
 
-		kdtree = new KDTreeIndex<ELEM_TYPE, DIST_TYPE>(inputData,kdtree_params);
-		kmeans = new KMeansIndex<ELEM_TYPE, DIST_TYPE>(inputData,kmeans_params);
-
-	}
-
-	virtual ~CompositeIndex()
-	{
-		delete kdtree;
-		delete kmeans;
-	}
-
-
-    flann_algorithm_t getType() const
+    ~Logger()
     {
-        return COMPOSITE;
+        if (stream!=NULL && stream!=stdout) {
+            fclose(stream);
+        }
     }
 
-
-	int size() const
-	{
-		return dataset.rows;
-	}
-
-	int veclen() const
-	{
-		return dataset.cols;
-	}
-
-
-	int usedMemory() const
-	{
-		return kmeans->usedMemory()+kdtree->usedMemory();
-	}
-
-	void buildIndex()
-	{
-		logger.info("Building kmeans tree...\n");
-		kmeans->buildIndex();
-		logger.info("Building kdtree tree...\n");
-		kdtree->buildIndex();
-	}
-
-
-    void saveIndex(FILE* stream)
+    void setDestination(const char* name)
     {
-
+        if (name==NULL) {
+            stream = stdout;
+        }
+        else {
+            stream = fopen(name,"w");
+            if (stream == NULL) {
+                stream = stdout;
+            }
+        }
     }
 
+    void setLevel(int level) { logLevel = level; }
 
-    void loadIndex(FILE* stream)
-    {
+    int log(int level, const char* fmt, ...);
 
-    }
+    int log(int level, const char* fmt, va_list arglist);
 
-	void findNeighbors(ResultSet& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
-	{
-		kmeans->findNeighbors(result,vec,searchParams);
-		kdtree->findNeighbors(result,vec,searchParams);
-	}
+    int fatal(const char* fmt, ...);
 
+    int error(const char* fmt, ...);
 
-//    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
-//    {
-//        Params params;
-//
-//        return params;
-//    }
+    int warn(const char* fmt, ...);
 
-
+    int info(const char* fmt, ...);
 };
+
+extern Logger logger;
 
 }
 
-#endif //COMPOSITETREE_H
+#endif //LOGGER_H

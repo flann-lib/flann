@@ -17,7 +17,7 @@ set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
 
 #set the C/C++ include path to the "include" directory
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 
 # Set the build type.  Options are:
 #  Debug          : w/ debug symbols, w/o optimization

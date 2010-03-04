@@ -28,65 +28,82 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef NNINDEX_H
+#define NNINDEX_H
 
+#include <string>
 
-#include <cstdio>
-#include "flann/flann.h"
-#include "flann/common.h"
+#include "flann/constants.h"
+#include "flann/util/common.h"
+#include "flann/util/matrix.h"
 
 using namespace std;
 
 namespace flann
 {
 
-class Logger
-{
-    FILE* stream;
-    int logLevel;
+class ResultSet;
 
+class SearchParams;
+
+/**
+* Nearest-neighbour index base class
+*/
+class NNIndex
+{
 public:
 
-    Logger() : stream(stdout), logLevel(LOG_WARN) {};
+	virtual ~NNIndex() {};
 
-    ~Logger()
-    {
-        if (stream!=NULL && stream!=stdout) {
-            fclose(stream);
-        }
-    }
+	/**
+	Method responsible with building the index.
+	*/
+	virtual void buildIndex() = 0;
 
-    void setDestination(const char* name)
-    {
-        if (name==NULL) {
-            stream = stdout;
-        }
-        else {
-            stream = fopen(name,"w");
-            if (stream == NULL) {
-                stream = stdout;
-            }
-        }
-    }
+	/**
+	Saves the index to a stream
+	*/
+	virtual void saveIndex(FILE* stream) = 0;
 
-    void setLevel(int level) { logLevel = level; }
+	/**
+	Loads the index from a stream
+	*/
+	virtual void loadIndex(FILE* stream) = 0;
 
-    int log(int level, const char* fmt, ...);
+	/**
+	Method that searches for nearest-neighbors
+	*/
+	virtual void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams) = 0;
 
-    int log(int level, const char* fmt, va_list arglist);
+	/**
+	Number of features in this index.
+	*/
+	virtual int size() const = 0;
 
-    int fatal(const char* fmt, ...);
+	/**
+	The length of each vector in this index.
+	*/
+	virtual int veclen() const = 0;
 
-    int error(const char* fmt, ...);
+	/**
+	The amount of memory (in bytes) this index uses.
+	*/
+	virtual int usedMemory() const = 0;
 
-    int warn(const char* fmt, ...);
+	/**
+	* Algorithm name
+	*/
+	virtual flann_algorithm_t getType() const = 0;
 
-    int info(const char* fmt, ...);
+	/**
+	Estimates the search parameters required in order to get a certain precision.
+	If testset is not given it uses cross-validation.
+	*/
+//	virtual Params estimateSearchParams(float precision, Matrix<float>* testset = NULL) = 0;
+
 };
 
-extern Logger logger;
 
 }
 
-#endif //LOGGER_H
+#endif //NNINDEX_H

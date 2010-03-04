@@ -4,8 +4,6 @@
  * Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
  * Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
  *
- * THE BSD LICENSE
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -21,54 +19,67 @@
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE NNIndexGOODS OR SERVICES; LOSS OF USE,
  * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#include "flann/common.h"
-#include "saving.h"
-#include "nn_index.h"
-#include <cstdio>
-#include <cstring>
+#ifndef SAVING_H_
+#define SAVING_H_
+
+#include "flann/constants.h"
+#include "flann/algorithms/nn_index.h"
+
 
 namespace flann
 {
 
-const char FLANN_SIGNATURE[] = "FLANN_INDEX";
-
-void save_header(FILE* stream, const NNIndex& index)
+/**
+ * Structure representing the index header.
+ */
+struct IndexHeader
 {
-	IndexHeader header;
-	memset(header.signature, 0 , sizeof(header.signature));
-	strcpy(header.signature, FLANN_SIGNATURE);
-	header.flann_version = FLANN_VERSION;
-	header.index_type = index.getType();
-	header.rows = index.size();
-	header.cols = index.veclen();
+	char signature[16];
+	int flann_version;
+	flann_algorithm_t index_type;
+	int rows;
+	int cols;
+};
 
-	std::fwrite(&header, sizeof(header),1,stream);
-}
+/**
+ * Saves index header to stream
+ *
+ * @param stream - Stream to save to
+ * @param index - The index to save
+ */
+void save_header(FILE* stream, const NNIndex& index);
 
 
+/**
+ *
+ * @param stream - Stream to load from
+ * @return Index header
+ */
+IndexHeader load_header(FILE* stream);
 
-IndexHeader load_header(FILE* stream)
+
+template<typename T>
+void save_value(FILE* stream, const T& value, int count = 1)
 {
-	IndexHeader header;
-	int read_size = fread(&header,sizeof(header),1,stream);
-
-	if (read_size!=1) {
-		throw FLANNException("Invalid index file, cannot read");
-	}
-
-	if (strcmp(header.signature,FLANN_SIGNATURE)!=0) {
-		throw FLANNException("Invalid index file, wrong signature");
-	}
-
-	return header;
-
+	fwrite(&value, sizeof(value),count, stream);
 }
 
+
+template<typename T>
+void load_value(FILE* stream, T& value, int count = 1)
+{
+	int read_cnt = fread(&value, sizeof(value),count, stream);
+	if (read_cnt!=count) {
+		throw FLANNException("Cannot read from file");
+	}
 }
+}
+
+#endif /* SAVING_H_ */

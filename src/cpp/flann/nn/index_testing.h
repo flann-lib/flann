@@ -34,11 +34,10 @@
 #include <cstring>
 #include <cassert>
 
-#include "flann/matrix.h"
-
-#include "nn_index.h"
-#include "result_set.h"
-#include "logger.h"
+#include "flann/util/matrix.h"
+#include "flann/algorithms/nn_index.h"
+#include "flann/util/result_set.h"
+#include "flann/util/logger.h"
 
 
 using namespace std;
@@ -57,7 +56,7 @@ void search_for_neighbors(NNIndex& index, const Matrix<ELEM_TYPE>& testset, Matr
     KNNResultSet resultSet(nn+skip);
 
 
-    for (int i = 0; i < testset.rows; i++) {
+    for (size_t i = 0; i < testset.rows; i++) {
         float* target = testset[i];
         resultSet.init(target, testset.cols);
 

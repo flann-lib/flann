@@ -48,10 +48,9 @@ set_target_properties(${the_target}
 else(DEFINED OPENCV_VERSION)
 #-----------------------------------------
 
-include_directories(${CMAKE_SOURCE_DIR}/include algorithms util nn .)
+#include_directories(${CMAKE_SOURCE_DIR}/include algorithms util nn .)
 
 file(GLOB_RECURSE SOURCES *.cpp)
-#SET(SOURCES flann.cpp util/Random.cpp nn/Testing.cpp algorithms/NNIndex.cpp algorithms/dist.cpp util/Logger.cpp util/Saving.cpp)
 
 add_library(flann SHARED ${SOURCES})
 add_library(flann_s STATIC ${SOURCES})

@@ -35,7 +35,7 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
-#include "dist.h"
+#include "flann/algorithms/dist.h"
 
 using namespace std;
 

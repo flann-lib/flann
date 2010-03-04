@@ -28,34 +28,29 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef KDTREE_MT_H
-#define KDTREE_MT_H
+#ifndef KDTREE_H
+#define KDTREE_H
 
 #include <algorithm>
 #include <map>
 #include <cassert>
 #include <cstring>
 
-// public imports
 #include "flann/constants.h"
-#include "flann/common.h"
-#include "flann/matrix.h"
-
-// internal imports
-#include "heap.h"
-#include "allocator.h"
-#include "result_set.h"
-#include "random.h"
-#include "nn_index.h"
-#include "saving.h"
+#include "flann/algorithms/nn_index.h"
+#include "flann/util/common.h"
+#include "flann/util/matrix.h"
+#include "flann/util/result_set.h"
+#include "flann/util/heap.h"
+#include "flann/util/allocator.h"
+#include "flann/util/random.h"
+#include "flann/util/saving.h"
 
 using namespace std;
 
 
 namespace flann
 {
-
-
 
 
 /**
@@ -65,7 +60,7 @@ namespace flann
  * for nearest-neighbor matching.
  */
 template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
-class KDTreeMTIndex : public NNIndex
+class KDTreeIndex : public NNIndex
 {
 
 	enum {
@@ -92,10 +87,15 @@ class KDTreeMTIndex : public NNIndex
 	int numTrees;
 
 	/**
-	 *  Array of indices to vectors in the dataset.
+	 *  Array of indices to vectors in the dataset.  When doing lookup,
+	 *  this is used instead to mark checkID.
 	 */
 	int* vind;
 
+	/**
+	 * An unique ID for each lookup.
+	 */
+	int checkID;
 
 	/**
 	 * The dataset used by this index
@@ -104,7 +104,6 @@ class KDTreeMTIndex : public NNIndex
 
     int size_;
     int veclen_;
-
 
     DIST_TYPE* mean;
     DIST_TYPE* var;
@@ -137,11 +136,16 @@ class KDTreeMTIndex : public NNIndex
 	typedef TreeSt* Tree;
 
     /**
-     * Array of k-d trees used to find neighbours.
+     * Array of k-d trees used to find neighbors.
      */
     Tree* trees;
     typedef BranchStruct<Tree> BranchSt;
     typedef BranchSt* Branch;
+    /**
+     * Priority queue storing intermediate branches in the best-bin-first search
+     */
+    Heap<BranchSt>* heap;
+
 
 	/**
 	 * Pooled memory allocator.
@@ -168,12 +172,12 @@ public:
 	 * 		inputData = dataset with the input features
 	 * 		params = parameters passed to the kdtree algorithm
 	 */
-	KDTreeMTIndex(const Matrix<ELEM_TYPE>& inputData, const KDTreeMTIndexParams& params = KDTreeMTIndexParams() ) : dataset(inputData)
+	KDTreeIndex(const Matrix<float>& inputData, const KDTreeIndexParams& params = KDTreeIndexParams() ) : dataset(inputData)
 	{
         size_ = dataset.rows;
         veclen_ = dataset.cols;
-
         numTrees = params.trees;
+
         trees = new Tree[numTrees];
 
 		// get the parameters
@@ -185,6 +189,8 @@ public:
 //        	numTrees = -1;
 //        	trees = NULL;
 //        }
+		heap = new Heap<BranchSt>(size_);
+		checkID = -1000;
 
 		// Create a permutable array of indices to the input vectors.
 		vind = new int[size_];
@@ -199,13 +205,14 @@ public:
 	/**
 	 * Standard destructor
 	 */
-	~KDTreeMTIndex()
+	~KDTreeIndex()
 	{
 		delete[] vind;
 		if (trees!=NULL) {
 			delete[] trees;
 		}
-		delete[] mean;
+		delete heap;
+        delete[] mean;
         delete[] var;
 	}
 
@@ -215,6 +222,8 @@ public:
 	 */
 	void buildIndex()
 	{
+		StartStopTimer t;
+		t.start();
 		/* Construct the randomized trees. */
 		for (int i = 0; i < numTrees; i++) {
 			/* Randomize the order of vectors to allow for unbiased sampling. */
@@ -227,6 +236,9 @@ public:
 			trees[i] = NULL;
 			divideTree(&trees[i], 0, size_ - 1);
 		}
+		t.stop();
+		logger.info("Time to build index: %g", t.value);
+
 	}
 
 
@@ -259,6 +271,7 @@ public:
     		load_tree(stream,trees[i]);
     	}
     }
+
 
 
     /**
@@ -297,7 +310,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams)
     {
 
         int maxChecks = searchParams.checks;
@@ -308,6 +321,29 @@ public:
             getNeighbors(result, vec, maxChecks);
         }
     }
+
+
+	void continueSearch(ResultSet& result, float* vec, int maxCheck)
+	{
+		BranchSt branch;
+
+		int checkCount = 0;
+
+		/* Keep searching other branches from heap until finished. */
+		while ( heap->popMin(branch) && (checkCount < maxCheck || !result.full() )) {
+			searchLevel(result, vec, branch.node,branch.mindistsq, checkCount, maxCheck);
+		}
+
+		assert(result.full());
+	}
+
+
+//    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
+//    {
+//        Params params;
+//
+//        return params;
+//    }
 
 
 private:
@@ -411,7 +447,7 @@ private:
 	 * Select the top RAND_DIM largest values from v and return the index of
 	 * one of these selected at random.
 	 */
-	int selectDivision(DIST_TYPE* v)
+	int selectDivision(float* v)
 	{
 		int num = 0;
 		int topind[RAND_DIM];
@@ -482,7 +518,7 @@ private:
 	 */
 	void getExactNeighbors(ResultSet& result, const ELEM_TYPE* vec)
 	{
-//		checkID -= 1;  /* Set a different unique ID for each search. */
+		checkID -= 1;  /* Set a different unique ID for each search. */
 
 		if (numTrees > 1) {
             fprintf(stderr,"It doesn't make any sense to use more than one tree for exact search");
@@ -504,20 +540,18 @@ private:
 		BranchSt branch;
 
 		int checkCount = 0;
-		Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
-		vector<bool> checked(size_,false);
+		heap->clear();
+		checkID -= 1;  /* Set a different unique ID for each search. */
 
 		/* Search once through each tree down to root. */
 		for (i = 0; i < numTrees; ++i) {
-			searchLevel(result, vec, trees[i], 0.0, checkCount, maxCheck, heap, checked);
+			searchLevel(result, vec, trees[i], 0.0, checkCount, maxCheck);
 		}
 
 		/* Keep searching other branches from heap until finished. */
 		while ( heap->popMin(branch) && (checkCount < maxCheck || !result.full() )) {
-			searchLevel(result, vec, branch.node, branch.mindistsq, checkCount, maxCheck, heap, checked);
+			searchLevel(result, vec, branch.node,branch.mindistsq, checkCount, maxCheck);
 		}
-
-		delete heap;
 
 		assert(result.full());
 	}
@@ -528,8 +562,7 @@ private:
 	 *  higher levels, all exemplars below this level must have a distance of
 	 *  at least "mindistsq".
 	*/
-	void searchLevel(ResultSet& result, const ELEM_TYPE* vec, Tree node, float mindistsq, int& checkCount, int maxCheck,
-			Heap<BranchSt>* heap, vector<bool>& checked)
+	void searchLevel(ResultSet& result, const ELEM_TYPE* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
 	{
 		if (result.worstDist()<mindistsq) {
 //			printf("Ignoring branch, too far\n");
@@ -543,11 +576,11 @@ private:
 				Once a vector is checked, we set its location in vind to the
 				current checkID.
 			*/
-			if (checked[node->divfeat] == true || checkCount>=maxCheck) {
+			if (vind[node->divfeat] == checkID || checkCount>=maxCheck) {
 				if (result.full()) return;
 			}
             checkCount++;
-			checked[node->divfeat] = true;
+			vind[node->divfeat] = checkID;
 
 			result.addPoint(dataset[node->divfeat],node->divfeat);
 			return;
@@ -574,13 +607,13 @@ private:
 		}
 
 		/* Call recursively to search next level down. */
-		searchLevel(result, vec, bestChild, mindistsq, checkCount, maxCheck, heap, checked);
+		searchLevel(result, vec, bestChild, mindistsq, checkCount, maxCheck);
 	}
 
 	/**
 	 * Performs an exact search in the tree starting from a node.
 	 */
-	void searchLevelExact(ResultSet& result, const ELEM_TYPE* vec, Tree node, float mindistsq)
+	void searchLevelExact(ResultSet& result, const float* vec, Tree node, float mindistsq)
 	{
 		if (mindistsq>result.worstDist()) {
 			return;
@@ -593,9 +626,9 @@ private:
 				Once a vector is checked, we set its location in vind to the
 				current checkID.
 			*/
-//			if (vind[node->divfeat] == checkID)
-//				return;
-//			vind[node->divfeat] = checkID;
+			if (vind[node->divfeat] == checkID)
+				return;
+			vind[node->divfeat] = checkID;
 
 			result.addPoint(dataset[node->divfeat],node->divfeat);
 			return;

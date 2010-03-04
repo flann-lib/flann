@@ -33,21 +33,31 @@
 
 #include <vector>
 #include <string>
+#include <cassert>
 
-#include "constants.h"
-#include "common.h"
-#include "matrix.h"
+#include "flann/flann.h"
+#include "flann/constants.h"
+#include "flann/util/common.h"
+#include "flann/util/matrix.h"
+#include "algorithms/nn_index.h"
+#include "flann/util/result_set.h"
+#include "flann/nn/index_testing.h"
 
-#include "flann.h"
+#include "flann/algorithms/kdtree_index.h"
+#include "flann/algorithms/kdtree_mt_index.h"
+#include "flann/algorithms/kmeans_index.h"
+#include "flann/algorithms/composite_index.h"
+#include "flann/algorithms/linear_index.h"
+#include "flann/algorithms/autotuned_index.h"
 
 namespace flann
 {
 
-class NNIndex;
-
 class IndexFactory
 {
 public:
+	virtual flann_algorithm_t getIndexType() const = 0;
+
 	virtual NNIndex* createIndex(const Matrix<float>& dataset) const = 0;
 };
 
@@ -59,6 +69,9 @@ public:
 
 	static IndexParams* createFromParameters(const FLANNParameters& p);
 
+	virtual flann_algorithm_t getIndexType() const = 0;
+	virtual NNIndex* createIndex(const Matrix<float>& dataset) const = 0;
+
 	virtual void fromParameters(const FLANNParameters& p) {};
 	virtual void toParameters(FLANNParameters& p) { };
 };
@@ -66,7 +79,7 @@ public:
 struct LinearIndexParams : public IndexParams {
 	LinearIndexParams() {};
 
-	NNIndex* createIndex(const Matrix<float>& dataset) const;
+	flann_algorithm_t getIndexType() { return LINEAR; }
 };
 
 
@@ -75,6 +88,8 @@ struct KDTreeIndexParams : public IndexParams {
 	KDTreeIndexParams(int trees_ = 4) : trees(trees_) {};
 
 	int trees;                 // number of randomized trees to use (for kdtree)
+
+	flann_algorithm_t getIndexType() const { return KDTREE; }
 
 	NNIndex* createIndex(const Matrix<float>& dataset) const;
 
@@ -96,6 +111,8 @@ struct KDTreeMTIndexParams : public IndexParams {
 	KDTreeMTIndexParams(int trees_ = 4) : trees(trees_) {};
 
 	int trees;                 // number of randomized trees to use (for kdtree)
+
+	flann_algorithm_t getIndexType() const { return KDTREE_MT; }
 
 	NNIndex* createIndex(const Matrix<float>& dataset) const;
 
@@ -126,6 +143,7 @@ struct KMeansIndexParams : public IndexParams {
 	flann_centers_init_t centers_init;          // algorithm used for picking the initial cluster centers for kmeans tree
     float cb_index;            // cluster boundary index. Used when searching the kmeans tree
 
+	flann_algorithm_t getIndexType() const { return KMEANS; }
 
     NNIndex* createIndex(const Matrix<float>& dataset) const;
 
@@ -164,6 +182,8 @@ struct CompositeIndexParams : public IndexParams {
 	flann_centers_init_t centers_init;          // algorithm used for picking the initial cluster centers for kmeans tree
     float cb_index;            // cluster boundary index. Used when searching the kmeans tree
 
+	flann_algorithm_t getIndexType() const { return COMPOSITE; }
+
     NNIndex* createIndex(const Matrix<float>& dataset) const;
 
 	void fromParameters(const FLANNParameters& p)
@@ -200,6 +220,8 @@ struct AutotunedIndexParams : public IndexParams {
 	float memory_weight;       // index memory weighting factor
     float sample_fraction;     // what fraction of the dataset to use for autotuning
 
+	flann_algorithm_t getIndexType() const { return AUTOTUNED; }
+
     NNIndex* createIndex(const Matrix<float>& dataset) const;
 
 	void fromParameters(const FLANNParameters& p)
@@ -229,6 +251,8 @@ struct SavedIndexParams : public IndexParams {
 
 	std::string filename;		// filename of the stored index
 
+	flann_algorithm_t getIndexType() const { return SAVED; }
+
 	NNIndex* createIndex(const Matrix<float>& dataset) const;
 };
 
@@ -241,19 +265,20 @@ struct SearchParams {
 };
 
 
+template<typename T>
 class Index {
 	NNIndex* nnIndex;
 
 public:
-	Index(const Matrix<float>& features, const IndexParams& params);
+	Index(const Matrix<T>& features, const IndexParams& params);
 
 	~Index();
 
 	void buildIndex();
 
-	void knnSearch(const Matrix<float>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& params);
+	void knnSearch(const Matrix<T>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& params);
 
-	int radiusSearch(const Matrix<float>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& params);
+	int radiusSearch(const Matrix<T>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& params);
 
 	void save(std::string filename);
 
@@ -263,6 +288,117 @@ public:
 
 	NNIndex* index() { return nnIndex; }
 };
+
+
+template<typename T>
+Index<T>::Index(const Matrix<T>& dataset, const IndexParams& params)
+{
+	flann_algorithm_t index_type = params.getIndexType();
+
+	switch (index_type) {
+	case LINEAR:
+		nnIndex = new LinearIndex<T>(dataset, params);
+		break;
+	case KDTREE:
+		nnIndex = new KDTreeIndex<T>(dataset, params);
+		break;
+	case KDTREE_MT:
+		nnIndex = new KDTreeMTIndex<T>(dataset, params);
+		break;
+	case KMEANS:
+		nnIndex = new KMeansIndex<T>(dataset, params);
+		break;
+	case COMPOSITE:
+		nnIndex = new CompositeIndex<T>(dataset, params);
+		break;
+	case AUTOTUNED:
+		nnIndex = new AutotunedIndex<T>(dataset, params);
+		break;
+	case SAVED:
+		nnIndex = new SavedIndexParams<T>(dataset, params);
+		break;
+	default:
+		throw FLANNException("Unknown index type");
+	}
+}
+
+template<typename T>
+Index<T>::~Index()
+{
+	delete nnIndex;
+}
+
+template<typename T>
+void Index<T>::buildIndex()
+{
+	nnIndex->buildIndex();
+}
+
+template<typename T>
+void Index<T>::knnSearch(const Matrix<T>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& searchParams)
+{
+	assert(queries.cols==nnIndex->veclen());
+	assert(indices.rows>=queries.rows);
+	assert(dists.rows>=queries.rows);
+	assert(indices.cols>=knn);
+	assert(dists.cols>=knn);
+
+    search_for_neighbors(*nnIndex, queries, indices, dists, searchParams);
+}
+
+template<typename T>
+int Index<T>::radiusSearch(const Matrix<T>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& searchParams)
+{
+	if (query.rows!=1) {
+		printf("I can only search one feature at a time for range search\n");
+		return -1;
+	}
+	assert(query.cols==nnIndex->veclen());
+
+	RadiusResultSet resultSet(radius);
+	resultSet.init(query.data, query.cols);
+	nnIndex->findNeighbors(resultSet,query.data,searchParams);
+
+	// TODO: optimize here
+	int* neighbors = resultSet.getNeighbors();
+	float* distances = resultSet.getDistances();
+	int count_nn = min(resultSet.size(), indices.cols);
+
+	assert (dists.cols>=count_nn);
+
+	for (int i=0;i<count_nn;++i) {
+		indices[0][i] = neighbors[i];
+		dists[0][i] = distances[i];
+	}
+
+	return count_nn;
+}
+
+
+template<typename T>
+void Index<T>::save(string filename)
+{
+	FILE* fout = fopen(filename.c_str(), "wb");
+	if (fout==NULL) {
+		throw FLANNException("Cannot open file");
+	}
+	nnIndex->saveIndex(fout);
+	fclose(fout);
+}
+
+
+template<typename T>
+int Index<T>::size() const
+{
+	return nnIndex->size();
+}
+
+template<typename T>
+int Index<T>::veclen() const
+{
+	return nnIndex->veclen();
+}
+
 
 
 int hierarchicalClustering(const Matrix<float>& features, Matrix<float>& centers, const KMeansIndexParams& params);

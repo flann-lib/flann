@@ -31,11 +31,11 @@
 #include <algorithm>
 #include <math.h>
 
-#include "flann/common.h"
-
-#include "index_testing.h"
-#include "timer.h"
-#include "dist.h"
+#include "flann/flann.h"
+#include "flann/algorithms/dist.h"
+#include "flann/util/common.h"
+#include "flann/nn/index_testing.h"
+#include "flann/util/timer.h"
 
 
 namespace flann
@@ -78,7 +78,7 @@ float computeDistanceRaport(const Matrix<float>& inputData, float* target, int* 
 
 float search_with_ground_truth(NNIndex& index, const Matrix<float>& inputData, const Matrix<float>& testData, const Matrix<int>& matches, int nn, int checks, float& time, float& dist, int skipMatches)
 {
-    if (matches.cols<nn) {
+    if (matches.cols<size_t(nn)) {
         logger.info("matches.cols=%d, nn=%d\n",matches.cols,nn);
 
         throw FLANNException("Ground truth is not computed for as many neighbors as requested");
@@ -96,7 +96,7 @@ float search_with_ground_truth(NNIndex& index, const Matrix<float>& inputData, c
         t.start();
         correct = 0;
         distR = 0;
-        for (int i = 0; i < testData.rows; i++) {
+        for (size_t i = 0; i < testData.rows; i++) {
             float* target = testData[i];
             resultSet.init(target, testData.cols);
             index.findNeighbors(resultSet,target, searchParams);

@@ -28,26 +28,48 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#include "random.h"
+#include "saving.h"
 
+#include "flann/util/common.h"
+#include "flann/algorithms/nn_index.h"
+#include <cstdio>
+#include <cstring>
 
 namespace flann
 {
 
-void seed_random(unsigned int seed)
+const char FLANN_SIGNATURE[] = "FLANN_INDEX";
+
+void save_header(FILE* stream, const NNIndex& index)
 {
-    srand(seed);
+	IndexHeader header;
+	memset(header.signature, 0 , sizeof(header.signature));
+	strcpy(header.signature, FLANN_SIGNATURE);
+	header.flann_version = FLANN_VERSION;
+	header.index_type = index.getType();
+	header.rows = index.size();
+	header.cols = index.veclen();
+
+	std::fwrite(&header, sizeof(header),1,stream);
 }
 
-double rand_double(double high, double low)
-{
-    return low + ((high-low) * (std::rand() / (RAND_MAX + 1.0)));
-}
 
 
-int rand_int(int high, int low)
+IndexHeader load_header(FILE* stream)
 {
-    return low + (int) ( double(high-low) * (std::rand() / (RAND_MAX + 1.0)));
+	IndexHeader header;
+	int read_size = fread(&header,sizeof(header),1,stream);
+
+	if (read_size!=1) {
+		throw FLANNException("Invalid index file, cannot read");
+	}
+
+	if (strcmp(header.signature,FLANN_SIGNATURE)!=0) {
+		throw FLANNException("Invalid index file, wrong signature");
+	}
+
+	return header;
+
 }
 
 }

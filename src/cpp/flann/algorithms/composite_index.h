@@ -28,29 +28,46 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef LINEARSEARCH_H
-#define LINEARSEARCH_H
+#ifndef COMPOSITETREE_H
+#define COMPOSITETREE_H
 
 #include "flann/constants.h"
-#include "nn_index.h"
+#include "flann/algorithms/nn_index.h"
 
 namespace flann
 {
 
 template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
-class LinearIndex : public NNIndex {
+class CompositeIndex : public NNIndex
+{
+	KMeansIndex<ELEM_TYPE, DIST_TYPE>* kmeans;
+	KDTreeIndex<ELEM_TYPE, DIST_TYPE>* kdtree;
 
-	const Matrix<ELEM_TYPE> dataset;
+    const Matrix<float> dataset;
+
 
 public:
 
-	LinearIndex(const Matrix<ELEM_TYPE>& inputData, const LinearIndexParams& params = LinearIndexParams() ) : dataset(inputData)
+	CompositeIndex(const Matrix<ELEM_TYPE>& inputData, const CompositeIndexParams& params = CompositeIndexParams() ) : dataset(inputData)
 	{
+		KDTreeIndexParams kdtree_params(params.trees);
+		KMeansIndexParams kmeans_params(params.branching, params.iterations, params.centers_init, params.cb_index);
+
+		kdtree = new KDTreeIndex<ELEM_TYPE, DIST_TYPE>(inputData,kdtree_params);
+		kmeans = new KMeansIndex<ELEM_TYPE, DIST_TYPE>(inputData,kmeans_params);
+
 	}
+
+	virtual ~CompositeIndex()
+	{
+		delete kdtree;
+		delete kmeans;
+	}
+
 
     flann_algorithm_t getType() const
     {
-        return LINEAR;
+        return COMPOSITE;
     }
 
 
@@ -67,40 +84,46 @@ public:
 
 	int usedMemory() const
 	{
-		return 0;
+		return kmeans->usedMemory()+kdtree->usedMemory();
 	}
 
 	void buildIndex()
 	{
-		/* nothing to do here for linear search */
+		logger.info("Building kmeans tree...\n");
+		kmeans->buildIndex();
+		logger.info("Building kdtree tree...\n");
+		kdtree->buildIndex();
 	}
+
 
     void saveIndex(FILE* stream)
     {
-		/* nothing to do here for linear search */
+
     }
 
 
     void loadIndex(FILE* stream)
     {
-		/* nothing to do here for linear search */
+
     }
 
-	void findNeighbors(ResultSet& resultSet, const ELEM_TYPE* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
 	{
-		for (int i=0;i<dataset.rows;++i) {
-			resultSet.addPoint(dataset[i],i);
-		}
+		kmeans->findNeighbors(result,vec,searchParams);
+		kdtree->findNeighbors(result,vec,searchParams);
 	}
 
-//    Params estimateSearchParams(float precision, Matrix<float>* testset = NULL)
+
+//    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
 //    {
 //        Params params;
+//
 //        return params;
 //    }
+
 
 };
 
 }
 
-#endif // LINEARSEARCH_H
+#endif //COMPOSITETREE_H

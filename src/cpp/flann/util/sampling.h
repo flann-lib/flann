@@ -19,67 +19,75 @@
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE NNIndexGOODS OR SERVICES; LOSS OF USE,
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
  * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef SAVING_H_
-#define SAVING_H_
 
-#include "flann/constants.h"
-#include "nn_index.h"
+#ifndef SAMPLING_H_
+#define SAMPLING_H_
 
+
+#include "flann/util/matrix.h"
+#include "flann/util/random.h"
 
 namespace flann
 {
 
-/**
- * Structure representing the index header.
- */
-struct IndexHeader
+template<typename T>
+Matrix<T> random_sample(Matrix<T>& srcMatrix, long size, bool remove = false)
 {
-	char signature[16];
-	int flann_version;
-	flann_algorithm_t index_type;
-	int rows;
-	int cols;
-};
+    UniqueRandom rand(srcMatrix.rows);
+    Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
 
-/**
- * Saves index header to stream
- *
- * @param stream - Stream to save to
- * @param index - The index to save
- */
-void save_header(FILE* stream, const NNIndex& index);
+    T *src,*dest;
+    for (long i=0;i<size;++i) {
+        long r = rand.next();
+        dest = newSet[i];
+        src = srcMatrix[r];
+        for (size_t j=0;j<srcMatrix.cols;++j) {
+            dest[j] = src[j];
+        }
+        if (remove) {
+            dest = srcMatrix[srcMatrix.rows-i-1];
+            src = srcMatrix[r];
+            for (size_t j=0;j<srcMatrix.cols;++j) {
+                swap(*src,*dest);
+                src++;
+                dest++;
+            }
+        }
+    }
 
+    if (remove) {
+    	srcMatrix.rows -= size;
+    }
 
-/**
- *
- * @param stream - Stream to load from
- * @return Index header
- */
-IndexHeader load_header(FILE* stream);
-
+    return newSet;
+}
 
 template<typename T>
-void save_value(FILE* stream, const T& value, int count = 1)
+Matrix<T> random_sample(const Matrix<T>& srcMatrix, size_t size)
 {
-	fwrite(&value, sizeof(value),count, stream);
+    UniqueRandom rand(srcMatrix.rows);
+    Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
+
+    T *src,*dest;
+    for (size_t i=0;i<size;++i) {
+        long r = rand.next();
+        dest = newSet[i];
+        src = srcMatrix[r];
+        for (size_t j=0;j<srcMatrix.cols;++j) {
+            dest[j] = src[j];
+        }
+    }
+
+    return newSet;
 }
 
+} // namespace
 
-template<typename T>
-void load_value(FILE* stream, T& value, int count = 1)
-{
-	int read_cnt = fread(&value, sizeof(value),count, stream);
-	if (read_cnt!=count) {
-		throw FLANNException("Cannot read from file");
-	}
-}
-}
-
-#endif /* SAVING_H_ */
+#endif /* SAMPLING_H_ */

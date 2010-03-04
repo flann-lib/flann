@@ -32,7 +32,7 @@
 #define FLANN_H
 
 
-#include "constants.h"
+#include "flann/constants.h"
 
 
 #ifdef WIN32

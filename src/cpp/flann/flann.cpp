@@ -30,20 +30,19 @@
 #include <vector>
 
 #include "flann/flann.h"
-#include "flann/common.h"
-
-#include "timer.h"
-#include "logger.h"
-#include "index_testing.h"
-#include "saving.h"
-#include "object_factory.h"
+#include "flann/util/common.h"
+#include "flann/util/timer.h"
+#include "flann/util/logger.h"
+#include "flann/nn/index_testing.h"
+#include "flann/util/saving.h"
+#include "flann/util/object_factory.h"
 // index types
-#include "kdtree_index.h"
-#include "kdtree_mt_index.h"
-#include "kmeans_index.h"
-#include "composite_index.h"
-#include "linear_index.h"
-#include "autotuned_index.h"
+#include "flann/algorithms/kdtree_index.h"
+#include "flann/algorithms/kdtree_mt_index.h"
+#include "flann/algorithms/kmeans_index.h"
+#include "flann/algorithms/composite_index.h"
+#include "flann/algorithms/linear_index.h"
+#include "flann/algorithms/autotuned_index.h"
 
 using namespace std;
 
@@ -140,83 +139,6 @@ StaticInit __init;
 
 
 
-Index::Index(const Matrix<float>& dataset, const IndexParams& params)
-{
-	nnIndex = params.createIndex(dataset);
-}
-
-Index::~Index()
-{
-	delete nnIndex;
-}
-
-void Index::buildIndex()
-{
-	nnIndex->buildIndex();
-}
-
-void Index::knnSearch(const Matrix<float>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& searchParams)
-{
-	assert(queries.cols==nnIndex->veclen());
-	assert(indices.rows>=queries.rows);
-	assert(dists.rows>=queries.rows);
-	assert(indices.cols>=knn);
-	assert(dists.cols>=knn);
-
-
-    search_for_neighbors(*nnIndex, queries, indices, dists, searchParams);
-}
-
-int Index::radiusSearch(const Matrix<float>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& searchParams)
-{
-	if (query.rows!=1) {
-		printf("I can only search one feature at a time for range search\n");
-		return -1;
-	}
-	assert(query.cols==nnIndex->veclen());
-
-	RadiusResultSet resultSet(radius);
-	resultSet.init(query.data, query.cols);
-	nnIndex->findNeighbors(resultSet,query.data,searchParams);
-
-	// TODO: optimize here
-	int* neighbors = resultSet.getNeighbors();
-	float* distances = resultSet.getDistances();
-	int count_nn = min(resultSet.size(), indices.cols);
-
-	assert (dists.cols>=count_nn);
-
-	for (int i=0;i<count_nn;++i) {
-		indices[0][i] = neighbors[i];
-		dists[0][i] = distances[i];
-	}
-
-	return count_nn;
-}
-
-
-void Index::save(string filename)
-{
-	FILE* fout = fopen(filename.c_str(), "wb");
-	if (fout==NULL) {
-		logger.error("Cannot open file: %s", filename.c_str());
-		throw FLANNException("Cannot open file");
-	}
-	nnIndex->saveIndex(fout);
-	fclose(fout);
-}
-
-int Index::size() const
-{
-	return nnIndex->size();
-}
-
-int Index::veclen() const
-{
-	return nnIndex->veclen();
-}
-
-
 int hierarchicalClustering(const Matrix<float>& features, Matrix<float>& centers, const KMeansIndexParams& params)
 {
     KMeansIndex<float> kmeans(features, params);
@@ -232,7 +154,7 @@ int hierarchicalClustering(const Matrix<float>& features, Matrix<float>& centers
 
 using namespace flann;
 
-typedef Index* IndexPtr;
+typedef Index<float>* IndexPtr;
 typedef Matrix<float>* MatrixPtr;
 
 
@@ -271,7 +193,7 @@ EXPORTED flann_index_t flann_build_index(float* dataset, int rows, int cols, flo
 			throw FLANNException("The flann_params argument must be non-null");
 		}
 		IndexParams* params = IndexParams::createFromParameters(*flann_params);
-		Index* index = new Index(Matrix<float>(dataset,rows,cols), *params);
+		IndexPtr index = new Index<float>(Matrix<float>(dataset,rows,cols), *params);
 		index->buildIndex();
 
 		return index;
@@ -291,7 +213,7 @@ EXPORTED int flann_save_index(flann_index_t index_ptr, char* filename)
 			throw FLANNException("Invalid index");
 		}
 
-		Index* index = (Index*)index_ptr;
+		IndexPtr index = (IndexPtr)index_ptr;
 		index->save(filename);
 
 		return 0;
@@ -306,7 +228,7 @@ EXPORTED int flann_save_index(flann_index_t index_ptr, char* filename)
 EXPORTED flann_index_t flann_load_index(char* filename, float* dataset, int rows, int cols)
 {
 	try {
-		Index* index = new Index(Matrix<float>(dataset,rows,cols), SavedIndexParams(filename));
+		IndexPtr index = new Index<float>(Matrix<float>(dataset,rows,cols), SavedIndexParams(filename));
 		return index;
 	}
 	catch(runtime_error& e) {
@@ -323,7 +245,7 @@ EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, f
 		init_flann_parameters(flann_params);
 
 		IndexParams* params = IndexParams::createFromParameters(*flann_params);
-		Index* index = new Index(Matrix<float>(dataset,rows,cols), *params);
+		IndexPtr index = new Index<float>(Matrix<float>(dataset,rows,cols), *params);
 		index->buildIndex();
 		Matrix<int> m_indices(result,tcount, nn);
 		Matrix<float> m_dists(dists,tcount, nn);
@@ -348,7 +270,7 @@ EXPORTED int flann_find_nearest_neighbors_index(flann_index_t index_ptr, float* 
 		if (index_ptr==NULL) {
 			throw FLANNException("Invalid index");
 		}
-		Index* index = (Index*) index_ptr;
+		IndexPtr index = (IndexPtr) index_ptr;
 
 		Matrix<int> m_indices(result,tcount, nn);
 		Matrix<float> m_dists(dists, tcount, nn);
@@ -380,7 +302,7 @@ EXPORTED int flann_radius_search(flann_index_t index_ptr,
 		if (index_ptr==NULL) {
 			throw FLANNException("Invalid index");
 		}
-		Index* index = (Index*) index_ptr;
+		IndexPtr index = (IndexPtr) index_ptr;
 
 		Matrix<int> m_indices(indices, 1, max_nn);
 		Matrix<float> m_dists(dists, 1, max_nn);
@@ -406,7 +328,7 @@ EXPORTED int flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_pa
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
-        Index* index = (Index*) index_ptr;
+        IndexPtr index = (IndexPtr) index_ptr;
         delete index;
 
         return 0;

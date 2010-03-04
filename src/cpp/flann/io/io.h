@@ -30,10 +30,12 @@
 #ifndef IO_H_
 #define IO_H_
 
-#include "flann/matrix.h"
-
 // TODO: add automatic library detection to make process
-#include "H5Cpp.h"
+#include <H5Cpp.h>
+
+#include "flann/util/matrix.h"
+
+
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;

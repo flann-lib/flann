@@ -39,14 +39,13 @@
 #include <cmath>
 
 #include "flann/constants.h"
-#include "flann/common.h"
-#include "flann/matrix.h"
-
-#include "heap.h"
-#include "allocator.h"
-#include "result_set.h"
-#include "random.h"
-#include "nn_index.h"
+#include "flann/algorithms/nn_index.h"
+#include "flann/util/common.h"
+#include "flann/util/matrix.h"
+#include "flann/util/result_set.h"
+#include "flann/util/heap.h"
+#include "flann/util/allocator.h"
+#include "flann/util/random.h"
 
 using namespace std;
 

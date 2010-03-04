@@ -4,6 +4,8 @@
  * Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
  * Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
  *
+ * THE BSD LICENSE
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -26,69 +28,79 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
+#ifndef LINEARSEARCH_H
+#define LINEARSEARCH_H
 
-#ifndef SAMPLING_H_
-#define SAMPLING_H_
-
-
-#include "flann/matrix.h"
-
-#include "random.h"
+#include "flann/constants.h"
+#include "flann/algorithms/nn_index.h"
 
 namespace flann
 {
 
-template<typename T>
-Matrix<T> random_sample(Matrix<T>& srcMatrix, long size, bool remove = false)
-{
-    UniqueRandom rand(srcMatrix.rows);
-    Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
+template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
+class LinearIndex : public NNIndex {
 
-    T *src,*dest;
-    for (long i=0;i<size;++i) {
-        long r = rand.next();
-        dest = newSet[i];
-        src = srcMatrix[r];
-        for (long j=0;j<srcMatrix.cols;++j) {
-            dest[j] = src[j];
-        }
-        if (remove) {
-            dest = srcMatrix[srcMatrix.rows-i-1];
-            src = srcMatrix[r];
-            for (long j=0;j<srcMatrix.cols;++j) {
-                swap(*src,*dest);
-                src++;
-                dest++;
-            }
-        }
+	const Matrix<ELEM_TYPE> dataset;
+
+public:
+
+	LinearIndex(const Matrix<ELEM_TYPE>& inputData, const LinearIndexParams& params = LinearIndexParams() ) : dataset(inputData)
+	{
+	}
+
+    flann_algorithm_t getType() const
+    {
+        return LINEAR;
     }
 
-    if (remove) {
-    	srcMatrix.rows -= size;
+
+	int size() const
+	{
+		return dataset.rows;
+	}
+
+	int veclen() const
+	{
+		return dataset.cols;
+	}
+
+
+	int usedMemory() const
+	{
+		return 0;
+	}
+
+	void buildIndex()
+	{
+		/* nothing to do here for linear search */
+	}
+
+    void saveIndex(FILE* stream)
+    {
+		/* nothing to do here for linear search */
     }
 
-    return newSet;
+
+    void loadIndex(FILE* stream)
+    {
+		/* nothing to do here for linear search */
+    }
+
+	void findNeighbors(ResultSet& resultSet, const ELEM_TYPE* vec, const SearchParams& searchParams)
+	{
+		for (size_t i=0;i<dataset.rows;++i) {
+			resultSet.addPoint(dataset[i],i);
+		}
+	}
+
+//    Params estimateSearchParams(float precision, Matrix<float>* testset = NULL)
+//    {
+//        Params params;
+//        return params;
+//    }
+
+};
+
 }
 
-template<typename T>
-Matrix<T> random_sample(const Matrix<T>& srcMatrix, long size)
-{
-    UniqueRandom rand(srcMatrix.rows);
-    Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
-
-    T *src,*dest;
-    for (long i=0;i<size;++i) {
-        long r = rand.next();
-        dest = newSet[i];
-        src = srcMatrix[r];
-        for (long j=0;j<srcMatrix.cols;++j) {
-            dest[j] = src[j];
-        }
-    }
-
-    return newSet;
-}
-
-} // namespace
-
-#endif /* SAMPLING_H_ */
+#endif // LINEARSEARCH_H
