@@ -33,8 +33,7 @@
 
 #include <string>
 
-#include "flann/constants.h"
-#include "flann/util/common.h"
+#include "flann/general.h"
 #include "flann/util/matrix.h"
 
 using namespace std;
@@ -42,13 +41,14 @@ using namespace std;
 namespace flann
 {
 
-class ResultSet;
 
-class SearchParams;
+template <typename ELEM_TYPE>
+class ResultSet;
 
 /**
 * Nearest-neighbour index base class
 */
+template <typename ELEM_TYPE>
 class NNIndex
 {
 public:
@@ -73,17 +73,17 @@ public:
 	/**
 	Method that searches for nearest-neighbors
 	*/
-	virtual void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams) = 0;
+	virtual void findNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, const SearchParams& searchParams) = 0;
 
 	/**
 	Number of features in this index.
 	*/
-	virtual int size() const = 0;
+	virtual size_t size() const = 0;
 
 	/**
 	The length of each vector in this index.
 	*/
-	virtual int veclen() const = 0;
+	virtual size_t veclen() const = 0;
 
 	/**
 	The amount of memory (in bytes) this index uses.
@@ -96,10 +96,9 @@ public:
 	virtual flann_algorithm_t getType() const = 0;
 
 	/**
-	Estimates the search parameters required in order to get a certain precision.
-	If testset is not given it uses cross-validation.
-	*/
-//	virtual Params estimateSearchParams(float precision, Matrix<float>* testset = NULL) = 0;
+	 * Returns the parameters used for the index
+	 */
+	virtual const IndexParams* getParameters() const = 0;
 
 };
 

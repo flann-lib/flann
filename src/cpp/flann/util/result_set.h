@@ -58,7 +58,7 @@ struct BranchStruct {
         return mindistsq<rhs.mindistsq;
 	}
 
-    static BranchStruct<T> make_branch(T aNode, float dist)
+    static BranchStruct<T> make_branch(const T& aNode, float dist)
     {
         BranchStruct<T> branch;
         branch.node = aNode;
@@ -71,22 +71,16 @@ struct BranchStruct {
 
 
 
-
+template <typename ELEM_TYPE>
 class ResultSet
 {
 protected:
-	const float* target;
-	const float* target_end;
-    int veclen;
 
 public:
 
-	ResultSet(float* target_ = NULL, int veclen_ = 0) :
-		target(target_), veclen(veclen_) { target_end = target + veclen;}
+	virtual ~ResultSet() {};
 
-	virtual ~ResultSet() {}
-
-	virtual void init(const float* target_, int veclen_) = 0;
+	virtual void init(const ELEM_TYPE* target_, int veclen_) = 0;
 
 	virtual int* getNeighbors() = 0;
 
@@ -96,15 +90,20 @@ public:
 
 	virtual bool full() const = 0;
 
-	virtual bool addPoint(float* point, int index) = 0;
+	virtual bool addPoint(ELEM_TYPE* point, int index) = 0;
 
 	virtual float worstDist() const = 0;
 
 };
 
 
-class KNNResultSet : public ResultSet
+template <typename ELEM_TYPE>
+class KNNResultSet : public ResultSet<ELEM_TYPE>
 {
+	const ELEM_TYPE* target;
+	const ELEM_TYPE* target_end;
+    int veclen;
+
 	int* indices;
 	float* dists;
     int capacity;
@@ -112,9 +111,11 @@ class KNNResultSet : public ResultSet
 	int count;
 
 public:
-	KNNResultSet(int capacity_, float* target_ = NULL, int veclen_ = 0 ) :
-        ResultSet(target_, veclen_), capacity(capacity_), count(0)
+	KNNResultSet(int capacity_, ELEM_TYPE* target_ = NULL, int veclen_ = 0 ) :
+			target(target_), veclen(veclen_), capacity(capacity_), count(0)
 	{
+		target_end = target + veclen;
+
         indices = new int[capacity_];
         dists = new float[capacity_];
 	}
@@ -125,7 +126,7 @@ public:
 		delete[] dists;
 	}
 
-	void init(const float* target_, int veclen_)
+	void init(const ELEM_TYPE* target_, int veclen_)
 	{
         target = target_;
         veclen = veclen_;
@@ -155,7 +156,7 @@ public:
 	}
 
 
-	bool addPoint(float* point, int index)
+	bool addPoint(ELEM_TYPE* point, int index)
 	{
 		for (int i=0;i<count;++i) {
 			if (indices[i]==index) return false;
@@ -198,8 +199,13 @@ public:
 /**
  * A result-set class used when performing a radius based search.
  */
-class RadiusResultSet : public ResultSet
+template <typename ELEM_TYPE>
+class RadiusResultSet : public ResultSet<ELEM_TYPE>
 {
+	const ELEM_TYPE* target;
+	const ELEM_TYPE* target_end;
+    int veclen;
+
 	struct Item {
 		int index;
 		float dist;
@@ -244,7 +250,7 @@ public:
 		if (dists!=NULL) delete[] dists;
 	}
 
-	void init(const float* target_, int veclen_)
+	void init(const ELEM_TYPE* target_, int veclen_)
 	{
         target = target_;
         veclen = veclen_;
@@ -289,7 +295,7 @@ public:
 		return true;
 	}
 
-	bool addPoint(float* point, int index)
+	bool addPoint(ELEM_TYPE* point, int index)
 	{
 		Item it;
 		it.index = index;

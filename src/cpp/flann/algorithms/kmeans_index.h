@@ -38,9 +38,8 @@
 #include <limits>
 #include <cmath>
 
-#include "flann/constants.h"
+#include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
-#include "flann/util/common.h"
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
 #include "flann/util/heap.h"
@@ -53,201 +52,80 @@ using namespace std;
 namespace flann
 {
 
-/**
-* Chooses the initial centers in the k-means clustering in a random manner.
-*
-* Params:
-*     k = number of centers
-*     vecs = the dataset of points
-*     indices = indices in the dataset
-*     indices_length = length of indices vector
-*
-*/
-void chooseCentersRandom(int k, const Matrix<float>& vecs, int* indices, int indices_length, float** centers, int& centers_length)
-{
-    UniqueRandom r(indices_length);
-
-    int index;
-    for (index=0;index<k;++index) {
-        bool duplicate = true;
-        int rnd;
-        while (duplicate) {
-            duplicate = false;
-            rnd = r.next();
-            if (rnd<0) {
-                centers_length = index;
-                return;
-            }
-
-            centers[index] = vecs[indices[rnd]];
-
-            for (int j=0;j<index;++j) {
-                float sq = flann_dist(centers[index],centers[index]+vecs.cols,centers[j]);
-                if (sq<1e-16) {
-                    duplicate = true;
-                }
-            }
-        }
-    }
-
-    centers_length = index;
-}
-
-
-/**
-* Chooses the initial centers in the k-means using Gonzales' algorithm
-* so that the centers are spaced apart from each other.
-*
-* Params:
-*     k = number of centers
-*     vecs = the dataset of points
-*     indices = indices in the dataset
-* Returns:
-*/
-void chooseCentersGonzales(int k, const Matrix<float>& vecs, int* indices, int indices_length, float** centers, int& centers_length)
-{
-    int n = indices_length;
-
-
-    int rnd = rand_int(n);
-    assert(rnd >=0 && rnd < n);
-
-    centers[0] = vecs[indices[rnd]];
-
-    int index;
-    for (index=1; index<k; ++index) {
-
-        int best_index = -1;
-        float best_val = 0;
-        for (int j=0;j<n;++j) {
-            float dist = flann_dist(centers[0],centers[0]+vecs.cols,vecs[indices[j]]);
-            for (int i=1;i<index;++i) {
-                    float tmp_dist = flann_dist(centers[i],centers[i]+vecs.cols,vecs[indices[j]]);
-                if (tmp_dist<dist) {
-                    dist = tmp_dist;
-                }
-            }
-            if (dist>best_val) {
-                best_val = dist;
-                best_index = j;
-            }
-        }
-        if (best_index!=-1) {
-            centers[index] = vecs[indices[best_index]];
-        }
-        else {
-            break;
-        }
-    }
-    centers_length = index;
-}
-
-
-/**
-* Chooses the initial centers in the k-means using the algorithm
-* proposed in the KMeans++ paper:
-* Arthur, David; Vassilvitskii, Sergei - k-means++: The Advantages of Careful Seeding
-*
-* Implementation of this function was converted from the one provided in Arthur's code.
-*
-* Params:
-*     k = number of centers
-*     vecs = the dataset of points
-*     indices = indices in the dataset
-* Returns:
-*/
-void chooseCentersKMeanspp(int k, const Matrix<float>& vecs, int* indices, int indices_length, float** centers, int& centers_length)
-{
-    int n = indices_length;
-
-    double currentPot = 0;
-    double* closestDistSq = new double[n];
-
-    // Choose one random center and set the closestDistSq values
-    int index = rand_int(n);
-    assert(index >=0 && index < n);
-    centers[0] = vecs[indices[index]];
-
-    for (int i = 0; i < n; i++) {
-        closestDistSq[i] = flann_dist(vecs[indices[i]], vecs[indices[i]] + vecs.cols, vecs[indices[index]]);
-        currentPot += closestDistSq[i];
-    }
-
-
-    const int numLocalTries = 1;
-
-    // Choose each center
-    int centerCount;
-    for (centerCount = 1; centerCount < k; centerCount++) {
-
-        // Repeat several trials
-        double bestNewPot = -1;
-        int bestNewIndex;
-        for (int localTrial = 0; localTrial < numLocalTries; localTrial++) {
-
-            // Choose our center - have to be slightly careful to return a valid answer even accounting
-            // for possible rounding errors
-        double randVal = rand_double(currentPot);
-            for (index = 0; index < n-1; index++) {
-                if (randVal <= closestDistSq[index])
-                    break;
-                else
-                    randVal -= closestDistSq[index];
-            }
-
-            // Compute the new potential
-            double newPot = 0;
-            for (int i = 0; i < n; i++)
-                newPot += min( flann_dist(vecs[indices[i]], vecs[indices[i]] + vecs.cols, vecs[indices[index]]), closestDistSq[i] );
-
-            // Store the best result
-            if (bestNewPot < 0 || newPot < bestNewPot) {
-                bestNewPot = newPot;
-                bestNewIndex = index;
-            }
-        }
-
-        // Add the appropriate center
-        centers[centerCount] = vecs[indices[bestNewIndex]];
-        currentPot = bestNewPot;
-        for (int i = 0; i < n; i++)
-            closestDistSq[i] = min( flann_dist(vecs[indices[i]], vecs[indices[i]]+vecs.cols, vecs[indices[bestNewIndex]]), closestDistSq[i] );
-    }
-
-    centers_length = centerCount;
-
-	delete[] closestDistSq;
-}
 
 
 
 
-namespace {
+//namespace {
+//
+//    typedef void (*centersAlgFunction)(int, const Matrix<float>&, int*, int, float**, int&);
+//    /**
+//    * Associative array with functions to use for choosing the cluster centres.
+//    */
+//    map<flann_centers_init_t,centersAlgFunction> centerAlgs;
+//    /**
+//    * Static initialiser. Performs initialisation before the program starts.
+//    */
+//
+//    void centers_init()
+//    {
+//        centerAlgs[CENTERS_RANDOM] = &chooseCentersRandom;
+//        centerAlgs[CENTERS_GONZALES] = &chooseCentersGonzales;
+//        centerAlgs[CENTERS_KMEANSPP] = &chooseCentersKMeanspp;
+//    }
+//
+//    struct Init {
+//        Init() { centers_init(); }
+//    };
+//    Init __init;
+//}
 
-    typedef void (*centersAlgFunction)(int, const Matrix<float>&, int*, int, float**, int&);
-    /**
-    * Associative array with functions to use for choosing the cluster centres.
-    */
-    map<flann_centers_init_t,centersAlgFunction> centerAlgs;
-    /**
-    * Static initialiser. Performs initialisation before the program starts.
-    */
-
-    void centers_init()
-    {
-        centerAlgs[CENTERS_RANDOM] = &chooseCentersRandom;
-        centerAlgs[CENTERS_GONZALES] = &chooseCentersGonzales;
-        centerAlgs[CENTERS_KMEANSPP] = &chooseCentersKMeanspp;
-    }
-
-    struct Init {
-        Init() { centers_init(); }
-    };
-    Init __init;
-}
 
 
+struct KMeansIndexParams : public IndexParams {
+	KMeansIndexParams(int branching_ = 32, int iterations_ = 11,
+			flann_centers_init_t centers_init_ = CENTERS_RANDOM, float cb_index_ = 0.2 ) :
+		IndexParams(KMEANS),
+		branching(branching_),
+		iterations(iterations_),
+		centers_init(centers_init_),
+		cb_index(cb_index_) {};
 
+	int branching;             // branching factor (for kmeans tree)
+	int iterations;            // max iterations to perform in one kmeans clustering (kmeans tree)
+	flann_centers_init_t centers_init;          // algorithm used for picking the initial cluster centers for kmeans tree
+    float cb_index;            // cluster boundary index. Used when searching the kmeans tree
+
+	flann_algorithm_t getIndexType() const { return KMEANS; }
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		assert(p.algorithm==KMEANS);
+		branching = p.branching;
+		iterations = p.iterations;
+		centers_init = p.centers_init;
+		cb_index = p.cb_index;
+	}
+
+	void toParameters(FLANNParameters& p) const
+	{
+		p.algorithm = KMEANS;
+		p.branching = branching;
+		p.iterations = iterations;
+		p.centers_init = centers_init;
+		p.cb_index = cb_index;
+	}
+
+	void print() const
+	{
+		printf("Index type: %d\n",(int)algorithm);
+		printf("Branching: %d\n", branching);
+		printf("Iterations: %d\n", iterations);
+		printf("Centres initialisation: %d\n", centers_init);
+		printf("Cluster boundary weight: %g\n", cb_index);
+	}
+
+};
 
 
 /**
@@ -257,7 +135,7 @@ namespace {
  * and other information for indexing a set of points for nearest-neighbour matching.
  */
 template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
-class KMeansIndex : public NNIndex
+class KMeansIndex : public NNIndex<ELEM_TYPE>
 {
 
 	/**
@@ -284,15 +162,17 @@ class KMeansIndex : public NNIndex
 	 */
     const Matrix<ELEM_TYPE> dataset;
 
+    const IndexParams& index_params;
+
     /**
     * Number of features in the dataset.
     */
-    int size_;
+    size_t size_;
 
     /**
     * Length of each feature.
     */
-    int veclen_;
+    size_t veclen_;
 
 
 	/**
@@ -341,12 +221,6 @@ class KMeansIndex : public NNIndex
      */
     typedef BranchStruct<KMeansNode> BranchSt;
 
-    /**
-     * Priority queue storing intermediate branches in the best-bin-first search
-     */
-    Heap<BranchSt>* heap;
-
-
 
 	/**
 	 * The root node in the tree.
@@ -374,10 +248,179 @@ class KMeansIndex : public NNIndex
 	int memoryCounter;
 
 
+	typedef void (KMeansIndex::*centersAlgFunction)(int, int*, int, int*, int&);
+
     /**
     * The function used for choosing the cluster centers.
     */
     centersAlgFunction chooseCenters;
+
+
+
+    /**
+    * Chooses the initial centers in the k-means clustering in a random manner.
+    *
+    * Params:
+    *     k = number of centers
+    *     vecs = the dataset of points
+    *     indices = indices in the dataset
+    *     indices_length = length of indices vector
+    *
+    */
+    void chooseCentersRandom(int k, int* indices, int indices_length, int* centers, int& centers_length)
+    {
+        UniqueRandom r(indices_length);
+
+        int index;
+        for (index=0;index<k;++index) {
+            bool duplicate = true;
+            int rnd;
+            while (duplicate) {
+                duplicate = false;
+                rnd = r.next();
+                if (rnd<0) {
+                    centers_length = index;
+                    return;
+                }
+
+                centers[index] = indices[rnd];
+
+                for (int j=0;j<index;++j) {
+                    float sq = flann_dist(dataset[centers[index]],dataset[centers[index]]+dataset.cols,dataset[centers[j]]);
+                    if (sq<1e-16) {
+                        duplicate = true;
+                    }
+                }
+            }
+        }
+
+        centers_length = index;
+    }
+
+
+    /**
+    * Chooses the initial centers in the k-means using Gonzales' algorithm
+    * so that the centers are spaced apart from each other.
+    *
+    * Params:
+    *     k = number of centers
+    *     vecs = the dataset of points
+    *     indices = indices in the dataset
+    * Returns:
+    */
+    void chooseCentersGonzales(int k, int* indices, int indices_length, int* centers, int& centers_length)
+    {
+        int n = indices_length;
+
+        int rnd = rand_int(n);
+        assert(rnd >=0 && rnd < n);
+
+        centers[0] = indices[rnd];
+
+        int index;
+        for (index=1; index<k; ++index) {
+
+            int best_index = -1;
+            float best_val = 0;
+            for (int j=0;j<n;++j) {
+                float dist = flann_dist(dataset[centers[0]],dataset[centers[0]]+dataset.cols,dataset[indices[j]]);
+                for (int i=1;i<index;++i) {
+                        float tmp_dist = flann_dist(dataset[centers[i]],dataset[centers[i]]+dataset.cols,dataset[indices[j]]);
+                    if (tmp_dist<dist) {
+                        dist = tmp_dist;
+                    }
+                }
+                if (dist>best_val) {
+                    best_val = dist;
+                    best_index = j;
+                }
+            }
+            if (best_index!=-1) {
+                centers[index] = indices[best_index];
+            }
+            else {
+                break;
+            }
+        }
+        centers_length = index;
+    }
+
+
+    /**
+    * Chooses the initial centers in the k-means using the algorithm
+    * proposed in the KMeans++ paper:
+    * Arthur, David; Vassilvitskii, Sergei - k-means++: The Advantages of Careful Seeding
+    *
+    * Implementation of this function was converted from the one provided in Arthur's code.
+    *
+    * Params:
+    *     k = number of centers
+    *     vecs = the dataset of points
+    *     indices = indices in the dataset
+    * Returns:
+    */
+    void chooseCentersKMeanspp(int k, int* indices, int indices_length, int* centers, int& centers_length)
+    {
+        int n = indices_length;
+
+        double currentPot = 0;
+        double* closestDistSq = new double[n];
+
+        // Choose one random center and set the closestDistSq values
+        int index = rand_int(n);
+        assert(index >=0 && index < n);
+        centers[0] = indices[index];
+
+        for (int i = 0; i < n; i++) {
+            closestDistSq[i] = flann_dist(dataset[indices[i]], dataset[indices[i]] + dataset.cols, dataset[indices[index]]);
+            currentPot += closestDistSq[i];
+        }
+
+
+        const int numLocalTries = 1;
+
+        // Choose each center
+        int centerCount;
+        for (centerCount = 1; centerCount < k; centerCount++) {
+
+            // Repeat several trials
+            double bestNewPot = -1;
+            int bestNewIndex;
+            for (int localTrial = 0; localTrial < numLocalTries; localTrial++) {
+
+                // Choose our center - have to be slightly careful to return a valid answer even accounting
+                // for possible rounding errors
+            double randVal = rand_double(currentPot);
+                for (index = 0; index < n-1; index++) {
+                    if (randVal <= closestDistSq[index])
+                        break;
+                    else
+                        randVal -= closestDistSq[index];
+                }
+
+                // Compute the new potential
+                double newPot = 0;
+                for (int i = 0; i < n; i++)
+                    newPot += min( flann_dist(dataset[indices[i]], dataset[indices[i]] + dataset.cols, dataset[indices[index]]), closestDistSq[i] );
+
+                // Store the best result
+                if (bestNewPot < 0 || newPot < bestNewPot) {
+                    bestNewPot = newPot;
+                    bestNewIndex = index;
+                }
+            }
+
+            // Add the appropriate center
+            centers[centerCount] = indices[bestNewIndex];
+            currentPot = bestNewPot;
+            for (int i = 0; i < n; i++)
+                closestDistSq[i] = min( flann_dist(dataset[indices[i]], dataset[indices[i]]+dataset.cols, dataset[indices[bestNewIndex]]), closestDistSq[i] );
+        }
+
+        centers_length = centerCount;
+
+    	delete[] closestDistSq;
+    }
 
 
 
@@ -397,7 +440,7 @@ public:
 	 * 		params = parameters passed to the hierarchical k-means algorithm
 	 */
 	KMeansIndex(const Matrix<ELEM_TYPE>& inputData, const KMeansIndexParams& params = KMeansIndexParams() )
-		: dataset(inputData), root(NULL), indices(NULL)
+		: dataset(inputData), index_params(params), root(NULL), indices(NULL)
 	{
 		memoryCounter = 0;
 
@@ -411,15 +454,20 @@ public:
         }
         flann_centers_init_t centersInit = params.centers_init;
 
-		if ( centerAlgs.find(centersInit) != centerAlgs.end() ) {
-			chooseCenters = centerAlgs[centersInit];
-		}
+        if (centersInit==CENTERS_RANDOM) {
+        	chooseCenters = &KMeansIndex::chooseCentersRandom;
+        }
+        else if (centersInit==CENTERS_GONZALES) {
+        	chooseCenters = &KMeansIndex::chooseCentersGonzales;
+        }
+        else if (centersInit==CENTERS_KMEANSPP) {
+                	chooseCenters = &KMeansIndex::chooseCentersKMeanspp;
+        }
 		else {
 			throw FLANNException("Unknown algorithm for choosing initial centers.");
 		}
         cb_index = 0.4;
 
- 		heap = new Heap<BranchSt>(size_);
 	}
 
 
@@ -433,7 +481,6 @@ public:
 		if (root != NULL) {
 			free_centers(root);
 		}
-		delete heap;
         if (indices!=NULL) {
 		  delete[] indices;
         }
@@ -442,7 +489,7 @@ public:
     /**
     *  Returns size of index.
     */
-    int size() const
+	size_t size() const
     {
         return size_;
     }
@@ -450,7 +497,7 @@ public:
     /**
     * Returns the length of an index feature.
     */
-    int veclen() const
+    size_t veclen() const
     {
         return veclen_;
     }
@@ -481,7 +528,7 @@ public:
 		}
 
 		indices = new int[size_];
-		for (int i=0;i<size_;++i) {
+		for (size_t i=0;i<size_;++i) {
 			indices[i] = i;
 		}
 
@@ -493,7 +540,6 @@ public:
 
     void saveIndex(FILE* stream)
     {
-    	save_header(stream, *this);
     	save_value(stream, branching);
     	save_value(stream, max_iter);
     	save_value(stream, memoryCounter);
@@ -501,17 +547,11 @@ public:
     	save_value(stream, *indices, size_);
 
    		save_tree(stream, root);
-
     }
 
 
     void loadIndex(FILE* stream)
     {
-    	IndexHeader header = load_header(stream);
-
-    	if (header.rows!=size() || header.cols!=veclen()) {
-    		throw FLANNException("The index saved belongs to a different dataset");
-    	}
     	load_value(stream, branching);
     	load_value(stream, max_iter);
     	load_value(stream, memoryCounter);
@@ -538,25 +578,30 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     searchParams = parameters that influence the search algorithm (checks, cb_index)
      */
-    void findNeighbors(ResultSet& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
     {
+
         int maxChecks = searchParams.checks;
 
         if (maxChecks<0) {
             findExactNN(root, result, vec);
         }
         else {
-            heap->clear();
+             // Priority queue storing intermediate branches in the best-bin-first search
+            Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
+
             int checks = 0;
 
-            findNN(root, result, vec, checks, maxChecks);
+            findNN(root, result, vec, checks, maxChecks, heap);
 
             BranchSt branch;
             while (heap->popMin(branch) && (checks<maxChecks || !result.full())) {
                 KMeansNode node = branch.node;
-                findNN(node, result, vec, checks, maxChecks);
+                findNN(node, result, vec, checks, maxChecks, heap);
             }
             assert(result.full());
+
+            delete heap;
         }
 
     }
@@ -586,7 +631,7 @@ public:
 
         for (int i=0;i<clusterCount;++i) {
             DIST_TYPE* center = clusters[i]->pivot;
-            for (int j=0;j<veclen_;++j) {
+            for (size_t j=0;j<veclen_;++j) {
                 centers[i][j] = center[j];
             }
         }
@@ -595,13 +640,10 @@ public:
         return clusterCount;
     }
 
-//    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
-//    {
-//        Params params;
-//
-//        return params;
-//    }
-
+	const IndexParams* getParameters() const
+	{
+		return &index_params;
+	}
 
 
 private:
@@ -672,14 +714,14 @@ private:
 
         memset(mean,0,veclen_*sizeof(float));
 
-		for (int i=0;i<size_;++i) {
-			float* vec = dataset[indices[i]];
-            for (int j=0;j<veclen_;++j) {
+		for (size_t i=0;i<size_;++i) {
+			ELEM_TYPE* vec = dataset[indices[i]];
+            for (size_t j=0;j<veclen_;++j) {
                 mean[j] += vec[j];
             }
 			variance += flann_dist(vec,vec+veclen_,zero);
 		}
-		for (int j=0;j<veclen_;++j) {
+		for (size_t j=0;j<veclen_;++j) {
 			mean[j] /= size_;
 		}
 		variance /= size_;
@@ -722,9 +764,9 @@ private:
 			return;
 		}
 
-		float** initial_centers = new float*[branching];
+		int* centers_idx = new int[branching];
         int centers_length;
- 		chooseCenters(branching, dataset, indices, indices_length, initial_centers, centers_length);
+ 		(this->*chooseCenters)(branching, indices, indices_length, centers_idx, centers_length);
 
 		if (centers_length<branching) {
             node->indices = indices;
@@ -736,11 +778,12 @@ private:
 
         Matrix<double> dcenters(new double[branching*veclen_],branching,veclen_);
         for (int i=0; i<centers_length; ++i) {
-            for (int k=0; k<veclen_; ++k) {
-                dcenters[i][k] = double(initial_centers[i][k]);
+        	ELEM_TYPE* vec = dataset[centers_idx[i]];
+            for (size_t k=0; k<veclen_; ++k) {
+                dcenters[i][k] = double(vec[k]);
             }
         }
-		delete[] initial_centers;
+		delete[] centers_idx;
 
 	 	float* radiuses = new float[branching];
 		int* count = new int[branching];
@@ -780,15 +823,15 @@ private:
                 radiuses[i] = 0;
 			}
             for (int i=0;i<indices_length;++i) {
-				float* vec = dataset[indices[i]];
+				ELEM_TYPE* vec = dataset[indices[i]];
 				double* center = dcenters[belongs_to[i]];
-				for (int k=0;k<veclen_;++k) {
+				for (size_t k=0;k<veclen_;++k) {
 					center[k] += vec[k];
  				}
 			}
 			for (int i=0;i<branching;++i) {
                 int cnt = count[i];
-                for (int k=0;k<veclen_;++k) {
+                for (size_t k=0;k<veclen_;++k) {
                     dcenters[i][k] /= cnt;
                 }
 			}
@@ -839,12 +882,12 @@ private:
 
 		}
 
-        float** centers = new float*[branching];
+        DIST_TYPE** centers = new DIST_TYPE*[branching];
 
         for (int i=0; i<branching; ++i) {
- 			centers[i] = new float[veclen_];
- 			memoryCounter += veclen_*sizeof(float);
-            for (int k=0; k<veclen_; ++k) {
+ 			centers[i] = new DIST_TYPE[veclen_];
+ 			memoryCounter += veclen_*sizeof(DIST_TYPE);
+            for (size_t k=0; k<veclen_; ++k) {
                 centers[i][k] = dcenters[i][k];
             }
  		}
@@ -905,7 +948,8 @@ private:
      */
 
 
-	void findNN(KMeansNode node, ResultSet& result, const ELEM_TYPE* vec, int& checks, int maxChecks)
+	void findNN(KMeansNode node, ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, int& checks, int maxChecks,
+			Heap<BranchSt>* heap)
 	{
 		// Ignore those clusters that are too far away
 		{
@@ -933,9 +977,9 @@ private:
 		}
 		else {
 			float* domain_distances = new float[branching];
-			int closest_center = exploreNodeBranches(node, vec, domain_distances);
+			int closest_center = exploreNodeBranches(node, vec, domain_distances, heap);
 			delete[] domain_distances;
-			findNN(node->childs[closest_center],result,vec, checks, maxChecks);
+			findNN(node->childs[closest_center],result,vec, checks, maxChecks, heap);
 		}
 	}
 
@@ -947,7 +991,7 @@ private:
 	 *     distances = array with the distances to each child node.
 	 * Returns:
 	 */
-	int exploreNodeBranches(KMeansNode node, const float* q, float* domain_distances)
+	int exploreNodeBranches(KMeansNode node, const ELEM_TYPE* q, float* domain_distances, Heap<BranchSt>* heap)
 	{
 
 		int best_index = 0;
@@ -979,7 +1023,7 @@ private:
 	/**
 	 * Function the performs exact nearest neighbor search by traversing the entire tree.
 	 */
-	void findExactNN(KMeansNode node, ResultSet& result, const float* vec)
+	void findExactNN(KMeansNode node, ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec)
 	{
 		// Ignore those clusters that are too far away
 		{
@@ -1021,7 +1065,7 @@ private:
 	 *
 	 * I computes the order in which to traverse the child nodes of a particular node.
 	 */
-	void getCenterOrdering(KMeansNode node, const float* q, int* sort_indices)
+	void getCenterOrdering(KMeansNode node, const ELEM_TYPE* q, int* sort_indices)
 	{
 		float* domain_distances = new float[branching];
 		for (int i=0;i<branching;++i) {

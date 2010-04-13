@@ -69,7 +69,7 @@ template<> PredType get_hdf5_type<long double>() { return PredType::NATIVE_LDOUB
 
 
 template<typename T>
-void save_to_file(const flann::Matrix<T>& flann_dataset, const std::string& filename, const std::string& name = "dataset")
+void save_to_file(const flann::Matrix<T>& flann_dataset, const std::string& filename, const std::string& name)
 {
 	// Try block to detect exceptions raised by any of the calls inside it
 	try
@@ -110,13 +110,14 @@ void save_to_file(const flann::Matrix<T>& flann_dataset, const std::string& file
 	}  // end of try block
 	catch( H5::Exception& error )
 	{
+		error.printError();
 		throw FLANNException(error.getDetailMsg());
 	}
 }
 
 
 template<typename T>
-void load_from_file(flann::Matrix<T>& flann_dataset, const std::string& filename, const std::string& name = "dataset")
+void load_from_file(flann::Matrix<T>& flann_dataset, const std::string& filename, const std::string& name)
 {
 	try
 	{
@@ -128,7 +129,7 @@ void load_from_file(flann::Matrix<T>& flann_dataset, const std::string& filename
 		/*
 		 * Check the type used by the dataset matches
 		 */
-		if (!(dataset.getDataType()==get_hdf5_type<T>())) {
+		if ( !(dataset.getDataType()==get_hdf5_type<T>())) {
 			throw FLANNException("Dataset matrix type does not match the type to be read.");
 		}
 

@@ -31,20 +31,44 @@
 #ifndef LINEARSEARCH_H
 #define LINEARSEARCH_H
 
-#include "flann/constants.h"
+#include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
 
 namespace flann
 {
 
-template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
-class LinearIndex : public NNIndex {
+struct LinearIndexParams : public IndexParams {
+	LinearIndexParams() : IndexParams(LINEAR) {};
 
+	flann_algorithm_t getIndexType() const { return algorithm; }
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		assert(p.algorithm==algorithm);
+	}
+
+	void toParameters(FLANNParameters& p) const
+	{
+		p.algorithm = algorithm;
+	}
+
+	void print() const
+	{
+		printf("Index type: %d\n",(int)algorithm);
+	}
+};
+
+
+template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
+class LinearIndex : public NNIndex<ELEM_TYPE>
+{
 	const Matrix<ELEM_TYPE> dataset;
+	const LinearIndexParams& index_params;
 
 public:
 
-	LinearIndex(const Matrix<ELEM_TYPE>& inputData, const LinearIndexParams& params = LinearIndexParams() ) : dataset(inputData)
+	LinearIndex(const Matrix<ELEM_TYPE>& inputData, const LinearIndexParams& params = LinearIndexParams() ) :
+		dataset(inputData), index_params(params)
 	{
 	}
 
@@ -54,12 +78,12 @@ public:
     }
 
 
-	int size() const
+	size_t size() const
 	{
 		return dataset.rows;
 	}
 
-	int veclen() const
+	size_t veclen() const
 	{
 		return dataset.cols;
 	}
@@ -86,18 +110,17 @@ public:
 		/* nothing to do here for linear search */
     }
 
-	void findNeighbors(ResultSet& resultSet, const ELEM_TYPE* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet<ELEM_TYPE>& resultSet, const ELEM_TYPE* vec, const SearchParams& searchParams)
 	{
 		for (size_t i=0;i<dataset.rows;++i) {
 			resultSet.addPoint(dataset[i],i);
 		}
 	}
 
-//    Params estimateSearchParams(float precision, Matrix<float>* testset = NULL)
-//    {
-//        Params params;
-//        return params;
-//    }
+	const IndexParams* getParameters() const
+	{
+		return &index_params;
+	}
 
 };
 

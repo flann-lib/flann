@@ -31,24 +31,79 @@
 #ifndef COMPOSITETREE_H
 #define COMPOSITETREE_H
 
-#include "flann/constants.h"
+#include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
 
 namespace flann
 {
 
+
+struct CompositeIndexParams : public IndexParams {
+	CompositeIndexParams(int trees_ = 4, int branching_ = 32, int iterations_ = 11,
+			flann_centers_init_t centers_init_ = CENTERS_RANDOM, float cb_index_ = 0.2 ) :
+		IndexParams(COMPOSITE),
+		trees(trees_),
+		branching(branching_),
+		iterations(iterations_),
+		centers_init(centers_init_),
+		cb_index(cb_index_) {};
+
+	int trees;                 // number of randomized trees to use (for kdtree)
+	int branching;             // branching factor (for kmeans tree)
+	int iterations;            // max iterations to perform in one kmeans clustering (kmeans tree)
+	flann_centers_init_t centers_init;          // algorithm used for picking the initial cluster centers for kmeans tree
+    float cb_index;            // cluster boundary index. Used when searching the kmeans tree
+
+	flann_algorithm_t getIndexType() const { return algorithm; }
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		assert(p.algorithm==algorithm);
+		trees = p.trees;
+		branching = p.branching;
+		iterations = p.iterations;
+		centers_init = p.centers_init;
+		cb_index = p.cb_index;
+	}
+
+	void toParameters(FLANNParameters& p) const
+	{
+		p.algorithm = algorithm;
+		p.trees = trees;
+		p.branching = branching;
+		p.iterations = iterations;
+		p.centers_init = centers_init;
+		p.cb_index = cb_index;
+	}
+
+	void print() const
+	{
+		printf("Index type: %d\n",(int)algorithm);
+		printf("Trees: %d\n", trees);
+		printf("Branching: %d\n", branching);
+		printf("Iterations: %d\n", iterations);
+		printf("Centres initialisation: %d\n", centers_init);
+		printf("Cluster boundary weight: %g\n", cb_index);
+	}
+};
+
+
+
 template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
-class CompositeIndex : public NNIndex
+class CompositeIndex : public NNIndex<ELEM_TYPE>
 {
 	KMeansIndex<ELEM_TYPE, DIST_TYPE>* kmeans;
 	KDTreeIndex<ELEM_TYPE, DIST_TYPE>* kdtree;
 
-    const Matrix<float> dataset;
+    const Matrix<ELEM_TYPE> dataset;
+
+    const IndexParams& index_params;
 
 
 public:
 
-	CompositeIndex(const Matrix<ELEM_TYPE>& inputData, const CompositeIndexParams& params = CompositeIndexParams() ) : dataset(inputData)
+	CompositeIndex(const Matrix<ELEM_TYPE>& inputData, const CompositeIndexParams& params = CompositeIndexParams() ) :
+		dataset(inputData), index_params(params)
 	{
 		KDTreeIndexParams kdtree_params(params.trees);
 		KMeansIndexParams kmeans_params(params.branching, params.iterations, params.centers_init, params.cb_index);
@@ -71,12 +126,12 @@ public:
     }
 
 
-	int size() const
+    size_t size() const
 	{
 		return dataset.rows;
 	}
 
-	int veclen() const
+	size_t veclen() const
 	{
 		return dataset.cols;
 	}
@@ -98,28 +153,27 @@ public:
 
     void saveIndex(FILE* stream)
     {
-
+    	kmeans->saveIndex(stream);
+    	kdtree->saveIndex(stream);
     }
 
 
     void loadIndex(FILE* stream)
     {
-
+    	kmeans->loadIndex(stream);
+    	kdtree->loadIndex(stream);
     }
 
-	void findNeighbors(ResultSet& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
 	{
 		kmeans->findNeighbors(result,vec,searchParams);
 		kdtree->findNeighbors(result,vec,searchParams);
 	}
 
-
-//    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
-//    {
-//        Params params;
-//
-//        return params;
-//    }
+	const IndexParams* getParameters() const
+	{
+		return &index_params;
+	}
 
 
 };

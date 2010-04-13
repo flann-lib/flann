@@ -29,12 +29,28 @@
 #ifndef SAVING_H_
 #define SAVING_H_
 
-#include "flann/constants.h"
+#include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
+#include <cstdio>
+#include <cstring>
 
 
 namespace flann
 {
+
+template <typename T> flann_datatype_t get_flann_datatype() { throw FLANNException("Unknown FLANN data type"); }
+template<> flann_datatype_t get_flann_datatype<char>();
+template<> flann_datatype_t get_flann_datatype<short>();
+template<> flann_datatype_t get_flann_datatype<int>();
+template<> flann_datatype_t get_flann_datatype<unsigned char>();
+template<> flann_datatype_t get_flann_datatype<unsigned short>();
+template<> flann_datatype_t get_flann_datatype<unsigned int>();
+template<> flann_datatype_t get_flann_datatype<float>();
+template<> flann_datatype_t get_flann_datatype<double>();
+
+
+extern const char FLANN_SIGNATURE[];
+extern const char FLANN_VERSION[];
 
 /**
  * Structure representing the index header.
@@ -42,7 +58,8 @@ namespace flann
 struct IndexHeader
 {
 	char signature[16];
-	int flann_version;
+	char version[16];
+	flann_datatype_t data_type;
 	flann_algorithm_t index_type;
 	int rows;
 	int cols;
@@ -54,7 +71,21 @@ struct IndexHeader
  * @param stream - Stream to save to
  * @param index - The index to save
  */
-void save_header(FILE* stream, const NNIndex& index);
+template<typename ELEM_TYPE>
+void save_header(FILE* stream, const NNIndex<ELEM_TYPE>& index)
+{
+	IndexHeader header;
+	memset(header.signature, 0 , sizeof(header.signature));
+	strcpy(header.signature, FLANN_SIGNATURE);
+	memset(header.version, 0 , sizeof(header.version));
+	strcpy(header.version, FLANN_VERSION);
+	header.data_type = get_flann_datatype<ELEM_TYPE>();
+	header.index_type = index.getType();
+	header.rows = index.size();
+	header.cols = index.veclen();
+
+	std::fwrite(&header, sizeof(header),1,stream);
+}
 
 
 /**
@@ -80,6 +111,7 @@ void load_value(FILE* stream, T& value, int count = 1)
 		throw FLANNException("Cannot read from file");
 	}
 }
+
 }
 
 #endif /* SAVING_H_ */

@@ -38,6 +38,7 @@
 #include "flann/algorithms/nn_index.h"
 #include "flann/util/result_set.h"
 #include "flann/util/logger.h"
+#include "flann/util/timer.h"
 
 
 using namespace std;
@@ -45,33 +46,78 @@ using namespace std;
 namespace flann
 {
 
-float search_with_ground_truth(NNIndex& index, const Matrix<float>& inputData, const Matrix<float>& testData, const Matrix<int>& matches, int nn, int checks, float& time, float& dist, int skipMatches);
+int countCorrectMatches(int* neighbors, int* groundTruth, int n);
 
-template <typename ELEM_TYPE, typename DIST_TYPE >
-void search_for_neighbors(NNIndex& index, const Matrix<ELEM_TYPE>& testset, Matrix<int>& result, Matrix<DIST_TYPE>& dists, const SearchParams &searchParams, int skip = 0)
+
+template <typename ELEM_TYPE>
+float computeDistanceRaport(const Matrix<ELEM_TYPE>& inputData, ELEM_TYPE* target, int* neighbors, int* groundTruth, int veclen, int n)
 {
-    assert(testset.rows == result.rows);
+	ELEM_TYPE* target_end = target + veclen;
+    float ret = 0;
+    for (int i=0;i<n;++i) {
+        float den = flann_dist(target,target_end, inputData[groundTruth[i]]);
+        float num = flann_dist(target,target_end, inputData[neighbors[i]]);
 
-    int nn = result.cols;
-    KNNResultSet resultSet(nn+skip);
-
-
-    for (size_t i = 0; i < testset.rows; i++) {
-        float* target = testset[i];
-        resultSet.init(target, testset.cols);
-
-        index.findNeighbors(resultSet,target, searchParams);
-
-        int* neighbors = resultSet.getNeighbors();
-        float* distances = resultSet.getDistances();
-        memcpy(result[i], neighbors+skip, nn*sizeof(int));
-        memcpy(dists[i], distances+skip, nn*sizeof(float));
+        if (den==0 && num==0) {
+            ret += 1;
+        }
+        else {
+            ret += num/den;
+        }
     }
 
+    return ret;
 }
 
 template <typename ELEM_TYPE>
-float test_index_checks(NNIndex& index, const Matrix<ELEM_TYPE>& inputData, const Matrix<ELEM_TYPE>& testData, const Matrix<int>& matches,
+float search_with_ground_truth(NNIndex<ELEM_TYPE>& index, const Matrix<ELEM_TYPE>& inputData, const Matrix<ELEM_TYPE>& testData, const Matrix<int>& matches, int nn, int checks, float& time, float& dist, int skipMatches)
+{
+    if (matches.cols<size_t(nn)) {
+        logger.info("matches.cols=%d, nn=%d\n",matches.cols,nn);
+
+        throw FLANNException("Ground truth is not computed for as many neighbors as requested");
+    }
+
+    KNNResultSet<ELEM_TYPE> resultSet(nn+skipMatches);
+    SearchParams searchParams(checks);
+
+    int correct;
+    float distR;
+    StartStopTimer t;
+    int repeats = 0;
+    while (t.value<0.2) {
+        repeats++;
+        t.start();
+        correct = 0;
+        distR = 0;
+        for (size_t i = 0; i < testData.rows; i++) {
+            ELEM_TYPE* target = testData[i];
+            resultSet.init(target, testData.cols);
+            index.findNeighbors(resultSet,target, searchParams);
+            int* neighbors = resultSet.getNeighbors();
+            neighbors = neighbors+skipMatches;
+
+            correct += countCorrectMatches(neighbors,matches[i], nn);
+            distR += computeDistanceRaport(inputData, target,neighbors,matches[i], testData.cols, nn);
+        }
+        t.stop();
+    }
+    time = t.value/repeats;
+
+
+    float precicion = (float)correct/(nn*testData.rows);
+
+    dist = distR/(testData.rows*nn);
+
+    logger.info("%8d %10.4g %10.5g %10.5g %10.5g\n",
+            checks, precicion, time, 1000.0 * time / testData.rows, dist);
+
+    return precicion;
+}
+
+
+template <typename ELEM_TYPE>
+float test_index_checks(NNIndex<ELEM_TYPE>& index, const Matrix<ELEM_TYPE>& inputData, const Matrix<ELEM_TYPE>& testData, const Matrix<int>& matches,
             int checks, float& precision, int nn = 1, int skipMatches = 0)
 {
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
@@ -85,7 +131,7 @@ float test_index_checks(NNIndex& index, const Matrix<ELEM_TYPE>& inputData, cons
 }
 
 template <typename ELEM_TYPE>
-float test_index_precision(NNIndex& index, const Matrix<ELEM_TYPE>& inputData, const Matrix<ELEM_TYPE>& testData, const Matrix<int>& matches,
+float test_index_precision(NNIndex<ELEM_TYPE>& index, const Matrix<ELEM_TYPE>& inputData, const Matrix<ELEM_TYPE>& testData, const Matrix<int>& matches,
              float precision, int& checks, int nn = 1, int skipMatches = 0)
 {
 	const float SEARCH_EPS = 0.001;
@@ -155,7 +201,7 @@ float test_index_precision(NNIndex& index, const Matrix<ELEM_TYPE>& inputData, c
 
 
 template <typename ELEM_TYPE>
-float test_index_precisions(NNIndex& index, const Matrix<ELEM_TYPE>& inputData, const Matrix<ELEM_TYPE>& testData, const Matrix<int>& matches,
+float test_index_precisions(NNIndex<ELEM_TYPE>& index, const Matrix<ELEM_TYPE>& inputData, const Matrix<ELEM_TYPE>& testData, const Matrix<int>& matches,
                     float* precisions, int precisions_length, int nn = 1, int skipMatches = 0, float maxTime = 0)
 {
 	const float SEARCH_EPS = 0.001;

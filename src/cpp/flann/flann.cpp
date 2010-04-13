@@ -30,12 +30,12 @@
 #include <vector>
 
 #include "flann/flann.h"
-#include "flann/util/common.h"
+#include "flann/general.h"
 #include "flann/util/timer.h"
 #include "flann/util/logger.h"
 #include "flann/nn/index_testing.h"
 #include "flann/util/saving.h"
-#include "flann/util/object_factory.h"
+#include "flann/nn/ground_truth.h"
 // index types
 #include "flann/algorithms/kdtree_index.h"
 #include "flann/algorithms/kdtree_mt_index.h"
@@ -52,12 +52,10 @@ using namespace std;
 #define EXPORTED extern "C"
 #endif
 
-struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { KDTREE, 32, 0.2, 4, 32, 11, CENTERS_RANDOM, -1, 0.01, 0, 0.1, LOG_NONE, 0 };
+//struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { KDTREE, 32, 0.2, 4, 32, 11, CENTERS_RANDOM, -1, 0.01, 0, 0.1, LOG_NONE, 0 };
 
 namespace flann
 {
-
-typedef ObjectFactory<IndexParams, flann_algorithm_t> ParamsFactory;
 
 
 IndexParams* IndexParams::createFromParameters(const FLANNParameters& p)
@@ -68,58 +66,6 @@ IndexParams* IndexParams::createFromParameters(const FLANNParameters& p)
 	return params;
 }
 
-NNIndex* LinearIndexParams::createIndex(const Matrix<float>& dataset) const
-{
-	return new LinearIndex<float>(dataset, *this);
-}
-
-
-NNIndex* KDTreeIndexParams::createIndex(const Matrix<float>& dataset) const
-{
-	return new KDTreeIndex<float>(dataset, *this);
-}
-
-NNIndex* KDTreeMTIndexParams::createIndex(const Matrix<float>& dataset) const
-{
-	return new KDTreeMTIndex<float>(dataset, *this);
-}
-
-NNIndex* KMeansIndexParams::createIndex(const Matrix<float>& dataset) const
-{
-	return new KMeansIndex<float>(dataset, *this);
-}
-
-
-NNIndex* CompositeIndexParams::createIndex(const Matrix<float>& dataset) const
-{
-	return new CompositeIndex<float>(dataset, *this);
-}
-
-
-NNIndex* AutotunedIndexParams::createIndex(const Matrix<float>& dataset) const
-{
-	return new AutotunedIndex<float>(dataset, *this);
-}
-
-
-NNIndex* SavedIndexParams::createIndex(const Matrix<float>& dataset) const
-{
-
-	FILE* fin = fopen(filename.c_str(), "rb");
-	if (fin==NULL) {
-		return NULL;
-	}
-	IndexHeader header = load_header(fin);
-	rewind(fin);
-	IndexParams* params = ParamsFactory::instance().create(header.index_type);
-	NNIndex* nnIndex =  params->createIndex(dataset);
-	nnIndex->loadIndex(fin);
-	fclose(fin);
-	delete params; //?
-
-	return nnIndex;
-
-}
 
 class StaticInit
 {
@@ -132,30 +78,17 @@ public:
 		ParamsFactory::instance().register_<KMeansIndexParams>(KMEANS);
 		ParamsFactory::instance().register_<CompositeIndexParams>(COMPOSITE);
 		ParamsFactory::instance().register_<AutotunedIndexParams>(AUTOTUNED);
-		ParamsFactory::instance().register_<SavedIndexParams>(SAVED);
+//		ParamsFactory::instance().register_<SavedIndexParams>(SAVED);
 	}
 };
 StaticInit __init;
 
-
-
-int hierarchicalClustering(const Matrix<float>& features, Matrix<float>& centers, const KMeansIndexParams& params)
-{
-    KMeansIndex<float> kmeans(features, params);
-	kmeans.buildIndex();
-
-    int clusterNum = kmeans.getClusterCenters(centers);
-	return clusterNum;
-}
 
 } // namespace FLANN
 
 
 
 using namespace flann;
-
-typedef Index<float>* IndexPtr;
-typedef Matrix<float>* MatrixPtr;
 
 
 
@@ -164,7 +97,7 @@ void init_flann_parameters(FLANNParameters* p)
 	if (p != NULL) {
  		flann_log_verbosity(p->log_level);
         if (p->random_seed>0) {
-		  seed_random(p->random_seed);
+        	seed_random(p->random_seed);
         }
 	}
 }
@@ -184,7 +117,8 @@ EXPORTED void flann_set_distance_type(flann_distance_t distance_type, int order)
 }
 
 
-EXPORTED flann_index_t flann_build_index(float* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
+template<typename T>
+flann_index_t _flann_build_index(T* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
 {
 	try {
 
@@ -193,8 +127,10 @@ EXPORTED flann_index_t flann_build_index(float* dataset, int rows, int cols, flo
 			throw FLANNException("The flann_params argument must be non-null");
 		}
 		IndexParams* params = IndexParams::createFromParameters(*flann_params);
-		IndexPtr index = new Index<float>(Matrix<float>(dataset,rows,cols), *params);
+		Index<T>* index = new Index<T>(Matrix<T>(dataset,rows,cols), *params);
 		index->buildIndex();
+		const IndexParams* index_params = index->getIndexParameters();
+		index_params->toParameters(*flann_params);
 
 		return index;
 	}
@@ -204,16 +140,40 @@ EXPORTED flann_index_t flann_build_index(float* dataset, int rows, int cols, flo
 	}
 }
 
+EXPORTED flann_index_t flann_build_index(float* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
+{
+	return _flann_build_index(dataset, rows, cols, speedup, flann_params);
+}
 
+EXPORTED flann_index_t flann_build_index_float(float* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
+{
+	return _flann_build_index(dataset, rows, cols, speedup, flann_params);
+}
 
-EXPORTED int flann_save_index(flann_index_t index_ptr, char* filename)
+EXPORTED flann_index_t flann_build_index_double(double* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
+{
+	return _flann_build_index(dataset, rows, cols, speedup, flann_params);
+}
+
+EXPORTED flann_index_t flann_build_index_byte(unsigned char* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
+{
+	return _flann_build_index(dataset, rows, cols, speedup, flann_params);
+}
+
+EXPORTED flann_index_t flann_build_index_int(int* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
+{
+	return _flann_build_index(dataset, rows, cols, speedup, flann_params);
+}
+
+template<typename T>
+int _flann_save_index(flann_index_t index_ptr, char* filename)
 {
 	try {
 		if (index_ptr==NULL) {
 			throw FLANNException("Invalid index");
 		}
 
-		IndexPtr index = (IndexPtr)index_ptr;
+		Index<T>* index = (Index<T>*)index_ptr;
 		index->save(filename);
 
 		return 0;
@@ -224,11 +184,37 @@ EXPORTED int flann_save_index(flann_index_t index_ptr, char* filename)
 	}
 }
 
+EXPORTED int flann_save_index(flann_index_t index_ptr, char* filename)
+{
+	return _flann_save_index<float>(index_ptr, filename);
+}
 
-EXPORTED flann_index_t flann_load_index(char* filename, float* dataset, int rows, int cols)
+EXPORTED int flann_save_index_float(flann_index_t index_ptr, char* filename)
+{
+	return _flann_save_index<float>(index_ptr, filename);
+}
+
+EXPORTED int flann_save_index_double(flann_index_t index_ptr, char* filename)
+{
+	return _flann_save_index<double>(index_ptr, filename);
+}
+
+EXPORTED int flann_save_index_byte(flann_index_t index_ptr, char* filename)
+{
+	return _flann_save_index<unsigned char>(index_ptr, filename);
+}
+
+EXPORTED int flann_save_index_int(flann_index_t index_ptr, char* filename)
+{
+	return _flann_save_index<int>(index_ptr, filename);
+}
+
+
+template<typename T>
+flann_index_t _flann_load_index(char* filename, T* dataset, int rows, int cols)
 {
 	try {
-		IndexPtr index = new Index<float>(Matrix<float>(dataset,rows,cols), SavedIndexParams(filename));
+		Index<T>* index = new Index<T>(Matrix<T>(dataset,rows,cols), SavedIndexParams(filename));
 		return index;
 	}
 	catch(runtime_error& e) {
@@ -237,19 +223,45 @@ EXPORTED flann_index_t flann_load_index(char* filename, float* dataset, int rows
 	}
 }
 
+EXPORTED flann_index_t flann_load_index(char* filename, float* dataset, int rows, int cols)
+{
+	return _flann_load_index(filename, dataset, rows, cols);
+}
+
+EXPORTED flann_index_t flann_load_index_float(char* filename, float* dataset, int rows, int cols)
+{
+	return _flann_load_index(filename, dataset, rows, cols);
+}
+
+EXPORTED flann_index_t flann_load_index_double(char* filename, double* dataset, int rows, int cols)
+{
+	return _flann_load_index(filename, dataset, rows, cols);
+}
+
+EXPORTED flann_index_t flann_load_index_byte(char* filename, unsigned char* dataset, int rows, int cols)
+{
+	return _flann_load_index(filename, dataset, rows, cols);
+}
+
+EXPORTED flann_index_t flann_load_index_int(char* filename, int* dataset, int rows, int cols)
+{
+	return _flann_load_index(filename, dataset, rows, cols);
+}
 
 
-EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+
+template<typename T>
+int _flann_find_nearest_neighbors(T* dataset,  int rows, int cols, T* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
 
 		IndexParams* params = IndexParams::createFromParameters(*flann_params);
-		IndexPtr index = new Index<float>(Matrix<float>(dataset,rows,cols), *params);
+		Index<T>* index = new Index<T>(Matrix<T>(dataset,rows,cols), *params);
 		index->buildIndex();
 		Matrix<int> m_indices(result,tcount, nn);
 		Matrix<float> m_dists(dists,tcount, nn);
-		index->knnSearch(Matrix<float>(testset, tcount, index->veclen()),
+		index->knnSearch(Matrix<T>(testset, tcount, index->veclen()),
 						m_indices,
 						m_dists, nn, SearchParams(flann_params->checks) );
 		return 0;
@@ -262,22 +274,48 @@ EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, f
 	return -1;
 }
 
+EXPORTED int flann_find_nearest_neighbors(float* dataset,  int rows, int cols, float* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
+}
 
-EXPORTED int flann_find_nearest_neighbors_index(flann_index_t index_ptr, float* testset, int tcount, int* result, float* dists, int nn, int checks, FLANNParameters* flann_params)
+EXPORTED int flann_find_nearest_neighbors_float(float* dataset,  int rows, int cols, float* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
+}
+
+EXPORTED int flann_find_nearest_neighbors_double(double* dataset,  int rows, int cols, double* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
+}
+
+EXPORTED int flann_find_nearest_neighbors_byte(unsigned char* dataset,  int rows, int cols, unsigned char* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
+}
+
+EXPORTED int flann_find_nearest_neighbors_int(int* dataset,  int rows, int cols, int* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
+}
+
+
+template<typename T>
+int _flann_find_nearest_neighbors_index(flann_index_t index_ptr, T* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
 		if (index_ptr==NULL) {
 			throw FLANNException("Invalid index");
 		}
-		IndexPtr index = (IndexPtr) index_ptr;
+		Index<T>* index = (Index<T>*) index_ptr;
 
 		Matrix<int> m_indices(result,tcount, nn);
 		Matrix<float> m_dists(dists, tcount, nn);
-		index->knnSearch(Matrix<float>(testset, tcount, index->veclen()),
-						m_indices,
-						m_dists, nn, SearchParams(checks) );
 
+		index->knnSearch(Matrix<T>(testset, tcount, index->veclen()),
+						m_indices,
+						m_dists, nn, SearchParams(flann_params->checks) );
 	}
 	catch(runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
@@ -287,14 +325,39 @@ EXPORTED int flann_find_nearest_neighbors_index(flann_index_t index_ptr, float* 
 	return -1;
 }
 
+EXPORTED int flann_find_nearest_neighbors_index(flann_index_t index_ptr, float* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors_index(index_ptr, testset, tcount, result, dists, nn, flann_params);
+}
 
-EXPORTED int flann_radius_search(flann_index_t index_ptr,
-										float* query,
+EXPORTED int flann_find_nearest_neighbors_index_float(flann_index_t index_ptr, float* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors_index(index_ptr, testset, tcount, result, dists, nn, flann_params);
+}
+
+EXPORTED int flann_find_nearest_neighbors_index_double(flann_index_t index_ptr, double* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors_index(index_ptr, testset, tcount, result, dists, nn, flann_params);
+}
+
+EXPORTED int flann_find_nearest_neighbors_index_byte(flann_index_t index_ptr, unsigned char* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors_index(index_ptr, testset, tcount, result, dists, nn, flann_params);
+}
+
+EXPORTED int flann_find_nearest_neighbors_index_int(flann_index_t index_ptr, int* testset, int tcount, int* result, float* dists, int nn, FLANNParameters* flann_params)
+{
+	return _flann_find_nearest_neighbors_index(index_ptr, testset, tcount, result, dists, nn, flann_params);
+}
+
+
+template<typename T>
+int _flann_radius_search(flann_index_t index_ptr,
+										T* query,
 										int* indices,
 										float* dists,
 										int max_nn,
 										float radius,
-										int checks,
 										FLANNParameters* flann_params)
 {
 	try {
@@ -302,13 +365,13 @@ EXPORTED int flann_radius_search(flann_index_t index_ptr,
 		if (index_ptr==NULL) {
 			throw FLANNException("Invalid index");
 		}
-		IndexPtr index = (IndexPtr) index_ptr;
+		Index<T>* index = (Index<T>*) index_ptr;
 
 		Matrix<int> m_indices(indices, 1, max_nn);
 		Matrix<float> m_dists(dists, 1, max_nn);
-		int count = index->radiusSearch(Matrix<float>(query, 1, index->veclen()),
+		int count = index->radiusSearch(Matrix<T>(query, 1, index->veclen()),
 						m_indices,
-						m_dists, radius, SearchParams(checks) );
+						m_dists, radius, SearchParams(flann_params->checks) );
 
 
 		return count;
@@ -320,15 +383,71 @@ EXPORTED int flann_radius_search(flann_index_t index_ptr,
 
 }
 
+EXPORTED int flann_radius_search(flann_index_t index_ptr,
+										float* query,
+										int* indices,
+										float* dists,
+										int max_nn,
+										float radius,
+										FLANNParameters* flann_params)
+{
+	return _flann_radius_search(index_ptr, query, indices, dists, max_nn, radius, flann_params);
+}
 
-EXPORTED int flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
+EXPORTED int flann_radius_search_float(flann_index_t index_ptr,
+										float* query,
+										int* indices,
+										float* dists,
+										int max_nn,
+										float radius,
+										FLANNParameters* flann_params)
+{
+	return _flann_radius_search(index_ptr, query, indices, dists, max_nn, radius, flann_params);
+}
+
+EXPORTED int flann_radius_search_double(flann_index_t index_ptr,
+										double* query,
+										int* indices,
+										float* dists,
+										int max_nn,
+										float radius,
+										FLANNParameters* flann_params)
+{
+	return _flann_radius_search(index_ptr, query, indices, dists, max_nn, radius, flann_params);
+}
+
+EXPORTED int flann_radius_search_byte(flann_index_t index_ptr,
+										unsigned char* query,
+										int* indices,
+										float* dists,
+										int max_nn,
+										float radius,
+										FLANNParameters* flann_params)
+{
+	return _flann_radius_search(index_ptr, query, indices, dists, max_nn, radius, flann_params);
+}
+
+EXPORTED int flann_radius_search_int(flann_index_t index_ptr,
+										int* query,
+										int* indices,
+										float* dists,
+										int max_nn,
+										float radius,
+										FLANNParameters* flann_params)
+{
+	return _flann_radius_search(index_ptr, query, indices, dists, max_nn, radius, flann_params);
+}
+
+
+template<typename T>
+int _flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
-        IndexPtr index = (IndexPtr) index_ptr;
+        Index<T>* index = (Index<T>*) index_ptr;
         delete index;
 
         return 0;
@@ -339,16 +458,43 @@ EXPORTED int flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_pa
 	}
 }
 
+EXPORTED int flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
+{
+	return _flann_free_index<float>(index_ptr, flann_params);
+}
 
-EXPORTED int flann_compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, FLANNParameters* flann_params)
+EXPORTED int flann_free_index_float(flann_index_t index_ptr, FLANNParameters* flann_params)
+{
+	return _flann_free_index<float>(index_ptr, flann_params);
+}
+
+EXPORTED int flann_free_index_double(flann_index_t index_ptr, FLANNParameters* flann_params)
+{
+	return _flann_free_index<double>(index_ptr, flann_params);
+}
+
+EXPORTED int flann_free_index_byte(flann_index_t index_ptr, FLANNParameters* flann_params)
+{
+	return _flann_free_index<unsigned char>(index_ptr, flann_params);
+}
+
+EXPORTED int flann_free_index_int(flann_index_t index_ptr, FLANNParameters* flann_params)
+{
+	return _flann_free_index<int>(index_ptr, flann_params);
+}
+
+
+
+template<typename ElEM_TYPE, typename DIST_TYPE>
+int _flann_compute_cluster_centers(ElEM_TYPE* dataset, int rows, int cols, int clusters, DIST_TYPE* result, FLANNParameters* flann_params)
 {
 	try {
 		init_flann_parameters(flann_params);
 
-        MatrixPtr inputData = new Matrix<float>(dataset,rows,cols);
+		Matrix<ElEM_TYPE> inputData(dataset,rows,cols);
         KMeansIndexParams params(flann_params->branching, flann_params->iterations, flann_params->centers_init, flann_params->cb_index);
-		Matrix<float> centers(result,clusters, cols);
-        int clusterNum = hierarchicalClustering(*inputData,centers, params);
+		Matrix<DIST_TYPE> centers(result,clusters, cols);
+        int clusterNum = hierarchicalClustering<ElEM_TYPE,DIST_TYPE>(inputData,centers, params);
 
 		return clusterNum;
 	} catch (runtime_error& e) {
@@ -357,6 +503,35 @@ EXPORTED int flann_compute_cluster_centers(float* dataset, int rows, int cols, i
 	}
 }
 
+EXPORTED int flann_compute_cluster_centers(float* dataset, int rows, int cols, int clusters, float* result, FLANNParameters* flann_params)
+{
+	return _flann_compute_cluster_centers(dataset, rows, cols, clusters, result, flann_params);
+}
+
+EXPORTED int flann_compute_cluster_centers_float(float* dataset, int rows, int cols, int clusters, float* result, FLANNParameters* flann_params)
+{
+	return _flann_compute_cluster_centers(dataset, rows, cols, clusters, result, flann_params);
+}
+
+EXPORTED int flann_compute_cluster_centers_double(double* dataset, int rows, int cols, int clusters, double* result, FLANNParameters* flann_params)
+{
+	return _flann_compute_cluster_centers(dataset, rows, cols, clusters, result, flann_params);
+}
+
+EXPORTED int flann_compute_cluster_centers_byte(unsigned char* dataset, int rows, int cols, int clusters, float* result, FLANNParameters* flann_params)
+{
+	return _flann_compute_cluster_centers(dataset, rows, cols, clusters, result, flann_params);
+}
+
+EXPORTED int flann_compute_cluster_centers_int(int* dataset, int rows, int cols, int clusters, float* result, FLANNParameters* flann_params)
+{
+	return _flann_compute_cluster_centers(dataset, rows, cols, clusters, result, flann_params);
+}
+
+
+/**
+ * Functions exported to the python ctypes interface.
+ */
 
 EXPORTED void compute_ground_truth_float(float* dataset, int dshape[], float* testset, int tshape[], int* match, int mshape[], int skip)
 {
@@ -379,8 +554,8 @@ EXPORTED float test_with_precision(flann_index_t index_ptr, float* dataset, int 
             throw FLANNException("Invalid index");
         }
 
-        IndexPtr index = (IndexPtr)index_ptr;
-        NNIndex* nn_index = index->index();
+        Index<float>* index = (Index<float>*)index_ptr;
+        NNIndex<float>* nn_index = index->getIndex();
         return test_index_precision(*nn_index, Matrix<float>(dataset, dshape[0], dshape[1]), Matrix<float>(testset, tshape[0], tshape[1]),
                 Matrix<int>(matches, mshape[0],mshape[1]), precision, *checks, nn, skip);
     } catch (runtime_error& e) {
@@ -399,8 +574,8 @@ EXPORTED float test_with_checks(flann_index_t index_ptr, float* dataset, int dsh
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
-        IndexPtr index = (IndexPtr)index_ptr;
-        NNIndex* nn_index = index->index();
+        Index<float>* index = (Index<float>*)index_ptr;
+        NNIndex<float>* nn_index = index->getIndex();
         return test_index_checks(*nn_index, Matrix<float>(dataset, dshape[0], dshape[1]), Matrix<float>(testset, tshape[0], tshape[1]),
                 Matrix<int>(matches, mshape[0],mshape[1]), checks, *precision, nn, skip);
     } catch (runtime_error& e) {

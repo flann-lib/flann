@@ -122,6 +122,7 @@ public:
 	 */
 	void* malloc(int size)
 	{
+		if (size>1000) printf("Allocating size: %d\n", size);
 		int blocksize;
 
 		/* Round size up to a multiple of wordsize.  The following expression
@@ -144,7 +145,7 @@ public:
 			// use the standard C malloc to allocate memory
 			void* m = ::malloc(blocksize);
 			if (!m) {
-                fprintf(stderr,"Failed to allocate memory.");
+                fprintf(stderr,"Failed to allocate memory.\n");
                 exit(1);
 			}
 

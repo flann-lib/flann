@@ -33,7 +33,7 @@
 
 #include <stdio.h>
 
-#include "flann/constants.h"
+#include "flann/general.h"
 
 namespace flann {
 

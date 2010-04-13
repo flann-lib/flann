@@ -11,7 +11,7 @@ import unittest, time
 class Test_PyFLANN_clustering(unittest.TestCase):
 
     def setUp(self):
-        self.nn = FLANN()
+        self.nn = FLANN(iterations=11)
 
     ################################################################################
 
@@ -51,14 +51,27 @@ class Test_PyFLANN_clustering(unittest.TestCase):
 
         if dup > 1: xc += randn(xc.shape[0], xc.shape[1])*0.000001/dim
 
-        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "random", random_seed=3)
+        rnseed = int(time.time())
+        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "random", random_seed=2)
+        if dim==10:
+        #    print x
+            print centroids
+        #print N
+        #print centroids.shape
         mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
+        print mindists
         for m in mindists: self.assertAlmostEqual(m, 0.0, 1)
 
+        rnseed = int(time.time())
         centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "gonzales", random_seed=2)
         mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
+        print mindists
         for m in mindists: self.assertAlmostEqual(m, 0.0, 1)
         
+        centroids = self.nn.kmeans(xc[permutation(len(xc))], N, centers_init = "kmeanspp", random_seed=2)
+        mindists = array([[ sum((d1-d2)**2) for d1 in x] for d2 in centroids]).min(0)
+        print mindists
+        for m in mindists: self.assertAlmostEqual(m, 0.0, 1)
 
     def testrandomnumber_same(self):
         

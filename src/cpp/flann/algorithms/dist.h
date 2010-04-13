@@ -34,7 +34,7 @@
 #include <cmath>
 using namespace std;
 
-#include "flann/constants.h"
+#include "flann/general.h"
 
 namespace flann
 {
@@ -81,6 +81,10 @@ double euclidean_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 	}
 	return distsq;
 }
+
+template <>
+double euclidean_dist(unsigned char* first1, unsigned char* last1, unsigned char* first2, double acc);
+
 
 /**
  *  Compute the Manhattan (L_1) distance between two vectors.

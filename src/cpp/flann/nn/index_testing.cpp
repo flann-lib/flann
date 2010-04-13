@@ -33,10 +33,7 @@
 
 #include "flann/flann.h"
 #include "flann/algorithms/dist.h"
-#include "flann/util/common.h"
 #include "flann/nn/index_testing.h"
-#include "flann/util/timer.h"
-
 
 namespace flann
 {
@@ -56,70 +53,7 @@ int countCorrectMatches(int* neighbors, int* groundTruth, int n)
 }
 
 
-float computeDistanceRaport(const Matrix<float>& inputData, float* target, int* neighbors, int* groundTruth, int veclen, int n)
-{
-	float* target_end = target + veclen;
-    float ret = 0;
-    for (int i=0;i<n;++i) {
-        float den = flann_dist(target,target_end, inputData[groundTruth[i]]);
-        float num = flann_dist(target,target_end, inputData[neighbors[i]]);
 
-//        printf("den=%g,num=%g\n",den,num);
-
-        if (den==0 && num==0) {
-            ret += 1;
-        } else {
-            ret += num/den;
-        }
-    }
-
-    return ret;
-}
-
-float search_with_ground_truth(NNIndex& index, const Matrix<float>& inputData, const Matrix<float>& testData, const Matrix<int>& matches, int nn, int checks, float& time, float& dist, int skipMatches)
-{
-    if (matches.cols<size_t(nn)) {
-        logger.info("matches.cols=%d, nn=%d\n",matches.cols,nn);
-
-        throw FLANNException("Ground truth is not computed for as many neighbors as requested");
-    }
-
-    KNNResultSet resultSet(nn+skipMatches);
-    SearchParams searchParams(checks);
-
-    int correct;
-    float distR;
-    StartStopTimer t;
-    int repeats = 0;
-    while (t.value<0.2) {
-        repeats++;
-        t.start();
-        correct = 0;
-        distR = 0;
-        for (size_t i = 0; i < testData.rows; i++) {
-            float* target = testData[i];
-            resultSet.init(target, testData.cols);
-            index.findNeighbors(resultSet,target, searchParams);
-            int* neighbors = resultSet.getNeighbors();
-            neighbors = neighbors+skipMatches;
-
-            correct += countCorrectMatches(neighbors,matches[i], nn);
-            distR += computeDistanceRaport(inputData, target,neighbors,matches[i], testData.cols, nn);
-        }
-        t.stop();
-    }
-    time = t.value/repeats;
-
-
-    float precicion = (float)correct/(nn*testData.rows);
-
-    dist = distR/(testData.rows*nn);
-
-    logger.info("%8d %10.4g %10.5g %10.5g %10.5g\n",
-            checks, precicion, time, 1000.0 * time / testData.rows, dist);
-
-    return precicion;
-}
 
 
 }

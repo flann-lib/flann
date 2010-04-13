@@ -6,26 +6,24 @@ function [index, params, speedup] = flann_build_index(dataset, build_params)
 
 % Marius Muja, January 2008
 
-
-
-    algos = { 'linear', 'kdtree', 'kmeans', 'composite' };
-    center_algos = {'random', 'gonzales', 'kmeanspp' };
-    log_levels = {'none', 'fatal', 'error', 'warning', 'info'};
-    function value = id2value(array, id)
-        value = array(id+1);
-    end
-    function id = value2id(array,value)
-        cnt = 0;
-        for item = array,
-            if strcmp(value,item)
-                id = cnt;
+    algos = struct( 'linear', 0, 'kdtree', 1, 'kmeans', 2, 'composite', 3, 'autotuned', 254, 'saved', 255 );
+    center_algos = struct('random', 0, 'gonzales', 1, 'kmeanspp', 2 );
+    log_levels = struct('none', 0, 'fatal', 1, 'error', 2, 'warning', 3, 'info', 4);
+    function value = id2value(map, id)
+        fields = fieldnames(map);
+        for i = 1:length(fields),
+            val = cell2mat(fields(i));
+            if map.(val) == id
+                value = val;
                 break;
             end
-            cnt  = cnt + 1;
-        end            
+        end
+    end
+    function id = value2id(map,value)
+        id = map.(value);
     end
 
-    default_params = struct('target_precision', -1, 'algorithm', 'kdtree' ,'checks', 32,  'cb_index', 0.4, 'trees', 4, 'branching', 32, 'iterations', 5, 'centers_init', 'random', 'build_weight', 0.01, 'memory_weight', 0, 'sample_fraction', 0.1, 'log_level', 'warning', 'random_seed', 0);
+    default_params = struct('algorithm', 'kdtree' ,'checks', 32,  'cb_index', 0.4, 'trees', 4, 'branching', 32, 'iterations', 5, 'centers_init', 'random', 'target_precision', 0.9,'build_weight', 0.01, 'memory_weight', 0, 'sample_fraction', 0.1, 'log_level', 'warning', 'random_seed', 0);
 
     if ~isstruct(build_params)
         error('The "build_params" argument must be a structure');
@@ -48,8 +46,6 @@ function [index, params, speedup] = flann_build_index(dataset, build_params)
     end
 
     [index, params, speedup] = nearest_neighbors('build_index',dataset, params);
-
-
 
     if isnumeric(params.algorithm),
         params.algorithm = id2value(algos,params.algorithm);

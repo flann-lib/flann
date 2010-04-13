@@ -24,12 +24,10 @@
 %(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 %THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-function flann_free_index(index_id)
-%FLANN_FREE_INDEX  Deletes the nearest-neighbors index
+function index = flann_load_index(filename, dataset)
+%FLANN_LOAD_INDEX  Loads an index from disk
 %
-% Deletes an index constructed using flann_build_index.
- 
-% Marius Muja, January 2008
+% Marius Muja, March 2009
 
-    nearest_neighbors('free_index',index_id);
+    index = nearest_neighbors('load_index', filename, dataset);
 end

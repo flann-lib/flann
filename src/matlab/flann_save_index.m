@@ -24,12 +24,11 @@
 %(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 %THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-function flann_free_index(index_id)
-%FLANN_FREE_INDEX  Deletes the nearest-neighbors index
+function flann_save_index(index_id, filename)
+%FLANN_SAVE_INDEX  Saves an index to disk
 %
-% Deletes an index constructed using flann_build_index.
  
-% Marius Muja, January 2008
+% Marius Muja, March 2010
 
-    nearest_neighbors('free_index',index_id);
+    nearest_neighbors('save_index',index_id, filename);
 end

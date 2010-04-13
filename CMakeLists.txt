@@ -24,7 +24,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
 #set(CMAKE_BUILD_TYPE Debug)
 
 
@@ -33,23 +34,28 @@ add_custom_target(test)
 add_dependencies(test tests)
 
 macro(flann_add_gtest exe)
-    # add build target
-    add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
-    target_link_libraries(${exe} flann gtest)
-    # add dependency to 'tests' target
-    add_dependencies(tests ${exe})
+	find_library(GTEST gtest)
+	if (${GTEST} STREQUAL "GTEST-NOTFOUND")
+		message("gtest library not found, some tests will not be run")
+	else()
+		# add build target
+		add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
+		target_link_libraries(${exe} flann gtest)
+		# add dependency to 'tests' target
+		add_dependencies(tests ${exe})
 
-    # add target for running test
-    string(REPLACE "/" "_" _testname ${exe})
-    add_custom_target(test_${_testname}
-                    COMMAND ${exe}
-                    ARGS --gtest_print_time
-                    DEPENDS ${exe}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
-                    VERBATIM
-                    COMMENT "Runnint gtest test(s) ${exe}")
-    # add dependency to 'test' target
-    add_dependencies(test test_${_testname})
+		# add target for running test
+		string(REPLACE "/" "_" _testname ${exe})
+		add_custom_target(test_${_testname}
+						COMMAND ${exe}
+						ARGS --gtest_print_time
+						DEPENDS ${exe}
+						WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
+						VERBATIM
+						COMMENT "Runnint gtest test(s) ${exe}")
+		# add dependency to 'test' target
+		add_dependencies(test test_${_testname})
+	endif()
 endmacro(flann_add_gtest)
 
 

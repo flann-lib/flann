@@ -33,8 +33,7 @@
 
 
 #include <cstdio>
-#include "flann/constants.h"
-#include "flann/util/common.h"
+#include "flann/general.h"
 
 using namespace std;
 

@@ -31,6 +31,7 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
         nn.delete_index()
         self.assert_(correct)
 
+
     def testnn_index_random_permute(self):
 
         numtests = 500

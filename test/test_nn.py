@@ -71,7 +71,7 @@ class Test_PyFLANN_nn(unittest.TestCase):
     def test_nn_stress_1d_1pt_kmeans(self):
         self.__nd_random_test(1, 1, algorithm='kmeans')
 
-    def test_nn_stress_1d_1pt_kmeans(self):
+    def test_nn_stress_1d_1pt_linear(self):
         self.__nd_random_test(1, 1, algorithm='linear')
 
     def test_nn_stress_1d_1pt_kdtree(self):
@@ -80,13 +80,13 @@ class Test_PyFLANN_nn(unittest.TestCase):
     def test_nn_stress_1d_1pt_composite(self):
         self.__nd_random_test(1, 1, algorithm='composite')
 
-    def __nd_random_test(self, dim, N, num_neighbors = 10, **kwargs):
+    def __nd_random_test(self, dim, N, type=float32, num_neighbors = 10, **kwargs):
         """
         Make a set of random points, then pass the same ones to the
         query points.  Each point should be closest to itself.
         """
         seed(0)
-        x = rand(N, dim)
+        x = array(rand(N, dim), dtype=type)
         perm = permutation(N)
         
         idx,dists = self.nn.nn(x, x[perm], **kwargs)

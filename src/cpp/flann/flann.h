@@ -32,7 +32,7 @@
 #define FLANN_H
 
 
-#include "flann/constants.h"
+#include "flann/general.h"
 
 
 #ifdef WIN32
@@ -49,26 +49,7 @@
 
 
 
-
-struct FLANNParameters {
-	flann_algorithm_t algorithm; // the algorithm to use (see constants.h)
-
-	int checks;                // how many leafs (features) to check in one search
-    float cb_index;            // cluster boundary index. Used when searching the kmeans tree
-	int trees;                 // number of randomized trees to use (for kdtree)
-	int branching;             // branching factor (for kmeans tree)
-	int iterations;            // max iterations to perform in one kmeans cluetering (kmeans tree)
-	flann_centers_init_t centers_init;          // algorithm used for picking the initial cluetr centers for kmeans tree
-	float target_precision;    // precision desired (used for autotuning, -1 otherwise)
-	float build_weight;        // build tree time weighting factor
-	float memory_weight;       // index memory weigthing factor
-    float sample_fraction;     // what fraction of the dataset to use for autotuning
-
-    flann_log_level_t log_level;             // determines the verbosity of each flann function
-	long random_seed;          // random seed to use
-};
-
-extern struct FLANNParameters DEFAULT_FLANN_PARAMETERS;
+//extern struct FLANNParameters DEFAULT_FLANN_PARAMETERS;
 
 typedef void* FLANN_INDEX; // deprecated
 typedef void* flann_index_t;
@@ -82,7 +63,7 @@ Sets the log level used for all flann functions (unless
 specified in FLANNParameters for each call
 
 Params:
-    level = verbosity level (defined in constants.h)
+    level = verbosity level
 */
 LIBSPEC void flann_log_verbosity(int level);
 
@@ -115,9 +96,29 @@ LIBSPEC flann_index_t flann_build_index(float* dataset,
 									  float* speedup,
 									  struct FLANNParameters* flann_params);
 
+LIBSPEC flann_index_t flann_build_index_float(float* dataset,
+									  int rows,
+									  int cols,
+									  float* speedup,
+									  struct FLANNParameters* flann_params);
 
+LIBSPEC flann_index_t flann_build_index_double(double* dataset,
+									  int rows,
+									  int cols,
+									  float* speedup,
+									  struct FLANNParameters* flann_params);
 
+LIBSPEC flann_index_t flann_build_index_byte(unsigned char* dataset,
+									  int rows,
+									  int cols,
+									  float* speedup,
+									  struct FLANNParameters* flann_params);
 
+LIBSPEC flann_index_t flann_build_index_int(int* dataset,
+									  int rows,
+									  int cols,
+									  float* speedup,
+									  struct FLANNParameters* flann_params);
 
 /**
  * Saves the index to a file. Only the index is saved into the file, the dataset corresponding to the index is not saved.
@@ -129,6 +130,17 @@ LIBSPEC flann_index_t flann_build_index(float* dataset,
 LIBSPEC int flann_save_index(flann_index_t index_id,
 							 char* filename);
 
+LIBSPEC int flann_save_index_float(flann_index_t index_id,
+							 char* filename);
+
+LIBSPEC int flann_save_index_double(flann_index_t index_id,
+							 char* filename);
+
+LIBSPEC int flann_save_index_byte(flann_index_t index_id,
+							 char* filename);
+
+LIBSPEC int flann_save_index_int(flann_index_t index_id,
+							 char* filename);
 
 /**
  * Loads an index from a file.
@@ -144,6 +156,25 @@ LIBSPEC flann_index_t flann_load_index(char* filename,
 									 int rows,
 									 int cols);
 
+LIBSPEC flann_index_t flann_load_index_float(char* filename,
+									 float* dataset,
+									 int rows,
+									 int cols);
+
+LIBSPEC flann_index_t flann_load_index_double(char* filename,
+									 double* dataset,
+									 int rows,
+									 int cols);
+
+LIBSPEC flann_index_t flann_load_index_byte(char* filename,
+									 unsigned char* dataset,
+									 int rows,
+									 int cols);
+
+LIBSPEC flann_index_t flann_load_index_int(char* filename,
+									 int* dataset,
+									 int rows,
+									 int cols);
 
 
 /**
@@ -173,6 +204,45 @@ LIBSPEC int flann_find_nearest_neighbors(float* dataset,
 										 int nn,
 										 struct FLANNParameters* flann_params);
 
+LIBSPEC int flann_find_nearest_neighbors_float(float* dataset,
+										 int rows,
+										 int cols,
+										 float* testset,
+										 int trows,
+										 int* indices,
+										 float* dists,
+										 int nn,
+										 struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_find_nearest_neighbors_double(double* dataset,
+										 int rows,
+										 int cols,
+										 double* testset,
+										 int trows,
+										 int* indices,
+										 float* dists,
+										 int nn,
+										 struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_find_nearest_neighbors_byte(unsigned char* dataset,
+										 int rows,
+										 int cols,
+										 unsigned char* testset,
+										 int trows,
+										 int* indices,
+										 float* dists,
+										 int nn,
+										 struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_find_nearest_neighbors_int(int* dataset,
+										 int rows,
+										 int cols,
+										 int* testset,
+										 int trows,
+										 int* indices,
+										 float* dists,
+										 int nn,
+										 struct FLANNParameters* flann_params);
 
 
 /**
@@ -185,7 +255,6 @@ Params:
     indices = pointer to matrix for the indices of the nearest neighbors of the testset features in the dataset
             (must have trows number of rows and nn number of columns)
     nn = how many nearest neighbors to return
-    checks = number of checks to perform before the search is stopped
     flann_params = generic flann parameters
 
 Returns: zero or a number <0 for error
@@ -196,9 +265,39 @@ LIBSPEC int flann_find_nearest_neighbors_index(flann_index_t index_id,
 											   int* indices,
 											   float* dists,
 											   int nn,
-											   int checks,
 											   struct FLANNParameters* flann_params);
 
+LIBSPEC int flann_find_nearest_neighbors_index_float(flann_index_t index_id,
+											   float* testset,
+											   int trows,
+											   int* indices,
+											   float* dists,
+											   int nn,
+											   struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_find_nearest_neighbors_index_double(flann_index_t index_id,
+											   double* testset,
+											   int trows,
+											   int* indices,
+											   float* dists,
+											   int nn,
+											   struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_find_nearest_neighbors_index_byte(flann_index_t index_id,
+											   unsigned char* testset,
+											   int trows,
+											   int* indices,
+											   float* dists,
+											   int nn,
+											   struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_find_nearest_neighbors_index_int(flann_index_t index_id,
+											   int* testset,
+											   int trows,
+											   int* indices,
+											   float* dists,
+											   int nn,
+											   struct FLANNParameters* flann_params);
 
 
 /**
@@ -221,9 +320,39 @@ LIBSPEC int flann_radius_search(flann_index_t index_ptr, /* the index */
 										float* dists, /* similar, but for storing distances */
 										int max_nn,  /* size of arrays indices and dists */
 										float radius, /* search radius (squared radius for euclidian metric) */
-										int checks,  /* number of features to check, sets the level of approximation */
 										FLANNParameters* flann_params);
 
+LIBSPEC int flann_radius_search_float(flann_index_t index_ptr, /* the index */
+										float* query,	/* query point */
+										int* indices, /* array for storing the indices found (will be modified) */
+										float* dists, /* similar, but for storing distances */
+										int max_nn,  /* size of arrays indices and dists */
+										float radius, /* search radius (squared radius for euclidian metric) */
+										FLANNParameters* flann_params);
+
+LIBSPEC int flann_radius_search_double(flann_index_t index_ptr, /* the index */
+										double* query,	/* query point */
+										int* indices, /* array for storing the indices found (will be modified) */
+										float* dists, /* similar, but for storing distances */
+										int max_nn,  /* size of arrays indices and dists */
+										float radius, /* search radius (squared radius for euclidian metric) */
+										FLANNParameters* flann_params);
+
+LIBSPEC int flann_radius_search_byte(flann_index_t index_ptr, /* the index */
+										unsigned char* query,	/* query point */
+										int* indices, /* array for storing the indices found (will be modified) */
+										float* dists, /* similar, but for storing distances */
+										int max_nn,  /* size of arrays indices and dists */
+										float radius, /* search radius (squared radius for euclidian metric) */
+										FLANNParameters* flann_params);
+
+LIBSPEC int flann_radius_search_int(flann_index_t index_ptr, /* the index */
+										int* query,	/* query point */
+										int* indices, /* array for storing the indices found (will be modified) */
+										float* dists, /* similar, but for storing distances */
+										int max_nn,  /* size of arrays indices and dists */
+										float radius, /* search radius (squared radius for euclidian metric) */
+										FLANNParameters* flann_params);
 
 /**
 Deletes an index and releases the memory used by it.
@@ -235,6 +364,18 @@ Params:
 Returns: zero or a number <0 for error
 */
 LIBSPEC int flann_free_index(flann_index_t index_id,
+		                     struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_free_index_float(flann_index_t index_id,
+		                     struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_free_index_double(flann_index_t index_id,
+		                     struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_free_index_byte(flann_index_t index_id,
+		                     struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_free_index_int(flann_index_t index_id,
 		                     struct FLANNParameters* flann_params);
 
 /**
@@ -257,6 +398,34 @@ Returns: number of clusters computed or a number <0 for error. This number can b
 */
 
 LIBSPEC int flann_compute_cluster_centers(float* dataset,
+										  int rows,
+										  int cols,
+										  int clusters,
+										  float* result,
+										  struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_compute_cluster_centers_float(float* dataset,
+										  int rows,
+										  int cols,
+										  int clusters,
+										  float* result,
+										  struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_compute_cluster_centers_double(double* dataset,
+										  int rows,
+										  int cols,
+										  int clusters,
+										  double* result,
+										  struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_compute_cluster_centers_byte(unsigned char* dataset,
+										  int rows,
+										  int cols,
+										  int clusters,
+										  float* result,
+										  struct FLANNParameters* flann_params);
+
+LIBSPEC int flann_compute_cluster_centers_int(int* dataset,
 										  int rows,
 										  int cols,
 										  int clusters,

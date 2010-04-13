@@ -36,21 +36,51 @@
 #include <cassert>
 #include <cstring>
 
-#include "flann/constants.h"
+#include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
-#include "flann/util/common.h"
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
 #include "flann/util/heap.h"
 #include "flann/util/allocator.h"
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
+#include "flann/util/timer.h"
 
 using namespace std;
 
 
 namespace flann
 {
+
+
+
+struct KDTreeIndexParams : public IndexParams {
+	KDTreeIndexParams(int trees_ = 4) : IndexParams(KDTREE), trees(trees_) {};
+
+	int trees;                 // number of randomized trees to use (for kdtree)
+
+	flann_algorithm_t getIndexType() const { return algorithm; }
+
+	void fromParameters(const FLANNParameters& p)
+	{
+		assert(p.algorithm==algorithm);
+		trees = p.trees;
+	}
+
+	void toParameters(FLANNParameters& p) const
+	{
+		p.algorithm = algorithm;
+		p.trees = trees;
+	}
+
+	void print() const
+	{
+		printf("Index type: %d\n",(int)algorithm);
+		printf("Trees: %d\n", trees);
+	}
+
+};
+
 
 
 /**
@@ -60,7 +90,7 @@ namespace flann
  * for nearest-neighbor matching.
  */
 template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
-class KDTreeIndex : public NNIndex
+class KDTreeIndex : public NNIndex<ELEM_TYPE>
 {
 
 	enum {
@@ -102,8 +132,10 @@ class KDTreeIndex : public NNIndex
 	 */
 	const Matrix<ELEM_TYPE> dataset;
 
-    int size_;
-    int veclen_;
+    const IndexParams& index_params;
+
+	size_t size_;
+	size_t veclen_;
 
     DIST_TYPE* mean;
     DIST_TYPE* var;
@@ -172,7 +204,8 @@ public:
 	 * 		inputData = dataset with the input features
 	 * 		params = parameters passed to the kdtree algorithm
 	 */
-	KDTreeIndex(const Matrix<float>& inputData, const KDTreeIndexParams& params = KDTreeIndexParams() ) : dataset(inputData)
+	KDTreeIndex(const Matrix<ELEM_TYPE>& inputData, const KDTreeIndexParams& params = KDTreeIndexParams() ) :
+		dataset(inputData), index_params(params)
 	{
         size_ = dataset.rows;
         veclen_ = dataset.cols;
@@ -194,7 +227,7 @@ public:
 
 		// Create a permutable array of indices to the input vectors.
 		vind = new int[size_];
-		for (int i = 0; i < size_; i++) {
+		for (size_t i = 0; i < size_; i++) {
 			vind[i] = i;
 		}
 
@@ -228,13 +261,10 @@ public:
 		for (int i = 0; i < numTrees; i++) {
 			/* Randomize the order of vectors to allow for unbiased sampling. */
 			for (int j = size_; j > 0; --j) {
-// 				int rand = cast(int) (drand48() * size);
 				int rnd = rand_int(j);
-				assert(rnd >=0 && rnd < size_);
 				swap(vind[j-1], vind[rnd]);
 			}
-			trees[i] = NULL;
-			divideTree(&trees[i], 0, size_ - 1);
+			trees[i] = divideTree(0, size_ - 1);
 		}
 		t.stop();
 		logger.info("Time to build index: %g", t.value);
@@ -245,7 +275,6 @@ public:
 
     void saveIndex(FILE* stream)
     {
-    	save_header(stream, *this);
     	save_value(stream, numTrees);
     	for (int i=0;i<numTrees;++i) {
     		save_tree(stream, trees[i]);
@@ -256,11 +285,6 @@ public:
 
     void loadIndex(FILE* stream)
     {
-    	IndexHeader header = load_header(stream);
-
-    	if (header.rows!=size() || header.cols!=veclen()) {
-    		throw FLANNException("The index saved belongs to a different dataset");
-    	}
     	load_value(stream, numTrees);
 
     	if (trees!=NULL) {
@@ -277,7 +301,7 @@ public:
     /**
     *  Returns size of index.
     */
-    int size() const
+    size_t size() const
     {
         return size_;
     }
@@ -285,7 +309,7 @@ public:
     /**
     * Returns the length of an index feature.
     */
-    int veclen() const
+    size_t veclen() const
     {
         return veclen_;
     }
@@ -310,9 +334,8 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet& result, const float* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
     {
-
         int maxChecks = searchParams.checks;
 
         if (maxChecks<0) {
@@ -322,28 +345,10 @@ public:
         }
     }
 
-
-	void continueSearch(ResultSet& result, float* vec, int maxCheck)
+    const IndexParams* getParameters() const
 	{
-		BranchSt branch;
-
-		int checkCount = 0;
-
-		/* Keep searching other branches from heap until finished. */
-		while ( heap->popMin(branch) && (checkCount < maxCheck || !result.full() )) {
-			searchLevel(result, vec, branch.node,branch.mindistsq, checkCount, maxCheck);
-		}
-
-		assert(result.full());
+		return &index_params;
 	}
-
-
-//    Params estimateSearchParams(float precision, Dataset<float>* testset = NULL)
-//    {
-//        Params params;
-//
-//        return params;
-//    }
 
 
 private:
@@ -383,21 +388,21 @@ private:
 	 * 			first = index of the first vector
 	 * 			last = index of the last vector
 	 */
-	void divideTree(Tree* pTree, int first, int last)
+	Tree divideTree(int first, int last)
 	{
-		Tree node;
-
-		node = pool.allocate<TreeSt>(); // allocate memory
-		*pTree = node;
+		Tree node = pool.allocate<TreeSt>(); // allocate memory
 
 		/* If only one exemplar remains, then make this a leaf node. */
 		if (first == last) {
 			node->child1 = node->child2 = NULL;    /* Mark as leaf node. */
 			node->divfeat = vind[first];    /* Store index of this vec. */
-		} else {
+		}
+		else {
 			chooseDivision(node, first, last);
 			subdivide(node, first, last);
 		}
+
+		return node;
 	}
 
 
@@ -420,18 +425,18 @@ private:
 		int count = end - first + 1;
 		for (int j = first; j <= end; ++j) {
 			ELEM_TYPE* v = dataset[vind[j]];
-            for (int k=0; k<veclen_; ++k) {
+            for (size_t k=0; k<veclen_; ++k) {
                 mean[k] += v[k];
             }
 		}
-        for (int k=0; k<veclen_; ++k) {
+        for (size_t k=0; k<veclen_; ++k) {
             mean[k] /= count;
         }
 
 		/* Compute variances (no need to divide by count). */
 		for (int j = first; j <= end; ++j) {
 			ELEM_TYPE* v = dataset[vind[j]];
-            for (int k=0; k<veclen_; ++k) {
+            for (size_t k=0; k<veclen_; ++k) {
                 DIST_TYPE dist = v[k] - mean[k];
                 var[k] += dist * dist;
             }
@@ -447,13 +452,13 @@ private:
 	 * Select the top RAND_DIM largest values from v and return the index of
 	 * one of these selected at random.
 	 */
-	int selectDivision(float* v)
+	int selectDivision(DIST_TYPE* v)
 	{
 		int num = 0;
 		int topind[RAND_DIM];
 
 		/* Create a list of the indices of the top RAND_DIM values. */
-		for (int i = 0; i < veclen_; ++i) {
+		for (size_t i = 0; i < veclen_; ++i) {
 			if (num < RAND_DIM  ||  v[i] > v[topind[num-1]]) {
 				/* Put this element at end of topind. */
 				if (num < RAND_DIM) {
@@ -471,9 +476,7 @@ private:
 			}
 		}
 		/* Select a random integer in range [0,num-1], and return that index. */
-// 		int rand = cast(int) (drand48() * num);
 		int rnd = rand_int(num);
-		assert(rnd >=0 && rnd < num);
 		return topind[rnd];
 	}
 
@@ -506,8 +509,8 @@ private:
             i = (first+last+1)/2;
 		}
 
-		divideTree(& node->child1, first, i - 1);
-		divideTree(& node->child2, i, last);
+		node->child1 = divideTree(first, i - 1);
+		node->child2 = divideTree( i, last);
 	}
 
 
@@ -516,7 +519,7 @@ private:
 	 * Performs an exact nearest neighbor search. The exact search performs a full
 	 * traversal of the tree.
 	 */
-	void getExactNeighbors(ResultSet& result, const ELEM_TYPE* vec)
+	void getExactNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec)
 	{
 		checkID -= 1;  /* Set a different unique ID for each search. */
 
@@ -534,7 +537,7 @@ private:
 	 * because the tree traversal is abandoned after a given number of descends in
 	 * the tree.
 	 */
-	void getNeighbors(ResultSet& result, const ELEM_TYPE* vec, int maxCheck)
+	void getNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, int maxCheck)
 	{
 		int i;
 		BranchSt branch;
@@ -562,7 +565,7 @@ private:
 	 *  higher levels, all exemplars below this level must have a distance of
 	 *  at least "mindistsq".
 	*/
-	void searchLevel(ResultSet& result, const ELEM_TYPE* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
+	void searchLevel(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
 	{
 		if (result.worstDist()<mindistsq) {
 //			printf("Ignoring branch, too far\n");
@@ -613,7 +616,7 @@ private:
 	/**
 	 * Performs an exact search in the tree starting from a node.
 	 */
-	void searchLevelExact(ResultSet& result, const float* vec, Tree node, float mindistsq)
+	void searchLevelExact(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, Tree node, float mindistsq)
 	{
 		if (mindistsq>result.worstDist()) {
 			return;

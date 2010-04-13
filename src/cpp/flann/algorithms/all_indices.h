@@ -4,8 +4,6 @@
  * Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
  * Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
  *
- * THE BSD LICENSE
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -28,57 +26,55 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+
+#ifndef ALL_INDICES_H_
+#define ALL_INDICES_H_
+
+#include "flann/general.h"
+
+#include "flann/algorithms/nn_index.h"
+#include "flann/algorithms/kdtree_index.h"
+#include "flann/algorithms/kdtree_mt_index.h"
+#include "flann/algorithms/kmeans_index.h"
+#include "flann/algorithms/composite_index.h"
+#include "flann/algorithms/linear_index.h"
+#include "flann/algorithms/autotuned_index.h"
 
 
-const int FLANN_VERSION = 1.20;
+namespace flann {
 
-/* Nearest neighbor index algorithms */
-enum flann_algorithm_t {
-	LINEAR = 0,
-	KDTREE = 1,
-	KMEANS = 2,
-	COMPOSITE = 3,
-	KDTREE_MT = 4,
-	SAVED = 254,
-	AUTOTUNED = 255
-};
+template<typename T>
+NNIndex<T>* create_index_by_type(const Matrix<T>& dataset, const IndexParams& params)
+{
+	flann_algorithm_t index_type = params.getIndexType();
 
-enum flann_centers_init_t {
-	CENTERS_RANDOM = 0,
-	CENTERS_GONZALES = 1,
-	CENTERS_KMEANSPP = 2
-};
+	NNIndex<T>* nnIndex;
+	switch (index_type) {
+	case LINEAR:
+		nnIndex = new LinearIndex<T>(dataset, (const LinearIndexParams&)params);
+		break;
+	case KDTREE:
+		nnIndex = new KDTreeIndex<T>(dataset, (const KDTreeIndexParams&)params);
+		break;
+	case KDTREE_MT:
+		nnIndex = new KDTreeMTIndex<T>(dataset, (const KDTreeMTIndexParams&)params);
+		break;
+	case KMEANS:
+		nnIndex = new KMeansIndex<T>(dataset, (const KMeansIndexParams&)params);
+		break;
+	case COMPOSITE:
+		nnIndex = new CompositeIndex<T>(dataset, (const CompositeIndexParams&) params);
+		break;
+	case AUTOTUNED:
+		nnIndex = new AutotunedIndex<T>(dataset, (const AutotunedIndexParams&) params);
+		break;
+	default:
+		throw FLANNException("Unknown index type");
+	}
 
+	return nnIndex;
+}
 
-enum flann_log_level_t {
-	LOG_NONE = 0,
-	LOG_FATAL = 1,
-	LOG_ERROR = 2,
-	LOG_WARN = 3,
-	LOG_INFO = 4
-};
+}
 
-enum flann_distance_t {
-	EUCLIDEAN = 1,
-	MANHATTAN = 2,
-	MINKOWSKI = 3
-};
-
-
-enum flann_datatype_t {
-	INT8 = 0,
-	INT16 = 1,
-	INT32 = 2,
-	INT64 = 3,
-	UINT8 = 4,
-	UINT16 = 5,
-	UINT32 = 6,
-	UINT64 = 7,
-	FLOAT32 = 8,
-	FLOAT64 = 9
-};
-
-
-#endif  // CONSTANTS_H
+#endif /* ALL_INDICES_H_ */

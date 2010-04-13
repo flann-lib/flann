@@ -30,6 +30,8 @@
 
 #include "flann/algorithms/dist.h"
 
+#include <cstdio>
+
 namespace flann
 {
 
@@ -48,5 +50,30 @@ ZeroIterator<float> zero;
  */
 int flann_minkowski_order;
 
+template <>
+double euclidean_dist(unsigned char* first1, unsigned char* last1, unsigned char* first2, double acc)
+{
+	printf("byte\n");
+	int distsq = acc;
+	int diff0, diff1, diff2, diff3;
+	unsigned char* lastgroup = last1 - 3;
+
+	/* Process 4 items with each loop for efficiency. */
+	while (first1 < lastgroup) {
+		diff0 = first1[0] - first2[0];
+		diff1 = first1[1] - first2[1];
+		diff2 = first1[2] - first2[2];
+		diff3 = first1[3] - first2[3];
+		distsq += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
+		first1 += 4;
+		first2 += 4;
+	}
+	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+	while (first1 < last1) {
+		diff0 = *first1++ - *first2++;
+		distsq += diff0 * diff0;
+	}
+	return distsq;
 }
 
+}

@@ -26,7 +26,7 @@
 
 from ctypes import *
 #from ctypes.util import find_library
-from numpy import float32, float64, int32, matrix, array, empty, reshape, require
+from numpy import float32, float64, uint8, int32, matrix, array, empty, reshape, require
 from numpy.ctypeslib import load_library, ndpointer
 import numpy.random as _rn
 import os
@@ -95,7 +95,6 @@ class FLANNParameters(CustomStructure):
         ('memory_weight', c_float),
         ('sample_fraction', c_float),
         ('log_level', c_int),
-        ('log_destination', STRING),
         ('random_seed', c_long),
     ]
     _defaults_ = {
@@ -111,7 +110,6 @@ class FLANNParameters(CustomStructure):
         'memory_weight' : 0.0,
         'sample_fraction' : 0.1,
         'log_level' : "warning",
-        'log_destination' : None,
         'random_seed' : -1
   }
     _translation_ = {
@@ -122,7 +120,7 @@ class FLANNParameters(CustomStructure):
     
     
 default_flags = ['C_CONTIGUOUS', 'ALIGNED']
-   
+allowed_types = [ float32, float64, uint8, int32]   
 
 FLANN_INDEX = c_void_p
 
@@ -135,113 +133,167 @@ def load_flann_library():
     if sys.platform == 'win32':
         libname = 'flann'
 
-    flann = None
+    flannlib = None
     loaded = False
     while (not loaded) and root_dir!="/":
         try:
            # print "Trying ",os.path.join(root_dir,'lib')
-            flann = load_library(libname, os.path.join(root_dir,'lib'))
+            flannlib = load_library(libname, os.path.join(root_dir,'lib'))
             loaded = True
         except Exception as e:
            # print e
             root_dir = os.path.dirname(root_dir)
 
-    return flann
+    return flannlib
 
-flann = load_flann_library()
-if flann == None:
+flannlib = load_flann_library()
+if flannlib == None:
     print 'Cannot load dynamic library. Did you compile FLANN?'
     sys.exit(1)
 
+class FlannLib: pass
+flann = FlannLib()
 
-flann.flann_log_verbosity.restype = None
-flann.flann_log_verbosity.argtypes = [ 
+
+flannlib.flann_log_verbosity.restype = None
+flannlib.flann_log_verbosity.argtypes = [ 
         c_int # level
 ]
 
-#flann.flann_log_destination.restype = None
-#flann.flann_log_destination.argtypes = [ 
-#        STRING # destination
-#]
-
-flann.flann_set_distance_type.restype = None
-flann.flann_set_distance_type.argtypes = [ 
+flannlib.flann_set_distance_type.restype = None
+flannlib.flann_set_distance_type.argtypes = [ 
         c_int,
         c_int,        
 ]
 
+type_mappings = ( ('float','float32'),
+                  ('double','float64'),
+                  ('byte','uint8'),
+                  ('int','int32') )
 
-flann.flann_build_index.restype = FLANN_INDEX
-flann.flann_build_index.argtypes = [ 
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+def define_functions(str):
+    for type in type_mappings:
+        exec str%{'C':type[0],'numpy':type[1]}
+
+flann.build_index = {}
+define_functions(r"""
+flannlib.flann_build_index_%(C)s.restype = FLANN_INDEX
+flannlib.flann_build_index_%(C)s.argtypes = [ 
+        ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
         c_int, # cols
         POINTER(c_float), # speedup 
         POINTER(FLANNParameters)  # flann_params
 ]
+flann.build_index[%(numpy)s] = flannlib.flann_build_index_%(C)s
+""")
 
-
-flann.flann_save_index.restype = None
-flann.flann_save_index.argtypes = [
+flann.save_index = {}
+define_functions(r"""
+flannlib.flann_save_index_%(C)s.restype = None
+flannlib.flann_save_index_%(C)s.argtypes = [
         FLANN_INDEX, # index_id
         c_char_p #filename                                   
 ] 
+flann.save_index[%(numpy)s] = flannlib.flann_save_index_%(C)s
+""")
 
-
-flann.flann_load_index.restype = FLANN_INDEX
-flann.flann_load_index.argtypes = [
+flann.load_index = {}
+define_functions(r"""
+flannlib.flann_load_index_%(C)s.restype = FLANN_INDEX
+flannlib.flann_load_index_%(C)s.argtypes = [
         c_char_p, #filename                                   
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
         c_int, # cols
-] 
+]
+flann.load_index[%(numpy)s] = flannlib.flann_load_index_%(C)s
+""")
 
-                                   
-flann.flann_find_nearest_neighbors.restype = c_int
-flann.flann_find_nearest_neighbors.argtypes = [ 
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+flann.find_nearest_neighbors = {}    
+define_functions(r"""                          
+flannlib.flann_find_nearest_neighbors_%(C)s.restype = c_int
+flannlib.flann_find_nearest_neighbors_%(C)s.argtypes = [ 
+        ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
         c_int, # cols
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
+        ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # testset
         c_int,  # tcount
         ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous, writeable'), # dists
         c_int, # nn
         POINTER(FLANNParameters)  # flann_params
 ]
+flann.find_nearest_neighbors[%(numpy)s] = flannlib.flann_find_nearest_neighbors_%(C)s
+""")
 
-
-flann.flann_find_nearest_neighbors_index.restype = c_int
-flann.flann_find_nearest_neighbors_index.argtypes = [ 
+flann.find_nearest_neighbors_index = {}
+define_functions(r"""
+flannlib.flann_find_nearest_neighbors_index_%(C)s.restype = c_int
+flannlib.flann_find_nearest_neighbors_index_%(C)s.argtypes = [ 
         FLANN_INDEX, # index_id
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
+        ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # testset
         c_int,  # tcount
         ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous, writeable'), # dists
         c_int, # nn
-        c_int, # checks
         POINTER(FLANNParameters) # flann_params
 ]
+flann.find_nearest_neighbors_index[%(numpy)s] = flannlib.flann_find_nearest_neighbors_index_%(C)s
+""")
 
-
-flann.flann_free_index.restype = None
-flann.flann_free_index.argtypes = [ 
-        FLANN_INDEX,  # index_id
+flann.radius_search = {}
+define_functions(r"""
+flannlib.flann_radius_search_%(C)s.restype = c_int
+flannlib.flann_radius_search_%(C)s.argtypes = [ 
+        FLANN_INDEX, # index_id
+        ndpointer(%(numpy)s, ndim = 1, flags='aligned, c_contiguous'), # query
+        ndpointer(int32, ndim = 1, flags='aligned, c_contiguous, writeable'), # indices
+        ndpointer(float32, ndim = 1, flags='aligned, c_contiguous, writeable'), # dists
+        c_int, # max_nn
+        c_float, # radius
         POINTER(FLANNParameters) # flann_params
 ]
+flann.radius_search[%(numpy)s] = flannlib.flann_radius_search_%(C)s
+""")
 
-flann.flann_compute_cluster_centers.restype = c_int
-flann.flann_compute_cluster_centers.argtypes = [ 
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
+flann.compute_cluster_centers = {}
+define_functions(r"""
+flannlib.flann_compute_cluster_centers_%(C)s.restype = c_int
+flannlib.flann_compute_cluster_centers_%(C)s.argtypes = [ 
+        ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int,  # rows
         c_int,  # cols
         c_int,  # clusters 
         ndpointer(float32, flags='aligned, c_contiguous, writeable'), # result
         POINTER(FLANNParameters)  # flann_params
 ]
+flann.compute_cluster_centers[%(numpy)s] = flannlib.flann_compute_cluster_centers_%(C)s
+""")
+# double is an exception
+flannlib.flann_compute_cluster_centers_double.restype = c_int
+flannlib.flann_compute_cluster_centers_double.argtypes = [ 
+        ndpointer(float64, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int,  # rows
+        c_int,  # cols
+        c_int,  # clusters 
+        ndpointer(float64, flags='aligned, c_contiguous, writeable'), # result
+        POINTER(FLANNParameters)  # flann_params
+]
 
-flann.compute_ground_truth_float.restype = None
-flann.compute_ground_truth_float.argtypes = [ 
+
+flann.free_index = {}
+define_functions(r"""
+flannlib.flann_free_index_%(C)s.restype = None
+flannlib.flann_free_index_%(C)s.argtypes = [ 
+        FLANN_INDEX,  # index_id
+        POINTER(FLANNParameters) # flann_params
+]
+flann.free_index[%(numpy)s] = flannlib.flann_free_index_%(C)s
+""")
+
+flannlib.compute_ground_truth_float.restype = None
+flannlib.compute_ground_truth_float.argtypes = [ 
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int*2, # dshape
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
@@ -251,8 +303,8 @@ flann.compute_ground_truth_float.argtypes = [
         c_int # skip
 ]
 
-flann.test_with_precision.restype = c_float
-flann.test_with_precision.argtypes = [
+flannlib.test_with_precision.restype = c_float
+flannlib.test_with_precision.argtypes = [
         FLANN_INDEX, 
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int*2, # dshape
@@ -267,8 +319,8 @@ flann.test_with_precision.argtypes = [
 ]
 
 
-flann.test_with_checks.restype = c_float
-flann.test_with_checks.argtypes = [
+flannlib.test_with_checks.restype = c_float
+flannlib.test_with_checks.argtypes = [
         FLANN_INDEX, 
         ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int*2, # dshape
@@ -283,22 +335,9 @@ flann.test_with_checks.argtypes = [
 ]
 
 
-flann.flann_radius_search.restype = c_int
-flann.flann_radius_search.argtypes = [ 
-        FLANN_INDEX, # index_id
-        ndpointer(float32, ndim = 1, flags='aligned, c_contiguous'), # query
-        ndpointer(int32, ndim = 1, flags='aligned, c_contiguous, writeable'), # indices
-        ndpointer(float32, ndim = 1, flags='aligned, c_contiguous, writeable'), # dists
-        c_int, # max_nn
-        c_float, # radius
-        c_int, # checks
-        POINTER(FLANNParameters) # flann_params
-]
 
-
-
-def ensure_2d_array(array, dtype, flags):
-    array = require(array,dtype,flags) 
+def ensure_2d_array(array, flags, **kwargs):
+    array = require(array, requirements = flags, **kwargs) 
     if len(array.shape) == 1:
         array.shape = (-1,array.size)
     return array
@@ -306,42 +345,42 @@ def ensure_2d_array(array, dtype, flags):
 
 def compute_ground_truth(dataset, testset, nn, skip = 0):
     
-    dataset = ensure_2d_array(dataset,float32,default_flags) 
-    testset = ensure_2d_array(testset,float32,default_flags) 
+    dataset = ensure_2d_array(dataset,default_flags, dtype=float32) 
+    testset = ensure_2d_array(testset,default_flags, dtype=float32) 
     
     assert(dataset.shape[1] == testset.shape[1] )
     match = empty((testset.shape[0],nn), dtype=int32)
     
-    flann.compute_ground_truth_float(dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, match, match.ctypes.shape, skip)
+    flannlib.compute_ground_truth_float(dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, match, match.ctypes.shape, skip)
     return match
 
 
 def test_with_precision(index, dataset, testset, matches, precision, nn, skip = 0):
-    dataset = ensure_2d_array(dataset,float32,default_flags) 
-    testset = ensure_2d_array(testset,float32,default_flags) 
-    matches = ensure_2d_array(matches,int32,default_flags)
+    dataset = ensure_2d_array(dataset,default_flags, dtype=float32) 
+    testset = ensure_2d_array(testset,default_flags, dtype=float32) 
+    matches = ensure_2d_array(matches,default_flags, dtype=int32)
     
     assert(dataset.shape[1] == testset.shape[1] )
     assert(testset.shape[0] == matches.shape[0] )
     assert( nn <= matches.shape[1] )
     
     checks = c_int(0)
-    time = flann.test_with_precision(index, dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, matches, matches.ctypes.shape, 
+    time = flannlib.test_with_precision(index, dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, matches, matches.ctypes.shape, 
                         nn, precision, byref(checks), skip)
     
     return checks.value, time
     
 def test_with_checks(index, dataset, testset, matches, checks, nn, skip = 0):
-    dataset = ensure_2d_array(dataset,float32,default_flags) 
-    testset = ensure_2d_array(testset,float32,default_flags) 
-    matches = ensure_2d_array(matches,int32,default_flags)
+    dataset = ensure_2d_array(dataset,default_flags, dtype=float32) 
+    testset = ensure_2d_array(testset,default_flags, dtype=float32) 
+    matches = ensure_2d_array(matches,default_flags, dtype=int32)
     
     assert(dataset.shape[1] == testset.shape[1] )
     assert(testset.shape[0] == matches.shape[0] )
     assert( nn <= matches.shape[1] )
     
     precision = c_float(0)
-    time = flann.test_with_checks(index, dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, matches, matches.ctypes.shape, 
+    time = flannlib.test_with_checks(index, dataset, dataset.ctypes.shape, testset, testset.ctypes.shape, matches, matches.ctypes.shape, 
                             nn, checks, byref(precision), skip)
     
     return precision.value, time
@@ -371,6 +410,7 @@ class FLANN:
 
         self.__curindex = None
         self.__curindex_data = None
+        self.__curindex_type = None
         
         self.__flann_parameters = FLANNParameters()        
         self.__flann_parameters.update(kwargs)
@@ -389,7 +429,7 @@ class FLANN:
         """
         
         distance_translation = { "euclidean" : 1, "manhattan" : 2, "minkowski" : 3}
-        flann.flann_set_distance_type(distance_translation[distance_type],order)
+        flannlib.flann_set_distance_type(distance_translation[distance_type],order)
 
 
     def nn(self, pts, qpts, num_neighbors = 1, **kwargs):
@@ -398,8 +438,17 @@ class FLANN:
         in testset.
         """
         
-        pts = ensure_2d_array(pts,float32,default_flags) 
-        qpts = ensure_2d_array(qpts,float32,default_flags) 
+        if not pts.dtype.type in allowed_types:
+            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+
+        if not qpts.dtype.type in allowed_types:
+            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+
+        if pts.dtype != qpts.dtype:
+            raise FLANNException("Data and query must have the same type")
+        
+        pts = ensure_2d_array(pts,default_flags) 
+        qpts = ensure_2d_array(qpts,default_flags) 
 
         npts, dim = pts.shape
         nqpts = qpts.shape[0]
@@ -412,9 +461,9 @@ class FLANN:
                 
         self.__flann_parameters.update(kwargs)
 
-        flann.flann_find_nearest_neighbors(pts, npts, dim, 
-            qpts, nqpts, result, dists, num_neighbors, 
-            pointer(self.__flann_parameters))
+        flann.find_nearest_neighbors[pts.dtype.type](pts, npts, dim, 
+                                                     qpts, nqpts, result, dists, num_neighbors, 
+                                                     pointer(self.__flann_parameters))
 
         if num_neighbors == 1:
             return (result.reshape( nqpts ), dists.reshape(nqpts))
@@ -434,8 +483,11 @@ class FLANN:
         in float32 type, but pts may be any type that is convertable
         to float32. 
         """
+        
+        if not pts.dtype.type in allowed_types:
+            raise FLANNException("Cannot handle type: %s"%pts.dtype)
 
-        pts = ensure_2d_array(pts,float32,default_flags) 
+        pts = ensure_2d_array(pts,default_flags) 
         npts, dim = pts.shape
         
         self.__ensureRandomSeed(kwargs)
@@ -443,12 +495,13 @@ class FLANN:
         self.__flann_parameters.update(kwargs)
 
         if self.__curindex != None:
-            flann.flann_free_index(self.__curindex, pointer(self.__flann_parameters))
+            flann.free_index[self.__curindex_type](self.__curindex, pointer(self.__flann_parameters))
             self.__curindex = None
                 
         speedup = c_float(0)
-        self.__curindex = flann.flann_build_index(pts, npts, dim, byref(speedup), pointer(self.__flann_parameters))
+        self.__curindex = flann.build_index[pts.dtype.type](pts, npts, dim, byref(speedup), pointer(self.__flann_parameters))
         self.__curindex_data = pts
+        self.__curindex_type = pts.dtype.type
         
         params = dict(self.__flann_parameters)
         params["speedup"] = speedup.value
@@ -457,32 +510,51 @@ class FLANN:
 
 
     def save_index(self, filename):
+        """
+        This saves the index to a disk file.
+        """
+        
         if self.__curindex != None:
-            flann.flann_save_index(self.__curindex, c_char_p(filename))
+            flann.save_index[self.__curindex_type](self.__curindex, c_char_p(filename))
 
     def load_index(self, filename, pts):
-        pts = ensure_2d_array(pts,float32,default_flags) 
+        """
+        Loads an index previously saved to disk.
+        """
+                
+        if not pts.dtype.type in allowed_types:
+            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+
+        pts = ensure_2d_array(pts,default_flags) 
         npts, dim = pts.shape
 
         if self.__curindex != None:
-            flann.flann_free_index(self.__curindex, pointer(self.__flann_parameters))
+            flann.free_index[self.__curindex_type](self.__curindex, pointer(self.__flann_parameters))
             self.__curindex = None
+            self.__curindex_data = None
+            self.__curindex_type = None
         
-        self.__curindex = flann.flann_load_index(c_char_p(filename), pts, npts, dim)
+        self.__curindex = flann.load_index[pts.dtype](c_char_p(filename), pts, npts, dim)
         self.__curindex_data = pts
+        self.__curindex_type = pts.dtype.type
 
     def nn_index(self, qpts, num_neighbors = 1, **kwargs):
         """
         For each point in querypts, (which may be a single point), it
         returns the num_neighbors nearest points in the index built by
         calling build_index.
-
         """
 
         if self.__curindex == None:
             raise FLANNException("build_index(...) method not called first or current index deleted.")
 
-        qpts = ensure_2d_array(qpts,float32,default_flags) 
+        if not qpts.dtype.type in allowed_types:
+            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+
+        if self.__curindex_type != qpts.dtype.type:
+            raise FLANNException("Index and query must have the same type")
+
+        qpts = ensure_2d_array(qpts,default_flags) 
 
         npts, dim = self.__curindex_data.shape
 
@@ -498,12 +570,11 @@ class FLANN:
         dists = empty( (nqpts, num_neighbors), dtype=float32)
 
         self.__flann_parameters.update(kwargs)
-        checks = self.__flann_parameters['checks']
 
-        flann.flann_find_nearest_neighbors_index(self.__curindex, 
+        flann.find_nearest_neighbors_index[self.__curindex_type](self.__curindex, 
                     qpts, nqpts,
                     result, dists, num_neighbors,
-                    checks, pointer(self.__flann_parameters))
+                    pointer(self.__flann_parameters))
 
         if num_neighbors == 1:
             return (result.reshape( nqpts ), dists.reshape( nqpts ))
@@ -511,14 +582,18 @@ class FLANN:
             return (result,dists)
         
         
-    def nn_radius(self, query, radius, checks, **kwargs):
+    def nn_radius(self, query, radius, **kwargs):
         
         if self.__curindex == None:
             raise FLANNException("build_index(...) method not called first or current index deleted.")
 
-        npts, dim = self.__curindex_data.shape
-        
-        query = require(query,float32,default_flags)
+        if not query.dtype.type in allowed_types:
+            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+
+        if self.__curindex_type != qpts.dtype.type:
+            raise FLANNException("Index and query must have the same type")
+
+        npts, dim = self.__curindex_data.shape        
         assert(query.shape[0]==dim)
         
         result = empty( npts, dtype=index_type)
@@ -526,14 +601,12 @@ class FLANN:
         
         self.__flann_parameters.update(kwargs)
 
-        nn = flann.flann_radius_search(self.__curindex, query, 
+        nn = flann.radius_search[self.__curindex_type](self.__curindex, query, 
                                          result, dists, npts,
-                                         radius, checks, pointer(self.__flann_parameters))
+                                         radius, pointer(self.__flann_parameters))
         
         
         return (result[0:nn],dists[0:nn])
-        
-        
 
     def delete_index(self, **kwargs):
         """
@@ -544,7 +617,7 @@ class FLANN:
         self.__flann_parameters.update(kwargs)
         
         if self.__curindex != None:
-            flann.flann_free_index(self.__curindex, pointer(self.__flann_parameters))
+            flann.free_index[self.__curindex_type](self.__curindex, pointer(self.__flann_parameters))
             self.__curindex = None
             self.__curindex_data = None
 
@@ -599,6 +672,9 @@ class FLANN:
         
         # First verify the paremeters are sensible.
 
+        if not pts.dtype.type in allowed_types:
+            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+
         if int(branch_size) != branch_size or branch_size < 2:
             raise FLANNException('branch_size must be an integer >= 2.')
 
@@ -616,11 +692,14 @@ class FLANN:
 
 
         # init the arrays and starting values
-        pts = ensure_2d_array(pts,float32,default_flags) 
+        pts = ensure_2d_array(pts,default_flags) 
         npts, dim = pts.shape
         num_clusters = (branch_size-1)*num_branches+1;
         
-        result = empty( (num_clusters, dim), dtype=float32)
+        if pts.dtype.type == float64:
+            result = empty( (num_clusters, dim), dtype=float64)
+        else:
+            result = empty( (num_clusters, dim), dtype=float32)
 
         # set all the parameters appropriately
         
@@ -633,7 +712,7 @@ class FLANN:
         
         self.__flann_parameters.update(params)
         
-        numclusters = flann.flann_compute_cluster_centers(pts, npts, dim,
+        numclusters = flann.compute_cluster_centers[pts.dtype.type](pts, npts, dim,
                                         num_clusters, result, 
                                         pointer(self.__flann_parameters))
         if numclusters <= 0:

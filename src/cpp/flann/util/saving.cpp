@@ -30,29 +30,21 @@
 
 #include "saving.h"
 
-#include "flann/util/common.h"
-#include "flann/algorithms/nn_index.h"
-#include <cstdio>
-#include <cstring>
-
 namespace flann
 {
 
+template<> flann_datatype_t get_flann_datatype<char>() { return INT8; }
+template<> flann_datatype_t get_flann_datatype<short>() { return INT16; }
+template<> flann_datatype_t get_flann_datatype<int>() { return INT32; }
+template<> flann_datatype_t get_flann_datatype<unsigned char>() { return UINT8; }
+template<> flann_datatype_t get_flann_datatype<unsigned short>() { return UINT16; }
+template<> flann_datatype_t get_flann_datatype<unsigned int>() { return UINT32; }
+template<> flann_datatype_t get_flann_datatype<float>() { return FLOAT32; }
+template<> flann_datatype_t get_flann_datatype<double>() { return FLOAT64; }
+
+
 const char FLANN_SIGNATURE[] = "FLANN_INDEX";
-
-void save_header(FILE* stream, const NNIndex& index)
-{
-	IndexHeader header;
-	memset(header.signature, 0 , sizeof(header.signature));
-	strcpy(header.signature, FLANN_SIGNATURE);
-	header.flann_version = FLANN_VERSION;
-	header.index_type = index.getType();
-	header.rows = index.size();
-	header.cols = index.veclen();
-
-	std::fwrite(&header, sizeof(header),1,stream);
-}
-
+const char FLANN_VERSION[] = "1.5.0";
 
 
 IndexHeader load_header(FILE* stream)

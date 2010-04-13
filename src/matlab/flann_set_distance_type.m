@@ -24,12 +24,22 @@
 %(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 %THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-function flann_free_index(index_id)
-%FLANN_FREE_INDEX  Deletes the nearest-neighbors index
+function flann_set_distance_type(type, order)
+%FLANN_LOAD_INDEX  Loads an index from disk
 %
-% Deletes an index constructed using flann_build_index.
- 
-% Marius Muja, January 2008
+% Marius Muja, March 2009
 
-    nearest_neighbors('free_index',index_id);
+    distances = struct('euclidean', 1, 'manhattan', 2, 'minkowski', 3);
+    function id = value2id(map,value)
+        id = map.(value);
+    end
+
+
+    if ~isnumeric(type),
+        type = value2id(distances,type);
+    end
+    if type~=3
+        order = 0;
+    end
+    nearest_neighbors('set_distance_type', type, order);
 end
