@@ -287,26 +287,7 @@ TEST_F(Flann_SIFT100K_Test, KDTreeTest)
 	printf("Precision: %g\n", precision);
 }
 
-TEST_F(Flann_SIFT100K_Test, KDTreeMTTest)
-{
-	flann::Index<float> index(data, flann::KDTreeMTIndexParams(4));
-	start_timer("Building randomised kd-tree index...");
-	index.buildIndex();
-	printf("done (%g seconds)\n", stop_timer());
-
-	index.save("kdtree_mt.idx");
-
-	start_timer("Searching KNN...");
-	index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
-	printf("done (%g seconds)\n", stop_timer());
-
-	float precision = compute_precision(match, indices);
-	EXPECT_GE(precision, 0.75);
-	printf("Precision: %g\n", precision);
-}
-
-
-TEST_F(Flann_SIFT100K_Test, KMeansTree)
+TEST_F(Flann_SIFT100K_Test, KMeansTreeTest)
 {
 	flann::Index<float> index(data, flann::KMeansIndexParams(32, 11, CENTERS_RANDOM, 0.2));
 	start_timer("Building hierarchical k-means index...");
@@ -316,7 +297,7 @@ TEST_F(Flann_SIFT100K_Test, KMeansTree)
 	index.save("kmeans_tree.idx");
 
 	start_timer("Searching KNN...");
-	index.knnSearch(query, indices, dists, 5, flann::SearchParams(80) );
+	index.knnSearch(query, indices, dists, 5, flann::SearchParams(96) );
 	printf("done (%g seconds)\n", stop_timer());
 
 	float precision = compute_precision(match, indices);
@@ -369,7 +350,7 @@ TEST_F(Flann_SIFT100K_Test, SavedTest)
 	flann::Index<float> kmeans_index(data, flann::SavedIndexParams("kmeans_tree.idx"));
 
 	start_timer("Searching KNN...");
-	kmeans_index.knnSearch(query, indices, dists, 5, flann::SearchParams(80) );
+	kmeans_index.knnSearch(query, indices, dists, 5, flann::SearchParams(96) );
 	printf("done (%g seconds)\n", stop_timer());
 
 	precision = compute_precision(match, indices);

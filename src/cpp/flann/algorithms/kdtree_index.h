@@ -44,15 +44,12 @@
 #include "flann/util/allocator.h"
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
-#include "flann/util/timer.h"
 
 using namespace std;
 
 
 namespace flann
 {
-
-
 
 struct KDTreeIndexParams : public IndexParams {
 	KDTreeIndexParams(int trees_ = 4) : IndexParams(KDTREE), trees(trees_) {};
@@ -80,7 +77,6 @@ struct KDTreeIndexParams : public IndexParams {
 	}
 
 };
-
 
 
 /**
@@ -117,15 +113,10 @@ class KDTreeIndex : public NNIndex<ELEM_TYPE>
 	int numTrees;
 
 	/**
-	 *  Array of indices to vectors in the dataset.  When doing lookup,
-	 *  this is used instead to mark checkID.
+	 *  Array of indices to vectors in the dataset.
 	 */
 	int* vind;
 
-	/**
-	 * An unique ID for each lookup.
-	 */
-	int checkID;
 
 	/**
 	 * The dataset used by this index
@@ -136,6 +127,7 @@ class KDTreeIndex : public NNIndex<ELEM_TYPE>
 
 	size_t size_;
 	size_t veclen_;
+
 
     DIST_TYPE* mean;
     DIST_TYPE* var;
@@ -168,16 +160,11 @@ class KDTreeIndex : public NNIndex<ELEM_TYPE>
 	typedef TreeSt* Tree;
 
     /**
-     * Array of k-d trees used to find neighbors.
+     * Array of k-d trees used to find neighbours.
      */
     Tree* trees;
     typedef BranchStruct<Tree> BranchSt;
     typedef BranchSt* Branch;
-    /**
-     * Priority queue storing intermediate branches in the best-bin-first search
-     */
-    Heap<BranchSt>* heap;
-
 
 	/**
 	 * Pooled memory allocator.
@@ -209,8 +196,8 @@ public:
 	{
         size_ = dataset.rows;
         veclen_ = dataset.cols;
-        numTrees = params.trees;
 
+        numTrees = params.trees;
         trees = new Tree[numTrees];
 
 		// get the parameters
@@ -222,8 +209,6 @@ public:
 //        	numTrees = -1;
 //        	trees = NULL;
 //        }
-		heap = new Heap<BranchSt>(size_);
-		checkID = -1000;
 
 		// Create a permutable array of indices to the input vectors.
 		vind = new int[size_];
@@ -244,8 +229,7 @@ public:
 		if (trees!=NULL) {
 			delete[] trees;
 		}
-		delete heap;
-        delete[] mean;
+		delete[] mean;
         delete[] var;
 	}
 
@@ -255,8 +239,6 @@ public:
 	 */
 	void buildIndex()
 	{
-		StartStopTimer t;
-		t.start();
 		/* Construct the randomized trees. */
 		for (int i = 0; i < numTrees; i++) {
 			/* Randomize the order of vectors to allow for unbiased sampling. */
@@ -266,9 +248,6 @@ public:
 			}
 			trees[i] = divideTree(0, size_ - 1);
 		}
-		t.stop();
-		logger.info("Time to build index: %g", t.value);
-
 	}
 
 
@@ -295,7 +274,6 @@ public:
     		load_tree(stream,trees[i]);
     	}
     }
-
 
 
     /**
@@ -345,11 +323,10 @@ public:
         }
     }
 
-    const IndexParams* getParameters() const
+	const IndexParams* getParameters() const
 	{
 		return &index_params;
 	}
-
 
 private:
 
@@ -406,8 +383,6 @@ private:
 	}
 
 
-
-
 	/**
 	 * Choose which feature to use in order to subdivide this set of vectors.
 	 * Make a random choice among those with the highest variance, and use
@@ -422,7 +397,6 @@ private:
 			sampled to get a good estimate.
 		*/
 		int end = min(first + SAMPLE_MEAN, last);
-		int count = end - first + 1;
 		for (int j = first; j <= end; ++j) {
 			ELEM_TYPE* v = dataset[vind[j]];
             for (size_t k=0; k<veclen_; ++k) {
@@ -430,7 +404,7 @@ private:
             }
 		}
         for (size_t k=0; k<veclen_; ++k) {
-            mean[k] /= count;
+            mean[k] /= (end - first + 1);
         }
 
 		/* Compute variances (no need to divide by count). */
@@ -510,7 +484,7 @@ private:
 		}
 
 		node->child1 = divideTree(first, i - 1);
-		node->child2 = divideTree( i, last);
+		node->child2 = divideTree(i, last);
 	}
 
 
@@ -521,7 +495,7 @@ private:
 	 */
 	void getExactNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec)
 	{
-		checkID -= 1;  /* Set a different unique ID for each search. */
+//		checkID -= 1;  /* Set a different unique ID for each search. */
 
 		if (numTrees > 1) {
             fprintf(stderr,"It doesn't make any sense to use more than one tree for exact search");
@@ -543,18 +517,20 @@ private:
 		BranchSt branch;
 
 		int checkCount = 0;
-		heap->clear();
-		checkID -= 1;  /* Set a different unique ID for each search. */
+		Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
+		vector<bool> checked(size_,false);
 
 		/* Search once through each tree down to root. */
 		for (i = 0; i < numTrees; ++i) {
-			searchLevel(result, vec, trees[i], 0.0, checkCount, maxCheck);
+			searchLevel(result, vec, trees[i], 0.0, checkCount, maxCheck, heap, checked);
 		}
 
 		/* Keep searching other branches from heap until finished. */
 		while ( heap->popMin(branch) && (checkCount < maxCheck || !result.full() )) {
-			searchLevel(result, vec, branch.node,branch.mindistsq, checkCount, maxCheck);
+			searchLevel(result, vec, branch.node, branch.mindistsq, checkCount, maxCheck, heap, checked);
 		}
+
+		delete heap;
 
 		assert(result.full());
 	}
@@ -565,7 +541,8 @@ private:
 	 *  higher levels, all exemplars below this level must have a distance of
 	 *  at least "mindistsq".
 	*/
-	void searchLevel(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, Tree node, float mindistsq, int& checkCount, int maxCheck)
+	void searchLevel(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, Tree node, float mindistsq, int& checkCount, int maxCheck,
+			Heap<BranchSt>* heap, vector<bool>& checked)
 	{
 		if (result.worstDist()<mindistsq) {
 //			printf("Ignoring branch, too far\n");
@@ -579,11 +556,11 @@ private:
 				Once a vector is checked, we set its location in vind to the
 				current checkID.
 			*/
-			if (vind[node->divfeat] == checkID || checkCount>=maxCheck) {
+			if (checked[node->divfeat] == true || checkCount>=maxCheck) {
 				if (result.full()) return;
 			}
             checkCount++;
-			vind[node->divfeat] = checkID;
+			checked[node->divfeat] = true;
 
 			result.addPoint(dataset[node->divfeat],node->divfeat);
 			return;
@@ -610,7 +587,7 @@ private:
 		}
 
 		/* Call recursively to search next level down. */
-		searchLevel(result, vec, bestChild, mindistsq, checkCount, maxCheck);
+		searchLevel(result, vec, bestChild, mindistsq, checkCount, maxCheck, heap, checked);
 	}
 
 	/**
@@ -629,9 +606,9 @@ private:
 				Once a vector is checked, we set its location in vind to the
 				current checkID.
 			*/
-			if (vind[node->divfeat] == checkID)
-				return;
-			vind[node->divfeat] = checkID;
+//			if (vind[node->divfeat] == checkID)
+//				return;
+//			vind[node->divfeat] = checkID;
 
 			result.addPoint(dataset[node->divfeat],node->divfeat);
 			return;

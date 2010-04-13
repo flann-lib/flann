@@ -147,9 +147,6 @@ public:
     	case KDTREE:
     		bestIndex = new KDTreeIndex<ELEM_TYPE>(dataset, (const KDTreeIndexParams&)*bestParams);
     		break;
-    	case KDTREE_MT:
-    		bestIndex = new KDTreeMTIndex<ELEM_TYPE>(dataset, (const KDTreeMTIndexParams&)*bestParams);
-    		break;
     	case KMEANS:
     		bestIndex = new KMeansIndex<ELEM_TYPE>(dataset, (const KMeansIndexParams&)*bestParams);
     		break;

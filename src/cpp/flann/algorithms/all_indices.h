@@ -34,7 +34,6 @@
 
 #include "flann/algorithms/nn_index.h"
 #include "flann/algorithms/kdtree_index.h"
-#include "flann/algorithms/kdtree_mt_index.h"
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
@@ -55,9 +54,6 @@ NNIndex<T>* create_index_by_type(const Matrix<T>& dataset, const IndexParams& pa
 		break;
 	case KDTREE:
 		nnIndex = new KDTreeIndex<T>(dataset, (const KDTreeIndexParams&)params);
-		break;
-	case KDTREE_MT:
-		nnIndex = new KDTreeMTIndex<T>(dataset, (const KDTreeMTIndexParams&)params);
 		break;
 	case KMEANS:
 		nnIndex = new KMeansIndex<T>(dataset, (const KMeansIndexParams&)params);

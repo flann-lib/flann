@@ -44,7 +44,6 @@ enum flann_algorithm_t {
 	KDTREE = 1,
 	KMEANS = 2,
 	COMPOSITE = 3,
-	KDTREE_MT = 4,
 	SAVED = 254,
 	AUTOTUNED = 255
 };

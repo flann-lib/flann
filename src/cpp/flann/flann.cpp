@@ -38,7 +38,6 @@
 #include "flann/nn/ground_truth.h"
 // index types
 #include "flann/algorithms/kdtree_index.h"
-#include "flann/algorithms/kdtree_mt_index.h"
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
@@ -74,7 +73,6 @@ public:
 	{
 		ParamsFactory::instance().register_<LinearIndexParams>(LINEAR);
 		ParamsFactory::instance().register_<KDTreeIndexParams>(KDTREE);
-		ParamsFactory::instance().register_<KDTreeMTIndexParams>(KDTREE_MT);
 		ParamsFactory::instance().register_<KMeansIndexParams>(KMEANS);
 		ParamsFactory::instance().register_<CompositeIndexParams>(COMPOSITE);
 		ParamsFactory::instance().register_<AutotunedIndexParams>(AUTOTUNED);
