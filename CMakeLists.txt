@@ -34,28 +34,23 @@ add_custom_target(test)
 add_dependencies(test tests)
 
 macro(flann_add_gtest exe)
-	find_library(GTEST gtest)
-	if (${GTEST} STREQUAL "GTEST-NOTFOUND")
-		message("gtest library not found, some tests will not be run")
-	else()
-		# add build target
-		add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
-		target_link_libraries(${exe} flann gtest)
-		# add dependency to 'tests' target
-		add_dependencies(tests ${exe})
+    # add build target
+    add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
+    target_link_libraries(${exe} flann gtest)
+    # add dependency to 'tests' target
+    add_dependencies(tests ${exe})
 
-		# add target for running test
-		string(REPLACE "/" "_" _testname ${exe})
-		add_custom_target(test_${_testname}
-						COMMAND ${exe}
-						ARGS --gtest_print_time
-						DEPENDS ${exe}
-						WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
-						VERBATIM
-						COMMENT "Runnint gtest test(s) ${exe}")
-		# add dependency to 'test' target
-		add_dependencies(test test_${_testname})
-	endif()
+    # add target for running test
+    string(REPLACE "/" "_" _testname ${exe})
+    add_custom_target(test_${_testname}
+                    COMMAND ${exe}
+                    ARGS --gtest_print_time
+                    DEPENDS ${exe}
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
+                    VERBATIM
+                    COMMENT "Runnint gtest test(s) ${exe}")
+    # add dependency to 'test' target
+    add_dependencies(test test_${_testname})
 endmacro(flann_add_gtest)
 
 
@@ -74,12 +69,13 @@ macro(flann_add_pyunit file)
     # add target for running test
     string(REPLACE "/" "_" _testname ${file})
     add_custom_target(pyunit_${_testname}
-                    COMMAND ${PYTHON_EXECUTABLE} ${_file_name}
+                    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/bin/run_test.py ${_file_name}
                     DEPENDS ${_file_name}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
                     VERBATIM
                     COMMENT "Running pyunit test(s) ${file}" )
     # add dependency to 'test' target
+    add_dependencies(pyunit_${_testname} flann)
     add_dependencies(test pyunit_${_testname})
 endmacro(flann_add_pyunit)
 
