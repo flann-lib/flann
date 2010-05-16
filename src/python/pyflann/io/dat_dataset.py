@@ -31,11 +31,30 @@ import numpy
 from scipy.io.numpyio import fwrite
 
 
-def write(dataset, filename):
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+def check(filename):
+    with open(filename,"r") as f:
+        line = f.readline().strip()
+        if line[0]=='#':  # first line might be a comment
+            line = f.readline().strip()
+    
+    values = line.split()    
+    if len(values)==0:
+        return False
+    return all(map(is_number, values))
+    
+
+def save(dataset, filename):
     if not isinstance(dataset,numpy.ndarray):
         raise FLANNException("Can only save numpy arrays")    
     numpy.savetxt(filename,dataset, fmt="%g")
 
-def read(filename, dtype = numpy.float32):
+def load(filename, rows = -1, cols = -1, dtype = numpy.float32):
     dataset = numpy.loadtxt(filename, dtype=dtype)
     return dataset

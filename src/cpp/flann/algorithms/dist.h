@@ -82,8 +82,7 @@ double euclidean_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 	return distsq;
 }
 
-template <>
-double euclidean_dist(unsigned char* first1, unsigned char* last1, unsigned char* first2, double acc);
+double euclidean_dist(const unsigned char* first1, const unsigned char* last1, unsigned char* first2, double acc);
 
 
 /**

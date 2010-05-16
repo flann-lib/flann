@@ -90,7 +90,7 @@ public:
 
 	virtual bool full() const = 0;
 
-	virtual bool addPoint(ELEM_TYPE* point, int index) = 0;
+	virtual bool addPoint(const ELEM_TYPE* point, int index) = 0;
 
 	virtual float worstDist() const = 0;
 
@@ -156,7 +156,7 @@ public:
 	}
 
 
-	bool addPoint(ELEM_TYPE* point, int index)
+	bool addPoint(const ELEM_TYPE* point, int index)
 	{
 		for (int i=0;i<count;++i) {
 			if (indices[i]==index) return false;
@@ -295,7 +295,7 @@ public:
 		return true;
 	}
 
-	bool addPoint(ELEM_TYPE* point, int index)
+	bool addPoint(const ELEM_TYPE* point, int index)
 	{
 		Item it;
 		it.index = index;

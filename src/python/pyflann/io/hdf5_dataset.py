@@ -27,36 +27,52 @@
 from __future__ import with_statement
 
 from pyflann.exceptions import FLANNException
-import binary_dataset
-import dat_dataset
-import npy_dataset
-import hdf5_dataset
-
-import os.path
-from numpy import float32
-
-dataset_formats = { 
-    'bin' : binary_dataset, 
-    'dat' : dat_dataset, 
-    'npy' : npy_dataset,
-    'h5' : hdf5_dataset 
-}
+import tables
+import numpy
 
 
-def load(filename, rows = -1, cols = -1, dtype = float32, **kwargs):
-    
-    for format in dataset_formats.values():
-        if format.check(filename):
-            return format.load(filename, rows, cols, dtype, **kwargs)
-    raise FLANNException("Error: Unknown dataset format")
-    
-    
-def save(dataset, filename, format = None, **kwargs):    
+def check(filename):
+    f = open(filename,"r")
+    header = f.read(4)
+    if header[1:4]=="HDF": return True
+    return False
+        
+
+def save(dataset, filename, **kwargs):
+    if not isinstance(dataset,numpy.ndarray):
+        raise FLANNException("Dataset must be in numpy format")
     try:
-        if format is None:
-            basename,extension = os.path.splitext(filename)
-            format = extension[1:]
-        handler = dataset_formats[format]
-        handler.save(dataset, filename, **kwargs)
+        if 'title' in kwargs:
+            title_name = kwargs['title']
+        else:
+            title_name = "Dataset saved by pyflann"
+        if 'dataset_name' in kwargs:
+            dataset_name = kwargs['dataset_name']
+        else:
+            dataset_name = 'dataset'
+        h5file = tables.openFile(filename, mode = "a", title = title_name)
+        h5file.createArray(h5file.root, dataset_name, dataset)
+        h5file.close()
     except Exception as e:
+        h5file.close()
         raise FLANNException(e)
+
+
+def load(filename, rows = -1, cols = -1, dtype = numpy.float32, **kwargs):
+    try:
+        h5file = tables.openFile(filename, mode = 'r')
+        if 'dataset_name' in kwargs:
+            dataset_name = kwargs['dataset_name']
+        else:
+            dataset_name = 'dataset'
+        
+        for node in h5file.walkNodes("/", "Array"):
+            if node.name == dataset_name:
+                data = node.read()
+        h5file.close()
+        return data
+    except Exception as e:
+        h5file.close()
+        raise FLANNException(e)
+        
+    
