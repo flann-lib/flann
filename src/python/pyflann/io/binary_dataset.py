@@ -28,34 +28,42 @@ from __future__ import with_statement
 
 from pyflann.exceptions import FLANNException
 import numpy
-from scipy.io.numpyio import fwrite
+import os.path
 
+def check(filename):
+    f = open(filename,"r")
+    header = f.read(6)
+    if header[0:6]=="BINARY":
+        return True
+    return False
 
-def write(dataset, filename):
+def save(dataset, filename):
     if not isinstance(dataset,numpy.ndarray):
-        raise FLANNException("Can only save numpy arrays")
+        raise FLANNException("Dataset must be in numpy format")
     
-    with open(filename, 'w') as fd_meta:
+    with open(filename+".meta", 'w') as fd_meta:
         fd_meta.write(\
 """BINARY
-%s
 %d
 %d
-%s"""%(filename+".bin",dataset.shape[1],dataset.shape[0],dataset.dtype.name))
-    with open(filename+".bin", 'wb') as fd:
-        fwrite(fd, dataset.size, dataset)
+%s"""%(dataset.shape[0],dataset.shape[1],dataset.dtype.name))
+
+    dataset.tofile(filename)
 
 
-def read(filename, dtype = numpy.float32):
+def load(filename, rows = -1, cols = -1, dtype = numpy.float32):
     
-    with open(filename,"rb") as fd:
-        header = fd.readline()
-        assert( header[0:6] == "BINARY")
-        bin_filename = fd.readline().strip()
-        length = int(fd.readline())
-        count = int(fd.readline())
-        thetype = fd.readline().strip()
-    data = numpy.fromfile(file=bin_filename, dtype=numpy.dtype(thetype), count=count*length)
-    data.shape = (count,length)
+    if os.path.isfile(filename+".meta"):        
+        with open(filename+".meta","r") as fd:
+            header = fd.readline()
+            assert( header[0:6] == "BINARY")
+            rows = int(fd.readline())
+            cols = int(fd.readline())
+            dtype = numpy.dtype(fd.readline().strip())
+    else:
+        if rows==-1 or cols==-1:
+            raise "No .meta file present, you must specify dataset rows, cols asd dtype"
+    data = numpy.fromfile(file=filename, dtype=dtype, count=rows*cols)
+    data.shape = (rows,cols)
     return data
     

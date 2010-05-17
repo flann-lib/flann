@@ -30,18 +30,23 @@ from pyflann.exceptions import FLANNException
 import numpy
 
 
+def check(filename):
+    f = open(filename,"r")
+    header = f.read(6)
+    if header[1:6]=="NUMPY": return True
+    return False
+        
 
-def write(dataset, filename):
+def save(dataset, filename):
     if not isinstance(dataset,numpy.ndarray):
-        raise FLANNException("Can only save numpy arrays")
-
+        raise FLANNException("Dataset must be in numpy format")
     try:
         numpy.save(filename, dataset)
     except:
         raise FLANNException("Format not supported. You need at least numpy version 1.1")
 
 
-def read(filename, dtype = numpy.float32):
+def load(filename, rows = -1, cols = -1, dtype = numpy.float32):
     try:
         tmp = numpy.save
     except:
