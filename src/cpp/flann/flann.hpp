@@ -78,6 +78,7 @@ struct SavedIndexParams : public IndexParams {
 template<typename T>
 class Index {
 	NNIndex<T>* nnIndex;
+    bool built;
 
 public:
 	Index(const Matrix<T>& features, const IndexParams& params);
@@ -130,9 +131,11 @@ template<typename T>
 Index<T>::Index(const Matrix<T>& dataset, const IndexParams& params)
 {
 	flann_algorithm_t index_type = params.getIndexType();
+    built = false;
 
 	if (index_type==SAVED) {
 		nnIndex = load_saved_index(dataset, ((const SavedIndexParams&)params).filename);
+        built = true;
 	}
 	else {
 		nnIndex = create_index_by_type(dataset, params);
@@ -149,11 +152,15 @@ template<typename T>
 void Index<T>::buildIndex()
 {
 	nnIndex->buildIndex();
+    built = true;
 }
 
 template<typename T>
 void Index<T>::knnSearch(const Matrix<T>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& searchParams)
 {
+    if (!built) {
+        throw FLANNException("You must build the index before searching.");
+    }
 	assert(queries.cols==nnIndex->veclen());
 	assert(indices.rows>=queries.rows);
 	assert(dists.rows>=queries.rows);
@@ -178,6 +185,9 @@ void Index<T>::knnSearch(const Matrix<T>& queries, Matrix<int>& indices, Matrix<
 template<typename T>
 int Index<T>::radiusSearch(const Matrix<T>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& searchParams)
 {
+    if (!built) {
+        throw FLANNException("You must build the index before searching.");
+    }
 	if (query.rows!=1) {
 		printf("I can only search one feature at a time for range search\n");
 		return -1;
