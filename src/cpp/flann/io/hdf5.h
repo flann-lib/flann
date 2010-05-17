@@ -85,7 +85,7 @@ void save_to_file(const flann::Matrix<T>& flann_dataset, const std::string& file
 		 * default file creation properties, and default file
 		 * access properties.
 		 */
-		H5File file( filename, H5F_ACC_RDWR );
+		H5File file( filename, H5F_ACC_TRUNC );
 
 		/*
 		 * Define the size of the array and create the data space for fixed
