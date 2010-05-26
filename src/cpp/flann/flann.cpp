@@ -26,22 +26,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#include <stdexcept>
-#include <vector>
-
-#include "flann/flann.h"
-#include "flann/general.h"
-#include "flann/util/timer.h"
-#include "flann/util/logger.h"
-#include "flann/nn/index_testing.h"
-#include "flann/util/saving.h"
-#include "flann/nn/ground_truth.h"
-// index types
-#include "flann/algorithms/kdtree_index.h"
-#include "flann/algorithms/kmeans_index.h"
-#include "flann/algorithms/composite_index.h"
-#include "flann/algorithms/linear_index.h"
-#include "flann/algorithms/autotuned_index.h"
+// include flann_cpp stuff
+#include "flann_cpp.cpp"
 
 using namespace std;
 
@@ -51,43 +37,19 @@ using namespace std;
 #define EXPORTED extern "C"
 #endif
 
-//struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { KDTREE, 32, 0.2, 4, 32, 11, CENTERS_RANDOM, -1, 0.01, 0, 0.1, LOG_NONE, 0 };
 
-namespace flann
-{
-
-
-IndexParams* IndexParams::createFromParameters(const FLANNParameters& p)
-{
-	IndexParams* params = ParamsFactory::instance().create(p.algorithm);
-	params->fromParameters(p);
-
-	return params;
-}
-
-
-class StaticInit
-{
-public:
-	StaticInit()
-	{
-		ParamsFactory::instance().register_<LinearIndexParams>(LINEAR);
-		ParamsFactory::instance().register_<KDTreeIndexParams>(KDTREE);
-		ParamsFactory::instance().register_<KMeansIndexParams>(KMEANS);
-		ParamsFactory::instance().register_<CompositeIndexParams>(COMPOSITE);
-		ParamsFactory::instance().register_<AutotunedIndexParams>(AUTOTUNED);
-//		ParamsFactory::instance().register_<SavedIndexParams>(SAVED);
-	}
+struct FLANNParameters FLANN_DEFAULT_PARAMETERS = { 
+    KDTREE, 
+    32, 0.2, 
+    4, 
+    32, 11, CENTERS_RANDOM, 
+    0.9, 0.01, 0, 0.1, 
+    "",
+    LOG_NONE, 0 
 };
-StaticInit __init;
-
-
-} // namespace FLANN
-
 
 
 using namespace flann;
-
 
 
 void init_flann_parameters(FLANNParameters* p)
@@ -103,15 +65,12 @@ void init_flann_parameters(FLANNParameters* p)
 
 EXPORTED void flann_log_verbosity(int level)
 {
-    if (level>=0) {
-        logger.setLevel(level);
-    }
+    flann::log_verbosity(level);
 }
 
 EXPORTED void flann_set_distance_type(flann_distance_t distance_type, int order)
 {
-	flann_distance_type = distance_type;
-	flann_minkowski_order = order;
+    flann::set_distance_type(distance_type, order);
 }
 
 

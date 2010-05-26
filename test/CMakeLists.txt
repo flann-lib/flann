@@ -5,8 +5,8 @@ set(EXECUTABLE_OUTPUT_PATH ${TEST_OUTPUT_PATH})
 #find_package(Boost COMPONENTS system thread REQUIRED)
 #target_link_libraries(flann_mt_test ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} flann)
 
-add_executable(flann_example flann_example.cpp)
-target_link_libraries(flann_example flann)
+add_executable(flann_example_c flann_example.c)
+target_link_libraries(flann_example_c flann)
 
 find_library(GTEST gtest)
 if (NOT GTEST)
@@ -26,7 +26,7 @@ flann_download_test_data(sift100K_byte.h5 b772255fd2044e9d2a5a0183953e4705)
 
 if (GTEST AND HDF5 AND HDF5_CPP)
 	flann_add_gtest(flann_simple_test flann_simple_test.cpp)
-	target_link_libraries(flann_simple_test hdf5 hdf5_cpp)
+	target_link_libraries(flann_simple_test flann_cpp hdf5 hdf5_cpp)
 endif()
 
 

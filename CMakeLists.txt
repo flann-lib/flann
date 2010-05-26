@@ -7,6 +7,13 @@ endif(COMMAND cmake_policy)
 
 project(flann)
 
+set(FLANN_VERSION 1.5.0)
+STRING(REGEX MATCHALL "[0-9]" FLANN_VERSION_PARTS "${FLANN_VERSION}")                                                
+LIST(GET FLANN_VERSION_PARTS 0 FLANN_VERSION_MAJOR)                                                                  
+LIST(GET FLANN_VERSION_PARTS 1 FLANN_VERSION_MINOR)                                                                  
+LIST(GET FLANN_VERSION_PARTS 2 FLANN_VERSION_PATCH)                                                                  
+
+
 set(CMAKE_INSTALL_PREFIX /usr/local)
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
@@ -36,7 +43,7 @@ add_dependencies(test tests)
 macro(flann_add_gtest exe)
     # add build target
     add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
-    target_link_libraries(${exe} flann gtest)
+    target_link_libraries(${exe} gtest)
     # add dependency to 'tests' target
     add_dependencies(tests ${exe})
 

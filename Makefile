@@ -1,8 +1,8 @@
 .PHONY: flann tests test doc all clean
 
-flann:
+default:
 	@-mkdir -p build
-	@cd build && cmake .. && make $@
+	@cd build && cmake .. && make flann flann_cpp
 
 test:
 	@-mkdir -p build

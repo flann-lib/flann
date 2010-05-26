@@ -49,6 +49,24 @@
 namespace flann
 {
 
+
+/**
+Sets the log level used for all flann functions
+
+Params:
+    level = verbosity level
+*/
+void log_verbosity(int level);
+
+
+/**
+ * Sets the distance type to use throughout FLANN.
+ * If distance type specified is MINKOWSKI, the second argument
+ * specifies which order the minkowski distance should have.
+ */
+void set_distance_type(flann_distance_t distance_type, int order);
+
+
 struct SavedIndexParams : public IndexParams {
 	SavedIndexParams(std::string filename_) : IndexParams(SAVED), filename(filename_) {}
 

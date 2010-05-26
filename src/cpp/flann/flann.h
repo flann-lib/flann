@@ -49,14 +49,15 @@
 
 
 
-//extern struct FLANNParameters DEFAULT_FLANN_PARAMETERS;
-
-typedef void* FLANN_INDEX; // deprecated
-typedef void* flann_index_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+    
+typedef void* FLANN_INDEX; /* deprecated */
+typedef void* flann_index_t;
+
+extern struct FLANNParameters FLANN_DEFAULT_PARAMETERS;
 
 /**
 Sets the log level used for all flann functions (unless
@@ -73,7 +74,7 @@ LIBSPEC void flann_log_verbosity(int level);
  * If distance type specified is MINKOWSKI, the second argument
  * specifies which order the minkowski distance should have.
  */
-LIBSPEC void flann_set_distance_type(flann_distance_t distance_type, int order);
+LIBSPEC void flann_set_distance_type(enum flann_distance_t distance_type, int order);
 
 
 /**
@@ -320,7 +321,7 @@ LIBSPEC int flann_radius_search(flann_index_t index_ptr, /* the index */
 										float* dists, /* similar, but for storing distances */
 										int max_nn,  /* size of arrays indices and dists */
 										float radius, /* search radius (squared radius for euclidian metric) */
-										FLANNParameters* flann_params);
+										struct FLANNParameters* flann_params);
 
 LIBSPEC int flann_radius_search_float(flann_index_t index_ptr, /* the index */
 										float* query,	/* query point */
@@ -328,7 +329,7 @@ LIBSPEC int flann_radius_search_float(flann_index_t index_ptr, /* the index */
 										float* dists, /* similar, but for storing distances */
 										int max_nn,  /* size of arrays indices and dists */
 										float radius, /* search radius (squared radius for euclidian metric) */
-										FLANNParameters* flann_params);
+										struct FLANNParameters* flann_params);
 
 LIBSPEC int flann_radius_search_double(flann_index_t index_ptr, /* the index */
 										double* query,	/* query point */
@@ -336,7 +337,7 @@ LIBSPEC int flann_radius_search_double(flann_index_t index_ptr, /* the index */
 										float* dists, /* similar, but for storing distances */
 										int max_nn,  /* size of arrays indices and dists */
 										float radius, /* search radius (squared radius for euclidian metric) */
-										FLANNParameters* flann_params);
+										struct FLANNParameters* flann_params);
 
 LIBSPEC int flann_radius_search_byte(flann_index_t index_ptr, /* the index */
 										unsigned char* query,	/* query point */
@@ -344,7 +345,7 @@ LIBSPEC int flann_radius_search_byte(flann_index_t index_ptr, /* the index */
 										float* dists, /* similar, but for storing distances */
 										int max_nn,  /* size of arrays indices and dists */
 										float radius, /* search radius (squared radius for euclidian metric) */
-										FLANNParameters* flann_params);
+										struct FLANNParameters* flann_params);
 
 LIBSPEC int flann_radius_search_int(flann_index_t index_ptr, /* the index */
 										int* query,	/* query point */
@@ -352,7 +353,7 @@ LIBSPEC int flann_radius_search_int(flann_index_t index_ptr, /* the index */
 										float* dists, /* similar, but for storing distances */
 										int max_nn,  /* size of arrays indices and dists */
 										float radius, /* search radius (squared radius for euclidian metric) */
-										FLANNParameters* flann_params);
+										struct FLANNParameters* flann_params);
 
 /**
 Deletes an index and releases the memory used by it.
