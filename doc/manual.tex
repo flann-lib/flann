@@ -59,14 +59,15 @@ through the C, MATLAB and Python bindings provided with the library.
 
 
 This section contains small examples of how to use the FLANN library from
-different programming languages (C/C++, MATLAB and Python) and from the
+different programming languages (C++, C, MATLAB and Python) and from the
 command line.
 
 \begin{itemize}
 
-\item \textbf{C/C++}
+
+\item \textbf{C}
 \begin{Verbatim}[fontsize=\scriptsize,frame=single]
-// file flann_example.cc
+// file flann_example.cpp
 
 #include "flann.h"
 #include <stdio.h>
@@ -97,6 +98,61 @@ int main(int argc, char** argv)
 
    // index parameters are stored here
    FLANNParameters p;
+   // want 90% target precision
+   // the rest of the parameters are automatically computed
+   p.target_precision = 0.9;  
+   // compute the 3 nearest-neighbors of each point in the testset
+   flann_find_nearest_neighbors(dataset, rows, cols, testset, t_rows,
+result, dists, nn, &p);
+
+   // ...
+
+   delete[] dataset;
+   delete[] testset;
+   delete[] result;
+   delete[] dists;
+
+   return 0;
+}
+
+\end{Verbatim}
+
+
+\item \textbf{C}
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+// file flann_example.c
+
+#include "flann.h"
+#include <stdio.h>
+#include <assert.h>
+
+// Function that reads a dataset
+float* read_points(char* filename, int *rows, int *cols);
+
+int main(int argc, char** argv)
+{
+   int rows,cols;
+   int t_rows, t_cols;
+   float speedup;
+
+   // read dataset points from file dataset.dat
+   float* dataset = read_points("dataset.dat", &rows, &cols);
+   float* testset = read_points("testset.dat", &t_rows, &t_cols);
+
+   // points in dataset and testset should have the same dimensionality
+   assert(cols==t_cols);
+
+   // number of nearest neighbors to search
+   int nn = 3;
+   // allocate memory for the nearest-neighbors indices
+   int* result = new int[t_rows*nn];
+   // allocate memory for the distances
+   float* dists = new float[t_rows*nn];
+
+   // index parameters are stored here
+   FLANNParameters p;
+   p.algorithm = ls
+
    // want 90% target precision
    // the rest of the parameters are automatically computed
    p.target_precision = 0.9;  

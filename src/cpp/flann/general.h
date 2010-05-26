@@ -33,10 +33,7 @@
 
 #define ARRAY_LEN(a) (sizeof(a)/sizeof(a[0]))
 
-#include "flann/util/object_factory.h"
 
-#include <stdexcept>
-#include <cassert>
 
 /* Nearest neighbour index algorithms */
 enum flann_algorithm_t {
@@ -83,37 +80,41 @@ enum flann_datatype_t {
 
 
 struct FLANNParameters {
-	flann_algorithm_t algorithm; // the algorithm to use
+	enum flann_algorithm_t algorithm; /* the algorithm to use */
 
-	// search time parameters
-	int checks;                // how many leafs (features) to check in one search
-    float cb_index;            // cluster boundary index. Used when searching the kmeans tree
+	/* search time parameters */
+	int checks;                /* how many leafs (features) to check in one search */
+    float cb_index;            /* cluster boundary index. Used when searching the kmeans tree */
 
-    // kdtree index parameters
-    int trees;                 // number of randomized trees to use (for kdtree)
+    /*  kdtree index parameters */
+    int trees;                 /* number of randomized trees to use (for kdtree) */
 
-    // kmeans index parameters
-	int branching;             // branching factor (for kmeans tree)
-	int iterations;            // max iterations to perform in one kmeans cluetering (kmeans tree)
-	flann_centers_init_t centers_init;          // algorithm used for picking the initial cluetr centers for kmeans tree
+    /* kmeans index parameters */
+	int branching;             /* branching factor (for kmeans tree) */
+	int iterations;            /* max iterations to perform in one kmeans cluetering (kmeans tree) */
+	enum flann_centers_init_t centers_init;  /* algorithm used for picking the initial cluetr centers for kmeans tree */
 
-	// autotuned index parameters
-	float target_precision;    // precision desired (used for autotuning, -1 otherwise)
-	float build_weight;        // build tree time weighting factor
-	float memory_weight;       // index memory weigthing factor
-    float sample_fraction;     // what fraction of the dataset to use for autotuning
+	/* autotuned index parameters */
+	float target_precision;    /* precision desired (used for autotuning, -1 otherwise) */
+	float build_weight;        /* build tree time weighting factor */
+	float memory_weight;       /* index memory weigthing factor */
+    float sample_fraction;     /* what fraction of the dataset to use for autotuning */
 
-    // saved index parameters
-	const char* filename; 			// filename containing the index in case of saved index type
+    /* saved index parameters */
+	const char* filename; 		/* filename containing the index in case of saved index type */
 
-    // other parameters
-    flann_log_level_t log_level;    // determines the verbosity of each flann function
-	long random_seed;          		// random seed to use
+    /* other parameters */
+    enum flann_log_level_t log_level;    /* determines the verbosity of each flann function */
+	long random_seed;          		/* random seed to use */
 };
 
 
 
 #ifdef __cplusplus
+
+#include <stdexcept>
+#include <cassert>
+#include "flann/util/object_factory.h"
 
 namespace flann {
 
@@ -177,4 +178,4 @@ struct SearchParams {
 
 #endif
 
-#endif  // CONSTANTS_H
+#endif  /* CONSTANTS_H */
