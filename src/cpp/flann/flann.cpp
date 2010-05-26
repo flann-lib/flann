@@ -531,21 +531,26 @@ EXPORTED int flann_compute_cluster_centers_int(int* dataset, int rows, int cols,
  * Functions exported to the python ctypes interface.
  */
 
-EXPORTED void compute_ground_truth_float(float* dataset, int dshape[], float* testset, int tshape[], int* match, int mshape[], int skip)
+EXPORTED void compute_ground_truth_float(float* dataset, int dataset_rows, int dataset_cols, 
+                                        float* testset, int testset_rows, int testset_cols, 
+                                        int* match, int match_rows, int match_cols, int skip)
 {
-    assert(dshape[1]==tshape[1]);
-    assert(tshape[0]==mshape[0]);
+    assert(dataset_cols==testset_cols);
+    assert(testset_rows==match_rows);
 
-    Matrix<int> _match(match, mshape[0], mshape[1]);
-    compute_ground_truth(Matrix<float>(dataset, dshape[0], dshape[1]), Matrix<float>(testset,tshape[0], tshape[1]), _match, skip);
+    Matrix<int> _match(match, match_rows, match_cols);
+    compute_ground_truth(Matrix<float>(dataset, dataset_rows, dataset_cols), Matrix<float>(testset,testset_rows, testset_cols), _match, skip);
 }
 
 
-EXPORTED float test_with_precision(flann_index_t index_ptr, float* dataset, int dshape[], float* testset, int tshape[], int* matches, int mshape[],
-             int nn, float precision, int* checks, int skip = 0)
+EXPORTED float test_with_precision(flann_index_t index_ptr, 
+                                    float* dataset, int dataset_rows, int dataset_cols, 
+                                    float* testset, int testset_rows, int testset_cols, 
+                                    int* matches, int matches_rows, int matches_cols,
+                                    int nn, float precision, int* checks, int skip = 0)
 {
-    assert(dshape[1]==tshape[1]);
-    assert(tshape[0]==mshape[0]);
+    assert(dataset_cols==testset_cols);
+    assert(testset_rows==matches_rows);
 
     try {
         if (index_ptr==NULL) {
@@ -554,19 +559,22 @@ EXPORTED float test_with_precision(flann_index_t index_ptr, float* dataset, int 
 
         Index<float>* index = (Index<float>*)index_ptr;
         NNIndex<float>* nn_index = index->getIndex();
-        return test_index_precision(*nn_index, Matrix<float>(dataset, dshape[0], dshape[1]), Matrix<float>(testset, tshape[0], tshape[1]),
-                Matrix<int>(matches, mshape[0],mshape[1]), precision, *checks, nn, skip);
+        return test_index_precision(*nn_index, Matrix<float>(dataset, dataset_rows, dataset_cols), Matrix<float>(testset, testset_rows, testset_cols),
+                Matrix<int>(matches, matches_rows,matches_cols), precision, *checks, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
         return -1;
     }
 }
 
-EXPORTED float test_with_checks(flann_index_t index_ptr, float* dataset, int dshape[], float* testset, int tshape[], int* matches, int mshape[],
-             int nn, int checks, float* precision, int skip = 0)
+EXPORTED float test_with_checks(flann_index_t index_ptr, 
+                                float* dataset, int dataset_rows, int dataset_cols, 
+                                float* testset, int testset_rows, int testset_cols, 
+                                int* matches, int matches_rows, int matches_cols,
+                                int nn, int checks, float* precision, int skip = 0)
 {
-    assert(dshape[1]==tshape[1]);
-    assert(tshape[0]==mshape[0]);
+    assert(dataset_cols==testset_cols);
+    assert(testset_rows==matches_rows);
 
     try {
         if (index_ptr==NULL) {
@@ -574,8 +582,7 @@ EXPORTED float test_with_checks(flann_index_t index_ptr, float* dataset, int dsh
         }
         Index<float>* index = (Index<float>*)index_ptr;
         NNIndex<float>* nn_index = index->getIndex();
-        return test_index_checks(*nn_index, Matrix<float>(dataset, dshape[0], dshape[1]), Matrix<float>(testset, tshape[0], tshape[1]),
-                Matrix<int>(matches, mshape[0],mshape[1]), checks, *precision, nn, skip);
+        return test_index_checks(*nn_index, Matrix<float>(dataset, dataset_rows, dataset_cols), Matrix<float>(testset, testset_rows, testset_cols), Matrix<int>(matches, matches_rows,matches_cols), checks, *precision, nn, skip);
     } catch (runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
         return -1;

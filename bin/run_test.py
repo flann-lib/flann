@@ -14,5 +14,5 @@ if __name__ == "__main__":
     sys.path.append(python_path)
 
     test_file = sys.argv[1]
-    sys.argv = [sys.argv[1]]
+    sys.argv = sys.argv[1:]
     execfile(test_file)

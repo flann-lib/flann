@@ -51,6 +51,7 @@ else(DEFINED OPENCV_VERSION)
 #include_directories(${CMAKE_SOURCE_DIR}/include algorithms util nn .)
 
 file(GLOB_RECURSE SOURCES *.cpp)
+file(GLOB_RECURSE HEADERS *.h *.hpp)
 
 add_library(flann SHARED ${SOURCES})
 add_library(flann_s STATIC ${SOURCES})
@@ -59,15 +60,6 @@ if(WIN32)
     install (
         TARGETS flann
         RUNTIME DESTINATION matlab 
-    )
-    install (
-        TARGETS flann
-        RUNTIME DESTINATION python/pyflann/bindings
-    )
-else(WIN32)
-    install (
-        TARGETS flann
-        LIBRARY DESTINATION python/pyflann/bindings
     )
 endif(WIN32)
 
@@ -78,15 +70,10 @@ install (
     ARCHIVE DESTINATION lib
 )
 
-# install (
-#     TARGETS flann flann_s
-#     ARCHIVE DESTINATION ${PROJECT_SOURCE_DIR}/python
-#     LIBRARY DESTINATION ${PROJECT_SOURCE_DIR}/python
-# )
-
 install (
-    FILES flann.h flann.hpp general.h util/matrix.h util/common.h util/random.h
+    DIRECTORY flann
     DESTINATION include
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
 )
 
 endif(DEFINED OPENCV_VERSION)

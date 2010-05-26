@@ -1,5 +1,5 @@
-#Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
-#Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
+#Copyright 2008-2010  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
+#Copyright 2008-2010  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
 #
 #THE BSD LICENSE
 #
@@ -24,39 +24,23 @@
 #(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 #THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import with_statement
 
-from pyflann.exceptions import FLANNException
-import binary_dataset
-import dat_dataset
-import npy_dataset
-import hdf5_dataset
+import pyflann
 
-import os.path
-from numpy import float32
+try:
+    import h5py
+except:
+    raise FLANNEcception("Remote index requires the h5py library")
 
-dataset_formats = { 
-    'bin' : binary_dataset, 
-    'dat' : dat_dataset, 
-    'npy' : npy_dataset,
-    'hdf5' : hdf5_dataset 
-}
+try:
+    from rpyc.servers import classic_server
+except:
+    raise FLANNEcception("Remote index requires the rpyc library")
 
 
-def load(filename, rows = -1, cols = -1, dtype = float32, **kwargs):
-    
-    for format in dataset_formats.values():
-        if format.check(filename):
-            return format.load(filename, rows, cols, dtype, **kwargs)
-    raise FLANNException("Error: Unknown dataset format")
-    
-    
-def save(dataset, filename, format = None, **kwargs):    
-    try:
-        if format is None:
-            basename,extension = os.path.splitext(filename)
-            format = extension[1:]
-        handler = dataset_formats[format]
-        handler.save(dataset, filename, **kwargs)
-    except Exception as e:
-        raise FLANNException(e)
+def start_server():
+    classic_server.main()
+
+
+if __name__=="__main__":
+    start_server()

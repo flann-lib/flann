@@ -43,4 +43,9 @@ if (EXISTS ${PDFLATEX_COMPILER} AND EXISTS ${BIBTEX_COMPILER})
     add_custom_target(doc
         DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.log
     )
+
+    install (
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.pdf
+        DESTINATION doc
+    )
 endif()

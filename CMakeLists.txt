@@ -7,7 +7,7 @@ endif(COMMAND cmake_policy)
 
 project(flann)
 
-set(CMAKE_INSTALL_PREFIX /usr/local)
+set(CMAKE_INSTALL_PREFIX /ubc/cs/home/m/mariusm/scratch/flann_install)
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory

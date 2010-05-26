@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     FLANN_INDEX index_id = flann_build_index(dataset, rows, cols, &speedup, &p);
     
     
-    flann_find_nearest_neighbors_index(index_id, testset, tcount, result, dists, nn, p.checks, &p);
+    flann_find_nearest_neighbors_index(index_id, testset, tcount, result, dists, nn, &p);
     
     write_dat_file("results.dat",result, tcount, nn);
     

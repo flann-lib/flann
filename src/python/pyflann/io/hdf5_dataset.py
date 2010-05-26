@@ -27,7 +27,7 @@
 from __future__ import with_statement
 
 from pyflann.exceptions import FLANNException
-import tables
+import h5py
 import numpy
 
 
@@ -50,8 +50,8 @@ def save(dataset, filename, **kwargs):
             dataset_name = kwargs['dataset_name']
         else:
             dataset_name = 'dataset'
-        h5file = tables.openFile(filename, mode = "a", title = title_name)
-        h5file.createArray(h5file.root, dataset_name, dataset)
+        h5file = h5py.File(filename)
+        h5file.create_dataset(dataset_name, dataset)
         h5file.close()
     except Exception as e:
         h5file.close()
@@ -60,19 +60,23 @@ def save(dataset, filename, **kwargs):
 
 def load(filename, rows = -1, cols = -1, dtype = numpy.float32, **kwargs):
     try:
-        h5file = tables.openFile(filename, mode = 'r')
+        h5file = h5py.File(filename)
         if 'dataset_name' in kwargs:
             dataset_name = kwargs['dataset_name']
         else:
             dataset_name = 'dataset'
         
-        for node in h5file.walkNodes("/", "Array"):
-            if node.name == dataset_name:
-                data = node.read()
+        for node in h5file.keys():
+            if node == dataset_name:
+                data = h5file[node]
         h5file.close()
         return data
     except Exception as e:
         h5file.close()
         raise FLANNException(e)
         
-    
+
+def load_range(filename, array_name, range):
+    h5file = h5py.File(filename)
+    dataset = h5file[array_name]
+    return dataset[range[0]:range[1]]
