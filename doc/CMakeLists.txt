@@ -40,12 +40,21 @@ if (EXISTS ${PDFLATEX_COMPILER} AND EXISTS ${BIBTEX_COMPILER})
         COMMENT   "Latex (third pass)"
     )
     # Eventually trigger the whole process
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}.pdf
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.pdf
+                ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.log
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ARGS ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}.pdf
+    )
+
     add_custom_target(doc
-        DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.log
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}.pdf
     )
 
     install (
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.pdf
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}.pdf
         DESTINATION doc
     )
 endif()
