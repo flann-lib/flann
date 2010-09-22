@@ -34,7 +34,7 @@ if(WIN32)
 endif(WIN32)
 
 install (
-    TARGETS flann flann_s
+    TARGETS flann flann_cpp flann_s flann_cpp_s
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib

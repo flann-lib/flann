@@ -1,24 +1,28 @@
-.PHONY: flann tests test doc all clean
-
-default:
-	@-mkdir -p build
-	@cd build && cmake .. && make flann flann_cpp
-
-test:
-	@-mkdir -p build
-	@cd build && cmake .. && make $@
-
-tests:
-	@-mkdir -p build
-	@cd build && cmake .. && make $@
-
-doc:
-	@-mkdir -p build
-	@cd build && cmake .. && make $@
+.PHONY: flann tests test libs doc all clean examples
 
 all:
 	@-mkdir -p build
-	@cd build && cmake .. && make all doc
+	cd build && cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} .. && make all doc
+
+libs:
+	@-mkdir -p build
+	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && make flann flann_cpp
+
+test:
+	@-mkdir -p build
+	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && make $@
+
+tests:
+	@-mkdir -p build
+	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && make $@
+
+doc:
+	@-mkdir -p build
+	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && make $@
+
+examples:
+	@-mkdir -p build
+	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && make $@
 
 clean:
 	-cd build && make clean
@@ -26,4 +30,5 @@ clean:
 
 %:
 	@-mkdir -p build
-	@cd build && cmake .. && make $@
+	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && make $@
+

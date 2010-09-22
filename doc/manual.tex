@@ -65,52 +65,40 @@ command line.
 \begin{itemize}
 
 
-\item \textbf{C}
+\item \textbf{C++}
 \begin{Verbatim}[fontsize=\scriptsize,frame=single]
 // file flann_example.cpp
 
 #include "flann.h"
-#include <stdio.h>
-#include <assert.h>
 
 // Function that reads a dataset
-float* read_points(char* filename, int *rows, int *cols);
+void load_from_file(flann::Matrix<float>& data, char* filename);
 
 int main(int argc, char** argv)
 {
-   int rows,cols;
-   int t_rows, t_cols;
-   float speedup;
+    int nn = 3;
 
-   // read dataset points from file dataset.dat
-   float* dataset = read_points("dataset.dat", &rows, &cols);
-   float* testset = read_points("testset.dat", &t_rows, &t_cols);
+    flann::Matrix<float> dataset;
+    load_from_file(dataset, "dataset.dat");
 
-   // points in dataset and testset should have the same dimensionality
-   assert(cols==t_cols);
+    flann::Matrix<float> query;
+    load_from_file(query, "query.dat");
 
-   // number of nearest neighbors to search
-   int nn = 3;
-   // allocate memory for the nearest-neighbors indices
-   int* result = new int[t_rows*nn];
-   // allocate memory for the distances
-   float* dists = new float[t_rows*nn];
+    flann::Matrix<int> indices(new int[query.rows*nn], query.rows, nn);
+    flann::Matrix<float> dists(new float[query.rows*nn], query.rows, nn);
 
-   // index parameters are stored here
-   FLANNParameters p;
-   // want 90% target precision
-   // the rest of the parameters are automatically computed
-   p.target_precision = 0.9;  
-   // compute the 3 nearest-neighbors of each point in the testset
-   flann_find_nearest_neighbors(dataset, rows, cols, testset, t_rows,
-result, dists, nn, &p);
+    // construct an randomized kd-tree index using 4 kd-trees
+    flann::Index<float> index(data, flann::KDTreeIndexParams(4));
+    index.buildIndex();                                                                                               
 
-   // ...
+    // do a knn search, using 128 checks
+    index.knnSearch(query, indices, dists, nn, flann::SearchParams(128));
 
-   delete[] dataset;
-   delete[] testset;
-   delete[] result;
-   delete[] dists;
+    ...
+    dataset.free();
+    query.free();
+    indices.free();
+    dists.free();
 
    return 0;
 }
@@ -120,13 +108,13 @@ result, dists, nn, &p);
 
 \item \textbf{C}
 \begin{Verbatim}[fontsize=\scriptsize,frame=single]
-// file flann_example.c
+/* file flann_example.c */
 
 #include "flann.h"
 #include <stdio.h>
 #include <assert.h>
 
-// Function that reads a dataset
+/* Function that reads a dataset */
 float* read_points(char* filename, int *rows, int *cols);
 
 int main(int argc, char** argv)
@@ -135,37 +123,34 @@ int main(int argc, char** argv)
    int t_rows, t_cols;
    float speedup;
 
-   // read dataset points from file dataset.dat
+   /* read dataset points from file dataset.dat */
    float* dataset = read_points("dataset.dat", &rows, &cols);
    float* testset = read_points("testset.dat", &t_rows, &t_cols);
 
-   // points in dataset and testset should have the same dimensionality
+   /* points in dataset and testset should have the same dimensionality */
    assert(cols==t_cols);
 
-   // number of nearest neighbors to search
+   /* number of nearest neighbors to search */
    int nn = 3;
-   // allocate memory for the nearest-neighbors indices
-   int* result = new int[t_rows*nn];
-   // allocate memory for the distances
-   float* dists = new float[t_rows*nn];
+   /* allocate memory for the nearest-neighbors indices */
+   int* result = (int*) malloc(t_rows*nn*sizeof(int));                                                               
+   /* allocate memory for the distances */
+   float* dists = (float*) malloc(t_rows*nn*sizeof(float));
 
-   // index parameters are stored here
-   FLANNParameters p;
-   p.algorithm = ls
+   /* index parameters are stored here */
+   struct FLANNParameters p = DEFAULT_FLANN_PARAMETERS;
+   p.algorithm = AUTOTUNED;  /* or KDTREE, KMEANS, ... /*
+   p.target_precision = 0.9;  /* want 90% target precision */
 
-   // want 90% target precision
-   // the rest of the parameters are automatically computed
-   p.target_precision = 0.9;  
-   // compute the 3 nearest-neighbors of each point in the testset
+   /* compute the 3 nearest-neighbors of each point in the testset */
    flann_find_nearest_neighbors(dataset, rows, cols, testset, t_rows,
 result, dists, nn, &p);
 
-   // ...
-
-   delete[] dataset;
-   delete[] testset;
-   delete[] result;
-   delete[] dists;
+   ...
+   free(dataset);
+   free(testset);
+   free(result);
+   free(dists);
 
    return 0;
 }
@@ -233,21 +218,13 @@ FLANN can be downloaded from the following address:
 After downloading and unpacking, the following files and directories should
 be present:
 \begin{itemize}
-\item \texttt{src}: directory containg the source files
-\item \texttt{doc}: directory containg this documentation
 \item \texttt{bin}: directory various for scripts and binary files
+\item \texttt{doc}: directory containg this documentation
+\item \texttt{examples}: directory containg examples of using FLANN
+\item \texttt{src}: directory containg the source files
+\item \texttt{test}: directory containg unit tests for FLANN
 \end{itemize}
 
-In addition, the FLANN libary will install itself in the directory
-\texttt{build} (unless overridden by the \texttt{CMAKE\_INSTALL\_PREFIX} variable).
-The \texttt{build} directory will have the following structure:
-\begin{itemize}
-\item \texttt{bin}: contains the command line application (\texttt{flann}) and other binary files
-\item \texttt{lib}: contains the compiled libraries (\texttt{libflann.so} and \texttt{libflann\_s.a} for linux)
-\item \texttt{include}: contains the C header files
-\item \texttt{matlab}: contains the MATLAB wrapper functions and a MEX (Matlab EXecutable) file
-\item \texttt{python}: contains the python bindings
-\end{itemize}
 
 
 To compile the flann library the \textit{CMake}\footnote{http://www.cmake.org/} build system is required.
@@ -277,17 +254,22 @@ On windows the steps are similar:
 
 
 The FLANN library can be used from MATLAB through the following wrapper
-functions: \texttt{flann\_build\_index}, \texttt{flann\_search} and
-\texttt{flann\_free\_index}. The \texttt{flann\_build\_index} function
+functions: \texttt{flann\_build\_index}, \texttt{flann\_search},
+\texttt{flann\_save\_index}, \texttt{flann\_load\_index},
+\texttt{flann\_set\_distance\_type} and \texttt{flann\_free\_index}. 
+The \texttt{flann\_build\_index} function
 creates a search index from the dataset points, \texttt{flann\_search} uses
-this index to perform nearest-neighbor searches and
+this index to perform nearest-neighbor searches, \texttt{flann\_save\_index} 
+and \texttt{flann\_load\_index} can be used to save and load an index
+to/from disk, \texttt{flann\_set\_distance\_type} is used to set the
+distance type to be used when building an index and
 \texttt{flann\_free\_index} deletes the index and releases the memory it
 uses.
 
-Note that in the binary distribution of FLANN the MEX file is linked against
-the shared version of FLANN (\texttt{flann.so} or \texttt{flann.dll}), so on Linux you must set the 
-LD\_LIBRARY\_PATH environment variable accordingly prior to starting MATLAB. On Windows is enough
-to have \texttt{flann.dll} in the same directory with the MEX file.
+% Note that in the binary distribution of FLANN the MEX file is linked against
+% the shared version of FLANN (\texttt{flann.so} or \texttt{flann.dll}), so on Linux you must set the 
+% LD\_LIBRARY\_PATH environment variable accordingly prior to starting MATLAB. On Windows is enough
+% to have \texttt{flann.dll} in the same directory with the MEX file.
 
 The following sections describe in more detail the FLANN matlab wrapper
 functions and show examples of how they may be used.
@@ -299,7 +281,7 @@ This function creates a search index from the initial dataset of points,
 index used  later for fast nearest-neighbor searches in the dataset.
 
 \begin{Verbatim}
-[index, parameters, speedup] = flann_build_index(dataset,build_params);
+[index, parameters, speedup] = flann_build_index(dataset, build_params);
 \end{Verbatim}
 
 
@@ -315,21 +297,30 @@ parameters passed to the function.
 
 \end{description}
 
-Depending on the contents of the \texttt{build\_params} structure, the
-function has two different behaviors. If the structure contains a field
-that specifies the index type to create the function will create an index
-of that type (using index parameters which also have to be included in
-the \texttt{build\_params} structure). If the index and index parameters
-are not specified directly the function will first try to automatically
-detect the best index and index parameters to use for nearest neighbor
-search in the provided dataset.
 
-\paragraph{Using automatic index and parameter configuration}
-When using automatic configuration the  \texttt{build\_params} structure
-must contain the following fields:
-
+The \texttt{build\_params} is used to specify the type of index to be built and the 
+index parameters.  These have a big impact on the performance of the new search
+index (nearest-neighbor search time) and on the time and memory required to
+build the index. The optimum parameter values depend on the dataset
+characteristics (number of dimensions, distribution of points in the
+dataset) and on the application domain (desired precision for the
+approximate nearest neighbor searches). The \texttt{build\_params} argument is 
+a structure that contains one or more of the following fields:
 
 \begin{description}
+\item[\texttt{algorithm}] - the algorithm to use for building the index.
+The possible values are: \texttt{'linear'}, \texttt{'kdtree'},
+\texttt{'kmeans'}, \texttt{'composite'} or \texttt{'autotuned'}. The \texttt{'linear'} option
+does not create any index, it uses brute-force search in the original
+dataset points, \texttt{'kdtree'} creates one or more randomized kd-trees,
+\texttt{'kmeans'} creates a hierarchical kmeans clustering tree,
+\texttt{'composite'} is a mix of both kdtree and kmeans trees and the
+\texttt{'autotuned'} automatically determines the best index and optimum
+parameters using a cross-validation technique.
+
+\vspace{0.5cm}
+\hspace{-1cm} \textbf{Autotuned index:} in case the algorithm field is \texttt{'autotuned'}, the following fields
+should also be present:
 
 \item[\texttt{target\_precision}] - is a number between 0 and 1 specifying the
 percentage of the approximate nearest-neighbor searches that return the
@@ -359,41 +350,27 @@ very large datasets can take longer than desired. In such case, using just a fra
 data helps speeding up this algorithm, while still giving good approximations of the
 optimum parameters.
 
- \end{description}
+\vspace{0.5cm}
+\hspace{-1cm} \textbf{Randomized kd-trees index:} in case the algorithm field is \texttt{'kdtree'}, the following fields
+should also be present:
+
+\item[\texttt{trees}] - the number of randomized kd-trees to create.
+
+\vspace{0.5cm}
+\hspace{-1cm} \textbf{Hierarchical k-means index:} in case the algorithm type is \texttt{'means'}, the following fields
+should also be present:
 
 
-\paragraph{Specifying the index type and parameters manually}
-
-Because the parameter estimation step is costly, it is
-possible to skip this step and reuse the already computed parameters the
-next time an index is created from similar data points (coming from the
-same distribution). To specify the index type and the index parameters
-manually, the \texttt{build\_params} structure must contain the following
-fields:
-
-
-
-\begin{description}
-\item[\texttt{algorithm}] - the algorithm to use for building the index.
-The possible values are: \texttt{'linear'}, \texttt{'kdtree'},
-\texttt{'kmeans'} and \texttt{'composite'}. The \texttt{'linear'} option
-does not create any index, it uses brute-force search in the original
-dataset points, \texttt{'kdtree'} creates one or more randomized kd-trees,
-\texttt{'kmeans'} creates a hierarchical kmeans clustering tree and
-\texttt{'composite'} is a mix of both kdtree and kmeans trees.
-\item[\texttt{trees}] - the number of randomized kd-trees to
-create. This parameter is required only when the algorithm used is
-\texttt{'kdtree'}.
 \item[\texttt{branching}] - the branching factor to use for
 the hierarchical kmeans tree creation. While kdtree is always a binary
 tree, each node in the kmeans tree may have several branches depending on
-the value of this parameter. This parameter is required only when the
-algorithm used is \texttt{'kmeans'}.
+the value of this parameter. 
+
 \item[\texttt{iterations}] - the maximum number of iterations to
 use in the kmeans clustering stage when building the kmeans tree. A value
 of -1 used here means that the kmeans clustering should be performed until
-convergence. This parameter is required only when the algorithm used is
-\texttt{'kmeans'}.
+convergence.
+
 \item[\texttt{centers\_init}] - the algorithm to use for selecting the initial
 centers when performing a kmeans clustering step. The possible values are
 'random' (picks the initial cluster centers randomly), 'gonzales' (picks the
@@ -406,22 +383,21 @@ way exploration is performed in the hierarchical kmeans tree. When \texttt{cb\_i
 the next kmeans domain to be explored is choosen to be the one with the closest center. 
 A value greater then zero also takes into account the size of the domain.
 
+\vspace{0.5cm}
+\hspace{-1cm} \textbf{Composite index:} in case the algorithm type is \texttt{'composite'}, the fields from 
+both randomized kd-tree index and hierarchical k-means index should be present.
+
 \end{description}
-
-The above parameters have a big impact on the performance of the new search
-index (nearest-neighbor search time) and on the time and memory required to
-build the index. The optimum parameter values depend on the dataset
-characteristics (number of dimensions, distribution of points in the
-dataset) and on the application domain (desired precision for the
-approximate nearest neighbor searches).
-
-
 
 
 The \texttt{flann\_build\_index} function returns the newly created
 \texttt{index}, the \texttt{parameters} used for creating the index and, if
 automatic configuration was used, an estimation of the \texttt{speedup}
-over linear search that is achieved when searching the index.
+over linear search that is achieved when searching the index.  Since the 
+parameter estimation step is costly, it is
+possible to save the computed parameters and reuse them the
+next time an index is created from similar data points (coming from the
+same distribution).
 
 
 
@@ -465,6 +441,57 @@ deleted in one step. In this case the parameters structure passed to the
 \begin{Verbatim}
 [result, dists] = flann_search(dataset, testset, k, parameters);
 \end{Verbatim}
+
+\subsubsection{flann\_save\_index}
+
+This function saves an index to a file so that it can be reused at a later time without
+the need to recompute it. Only the index will be saved to the file, not also the data
+points for which the index was created, so for the index to be reused the data 
+points must be saved separately.
+\begin{Verbatim}
+flann_save_index(index, filename)
+\end{Verbatim}
+
+The argumenst required by this function are:
+\begin{description}
+\item[\texttt{index}] - the index to be saved, created by \texttt{flann\_build\_index}
+\item[\texttt{filename}] - the name of the file in which to save the index
+\end{description}
+
+
+
+\subsubsection{flann\_load\_index}
+
+This function loads a previously saved index from a file. It needs to be passed as a second 
+parameter the dataset for which the index was created, as this is not saved together with the
+index.
+\begin{Verbatim}
+index = flann_load_index(filename, dataset)
+\end{Verbatim}
+The argumenst required by this function are:
+\begin{description}
+\item[\texttt{filename}] - the file from which to load the index
+\item[\texttt{dataset}] - the dataset for which the index was created
+\end{description}
+
+This function returns the index object.
+
+
+\subsubsection{flann\_set\_distance\_type}
+
+This function chooses the distance function to use when computing distances between
+data points.
+\begin{Verbatim}
+flann_set_distance_type(type, order)
+\end{Verbatim}
+The argumenst required by this function are:
+\begin{description}
+\item[\texttt{type}] - the distance type to use. Currently the options are: \texttt{'euclidean'},
+		      \texttt{'manhattan'} and \texttt{'minkowski'}
+\item[\texttt{order}] - only used if distance type is \texttt{'minkowski'} and represents the order
+	      of the minkowski distance.
+\end{description}
+
 
 
 \subsubsection{flann\_free\_index}
@@ -539,7 +566,29 @@ testset = single(rand(128,1000));
 
 \end{Verbatim}
 
-\subsection{Using FLANN from C/C++}
+\subsection{Using FLANN from C++}
+
+FLANN can be used C++ programs through the C++ bindings provided
+with the library. To use the C++ bindings, the library header file
+\texttt{flann.h}  must be included. The compiler must be told where to look for that file, by
+adding the FLANN \texttt{src/cpp} directory to the compiler include path
+(all the paths in this document are specified relative to the library main
+directory). The directory can be added to the compiler include
+path using the \texttt{-I} compiler flag (on most Unix/Linux systems). When
+linking the C++ application the \texttt{libflann\_cpp\_s.a} (for linking statically) or
+the \texttt{libflann\_cpp.so} (for linking dynamically) libraries must be linked in. 
+This is done using the \texttt{-l} compiler flag followed by the library name
+(eg. \texttt{-lflann\_cpp}) and by specifying the library search path
+(\texttt{lib}) with the \texttt{-L} flag. The entire compile command
+that must be used will look something like this:
+\begin{Verbatim}[fontsize=\footnotesize]
+g++ flann_example.cc -I $FLANN_ROOT/src/cpp -L $FLANN_ROOT/lib -o flann_example_cpp
+ -lflann_cpp
+\end{Verbatim}
+where \texttt{\$FLANN\_ROOT} is the library main directory.
+
+
+\subsection{Using FLANN from C}
 
 FLANN can be easily used in C/C++ programs through the C bindings provided
 with the library. To use the C bindings, the library header file

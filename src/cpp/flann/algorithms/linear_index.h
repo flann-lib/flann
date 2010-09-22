@@ -54,7 +54,7 @@ struct LinearIndexParams : public IndexParams {
 
 	void print() const
 	{
-		printf("Index type: %d\n",(int)algorithm);
+		logger.info("Index type: %d\n",(int)algorithm);
 	}
 };
 

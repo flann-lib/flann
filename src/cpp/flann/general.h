@@ -100,9 +100,6 @@ struct FLANNParameters {
 	float memory_weight;       /* index memory weigthing factor */
     float sample_fraction;     /* what fraction of the dataset to use for autotuning */
 
-    /* saved index parameters */
-	const char* filename; 		/* filename containing the index in case of saved index type */
-
     /* other parameters */
     enum flann_log_level_t log_level;    /* determines the verbosity of each flann function */
 	long random_seed;          		/* random seed to use */

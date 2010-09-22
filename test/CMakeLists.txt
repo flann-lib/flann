@@ -5,9 +5,6 @@ set(EXECUTABLE_OUTPUT_PATH ${TEST_OUTPUT_PATH})
 #find_package(Boost COMPONENTS system thread REQUIRED)
 #target_link_libraries(flann_mt_test ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} flann)
 
-add_executable(flann_example_c flann_example.c)
-target_link_libraries(flann_example_c flann)
-
 find_library(GTEST gtest)
 if (NOT GTEST)
 	message("gtest library not found, some tests will not be run")

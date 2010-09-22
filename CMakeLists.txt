@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.4.6)
+cmake_minimum_required(VERSION 2.4)
 
 if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)
@@ -13,8 +13,26 @@ LIST(GET FLANN_VERSION_PARTS 0 FLANN_VERSION_MAJOR)
 LIST(GET FLANN_VERSION_PARTS 1 FLANN_VERSION_MINOR)                                                                  
 LIST(GET FLANN_VERSION_PARTS 2 FLANN_VERSION_PATCH)                                                                  
 
+if (NOT CMAKE_INSTALL_PREFIX)
+    set(CMAKE_INSTALL_PREFIX /usr/local)
+endif()
 
-set(CMAKE_INSTALL_PREFIX /usr/local)
+# Set the build type.  Options are:
+#  Debug          : w/ debug symbols, w/o optimization
+#  Release        : w/o debug symbols, w/ optimization
+#  RelWithDebInfo : w/ debug symbols, w/ optimization
+#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
+
+if (NOT CMAKE_BUILD_TYPE)
+    #set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+    #set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+message("Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message("Build type: ${CMAKE_BUILD_TYPE}")
+
+
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
@@ -25,16 +43,6 @@ set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
 #set the C/C++ include path to the "include" directory
 include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
-
-# Set the build type.  Options are:
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
-#set(CMAKE_BUILD_TYPE Debug)
-
 
 add_custom_target(tests)
 add_custom_target(test)
@@ -107,5 +115,6 @@ add_definitions( "-Wall -ansi -pedantic" )
 
 
 add_subdirectory( src )
+add_subdirectory( examples )
 add_subdirectory( test )
 add_subdirectory( doc )

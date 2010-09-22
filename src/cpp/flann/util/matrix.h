@@ -64,7 +64,7 @@ public:
      */
     void free()
     {
-    	delete[] data;
+        if (data!=NULL) delete[] data;
     }
 
 	~Matrix()

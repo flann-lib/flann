@@ -38,13 +38,12 @@ using namespace std;
 #endif
 
 
-struct FLANNParameters FLANN_DEFAULT_PARAMETERS = { 
+struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { 
     KDTREE, 
     32, 0.2, 
     4, 
     32, 11, CENTERS_RANDOM, 
     0.9, 0.01, 0, 0.1, 
-    "",
     LOG_NONE, 0 
 };
 

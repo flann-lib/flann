@@ -30,7 +30,6 @@
 #ifndef IO_H_
 #define IO_H_
 
-// TODO: add automatic library detection to make process
 #include <H5Cpp.h>
 
 #include "flann/util/matrix.h"
@@ -144,7 +143,7 @@ void load_from_file(flann::Matrix<T>& flann_dataset, const std::string& filename
 		 */
 		hsize_t dims_out[2];
 		dataspace.getSimpleExtentDims( dims_out, NULL);
-
+		
 		flann_dataset.rows = dims_out[0];
 		flann_dataset.cols = dims_out[1];
 		flann_dataset.data = new T[flann_dataset.rows*flann_dataset.cols];

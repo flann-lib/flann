@@ -25,7 +25,7 @@
 %THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 function test_flann
-data_path = '../../data/';
+data_path = './';
 outcome = {'FAILED!!!!!!!!!', 'PASSED'};
 
 failed = 0;
@@ -121,7 +121,8 @@ ok = 1;
     run_test('composite search',@test_composite_search);
     
     function test_autotune_search
-        [result, ndists] = flann_search(dataset, testset, 10, struct('target_precision',0.95,...
+        [result, ndists] = flann_search(dataset, testset, 10, struct('algorithm','autotuned',...
+                                                          'target_precision',0.95,...
                                                           'build_weight',0.01,...
                                                           'memory_weight',0));
         n = size(match,2);
@@ -198,7 +199,8 @@ ok = 1;
     run_test('index composite search',@test_index_composite_search);
     
    function test_index_autotune_search
-        [index, search_params, speedup ] = flann_build_index(dataset,struct('target_precision',0.95,...
+        [index, search_params, speedup ] = flann_build_index(dataset,struct('algorithm','autotuned',...
+                                                          'target_precision',0.95,...
                                                           'build_weight',0.01,...
                                                           'memory_weight',0));
         [result, ndists] = flann_search(index, testset, 10, search_params);

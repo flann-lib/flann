@@ -77,11 +77,11 @@ struct AutotunedIndexParams : public IndexParams {
 
 	void print() const
 	{
-		printf("Index type: %d\n",(int)algorithm);
-		printf("Target precision: %g\n", target_precision);
-		printf("Build weight: %g\n", build_weight);
-		printf("Memory weight: %g\n", memory_weight);
-		printf("Sample fraction: %g\n", sample_fraction);
+		logger.info("Index type: %d\n",(int)algorithm);
+		logger.info("Target precision: %g\n", target_precision);
+		logger.info("Build weight: %g\n", build_weight);
+		logger.info("Memory weight: %g\n", memory_weight);
+		logger.info("Sample fraction: %g\n", sample_fraction);
 	}
 };
 
@@ -135,10 +135,10 @@ public:
 	virtual void buildIndex()
 	{
 		bestParams = estimateBuildParams();
-		printf("----------------------------------------------------\n");
-		printf("Autotuned parameters:\n");
+		logger.info("----------------------------------------------------\n");
+		logger.info("Autotuned parameters:\n");
 		bestParams->print();
-		printf("----------------------------------------------------\n");
+		logger.info("----------------------------------------------------\n");
     	flann_algorithm_t index_type = bestParams->getIndexType();
     	switch (index_type) {
     	case LINEAR:

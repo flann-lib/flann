@@ -78,12 +78,12 @@ struct CompositeIndexParams : public IndexParams {
 
 	void print() const
 	{
-		printf("Index type: %d\n",(int)algorithm);
-		printf("Trees: %d\n", trees);
-		printf("Branching: %d\n", branching);
-		printf("Iterations: %d\n", iterations);
-		printf("Centres initialisation: %d\n", centers_init);
-		printf("Cluster boundary weight: %g\n", cb_index);
+		logger.info("Index type: %d\n",(int)algorithm);
+		logger.info("Trees: %d\n", trees);
+		logger.info("Branching: %d\n", branching);
+		logger.info("Iterations: %d\n", iterations);
+		logger.info("Centres initialisation: %d\n", centers_init);
+		logger.info("Cluster boundary weight: %g\n", cb_index);
 	}
 };
 

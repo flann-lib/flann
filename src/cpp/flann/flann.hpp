@@ -77,19 +77,19 @@ struct SavedIndexParams : public IndexParams {
 	void fromParameters(const FLANNParameters& p)
 	{
 		assert(p.algorithm==algorithm);
-		filename = p.filename;
+		//filename = p.filename;
 	};
 
 	void toParameters(FLANNParameters& p) const
 	{
 		p.algorithm = algorithm;
-		p.filename = filename.c_str();
+		//p.filename = filename.c_str();
 	};
 
 	void print() const
 	{
-		printf("Index type: %d\n",(int)algorithm);
-		printf("Filename: %s\n", filename.c_str());
+		logger.info("Index type: %d\n",(int)algorithm);
+		logger.info("Filename: %s\n", filename.c_str());
 	}
 };
 
@@ -207,7 +207,7 @@ int Index<T>::radiusSearch(const Matrix<T>& query, Matrix<int>& indices, Matrix<
         throw FLANNException("You must build the index before searching.");
     }
 	if (query.rows!=1) {
-		printf("I can only search one feature at a time for range search\n");
+	    fprintf(stderr, "I can only search one feature at a time for range search\n");
 		return -1;
 	}
 	assert(query.cols==nnIndex->veclen());

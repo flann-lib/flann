@@ -122,7 +122,6 @@ public:
 	 */
 	void* malloc(int size)
 	{
-		if (size>1000) printf("Allocating size: %d\n", size);
 		int blocksize;
 
 		/* Round size up to a multiple of wordsize.  The following expression

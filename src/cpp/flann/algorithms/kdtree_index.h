@@ -72,8 +72,8 @@ struct KDTreeIndexParams : public IndexParams {
 
 	void print() const
 	{
-		printf("Index type: %d\n",(int)algorithm);
-		printf("Trees: %d\n", trees);
+		logger.info("Index type: %d\n",(int)algorithm);
+		logger.info("Trees: %d\n", trees);
 	}
 
 };
