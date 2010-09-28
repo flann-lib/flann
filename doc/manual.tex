@@ -16,7 +16,8 @@ Manual\\[1cm]}
 
 \author{Marius Muja, mariusm@cs.ubc.ca\\David Lowe, lowe@cs.ubc.ca}
 
-\date{February 27, 2009}
+\date{September 26, 2009}
+
 \begin{document}
 
 
@@ -69,38 +70,38 @@ command line.
 \begin{Verbatim}[fontsize=\scriptsize,frame=single]
 // file flann_example.cpp
 
-#include "flann.h"
+#include <flann/flann.hpp>
+#include <flann/io/hdf5.h>
 
-// Function that reads a dataset
-void load_from_file(flann::Matrix<float>& data, char* filename);
+#include <stdio.h>
 
 int main(int argc, char** argv)
 {
     int nn = 3;
 
     flann::Matrix<float> dataset;
-    load_from_file(dataset, "dataset.dat");
-
     flann::Matrix<float> query;
-    load_from_file(query, "query.dat");
+    flann::load_from_file(dataset, "dataset.hdf5","dataset");
+    flann::load_from_file(query, "dataset.hdf5","query");
 
     flann::Matrix<int> indices(new int[query.rows*nn], query.rows, nn);
     flann::Matrix<float> dists(new float[query.rows*nn], query.rows, nn);
 
     // construct an randomized kd-tree index using 4 kd-trees
-    flann::Index<float> index(data, flann::KDTreeIndexParams(4));
+    flann::Index<float> index(dataset, flann::KDTreeIndexParams(4));
     index.buildIndex();                                                                                               
 
     // do a knn search, using 128 checks
     index.knnSearch(query, indices, dists, nn, flann::SearchParams(128));
 
-    ...
+    flann::save_to_file(indices,"result.hdf5","result");
+
     dataset.free();
     query.free();
     indices.free();
     dists.free();
-
-   return 0;
+    
+    return 0;
 }
 
 \end{Verbatim}
@@ -231,27 +232,551 @@ To compile the flann library the \textit{CMake}\footnote{http://www.cmake.org/} 
 Below is an example of how the FLANN library can be compiled on Linux (replace x.y with the corresponding version number).
 \begin{Verbatim}[fontsize=\scriptsize,frame=single]
 $ cd flann-x.y-src
-$ mkdir tmp
-$ cd tmp
-$ cmake ../src -DCMAKE_BUILD_TYPE=release
-$ make install
+$ BUILD_TYPE=release INSTALL_PREFIX=<some directory> make install
 \end{Verbatim}
 
-On windows the steps are similar:
-
-\begin{Verbatim}[fontsize=\scriptsize,frame=single]
-> cd flann-x.y-src
-> md tmp
-> cd tmp
-> cmake ..\src -G ``NMake Makefiles'' -DCMAKE_BUILD_TYPE=release
-> nmake install
-\end{Verbatim}
+% On windows the steps are similar:
+% 
+% \begin{Verbatim}[fontsize=\scriptsize,frame=single]
+% > cd flann-x.y-src
+% > cmake ..\src -G ``NMake Makefiles'' -DCMAKE_BUILD_TYPE=release
+% > nmake install
+% \end{Verbatim}
 
 
 \section{Using FLANN}
 
-\subsection{Using FLANN from MATLAB}
+\subsection{Using FLANN from C++}
 
+The core of the FLANN library is written in C++. To make use of the full power 
+and flexibility of the templated code one should use the C++ bindings if possible. 
+To use the C++ bindings, the library header file \texttt{flann.hpp} must be included 
+and the library \texttt{libflann\_cpp.so} (for linking dynamically) or
+the \texttt{libflann\_cpp\_s.a} (for linking statically) must be linked in. An example
+of the compile command that must be used will look something like this:
+\begin{Verbatim}[fontsize=\footnotesize]
+g++ flann_example.cpp -I $FLANN_ROOT/include -L $FLANN_ROOT/lib -o flann_example_cpp
+ -lflann_cpp
+\end{Verbatim}
+where \texttt{\$FLANN\_ROOT} is the library main directory.
+
+The following sections describe the public C++ API.
+
+\subsubsection{flann::Index}
+\label{sec:flann::Index}
+The FLANN nearest neighbor index class. This class is used to abstract different
+types of nearest neighbor search indexes.
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+namespace flann
+{
+    template<typename T>
+    class Index 
+    {
+    public:
+	Index(const Matrix<T>& features, const IndexParams& params);
+
+	~Index();
+
+	void buildIndex();
+
+	void knnSearch(const Matrix<T>& queries, 
+		       Matrix<int>& indices, 
+		       Matrix<float>& dists, 
+		       int knn, 
+		       const SearchParams& params);
+
+	int radiusSearch(const Matrix<T>& query, 
+			 Matrix<int>& indices, 
+			 Matrix<float>& dists, 
+			 float radius, 
+			 const SearchParams& params);
+
+	void save(std::string filename);
+
+	int veclen() const;
+
+	int size() const;
+
+	const IndexParams* getIndexParameters();
+    };
+}
+\end{Verbatim}
+
+\textbf{flann::Index::Index}
+Constructs a nearest neighbor search index for a given dataset.
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+Index(const Matrix<T>& features, const IndexParams& params);
+\end{Verbatim}
+\begin{description}
+\item[features] Matrix containing the features(points) to index. The size of the matrix is $num\_features \times dimensionality$.
+\item[params] Structure containing the index parameters. The type of index that will be constructed depends on the type 
+of this parameter. The possible parameter types are:
+
+\textbf{LinearIndexParams} When passing an object of this type, the index will perform a linear, brute-force search.
+\begin{Verbatim}[fontsize=\footnotesize]
+struct LinearIndexParams : public IndexParams 
+{
+};
+\end{Verbatim}
+
+\textbf{KDTreeIndexParams} When passing an object of this type the index constructed will consist of a set 
+of randomized kd-trees which will be searched in parallel.
+\begin{Verbatim}[fontsize=\footnotesize]
+struct KDTreeIndexParams : public IndexParams
+{
+      KDTreeIndexParams( int trees = 4 );
+};
+\end{Verbatim}
+\begin{description}
+ \item[trees] The number of parallel kd-trees to use. Good values are in the range [1..16]
+\end{description}
+
+\textbf{KMeansIndexParams} When passing an object of this type the index constructed will be a hierarchical k-means tree. 
+\begin{Verbatim}[fontsize=\footnotesize]
+struct KMeansIndexParams : public IndexParams
+{
+	KMeansIndexParams( int branching = 32,
+			int iterations = 11,
+			flann_centers_init_t centers_init = CENTERS_RANDOM,
+			float cb_index = 0.2 );
+};
+\end{Verbatim}
+\begin{description}
+\item[branching]{ The branching factor to use for the hierarchical k-means tree }
+\item[iterations]{ The maximum number of iterations to use in the k-means clustering 
+		    stage when building the k-means tree. If a value of -1 is used here, it means
+		    that the k-means clustering should be iterated until convergence}
+\item[centers\_init]{ The algorithm to use for selecting the initial
+		  centers when performing a k-means clustering step. The possible values are
+		  CENTERS\_RANDOM (picks the initial cluster centers randomly), CENTERS\_GONZALES (picks the
+		  initial centers using Gonzales' algorithm) and CENTERS\_KMEANSPP (picks the initial
+		centers using the algorithm suggested in \cite{arthur_kmeanspp_2007}) }
+\item[cb\_index]{ This parameter (cluster boundary index) influences the
+		  way exploration is performed in the hierarchical kmeans tree. When \texttt{cb\_index} is zero
+		  the next kmeans domain to be explored is choosen to be the one with the closest center. 
+		  A value greater then zero also takes into account the size of the domain.}
+\end{description}
+
+\textbf{CompositeIndexParams} When using a parameters object of this type the index created combines the randomized kd-trees 
+	and the hierarchical k-means tree.
+\begin{Verbatim}[fontsize=\footnotesize]
+struct CompositeIndexParams : public IndexParams
+{
+	CompositeIndexParams( int trees = 4,
+			  int branching = 32,
+			  int iterations = 11,
+			  flann_centers_init_t centers_init = CENTERS_RANDOM, 
+			  float cb_index = 0.2 );
+};
+\end{Verbatim}
+
+
+\textbf{AutotunedIndexParams}
+  When passing an object of this type the index created is automatically tuned to offer 
+the best performance, by choosing the optimal index type (randomized kd-trees, hierarchical kmeans, linear) and parameters for the
+dataset provided.
+\begin{Verbatim}[fontsize=\footnotesize]
+struct AutotunedIndexParams : public IndexParams
+{
+	autotunedindexparams( float target_precision = 0.9,
+			  float build_weight = 0.01,
+			  float memory_weight = 0,
+			  float sample_fraction = 0.1 );
+};
+\end{Verbatim}
+\begin{description}
+\item[target\_precision]{ Is a number between 0 and 1 specifying the
+percentage of the approximate nearest-neighbor searches that return the
+exact nearest-neighbor. Using a higher value for this parameter gives
+more accurate results, but the search takes longer. The optimum value
+usually depends on the application. }
+
+\item[build\_weight]{ Specifies the importance of the
+index build time raported to the nearest-neighbor search time. In some
+applications it's acceptable for the index build step to take a long time
+if the subsequent searches in the index can be performed very fast. In
+other applications it's required that the index be build as fast as
+possible even if that leads to slightly longer search times.}
+
+\item[memory\_weight]{Is used to specify the tradeoff between
+time (index build time and search time) and memory used by the index. A
+value less than 1 gives more importance to the time spent and a value
+greater than 1 gives more importance to the memory usage.}
+
+\item[sample\_fraction]{Is a number between 0 and 1 indicating what fraction
+of the dataset to use in the automatic parameter configuration algorithm. Running the 
+algorithm on the full dataset gives the most accurate results, but for
+very large datasets can take longer than desired. In such case using just a fraction of the
+data helps speeding up this algorithm while still giving good approximations of the
+optimum parameters.}
+\end{description}
+
+\textbf{SavedIndexParams}
+This object type is used for loading a previously saved index from the disk.
+\begin{Verbatim}[fontsize=\footnotesize]
+struct SavedIndexParams : public IndexParams
+{
+      SavedIndexParams( std::string filename );
+};
+\end{Verbatim}
+\begin{description}
+\item[filename]{ The filename in which the index was saved. }
+\end{description}
+\end{description}
+
+\subsubsection{flann::Index::buildIndex}
+Constructs the nearest neighbor search index using the parameters provided to the constructor (with the
+exception of saved index type).
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+      void buildIndex();
+\end{Verbatim}
+
+
+
+\subsubsection{flann::Index::knnSearch}
+Performs a K-nearest neighbor search for a given query point using the index.
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+void Index::knnSearch(const Matrix<T>& queries,
+		Matrix<int>& indices, 
+		Matrix<float>& dists,
+		int knn,
+		const SearchParams& params);
+\end{Verbatim}
+\begin{description}
+\item[query]{Matrix containing the query points. Size of matrix is ($num\_queries \times dimentionality $)}
+\item[indices]{Matrix that will contain the indices of the K-nearest neighbors found (size should be at least $num\_queries \times knn$)}
+\item[dists]{Matrix that will contain the distances to the K-nearest neighbors found. (size should be at least $num\_queries \times knn$)}
+\item[knn]{Number of nearest neighbors to search for.}
+\item[params]{Search parameters. Structure currently contains a single field, \texttt{checks} specifying the number 
+of times the tree(s) in the index should be recursively traversed. A
+higher value for this parameter would give better search precision, but
+also take more time. If automatic configuration was used when the
+index was created, the number of checks required to achieve the specified
+precision was also computed, in which case this parameter is ignored.}
+\end{description}
+
+\subsubsection{flann::Index::radiusSearch}
+Performs a radius nearest neighbor search for a given query point.
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int Index::radiusSearch(const Matrix<T>& query,
+		  Matrix<int>& indices,
+		  Matrix<float>& dists,
+		  float radius,
+		  const SearchParams& params); 
+\end{Verbatim}
+
+\begin{description}
+\item[query]{The query point}
+\item[indices]{Vector that will contain the indices of the points found within the search radius in decreasing order of the distance to the query point. If the number of neighbors in the search radius is bigger than the size of this vector, the ones that don't fit in the vector are ignored. }
+\item[dists]{Vector that will contain the distances to the points found within the search radius}
+\item[radius]{The search radius}
+\item[params]{Search parameters}
+\end{description}
+The method returns the number of nearest neighbors found.
+
+
+\subsubsection{flann::Index::save}
+Saves the index to a file.
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+  void Index::save(std::string filename);
+\end{Verbatim}
+\begin{description}
+\item[filename]{The file to save the index to}
+\end{description}
+
+\subsubsection{flann::set\_distance\_type}
+\label{flann::setDistanceType}
+This function chooses the distance function to use when computing distances between
+data points.
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+void set_distance_type(flann_distance_t distance_type, int order);
+\end{Verbatim}
+\begin{description}
+\item[distance\_type] The distance type to use. Possible values are
+\begin{Verbatim}[fontsize=\footnotesize]
+enum flann_distance_t {
+	EUCLIDEAN = 1,
+	MANHATTAN = 2,
+	MINKOWSKI = 3,
+	MAX_DIST   = 4,  // L_infinity - not valid for kd-tree  index type
+	HIK       = 5,
+	HELLINGER = 6,
+	CS        = 7,   // chi-square
+	KL        = 8,   // kullback-leibler divergence
+};
+\end{Verbatim}
+\item[order] Used in for the \texttt{MINKOWSKI} distance type, to choose the order of the Minkowski distance.
+\end{description}
+
+
+\subsubsection{flann::hierarchicalClustering}
+\label{flann::hierarchicalClustering}
+Clusters the given points by constructing a hierarchical k-means tree and choosing a cut in the tree that minimizes the clusters' variance.
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+template <typename ELEM_TYPE, typename DIST_TYPE>
+int hierarchicalClustering(const Matrix<ELEM_TYPE>& features, 
+	  Matrix<DIST_TYPE>& centers, const KMeansIndexParams& params)
+\end{Verbatim}
+\begin{description}
+\item[features]{The points to be clustered}
+\item[centers]{The centers of the clusters obtained. The number of rows in this matrix represents the number of clusters desired.
+However, because of the way the cut in the hierarchical tree is choosen, the number of clusters computed will be
+ the highest number of the form $(branching-1)*k+1$ that's lower than the number of clusters desired, where $branching$ is the tree's 
+branching factor (see description of the KMeansIndexParams).  }
+\item[params]{Parameters used in the construction of the hierarchical k-means tree}
+\end{description}
+The function returns the number of clusters computed.
+
+
+
+
+
+\subsection{Using FLANN from C}
+
+FLANN can be used in C programs through the C bindings provided
+with the library. Because there is not template support in C, there
+are bindings provided for the following data types: \texttt{unsigned char},
+\texttt{int}, \texttt{float} and \texttt{double}. For each of the functions 
+below there is a corresponding version for each of the for data types, for example
+for the function:
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+flan_index_t flann_build_index(float* dataset, int rows, int cols, float* speedup,
+	struct FLANNParameters* flann_params);
+\end{Verbatim}
+there are also the following versions:
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+flan_index_t flann_build_index_byte(unsigned char* dataset,
+	int rows, int cols, float* speedup,
+	struct FLANNParameters* flann_params);
+flan_index_t flann_build_index_int(int* dataset,
+	int rows, int cols, float* speedup,
+	struct FLANNParameters* flann_params);
+flan_index_t flann_build_index_float(float* dataset,
+	int rows, int cols, float* speedup,
+	struct FLANNParameters* flann_params);
+flan_index_t flann_build_index_double(double* dataset,
+	int rows, int cols, float* speedup,
+	struct FLANNParameters* flann_params);
+\end{Verbatim}
+
+\subsubsection{flann\_build\_index()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+flan_index_t flann_build_index(float* dataset,
+	int rows,
+	int cols,
+	float* speedup,
+	struct FLANNParameters* flann_params);
+\end{Verbatim}
+This function builds an index and return a reference to it. The arguments
+expected by this function are as follows:
+\begin{description}
+ \item[dataset, rows and cols] - are used to specify the input dataset of
+points: dataset is a pointer to a $\rm{rows} \times \rm{cols}$ matrix
+stored in row-major order.
+\item [speedup] - is used to return the approximate speedup over linear
+search achieved when using the automatic index and parameter configuration
+(see section \ref{sec:flann_build_index})
+\item [flann\_params] - is a structure containing the parameters passed to
+the function. This structure is defined as follows:
+\begin{Verbatim}[fontsize=\footnotesize]
+struct FLANNParameters {
+  enum flann_algorithm_t algorithm; 	/* the algorithm to use */
+
+  /* search parameters */
+  int checks;            /* how many leafs (features) to check in one search */
+  float cb_index;        /* cluster boundary index. Used when searching the 
+			  kmeans tree */
+
+  /*  kdtree index parameters */
+  int trees;                 /* number of randomized trees to use (for kdtree) */
+
+  /* kmeans index parameters */
+  int branching;             /* branching factor (for kmeans tree) */
+  int iterations;            /* max iterations to perform in one kmeans cluetering 
+			      (kmeans tree) */
+  enum flann_centers_init_t centers_init;  /* algorithm used for picking the initial 
+				cluster centers for kmeans tree */
+
+  /* autotuned index parameters */
+  float target_precision;    /* precision desired (used for autotuning, -1 otherwise) */
+  float build_weight;        /* build tree time weighting factor */
+  float memory_weight;       /* index memory weigthing factor */
+  float sample_fraction;     /* what fraction of the dataset to use for autotuning */
+
+  /* other parameters */
+  enum flann_log_level_t log_level;   /* determines the verbosity of each flann function */
+  long random_seed;          		/* random seed to use */
+};
+\end{Verbatim}
+
+The \texttt{algorithm} and \texttt{centers\_init} fields can take the
+following values:
+\begin{Verbatim}[fontsize=\footnotesize]
+enum flann_algorithm_t {
+	LINEAR = 0,
+	KDTREE = 1,
+	KMEANS = 2,
+	COMPOSITE = 3,
+	SAVED = 254,
+	AUTOTUNED = 255
+};
+
+enum flann_centers_init_t {
+	CENTERS_RANDOM = 0,
+	CENTERS_GONZALES = 1,
+	CENTERS_KMEANSPP = 2
+};
+\end{Verbatim}
+The \texttt{algorithm} field is used to manually select the type of index
+used. The \texttt{centers\_init} field specifies how to choose the inital
+cluster centers when performing the hierarchical k-means clustering (in
+case the algorithm used is k-means): \texttt{CENTERS\_RANDOM} chooses the
+initial centers randomly, \texttt{CENTERS\_GONZALES} chooses the
+initial centers to be spaced apart from each other by using Gonzales' algorithm
+and \texttt{CENTERS\_KMEANSPP} chooses the initial centers using the algorithm
+proposed in \cite{arthur_kmeanspp_2007}.
+
+The fields: \texttt{checks}, \texttt{cb\_index}, \texttt{trees}, \texttt{branching},  
+\texttt{iterations}, \texttt{target\_precision}, \texttt{build\_weight},
+ \texttt{memory\_weight} and \texttt{sample\_fraction} have the
+same meaning as described in \ref{sec:flann::Index}.
+
+The \texttt{random\_seed} field contains the random seed useed to initialize the random
+number generator. 
+
+The field \texttt{log\_level} controls the verbosity of the messages generated by the FLANN
+library functions. It can take the following values:
+\begin{Verbatim}[fontsize=\footnotesize]
+enum flann_log_level_t {
+    LOG_NONE = 0,
+    LOG_FATAL = 1,
+    LOG_ERROR = 2,
+    LOG_WARN = 3,
+    LOG_INFO = 4
+};
+\end{Verbatim}
+\end{description}
+
+
+\subsubsection{flann\_find\_nearest\_neighbors\_index()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int flann_find_nearest_neighbors_index(FLANN_INDEX index_id,
+	float* testset,
+	int trows,
+	int* indices,
+	float* dists,
+	int nn,
+	int checks,
+	struct FLANNParameters* flann_params);
+\end{Verbatim}
+This function searches for the nearest neighbors of the
+\texttt{testset} points using an index already build and referenced by
+\texttt{index\_id}. The \texttt{testset} is a matrix stored in row-major format
+with \texttt{trows} rows and the same number of columns as the dimensionality
+of the points used to build the index. The function computes \texttt{nn}
+nearest neighbors for each point in the \texttt{testset} and stores them in the
+\texttt{indices} matrix (which is a $\rm{trows} \times \rm{nn}$ matrix stored in
+row-major format). The memory for the \texttt{result} matrix must be allocated
+before the \texttt{flann\_find\_nearest\_neighbors\_index()} function is
+called. The distances to the nearest neighbors found are stored in the \texttt{dists}
+matrix. The \texttt{checks} parameter specifies how many tree traversals should
+be performed during the search.
+
+
+
+\subsubsection{flann\_find\_nearest\_neighbors()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int flann_find_nearest_neighbors(float* dataset,
+	int rows,
+	int cols,
+	float* testset,
+	int trows,
+	int* indices,
+	float* dists,
+	int nn,
+	struct FLANNParameters* flann_params);
+\end{Verbatim}
+This function is similar to the
+\texttt{flann\_find\_nearest\_neighbors\_index()} function, but instread of
+using a previously constructed index, it constructs the index, does the nearest
+neighbor search and deletes the index in one step.
+
+\subsubsection{flann\_radius\_search()}
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int flann_radius_search(FLANN_INDEX index_ptr,
+	float* query,   /* query point */
+	int* indices, /* array for storing the indices */
+	float* dists, /* similar, but for storing distances */
+	int max_nn,  /* size of arrays indices and dists */
+	float radius, /* search radius (squared radius for euclidian metric) */
+	int checks,  /* number of features to check, sets the level
+			 of approximation */
+	FLANNParameters* flann_params);
+\end{Verbatim}
+
+This function performs a radius search to single query point. The indices of the neighbors found and
+the distances to them are stored in the \texttt{indices} and dists \texttt{arrays}. The \texttt{max\_nn} parameter sets the limit of the
+neighbors that will be returned (the size of the \texttt{indices} and \texttt{dists} arrays must be at least \texttt{max\_nn}).
+
+\subsubsection{flann\_save\_index()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int flann_save_index(flann_index_t index_id,
+	char* filename);
+\end{Verbatim}
+
+This function saves an index to a file. The dataset for which the index was built is not saved with the index.
+
+\subsubsection{flann\_load\_index()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+flann_index_t flann_load_index(char* filename,
+	float* dataset,
+	int rows,
+	int cols);
+\end{Verbatim}
+
+This function loads a previously saved index from a file. Since the dataset is not saved with the
+index, it must be provided to this function.
+
+
+
+\subsubsection{flann\_free\_index()}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int flann_free_index(FLANN_INDEX index_id,
+	struct FLANNParameters* flann_params);
+\end{Verbatim}
+This function deletes a previously constructed index and frees all the memory
+used by it.
+
+\subsubsection{flann\_set\_distance\_type}
+This function chooses the distance function to use when computing distances between
+data points (see \ref{flann::setDistanceType}).
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+void flann_set_distance_type(enum flann_distance_t distance_type, int order);
+\end{Verbatim}
+
+
+\subsubsection{flann\_compute\_cluster\_centers()}
+Performs hierarchical clustering of a set of points (see \ref{flann::hierarchicalClustering}).
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+int flann_compute_cluster_centers(float* dataset,
+      int rows,
+      int cols,
+      int clusters,
+      float* result,
+      struct FLANNParameters* flann_params);
+\end{Verbatim}
+
+
+\bigskip
+
+See section \ref{sec:quickstart} for an example of how to use the C/C++
+bindings.
+
+
+\subsection{Using FLANN from MATLAB}
 
 The FLANN library can be used from MATLAB through the following wrapper
 functions: \texttt{flann\_build\_index}, \texttt{flann\_search},
@@ -280,7 +805,7 @@ functions and show examples of how they may be used.
 This function creates a search index from the initial dataset of points,
 index used  later for fast nearest-neighbor searches in the dataset.
 
-\begin{Verbatim}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
 [index, parameters, speedup] = flann_build_index(dataset, build_params);
 \end{Verbatim}
 
@@ -406,7 +931,7 @@ same distribution).
 
 This function performs nearest-neighbor searches using the index already
 created:
-\begin{Verbatim}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
 [result, dists] = flann_search(index, testset, k, parameters);
 \end{Verbatim}
 
@@ -448,7 +973,7 @@ This function saves an index to a file so that it can be reused at a later time 
 the need to recompute it. Only the index will be saved to the file, not also the data
 points for which the index was created, so for the index to be reused the data 
 points must be saved separately.
-\begin{Verbatim}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
 flann_save_index(index, filename)
 \end{Verbatim}
 
@@ -465,7 +990,7 @@ The argumenst required by this function are:
 This function loads a previously saved index from a file. It needs to be passed as a second 
 parameter the dataset for which the index was created, as this is not saved together with the
 index.
-\begin{Verbatim}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
 index = flann_load_index(filename, dataset)
 \end{Verbatim}
 The argumenst required by this function are:
@@ -478,16 +1003,20 @@ This function returns the index object.
 
 
 \subsubsection{flann\_set\_distance\_type}
+\label{matlab:flannSetDistanceType}
 
 This function chooses the distance function to use when computing distances between
 data points.
-\begin{Verbatim}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
 flann_set_distance_type(type, order)
 \end{Verbatim}
 The argumenst required by this function are:
 \begin{description}
-\item[\texttt{type}] - the distance type to use. Currently the options are: \texttt{'euclidean'},
-		      \texttt{'manhattan'} and \texttt{'minkowski'}
+\item[\texttt{type}] - the distance type to use. Possible values are: \texttt{'euclidean'},
+		      \texttt{'manhattan'}, \texttt{'minkowski'}, \texttt{'max\_dist'} ($L\_{infinity}$ - distance
+type is not valid for kd-tree index type since it's not dimensionwise additive), 
+\texttt{'hik'} (histogram intersection kernel), \texttt{'hellinger'},\texttt{'cs'} (chi-square) and \texttt{'kl'} (Kullback-Leibler).
+
 \item[\texttt{order}] - only used if distance type is \texttt{'minkowski'} and represents the order
 	      of the minkowski distance.
 \end{description}
@@ -498,7 +1027,7 @@ The argumenst required by this function are:
 
 This function must be called to delete an index and release all the memory
 used by it:
-\begin{Verbatim}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
 flann_free_index(index);
 \end{Verbatim}
 
@@ -507,7 +1036,7 @@ flann_free_index(index);
 Let's look at a few examples showing how the functions described above are
 used:
 
-\paragraph{Example 1:}
+\subsubsection{Example 1:}
 
 In this example the index is constructed using automatic parameter estimation, requesting 90\% as desired precision and using the default values for the build time and memory usage factors. The index is then used to search for the nearest-neighbors of the points in the testset matrix and finally the index is deleted.
 
@@ -535,7 +1064,7 @@ flann_free_index(index);
 % \bibliography{references}
 
 
-\paragraph{Example 2:}
+\subsubsection{Example 2:}
 
 In this example the index constructed with the parameters specified manually.
 
@@ -552,7 +1081,7 @@ flann_free_index(index);
 
 \end{Verbatim}
 
-\paragraph{Example 3:}
+\subsubsection{Example 3:}
 
 In this example the index creation, searching and deletion are all performed in one step:
 
@@ -566,219 +1095,7 @@ testset = single(rand(128,1000));
 
 \end{Verbatim}
 
-\subsection{Using FLANN from C++}
 
-FLANN can be used C++ programs through the C++ bindings provided
-with the library. To use the C++ bindings, the library header file
-\texttt{flann.h}  must be included. The compiler must be told where to look for that file, by
-adding the FLANN \texttt{src/cpp} directory to the compiler include path
-(all the paths in this document are specified relative to the library main
-directory). The directory can be added to the compiler include
-path using the \texttt{-I} compiler flag (on most Unix/Linux systems). When
-linking the C++ application the \texttt{libflann\_cpp\_s.a} (for linking statically) or
-the \texttt{libflann\_cpp.so} (for linking dynamically) libraries must be linked in. 
-This is done using the \texttt{-l} compiler flag followed by the library name
-(eg. \texttt{-lflann\_cpp}) and by specifying the library search path
-(\texttt{lib}) with the \texttt{-L} flag. The entire compile command
-that must be used will look something like this:
-\begin{Verbatim}[fontsize=\footnotesize]
-g++ flann_example.cc -I $FLANN_ROOT/src/cpp -L $FLANN_ROOT/lib -o flann_example_cpp
- -lflann_cpp
-\end{Verbatim}
-where \texttt{\$FLANN\_ROOT} is the library main directory.
-
-
-\subsection{Using FLANN from C}
-
-FLANN can be easily used in C/C++ programs through the C bindings provided
-with the library. To use the C bindings, the library header file
-\texttt{flann.h} (located in the \texttt{build/include} directory) must be
-included. Also the compiler must be told where to look for that file, by
-adding the \texttt{build/include} directory to the compiler include path
-(all the paths in this document are specified relative to the library main
-directory). The directory can be added to the compiler include
-path using the \texttt{-I} compiler flag (on most Unix/Linux systems). When
-linking the C/C++ application the \texttt{libflann\_s.a} (for linking statically) or
-the \texttt{libflann.so} (for linking dynamically) libraries must be linked in. 
-This is done using the \texttt{-l} compiler flag followed by the library name
-(eg. \texttt{-lflann}) and by specifying the library search path
-(\texttt{build/lib}) with the \texttt{-L} flag. The entire compile command
-that must be used will look like this:
-\begin{Verbatim}[fontsize=\footnotesize]
-g++ flann_example.cc -I build/include -L build/lib -o flann_example -lflann
-\end{Verbatim}
-
-The following section describes the C bindings offered by the FLANN
-library:
-
-\paragraph{flann\_build\_index()}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single]
-FLANN_INDEX flann_build_index(float* dataset,
-	int rows,
-	int cols,
-	float* speedup,
-	struct FLANNParameters* flann_params);
-\end{Verbatim}
-This function builds an index and return a reference to it. The arguments
-expected by this function are as follows:
-\begin{description}
- \item[dataset, rows and cols] - are used to specify the input dataset of
-points: dataset is a pointer to a $\rm{rows} \times \rm{cols}$ matrix
-stored in row-major order.
-\item [speedup] - is used to return the approximate speedup over linear
-search achieved when using the automatic index and parameter configuration
-(see section \ref{sec:flann_build_index})
-\item [flann\_params] - is a structure containing the parameters passed to
-the function. This structure is defined as follows:
-\begin{Verbatim}[fontsize=\footnotesize]
-struct FLANNParameters {
-    flann_algorithm_t algorithm; // the algorithm to use (see constants.h)
-    int checks;                // how many leafs (features) to check in one search
-    float cb_index;            // cluster boundary index. Used when searching the kmeans tree
-    int trees;                 // number of randomized trees to use (for kdtree)
-    int branching;             // branching factor (for kmeans tree)
-    int iterations;            // max iterations to perform in one kmeans cluetering (kmeans tree)
-    flann_centers_init_t centers_init;   // algorithm used for picking the initial cluster centers for kmeans tree
-    float target_precision;    // precision desired (used for autotuning, -1 otherwise)
-    float build_weight;        // build tree time weighting factor
-    float memory_weight;       // index memory weigthing factor
-    float sample_fraction;     // what fraction of the dataset to use for autotuning
-
-    flann_log_level_t log_level;             // determines the verbosity of each flann function
-    char* log_destination;     // file where the output should go, NULL for the console
-    long random_seed;          // random seed to use
-};
-\end{Verbatim}
-
-The \texttt{algorithm} and \texttt{centers\_init} fields can take the
-following values:
-\begin{Verbatim}[fontsize=\footnotesize]
-enum flann_algorithm_t {
-    LINEAR = 0,
-    KDTREE = 1,
-    KMEANS = 2,
-    COMPOSITE = 3,
-};
-
-enum flann_centers_init_t {
-    CENTERS_RANDOM = 0,
-    CENTERS_GONZALES = 1,
-    CENTERS_KMEANSPP = 2
-};
-\end{Verbatim}
-The \texttt{algorithm} field is used to manually select the type of index
-used. The \texttt{centers\_init} field specifies how to choose the inital
-cluster centers when performing the hierarchical k-means clustering (in
-case the algorithm used is k-means): \texttt{CENTERS\_RANDOM} chooses the
-initial centers randomly, \texttt{CENTERS\_GONZALES} chooses the
-initial centers to be spaced apart from each other by using Gonzales' algorithm
-and \texttt{CENTERS\_KMEANSPP} chooses the initial centers using the algorithm
-proposed in \cite{arthur_kmeanspp_2007}.
-
-The fields: \texttt{checks}, \texttt{cb\_index},  \texttt{trees}, \texttt{branching},  \texttt{iterations}, \texttt{target\_precision}, \texttt{build\_weight}, \texttt{memory\_weight} and \texttt{sample\_fraction} have the
-same meaning as described in \ref{sec:flann_build_index}.
-
-
-The \texttt{random\_seed} field contains the random seed useed to initialize the random
-number generator. 
-
-The field \texttt{log\_level} controls the verbosity of the messages generated by the FLANN
-library functions. It can take the following values:
-\begin{Verbatim}[fontsize=\footnotesize]
-enum flann_log_level_t {
-    LOG_NONE = 0,
-    LOG_FATAL = 1,
-    LOG_ERROR = 2,
-    LOG_WARN = 3,
-    LOG_INFO = 4
-};
-\end{Verbatim}
-The field \texttt{log\_destination} contains the name of a file where these messages
-should be generated or NULL for the console.
-\end{description}
-
-
-\paragraph{flann\_find\_nearest\_neighbors\_index()}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single]
-int flann_find_nearest_neighbors_index(FLANN_INDEX index_id,
-	float* testset,
-	int trows,
-	int* indices,
-	float* dists,
-	int nn,
-	int checks,
-	struct FLANNParameters* flann_params);
-\end{Verbatim}
-This function searches for the nearest neighbors of the
-\texttt{testset} points using an index already build and referenced by
-\texttt{index\_id}. The \texttt{testset} is a matrix stored in row-major format
-with \texttt{trows} rows and the same number of columns as the dimensionality
-of the points used to build the index. The function computes \texttt{nn}
-nearest neighbors for each point in the \texttt{testset} and stores them in the
-\texttt{indices} matrix (which is a $\rm{trows} \times \rm{nn}$ matrix stored in
-row-major format). The memory for the \texttt{result} matrix must be allocated
-before the \texttt{flann\_find\_nearest\_neighbors\_index()} function is
-called. The distances to the nearest neighbors found are stored in the \texttt{dists}
-matrix. The \texttt{checks} parameter specifies how many tree traversals should
-be performed during the search.
-
-
-
-\paragraph{flann\_find\_nearest\_neighbors()}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single]
-int flann_find_nearest_neighbors(float* dataset,
-	int rows,
-	int cols,
-	float* testset,
-	int trows,
-	int* indices,
-	float* dists,
-	int nn,
-	struct FLANNParameters* flann_params);
-\end{Verbatim}
-This function is similar to the
-\texttt{flann\_find\_nearest\_neighbors\_index()} function, but instread of
-using a previously constructed index, it constructs the index, does the nearest
-neighbor search and deletes the index in one step.
-
-\paragraph{flann\_radius\_search()}
-
-\begin{Verbatim}[fontsize=\footnotesize,frame=single]
-int flann_radius_search(FLANN_INDEX index_ptr,
-	float* query,   /* query point */
-	int* indices, /* array for storing the indices */
-	float* dists, /* similar, but for storing distances */
-	int max_nn,  /* size of arrays indices and dists */
-	float radius, /* search radius (squared radius for euclidian metric) */
-	int checks,  /* number of features to check, sets the level
-			 of approximation */
-	FLANNParameters* flann_params);
-\end{Verbatim}
-
-This function performs a radius search to single query point. The indices of the neighbors found and
-the distances to them are stored in the \texttt{indices} and dists \texttt{arrays}. The \texttt{max\_nn} parameter sets the limit of the
-neighbors that will be returned (the size of the \texttt{indices} and \texttt{dists} arrays must be at least \texttt{max\_nn}).
-
-
-\paragraph{flann\_free\_index()}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single]
-int flann_free_index(FLANN_INDEX index_id,
-	struct FLANNParameters* flann_params);
-\end{Verbatim}
-This function deletes a previously constructed index and frees all the memory
-used by it.
-
-
-
-
-
-
-
-
-\bigskip
-
-See section \ref{sec:quickstart} for an example of how to use the C/C++
-bindings.
 
 \subsection{Using FLANN from python}
 
@@ -842,11 +1159,20 @@ result, dists = flann.nn_index(testset,5, checks=params["checks"]);
     This method builds the index, performs the nearest neighbor search and
 deleted the index, all in one step.
 
-\item [\texttt{def delete\_index(self, **kwargs)}] :\\
-    This method deletes the current index and all the data associated with it.
-It should be called to free all the memory used by the index.
+\item [\texttt{def save\_index(self, filename)}] :\\
+    This method saves the index to a file. The dataset form which the index was
+build is not saved.
+
+\item [\texttt{def load\_index(self, filename, pts)}] :\\
+    Load the index from a file. The dataset for which the index was build must also 
+be provided since is not saved with the index.
+
+\item [\texttt{def set\_distance\_type(distance\_type, order = 0)}] :\\
+    This function (part of the pyflann module) sets the distance type to be used. See
+\ref{matlab:flannSetDistanceType} for possible values of the distance\_type.
 
 \end{description}
+
 
 
 See section \ref{sec:quickstart} for an example of how to use the Python
@@ -921,13 +1247,6 @@ Options:
                         Skip the first NUM matches at test phase
 
 \end{Verbatim}
-
-
-\section{Acknowledgments}
-
-Many thanks to Hoyt Koepke for his initial work on the python bindings.
-
-
 
 
 \bibliographystyle{alpha}

@@ -159,6 +159,8 @@ flannlib.flann_log_verbosity.argtypes = [
         c_int # level
 ]
 
+
+
 flannlib.flann_set_distance_type.restype = None
 flannlib.flann_set_distance_type.argtypes = [ 
         c_int,

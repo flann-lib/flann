@@ -1,0 +1,8 @@
+ 
+ 
+Version 1.5
+	* new C++ templated API
+	* saving/loading of indices to disk
+	* threadsafe search
+	* new distance types (thanks to Radu Bogdan Rusu and Romain Thibaux for the patch)
+	* (api change) autotuned is no longer selected by passing a precision >0, it's used when the algorithm type is set to autotuned

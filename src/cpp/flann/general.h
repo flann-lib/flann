@@ -62,7 +62,14 @@ enum flann_log_level_t {
 enum flann_distance_t {
 	EUCLIDEAN = 1,
 	MANHATTAN = 2,
-	MINKOWSKI = 3
+	MINKOWSKI = 3,
+	MAX_DIST   = 4,
+	HIK       = 5,
+	HELLINGER = 6,
+	CS        = 7,
+	CHI_SQUARE = 7,
+	KL        = 8,
+	KULLBACK_LEIBLER        = 8
 };
 
 enum flann_datatype_t {
@@ -92,7 +99,7 @@ struct FLANNParameters {
     /* kmeans index parameters */
 	int branching;             /* branching factor (for kmeans tree) */
 	int iterations;            /* max iterations to perform in one kmeans cluetering (kmeans tree) */
-	enum flann_centers_init_t centers_init;  /* algorithm used for picking the initial cluetr centers for kmeans tree */
+	enum flann_centers_init_t centers_init;  /* algorithm used for picking the initial cluster centers for kmeans tree */
 
 	/* autotuned index parameters */
 	float target_precision;    /* precision desired (used for autotuning, -1 otherwise) */

@@ -31,6 +31,27 @@ import numpy.random as _rn
 
 index_type = int32
 
+def set_distance_type(distance_type, order = 0):
+    """
+    Sets the distance type used. Possible values: euclidean, manhattan, minkowski, max_dist, 
+    hik, hellinger, cs, kl.
+    """
+    
+    distance_translation = { "euclidean" : 1, 
+                            "manhattan" : 2, 
+                            "minkowski" : 3,
+                            "max_dist" : 4,
+                            "hik" : 5,
+                            "hellinger" : 6,
+                            "chi_square" : 7,
+                            "cs" : 7,
+                            "kullback_leibler" : 8,
+                            "kl" : 8,
+                            }
+    if type(distance_type)==str:
+        distance_type = distance_translation[distance_type]
+
+    flannlib.flann_set_distance_type(distance_type,order)
 
 # This class is derived from an initial implementation by Hoyt Koepke (hoytak@cs.ubc.ca)
 class FLANN:
@@ -63,16 +84,6 @@ class FLANN:
         
     ################################################################################
     # actual workhorse functions
-
-
-    def set_distance_type(self, distance_type, order = 0):
-        """
-        Sets the distance type used. Possible values: euclidean, manhattan, minkowski.
-        """
-        
-        distance_translation = { "euclidean" : 1, "manhattan" : 2, "minkowski" : 3}
-        flannlib.flann_set_distance_type(distance_translation[distance_type],order)
-
 
     def nn(self, pts, qpts, num_neighbors = 1, **kwargs):
         """

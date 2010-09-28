@@ -155,6 +155,142 @@ double minkowski_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 }
 
 
+// L_infinity distance (NOT A VALID KD-TREE DISTANCE - NOT DIMENSIONWISE ADDITIVE)
+template <typename Iterator1, typename Iterator2>
+double max_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+{
+	double dist = acc;
+	Iterator1 lastgroup = last1 - 3;
+	double diff0, diff1, diff2, diff3;
+
+	/* Process 4 items with each loop for efficiency. */
+	while (first1 < lastgroup) {
+		diff0 = fabs(first1[0] - first2[0]);
+		diff1 = fabs(first1[1] - first2[1]);
+		diff2 = fabs(first1[2] - first2[2]);
+		diff3 = fabs(first1[3] - first2[3]);
+		if (diff0 > dist) dist = diff0;
+		if (diff1 > dist) dist = diff1;
+		if (diff2 > dist) dist = diff2;
+		if (diff3 > dist) dist = diff3;
+		first1 += 4;
+		first2 += 4;
+	}
+	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+	while (first1 < last1) {
+		diff0 = fabs(*first1++ - *first2++);
+		dist = (diff0 > dist) ? diff0 : dist;
+	}
+	return dist;
+}
+
+
+template <typename Iterator1, typename Iterator2>
+double hist_intersection_kernel(Iterator1 first1, Iterator1 last1, Iterator2 first2)
+{
+	double kernel = 0;
+	Iterator1 lastgroup = last1 - 3;
+	double min0, min1, min2, min3;
+
+	/* Process 4 items with each loop for efficiency. */
+	while (first1 < lastgroup) {
+		min0 = first1[0] < first2[0] ? first1[0] : first2[0];
+		min1 = first1[1] < first2[1] ? first1[1] : first2[1];
+		min2 = first1[2] < first2[2] ? first1[2] : first2[2];
+		min3 = first1[3] < first2[3] ? first1[3] : first2[3];
+		kernel += min0 + min1 + min2 + min3;
+		first1 += 4;
+		first2 += 4;
+	}
+	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+	while (first1 < last1) {
+		min0 = first1[0] < first2[0] ? first1[0] : first2[0];
+		kernel += min0;
+		first1++;
+		first2++;
+	}
+	return kernel;
+}
+
+template <typename Iterator1, typename Iterator2>
+double hist_intersection_dist_sq(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+{
+	double dist_sq = acc - 2 * hist_intersection_kernel(first1, last1, first2);
+	while (first1 < last1) {
+		dist_sq += *first1 + *first2;
+		first1++;
+		first2++;
+	}
+	return dist_sq;
+}
+
+
+// Hellinger distance
+template <typename Iterator1, typename Iterator2>
+double hellinger_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+{
+	double distsq = acc;
+	double diff0, diff1, diff2, diff3;
+	Iterator1 lastgroup = last1 - 3;
+
+	/* Process 4 items with each loop for efficiency. */
+	while (first1 < lastgroup) {
+		diff0 = sqrt(first1[0]) - sqrt(first2[0]);
+		diff1 = sqrt(first1[1]) - sqrt(first2[1]);
+		diff2 = sqrt(first1[2]) - sqrt(first2[2]);
+		diff3 = sqrt(first1[3]) - sqrt(first2[3]);
+		distsq += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
+		first1 += 4;
+		first2 += 4;
+	}
+	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+	while (first1 < last1) {
+		diff0 = sqrt(*first1++) - sqrt(*first2++);
+		distsq += diff0 * diff0;
+	}
+	return distsq;
+}
+
+
+// chi-dsquare distance
+template <typename Iterator1, typename Iterator2>
+double chi_square_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+{
+	double dist = acc;
+
+	while (first1 < last1) {
+		double sum = *first1 + *first2;
+		if (sum > 0) {
+			double diff = *first1 - *first2;
+			dist += diff * diff / sum;
+		}
+		first1++;
+		first2++;
+	}
+	return dist;
+}
+
+
+// Kullback–Leibler divergence (NOT SYMMETRIC)
+template <typename Iterator1, typename Iterator2>
+double kl_divergence(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+{
+	double div = acc;
+
+	while (first1 < last1) {
+		if (*first2 != 0) {
+			double ratio = *first1 / *first2;
+			if (ratio > 0) {
+				div += *first1 * log(ratio);
+			}
+		}
+		first1++;
+		first2++;
+	}
+	return div;
+}
+
+
 
 
 extern flann_distance_t flann_distance_type;
@@ -175,6 +311,16 @@ double custom_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double a
 		return manhattan_dist(first1, last1, first2, acc);
 	case MINKOWSKI:
 		return minkowski_dist(first1, last1, first2, acc);
+	case MAX_DIST:
+		return max_dist(first1, last1, first2, acc);
+	case HIK:
+		return hist_intersection_dist_sq(first1, last1, first2, acc);
+	case HELLINGER:
+		return hellinger_dist(first1, last1, first2, acc);
+	case CS:
+		return chi_square_dist(first1, last1, first2, acc);
+	case KL:
+		return kl_divergence(first1, last1, first2, acc);
 	default:
 		return euclidean_dist(first1, last1, first2, acc);
 	}

@@ -169,8 +169,10 @@ Index<T>::~Index()
 template<typename T>
 void Index<T>::buildIndex()
 {
-	nnIndex->buildIndex();
-    built = true;
+	if (!built)	{
+		nnIndex->buildIndex();
+		built = true;
+	}
 }
 
 template<typename T>
