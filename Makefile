@@ -1,4 +1,4 @@
-.PHONY: flann tests test libs doc all clean examples
+.PHONY: tests test libs doc all clean examples
 
 all:
 	@-mkdir -p build

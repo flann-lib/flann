@@ -58,7 +58,7 @@ namespace flann
  *	efficiency.
  */
 template <typename Iterator1, typename Iterator2>
-double euclidean_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double euclidean_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	double distsq = acc;
 	double diff0, diff1, diff2, diff3;
@@ -73,6 +73,10 @@ double euclidean_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 		distsq += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
 		first1 += 4;
 		first2 += 4;
+
+		if (cutoff_value>0 && distsq>cutoff_value) {
+			return distsq;
+		}
 	}
 	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
 	while (first1 < last1) {
@@ -92,7 +96,7 @@ double euclidean_dist(const unsigned char* first1, const unsigned char* last1, u
  *	of the most expensive inner loops.
  */
 template <typename Iterator1, typename Iterator2>
-double manhattan_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double manhattan_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	double distsq = acc;
 	double diff0, diff1, diff2, diff3;
@@ -107,6 +111,10 @@ double manhattan_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 		distsq += diff0 + diff1 + diff2  + diff3;
 		first1 += 4;
 		first2 += 4;
+
+		if (cutoff_value>0 && distsq>cutoff_value) {
+			return distsq;
+		}
 	}
 	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
 	while (first1 < last1) {
@@ -128,7 +136,7 @@ extern int flann_minkowski_order;
  *	efficiency.
  */
 template <typename Iterator1, typename Iterator2>
-double minkowski_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double minkowski_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	double distsq = acc;
 	double diff0, diff1, diff2, diff3;
@@ -145,6 +153,10 @@ double minkowski_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 		distsq += pow(diff0,p) + pow(diff1,p) + pow(diff2,p)  + pow(diff3,p);
 		first1 += 4;
 		first2 += 4;
+
+		if (cutoff_value>0 && distsq>cutoff_value) {
+			return distsq;
+		}
 	}
 	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
 	while (first1 < last1) {
@@ -157,7 +169,7 @@ double minkowski_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 
 // L_infinity distance (NOT A VALID KD-TREE DISTANCE - NOT DIMENSIONWISE ADDITIVE)
 template <typename Iterator1, typename Iterator2>
-double max_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double max_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	double dist = acc;
 	Iterator1 lastgroup = last1 - 3;
@@ -213,7 +225,7 @@ double hist_intersection_kernel(Iterator1 first1, Iterator1 last1, Iterator2 fir
 }
 
 template <typename Iterator1, typename Iterator2>
-double hist_intersection_dist_sq(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double hist_intersection_dist_sq(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	double dist_sq = acc - 2 * hist_intersection_kernel(first1, last1, first2);
 	while (first1 < last1) {
@@ -227,7 +239,7 @@ double hist_intersection_dist_sq(Iterator1 first1, Iterator1 last1, Iterator2 fi
 
 // Hellinger distance
 template <typename Iterator1, typename Iterator2>
-double hellinger_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double hellinger_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	double distsq = acc;
 	double diff0, diff1, diff2, diff3;
@@ -242,6 +254,10 @@ double hellinger_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 		distsq += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
 		first1 += 4;
 		first2 += 4;
+
+		if (cutoff_value>0 && distsq>cutoff_value) {
+			return distsq;
+		}
 	}
 	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
 	while (first1 < last1) {
@@ -254,7 +270,7 @@ double hellinger_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 
 // chi-dsquare distance
 template <typename Iterator1, typename Iterator2>
-double chi_square_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double chi_square_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	double dist = acc;
 
@@ -273,7 +289,7 @@ double chi_square_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doub
 
 // Kullback–Leibler divergence (NOT SYMMETRIC)
 template <typename Iterator1, typename Iterator2>
-double kl_divergence(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double kl_divergence(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	double div = acc;
 
@@ -286,10 +302,14 @@ double kl_divergence(Iterator1 first1, Iterator1 last1, Iterator2 first2, double
 		}
 		first1++;
 		first2++;
+
+		if (cutoff_value>0 && div>cutoff_value) {
+			return div;
+		}
+
 	}
 	return div;
 }
-
 
 
 
@@ -302,27 +322,27 @@ extern flann_distance_t flann_distance_type;
  * of this argument.
  */
 template <typename Iterator1, typename Iterator2>
-double custom_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0)
+double custom_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
 	switch (flann_distance_type) {
 	case EUCLIDEAN:
-		return euclidean_dist(first1, last1, first2, acc);
+		return euclidean_dist(first1, last1, first2, acc, cutoff_value);
 	case MANHATTAN:
-		return manhattan_dist(first1, last1, first2, acc);
+		return manhattan_dist(first1, last1, first2, acc, cutoff_value);
 	case MINKOWSKI:
-		return minkowski_dist(first1, last1, first2, acc);
+		return minkowski_dist(first1, last1, first2, acc, cutoff_value);
 	case MAX_DIST:
-		return max_dist(first1, last1, first2, acc);
+		return max_dist(first1, last1, first2, acc, cutoff_value);
 	case HIK:
-		return hist_intersection_dist_sq(first1, last1, first2, acc);
+		return hist_intersection_dist_sq(first1, last1, first2, acc, cutoff_value);
 	case HELLINGER:
-		return hellinger_dist(first1, last1, first2, acc);
+		return hellinger_dist(first1, last1, first2, acc, cutoff_value);
 	case CS:
-		return chi_square_dist(first1, last1, first2, acc);
+		return chi_square_dist(first1, last1, first2, acc, cutoff_value);
 	case KL:
-		return kl_divergence(first1, last1, first2, acc);
+		return kl_divergence(first1, last1, first2, acc, cutoff_value);
 	default:
-		return euclidean_dist(first1, last1, first2, acc);
+		return euclidean_dist(first1, last1, first2, acc, cutoff_value);
 	}
 }
 
