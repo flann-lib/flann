@@ -44,6 +44,11 @@ set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 #set the C/C++ include path to the "include" directory
 include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 
+
+find_library(HDF5 hdf5)
+find_library(HDF5_CPP hdf5_cpp)
+
+
 add_custom_target(tests)
 add_custom_target(test)
 add_dependencies(test tests)
