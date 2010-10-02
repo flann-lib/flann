@@ -10,8 +10,6 @@ if (NOT GTEST)
 	message("gtest library not found, some tests will not be run")
 endif()
 
-find_library(HDF5 hdf5)
-find_library(HDF5_CPP hdf5_cpp)
 if (NOT HDF5 OR NOT HDF5_CPP)
 	message("hdf5 library not found, some tests will not be run")
 endif()
