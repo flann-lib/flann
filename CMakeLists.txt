@@ -46,7 +46,6 @@ include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 
 
 find_library(HDF5 hdf5)
-find_library(HDF5_CPP hdf5_cpp)
 
 
 add_custom_target(tests)
