@@ -59,52 +59,127 @@ template<> hid_t get_hdf5_type<long double>() { return H5T_NATIVE_LDOUBLE; }
 }
 
 
+#define CHECK_ERROR(x,y) if ((x)<0) throw FLANNException((y));
+
 template<typename T>
-void save_to_file(const flann::Matrix<T>& flann_dataset, const std::string& filename, const std::string& name)
+void save_to_file(const flann::Matrix<T>& dataset, const std::string& filename, const std::string& name)
 {
 	herr_t status;
 	hid_t file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	CHECK_ERROR(file_id,"Error creating hdf5 file.");
 
 	hsize_t     dimsf[2];              // dataset dimensions
-	dimsf[0] = flann_dataset.rows;
-	dimsf[1] = flann_dataset.cols;
+	dimsf[0] = dataset.rows;
+	dimsf[1] = dataset.cols;
 
 	hid_t space_id = H5Screate_simple(2, dimsf, NULL);
 	hid_t memspace_id = H5Screate_simple(2, dimsf, NULL);
 
 	hid_t dataset_id = H5Dcreate(file_id, name.c_str(), get_hdf5_type<T>(), space_id, H5P_DEFAULT);
+	CHECK_ERROR(dataset_id,"Error creating dataset in file.");
 
-	status = H5Dwrite(dataset_id, get_hdf5_type<T>(), memspace_id, space_id, H5P_DEFAULT, flann_dataset.data );
+	status = H5Dwrite(dataset_id, get_hdf5_type<T>(), memspace_id, space_id, H5P_DEFAULT, dataset.data );
+	CHECK_ERROR(status, "Error writing to dataset");
 
-	if (status>0) {
-		throw FLANNException("Error writing to dataset");
-	}
+	H5Sclose(memspace_id);
+	H5Sclose(space_id);
+	H5Dclose(dataset_id);
+	H5Fclose(file_id);
+
 }
 
 
 template<typename T>
-void load_from_file(flann::Matrix<T>& flann_dataset, const std::string& filename, const std::string& name)
+void load_from_file(flann::Matrix<T>& dataset, const std::string& filename, const std::string& name)
 {
 	herr_t status;
 	hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+	CHECK_ERROR(file_id,"Error opening hdf5 file.");
+
 	hid_t dataset_id = H5Dopen(file_id, name.c_str());
+	CHECK_ERROR(dataset_id,"Error opening dataset in file.");
 
 	hid_t space_id = H5Dget_space(dataset_id);
 
 	hsize_t dims_out[2];
 	H5Sget_simple_extent_dims(space_id, dims_out, NULL);
 
-	flann_dataset.rows = dims_out[0];
-	flann_dataset.cols = dims_out[1];
-	flann_dataset.data = new T[flann_dataset.rows*flann_dataset.cols];
+	dataset.rows = dims_out[0];
+	dataset.cols = dims_out[1];
+	dataset.data = new T[dataset.rows*dataset.cols];
 
-	status = H5Dread(dataset_id, get_hdf5_type<T>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, flann_dataset.data);
+	status = H5Dread(dataset_id, get_hdf5_type<T>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, dataset.data);
+	CHECK_ERROR(status, "Error reading dataset");
 
-	if (status>0) {
-		throw FLANNException("Error reading dataset");
-	}
+	H5Sclose(space_id);
+	H5Dclose(dataset_id);
+	H5Fclose(file_id);
 }
 
+
+namespace mpi
+{
+/**
+ * Loads a the hyperslice corresponding to this processor from a hdf5 file.
+ * @param flann_dataset Dataset where the data is loaded
+ * @param filename HDF5 file name
+ * @param name Name of dataset inside file
+ */
+template<typename T>
+void load_from_file(flann::Matrix<T>& dataset, const std::string& filename, const std::string& name)
+{
+	MPI_Comm comm  = MPI_COMM_WORLD;
+	MPI_Info info  = MPI_INFO_NULL;
+
+	int mpi_size, mpi_rank;
+    MPI_Comm_size(comm, &mpi_size);
+    MPI_Comm_rank(comm, &mpi_rank);
+
+	herr_t status;
+
+    hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
+    H5Pset_fapl_mpio(plist_id, comm, info);
+	hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDWR, plist_id);
+	CHECK_ERROR(file_id,"Error opening hdf5 file.");
+    H5Pclose(plist_id);
+	hid_t dataset_id = H5Dopen(file_id, name.c_str());
+	CHECK_ERROR(dataset_id,"Error opening dataset in file.");
+
+	hid_t space_id = H5Dget_space(dataset_id);
+	hsize_t dims[2];
+	H5Sget_simple_extent_dims(space_id, dims, NULL);
+
+	hsize_t count[2];
+	hsize_t offset[2];
+
+	hsize_t item_cnt = dims[0]/mpi_size+(dims[0]%mpi_size==0?0:1);
+	hsize_t cnt = (mpi_rank<mpi_size-1?item_cnt:dims[0]-item_cnt*(mpi_size-1));
+
+	count[0] = cnt;
+	count[1] = dims[1];
+	offset[0] = mpi_rank*item_cnt;
+	offset[1] = 0;
+
+	hid_t memspace_id = H5Screate_simple(2,count,NULL);
+
+	H5Sselect_hyperslab(space_id, H5S_SELECT_SET, offset, NULL, count, NULL);
+
+	dataset.rows = count[0];
+	dataset.cols = count[1];
+	dataset.data = new T[dataset.rows*dataset.cols];
+
+	plist_id = H5Pcreate(H5P_DATASET_XFER);
+    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+	status = H5Dread(dataset_id, get_hdf5_type<T>(), memspace_id, space_id, plist_id, dataset.data);
+	CHECK_ERROR(status, "Error reading dataset");
+
+	H5Pclose(plist_id);
+	H5Sclose(space_id);
+	H5Sclose(memspace_id);
+	H5Dclose(dataset_id);
+	H5Fclose(file_id);
+}
+}
 
 }
 
