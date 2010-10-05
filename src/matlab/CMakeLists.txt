@@ -44,7 +44,7 @@ if(MEX_CMD AND MEXEXT_CMD)
 
         INSTALL (
             FILES ${MEX_FILE} ${MATLAB_SOURCES}
-            DESTINATION matlab
+            DESTINATION share/flann/matlab
         )
     else()
         message("The 'mex' and 'mexext' programs have been found in different locations. It's likely that one of them is not part of the MATLAB instalation. Make sure that the 'bin' directory from the MATLAB instalation is in PATH")

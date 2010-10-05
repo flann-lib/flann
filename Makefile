@@ -1,5 +1,6 @@
 .PHONY: flann tests test libs doc all clean examples
 
+
 all:
 	@-mkdir -p build
 	cd build && cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} .. && make all doc
@@ -23,6 +24,11 @@ doc:
 examples:
 	@-mkdir -p build
 	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && make $@
+
+install:
+	@-mkdir -p build
+	cd build && cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} .. && make all doc install
+
 
 clean:
 	-cd build && make clean

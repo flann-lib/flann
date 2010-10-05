@@ -55,6 +55,6 @@ if (EXISTS ${PDFLATEX_COMPILER} AND EXISTS ${BIBTEX_COMPILER})
 
     install (
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}.pdf
-        DESTINATION doc
+        DESTINATION share/doc/flann
     )
 endif()

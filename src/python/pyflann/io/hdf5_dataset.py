@@ -27,56 +27,67 @@
 from __future__ import with_statement
 
 from pyflann.exceptions import FLANNException
-import h5py
 import numpy
+have_h5py = True
+try:
+    import h5py
+except Exception as e:
+    have_h5py = False
+
+if not have_h5py:
+    def __missing_h5py(*args,**kwargs):
+        raise FLANNException("h5py library not found")
+    check = __missing_h5py
+    save = __missing_h5py
+    load = __missing_h5py
+    load_range = __missing_h5py
+else:
+    def check(filename):
+        f = open(filename,"r")
+        header = f.read(4)
+        if header[1:4]=="HDF": return True
+        return False
+            
+
+    def save(dataset, filename, **kwargs):
+        if not isinstance(dataset,numpy.ndarray):
+            raise FLANNException("Dataset must be in numpy format")
+        try:
+            if 'title' in kwargs:
+                title_name = kwargs['title']
+            else:
+                title_name = "Dataset saved by pyflann"
+            if 'dataset_name' in kwargs:
+                dataset_name = kwargs['dataset_name']
+            else:
+                dataset_name = 'dataset'
+            h5file = h5py.File(filename)
+            h5file.create_dataset(dataset_name, dataset)
+            h5file.close()
+        except Exception as e:
+            h5file.close()
+            raise FLANNException(e)
 
 
-def check(filename):
-    f = open(filename,"r")
-    header = f.read(4)
-    if header[1:4]=="HDF": return True
-    return False
-        
+    def load(filename, rows = -1, cols = -1, dtype = numpy.float32, **kwargs):
+        try:
+            h5file = h5py.File(filename)
+            if 'dataset_name' in kwargs:
+                dataset_name = kwargs['dataset_name']
+            else:
+                dataset_name = 'dataset'
+            
+            for node in h5file.keys():
+                if node == dataset_name:
+                    data = h5file[node]
+            h5file.close()
+            return data
+        except Exception as e:
+            h5file.close()
+            raise FLANNException(e)
+            
 
-def save(dataset, filename, **kwargs):
-    if not isinstance(dataset,numpy.ndarray):
-        raise FLANNException("Dataset must be in numpy format")
-    try:
-        if 'title' in kwargs:
-            title_name = kwargs['title']
-        else:
-            title_name = "Dataset saved by pyflann"
-        if 'dataset_name' in kwargs:
-            dataset_name = kwargs['dataset_name']
-        else:
-            dataset_name = 'dataset'
+    def load_range(filename, array_name, range):
         h5file = h5py.File(filename)
-        h5file.create_dataset(dataset_name, dataset)
-        h5file.close()
-    except Exception as e:
-        h5file.close()
-        raise FLANNException(e)
-
-
-def load(filename, rows = -1, cols = -1, dtype = numpy.float32, **kwargs):
-    try:
-        h5file = h5py.File(filename)
-        if 'dataset_name' in kwargs:
-            dataset_name = kwargs['dataset_name']
-        else:
-            dataset_name = 'dataset'
-        
-        for node in h5file.keys():
-            if node == dataset_name:
-                data = h5file[node]
-        h5file.close()
-        return data
-    except Exception as e:
-        h5file.close()
-        raise FLANNException(e)
-        
-
-def load_range(filename, array_name, range):
-    h5file = h5py.File(filename)
-    dataset = h5file[array_name]
-    return dataset[range[0]:range[1]]
+        dataset = h5file[array_name]
+        return dataset[range[0]:range[1]]
