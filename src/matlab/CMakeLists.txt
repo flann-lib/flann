@@ -9,10 +9,10 @@ find_program(MEXEXT_CMD mexext)
 
 if(MEX_CMD AND MEXEXT_CMD)
 
-    get_filename_component(MEX_REAL_CMD ${MEX_CMD} REALPATH)
+    get_filename_component(MEX_REAL_CMD ${MEX_CMD} ABSOLUTE)
     get_filename_component(MEX_PATH ${MEX_REAL_CMD} PATH)
 
-    get_filename_component(MEXEXT_REAL_CMD ${MEXEXT_CMD} REALPATH)
+    get_filename_component(MEXEXT_REAL_CMD ${MEXEXT_CMD} ABSOLUTE)
     get_filename_component(MEXEXT_PATH ${MEXEXT_REAL_CMD} PATH)
 
     if (MEX_PATH STREQUAL MEXEXT_PATH)
@@ -33,7 +33,7 @@ if(MEX_CMD AND MEXEXT_CMD)
         ADD_CUSTOM_COMMAND(
             OUTPUT ${MEX_FILE}
             COMMAND ${MEX_REAL_CMD}
-            ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${MEX_NAME}.cpp -I${PROJECT_SOURCE_DIR}/src/cpp  -L${LIBRARY_OUTPUT_PATH} -lflann_s
+            ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${MEX_NAME}.cpp -I${PROJECT_SOURCE_DIR}/src/cpp -L${LIBRARY_OUTPUT_PATH} -lflann_s
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${MEX_NAME}.cpp ${LIBRARY_OUTPUT_PATH}/${LIB_DEP}
             COMMENT "Building MEX extension ${MEX_FILE}"
         )
