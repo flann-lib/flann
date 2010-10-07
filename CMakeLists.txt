@@ -41,16 +41,67 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
 
+
+
+# workaround a FindHDF5 bug
+macro(find_hdf5)
+    find_package(HDF5)
+
+    set( HDF5_IS_PARALLEL FALSE )
+    foreach( _dir ${HDF5_INCLUDE_DIRS} )
+        if( EXISTS "${_dir}/H5pubconf.h" )
+            file( STRINGS "${_dir}/H5pubconf.h" 
+                HDF5_HAVE_PARALLEL_DEFINE
+                REGEX "HAVE_PARALLEL 1" )
+            if( HDF5_HAVE_PARALLEL_DEFINE )
+                set( HDF5_IS_PARALLEL TRUE )
+            endif()
+        endif()
+    endforeach()
+    set( HDF5_IS_PARALLEL ${HDF5_IS_PARALLEL} CACHE BOOL
+        "HDF5 library compiled with parallel IO support" )
+    mark_as_advanced( HDF5_IS_PARALLEL )
+endmacro(find_hdf5)
+
+find_hdf5()
+if (USE_MPI OR HDF5_IS_PARALLEL)
+    find_package(MPI)
+endif()
+
+if (HDF5_IS_PARALLEL)
+    if (NOT MPI_FOUND)
+        message(ERROR "Found the parallel HDF5 library, but could not find the MPI library. Define the MPI_COMPILER variable to the path of your MPI compiler.")
+    endif()
+    # Parallel HDF5 needs to find the "mpi.h" header file
+    include_directories(${MPI_INCLUDE_PATH})
+endif()
+
+
+if (USE_MPI)
+    if (NOT MPI_FOUND)
+        message(ERROR "Could not find an MPI library. Define the MPI_COMPILER variable to the path of your MPI compiler.")
+    endif()
+
+    if (NOT HDF5_IS_PARALLEL)
+        message(ERROR "For MPI support the Parallel HDF5 library is required.")
+    endif()
+
+endif(USE_MPI)
+
+
+
 #set the C/C++ include path to the "include" directory
 include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
-
-
-find_library(HDF5 hdf5)
 
 
 add_custom_target(tests)
 add_custom_target(test)
 add_dependencies(test tests)
+
+
+
+
+
 
 macro(flann_add_gtest exe)
     # add build target

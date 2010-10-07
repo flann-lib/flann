@@ -179,8 +179,6 @@ void load_from_file(flann::Matrix<T>& dataset, const std::string& filename, cons
 	H5Dclose(dataset_id);
 	H5Fclose(file_id);
 }
-}
-
-}
+} } // namespace flann::mpi
 
 #endif /* IO_H_ */

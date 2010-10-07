@@ -22,7 +22,7 @@ doc:
 
 examples:
 	@-mkdir -p build
-	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && make $@
+	cd build && cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DUSE_MPI=${USE_MPI} && make $@
 
 clean:
 	-cd build && make clean
