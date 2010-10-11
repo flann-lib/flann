@@ -41,6 +41,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
 
+message("USE_MPI: ${USE_MPI}")
 
 
 # workaround a FindHDF5 bug

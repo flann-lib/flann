@@ -163,6 +163,7 @@ Index<T>::Index(const std::string& file_name, const std::string& dataset_name, c
 	flann_index = new flann::Index<T>(dataset, params);
 
 	std::vector<int> sizes;
+	// get the sizes of all MPI indices
 	all_gather(world, flann_index->size(), sizes);
 	size_ = 0;
 	offset_ = 0;
@@ -196,6 +197,8 @@ void Index<T>::knnSearch(const flann::Matrix<T>& queries, flann::Matrix<int>& in
 	local_results.indices = local_indices;
 	local_results.dists = local_dists;
 	SearchResults results;
+
+	// perform MPI reduce
 	reduce(world, local_results, results, ResultsMerger(), 0);
 
 	if (world.rank()==0) {

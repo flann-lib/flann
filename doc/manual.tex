@@ -446,7 +446,7 @@ void Index::knnSearch(const Matrix<T>& queries,
 \begin{description}
 \item[query]{Matrix containing the query points. Size of matrix is ($num\_queries \times dimentionality $)}
 \item[indices]{Matrix that will contain the indices of the K-nearest neighbors found (size should be at least $num\_queries \times knn$)}
-\item[dists]{Matrix that will contain the distances to the K-nearest neighbors found. (size should be at least $num\_queries \times knn$)}
+\item[dists]{Matrix that will contain the distances to the K-nearest neighbors found. (size should be at least $num\_queries \times knn$). The distance values are computed by the distance function used (see \texttt{flann::set\_distance\_type} below), for example in the case of euclidean distance function, this will contain the squared euclidean distances.}
 \item[knn]{Number of nearest neighbors to search for.}
 \item[params]{Search parameters. Structure currently contains a single field, \texttt{checks} specifying the number 
 of times the tree(s) in the index should be recursively traversed. A
@@ -496,7 +496,7 @@ void set_distance_type(flann_distance_t distance_type, int order);
 \item[distance\_type] The distance type to use. Possible values are
 \begin{Verbatim}[fontsize=\footnotesize]
 enum flann_distance_t {
-	EUCLIDEAN = 1,
+	EUCLIDEAN = 1,  // squared euclidean distance
 	MANHATTAN = 2,
 	MINKOWSKI = 3,
 	MAX_DIST   = 4,  // L_infinity - not valid for kd-tree  index type

@@ -268,7 +268,7 @@ double hellinger_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, doubl
 }
 
 
-// chi-dsquare distance
+// chi-square distance
 template <typename Iterator1, typename Iterator2>
 double chi_square_dist(Iterator1 first1, Iterator1 last1, Iterator2 first2, double acc = 0, double cutoff_value = -1)
 {
