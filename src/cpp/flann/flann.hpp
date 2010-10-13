@@ -129,7 +129,7 @@ NNIndex<T>* load_saved_index(const Matrix<T>& dataset, const string& filename)
 		return NULL;
 	}
 	IndexHeader header = load_header(fin);
-	if (header.data_type!=get_flann_datatype<T>()) {
+	if (header.data_type!=Datatype<T>::type()) {
 		throw FLANNException("Datatype of saved index is different than of the one to be created.");
 	}
 	if (size_t(header.rows)!=dataset.rows || size_t(header.cols)!=dataset.cols) {

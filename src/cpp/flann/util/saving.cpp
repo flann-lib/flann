@@ -33,15 +33,6 @@
 namespace flann
 {
 
-template<> flann_datatype_t get_flann_datatype<char>() { return INT8; }
-template<> flann_datatype_t get_flann_datatype<short>() { return INT16; }
-template<> flann_datatype_t get_flann_datatype<int>() { return INT32; }
-template<> flann_datatype_t get_flann_datatype<unsigned char>() { return UINT8; }
-template<> flann_datatype_t get_flann_datatype<unsigned short>() { return UINT16; }
-template<> flann_datatype_t get_flann_datatype<unsigned int>() { return UINT32; }
-template<> flann_datatype_t get_flann_datatype<float>() { return FLOAT32; }
-template<> flann_datatype_t get_flann_datatype<double>() { return FLOAT64; }
-
 
 const char FLANN_SIGNATURE[] = "FLANN_INDEX";
 const char FLANN_VERSION[] = "1.5.0";

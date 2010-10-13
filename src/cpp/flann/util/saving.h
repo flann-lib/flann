@@ -38,15 +38,16 @@
 namespace flann
 {
 
-template <typename T> flann_datatype_t get_flann_datatype() { throw FLANNException("Unknown FLANN data type"); }
-template<> flann_datatype_t get_flann_datatype<char>();
-template<> flann_datatype_t get_flann_datatype<short>();
-template<> flann_datatype_t get_flann_datatype<int>();
-template<> flann_datatype_t get_flann_datatype<unsigned char>();
-template<> flann_datatype_t get_flann_datatype<unsigned short>();
-template<> flann_datatype_t get_flann_datatype<unsigned int>();
-template<> flann_datatype_t get_flann_datatype<float>();
-template<> flann_datatype_t get_flann_datatype<double>();
+template <typename T> struct Datatype {};
+template<> struct Datatype<char> { static flann_datatype_t type() { return INT8; } };
+template<> struct Datatype<short> { static flann_datatype_t type() { return INT16; } };
+template<> struct Datatype<int> { static flann_datatype_t type() { return INT32; } };
+template<> struct Datatype<unsigned char> { static flann_datatype_t type() { return UINT8; } };
+template<> struct Datatype<unsigned short> { static flann_datatype_t type() { return UINT16; } };
+template<> struct Datatype<unsigned int> { static flann_datatype_t type() { return UINT32; } };
+template<> struct Datatype<float> { static flann_datatype_t type() { return FLOAT32; } };
+template<> struct Datatype<double> { static flann_datatype_t type() { return FLOAT64; } };
+
 
 
 extern const char FLANN_SIGNATURE[];
@@ -79,7 +80,7 @@ void save_header(FILE* stream, const NNIndex<ELEM_TYPE>& index)
 	strcpy(header.signature, FLANN_SIGNATURE);
 	memset(header.version, 0 , sizeof(header.version));
 	strcpy(header.version, FLANN_VERSION);
-	header.data_type = get_flann_datatype<ELEM_TYPE>();
+	header.data_type = Datatype<ELEM_TYPE>::type();
 	header.index_type = index.getType();
 	header.rows = index.size();
 	header.cols = index.veclen();
