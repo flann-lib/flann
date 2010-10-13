@@ -272,6 +272,8 @@ int _flann_find_nearest_neighbors_index(flann_index_t index_ptr, T* testset, int
 		index->knnSearch(Matrix<T>(testset, tcount, index->veclen()),
 						m_indices,
 						m_dists, nn, SearchParams(flann_params->checks) );
+
+        return 0;
 	}
 	catch(runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
