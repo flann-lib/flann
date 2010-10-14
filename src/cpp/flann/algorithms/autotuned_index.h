@@ -261,7 +261,7 @@ private:
         float buildTime = t.value;
 
         // measure search time
-        float searchTime = test_index_precision(kmeans, sampledDataset, testDataset, gt_matches, index_params.target_precision, checks, nn);;
+        float searchTime = test_index_precision(kmeans, sampledDataset, testDataset, gt_matches, index_params.target_precision, checks, nn);
 
         float datasetMemory = sampledDataset.rows*sampledDataset.cols*sizeof(float);
         cost.memoryCost = (kmeans.usedMemory()+datasetMemory)/datasetMemory;
@@ -504,7 +504,7 @@ private:
         int sampleSize = int(index_params.sample_fraction*dataset.rows);
         int testSampleSize = min(sampleSize/10, 1000);
 
-        logger.info("Entering autotuning, dataset size: %d, sampleSize: %d, testSampleSize: %d\n",dataset.rows, sampleSize, testSampleSize);
+        logger.info("Entering autotuning, dataset size: %d, sampleSize: %d, testSampleSize: %d, target precision: %g\n",dataset.rows, sampleSize, testSampleSize, index_params.target_precision);
 
         // For a very small dataset, it makes no sense to build any fancy index, just
         // use linear search

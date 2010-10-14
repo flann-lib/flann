@@ -104,7 +104,7 @@ class FLANNParameters(CustomStructure):
         'branching' : 32,
         'iterations' : 5,
         'centers_init' : 'random',
-        'target_precision' : -1,
+        'target_precision' : 0.9,
         'build_weight' : 0.01,
         'memory_weight' : 0.0,
         'sample_fraction' : 0.1,
