@@ -88,6 +88,12 @@ flann_index_t _flann_build_index(T* dataset, int rows, int cols, float* speedup,
 		const IndexParams* index_params = index->getIndexParameters();
 		index_params->toParameters(*flann_params);
 
+        if (index->getIndex()->getType()==AUTOTUNED) {
+            AutotunedIndex<T>* autotuned_index = (AutotunedIndex<T>*)index->getIndex(); 
+            flann_params->checks = autotuned_index->getSearchParameters()->checks;
+            *speedup = autotuned_index->getSpeedup();
+        }
+
 		return index;
 	}
 	catch (runtime_error& e) {
