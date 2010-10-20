@@ -362,7 +362,7 @@ flannlib.test_with_checks.argtypes = [
 def ensure_2d_array(array, flags, **kwargs):
     array = require(array, requirements = flags, **kwargs) 
     if len(array.shape) == 1:
-        array.shape = (-1,array.size)
+        array = array.reshape(-1,array.size)
     return array
 
 
