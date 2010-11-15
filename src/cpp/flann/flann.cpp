@@ -40,7 +40,7 @@ using namespace std;
 
 struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { 
     KDTREE, 
-    32, 0.2, 
+    32, 0.2, 0.0,
     4, 
     32, 11, CENTERS_RANDOM, 
     0.9, 0.01, 0, 0.1, 

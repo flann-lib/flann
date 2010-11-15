@@ -32,3 +32,10 @@ endif()
 flann_add_pyunit(test_nn.py)
 flann_add_pyunit(test_nn_index.py)
 #flann_add_pyunit(test_clustering.py)
+
+
+
+#SET_TARGET_PROPERTIES(test_3d PROPERTIES 
+#        COMPILE_FLAGS -pg
+#        LINK_FLAGS -pg)
+

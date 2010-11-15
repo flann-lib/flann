@@ -41,6 +41,7 @@ enum flann_algorithm_t {
 	KDTREE = 1,
 	KMEANS = 2,
 	COMPOSITE = 3,
+	KDTREE2 = 4,
 	SAVED = 254,
 	AUTOTUNED = 255
 };
@@ -92,6 +93,7 @@ struct FLANNParameters {
 	/* search time parameters */
 	int checks;                /* how many leafs (features) to check in one search */
     float cb_index;            /* cluster boundary index. Used when searching the kmeans tree */
+    float eps;					/* eps parameter for eps-knn search */
 
     /*  kdtree index parameters */
     int trees;                 /* number of randomized trees to use (for kdtree) */
@@ -172,10 +174,11 @@ typedef ObjectFactory<IndexParams, flann_algorithm_t> ParamsFactory;
 
 
 struct SearchParams {
-	SearchParams(int checks_ = 32) :
-		checks(checks_) {};
+	SearchParams(int checks_ = 32, float eps_ = 0) :
+		checks(checks_), eps(eps_) {};
 
 	int checks;
+	float eps;
 };
 
 }

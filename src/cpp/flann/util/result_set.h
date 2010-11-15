@@ -110,6 +110,8 @@ class KNNResultSet : public ResultSet<ELEM_TYPE>
 
 	int count;
 
+	float MAX_FLOAT;
+
 public:
 	KNNResultSet(int capacity_, ELEM_TYPE* target_ = NULL, int veclen_ = 0 ) :
 			target(target_), veclen(veclen_), capacity(capacity_), count(0)
@@ -118,6 +120,8 @@ public:
 
         indices = new int[capacity_];
         dists = new float[capacity_];
+
+        MAX_FLOAT = numeric_limits<float>::max();
 	}
 
 	~KNNResultSet()
@@ -158,10 +162,10 @@ public:
 
 	bool addPoint(const ELEM_TYPE* point, int index)
 	{
-		for (int i=0;i<count;++i) {
-			if (indices[i]==index) return false;
-		}
-		float dist = flann_dist(target, target_end, point, 0, worstDist());
+//		for (int i=0;i<count;++i) {
+//			if (indices[i]==index) return false;
+//		}
+		float dist = euclidean_dist(target, target_end, point, 0, worstDist());
 
 		if (count<capacity) {
 			indices[count] = index;
@@ -191,7 +195,7 @@ public:
 
 	float worstDist() const
 	{
-		return (count<capacity) ? numeric_limits<float>::max() : dists[count-1];
+		return (count<capacity) ? MAX_FLOAT : dists[count-1];
 	}
 };
 

@@ -17,7 +17,7 @@ if (HDF5_FOUND)
     install (TARGETS flann_example_cpp DESTINATION bin)
 
 
-    if (USE_MPI)
+    if (USE_MPI AND HDF5_IS_PARALLEL)
         add_executable(flann_example_mpi flann_example_mpi.cpp)
         target_link_libraries(flann_example_mpi flann_cpp ${HDF5_LIBRARIES} ${MPI_LIBRARIES})
 
