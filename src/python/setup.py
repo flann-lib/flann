@@ -8,7 +8,6 @@ setup(name='flann',
       author='Marius Muja',
       author_email='mariusm@cs.ubc.ca',
       url='http://www.cs.ubc.ca/~mariusm/flann/',
-      packages=['pyflann','pyflann.command', 'pyflann.io', 'pyflann.bindings', 'pyflann.util'],
-      scripts=['flann'],
+      packages=['pyflann', 'pyflann.io', 'pyflann.bindings', 'pyflann.util'],
       package_data={'pyflann.bindings' : ['libflann.so','flann.dll', 'libflann.dylib']},
 )
