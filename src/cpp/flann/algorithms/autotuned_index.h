@@ -35,7 +35,11 @@
 #include "flann/nn/ground_truth.h"
 #include "flann/nn/index_testing.h"
 #include "flann/util/sampling.h"
-#include "flann/algorithms/all_indices.h"
+#include "flann/algorithms/kdtree_index.h"
+#include "flann/algorithms/kdtree_single_index.h"
+#include "flann/algorithms/kmeans_index.h"
+#include "flann/algorithms/composite_index.h"
+#include "flann/algorithms/linear_index.h"
 
 namespace flann
 {
@@ -51,8 +55,8 @@ template<typename Distance>
  	case LINEAR:
  		nnIndex = new LinearIndex<Distance>(dataset, (const LinearIndexParams&)params, distance);
  		break;
- 	case KDTREE_SIMPLE:
- 		nnIndex = new KDTreeSimpleIndex<Distance>(dataset, (const KDTreeSimpleIndexParams&)params, distance);
+ 	case KDTREE_SINGLE:
+ 		nnIndex = new KDTreeSingleIndex<Distance>(dataset, (const KDTreeSingleIndexParams&)params, distance);
  	    break;
      case KDTREE:
  		nnIndex = new KDTreeIndex<Distance>(dataset, (const KDTreeIndexParams&)params, distance);
@@ -64,6 +68,7 @@ template<typename Distance>
  		nnIndex = new CompositeIndex<Distance>(dataset, (const CompositeIndexParams&) params, distance);
  		break;
  	default:
+ 		printf("Index type: %d\n", (int)index_type);
  		throw FLANNException("Unknown index type");
  	}
 
@@ -286,7 +291,7 @@ private:
         const int nn = 1;
 
         logger.info("KMeansTree using params: max_iterations=%d, branching=%d\n", kmeans_params.iterations, kmeans_params.branching);
-        KMeansIndex<Distance> kmeans(sampledDataset, kmeans_params);
+        KMeansIndex<Distance> kmeans(sampledDataset, kmeans_params, distance);
         // measure index build time
         t.start();
         kmeans.buildIndex();
@@ -294,7 +299,7 @@ private:
         float buildTime = t.value;
 
         // measure search time
-        float searchTime = test_index_precision(kmeans, sampledDataset, testDataset, gt_matches, index_params.target_precision, checks, nn);;
+        float searchTime = test_index_precision(kmeans, sampledDataset, testDataset, gt_matches, index_params.target_precision, checks, distance, nn);;
 
         float datasetMemory = sampledDataset.rows*sampledDataset.cols*sizeof(float);
         cost.memoryCost = (kmeans.usedMemory()+datasetMemory)/datasetMemory;
@@ -312,7 +317,7 @@ private:
         const int nn = 1;
 
         logger.info("KDTree using params: trees=%d\n",kdtree_params.trees);
-        KDTreeIndex<Distance> kdtree(sampledDataset, kdtree_params);
+        KDTreeIndex<Distance> kdtree(sampledDataset, kdtree_params, distance);
 
         t.start();
         kdtree.buildIndex();
@@ -320,7 +325,7 @@ private:
         float buildTime = t.value;
 
         //measure search time
-        float searchTime = test_index_precision(kdtree, sampledDataset, testDataset, gt_matches, index_params.target_precision, checks, nn);
+        float searchTime = test_index_precision(kdtree, sampledDataset, testDataset, gt_matches, index_params.target_precision, checks, distance, nn);
 
         float datasetMemory = sampledDataset.rows*sampledDataset.cols*sizeof(float);
         cost.memoryCost = (kdtree.usedMemory()+datasetMemory)/datasetMemory;
@@ -628,7 +633,7 @@ private:
                 int best_checks = -1;
                 for (cb_index = 0;cb_index<1.1; cb_index+=0.2) {
                     kmeans->set_cb_index(cb_index);
-                    searchTime = test_index_precision(*kmeans, dataset, testDataset, gt_matches, index_params.target_precision, checks, nn, 1);
+                    searchTime = test_index_precision(*kmeans, dataset, testDataset, gt_matches, index_params.target_precision, checks, distance, nn, 1);
                     if (searchTime<bestSearchTime || bestSearchTime == -1) {
                         bestSearchTime = searchTime;
                         best_cb_index = cb_index;
@@ -644,7 +649,7 @@ private:
                 ((KMeansIndexParams*)bestParams)->cb_index = cb_index;
             }
             else {
-                searchTime = test_index_precision(*bestIndex, dataset, testDataset, gt_matches, index_params.target_precision, checks, nn, 1);
+                searchTime = test_index_precision(*bestIndex, dataset, testDataset, gt_matches, index_params.target_precision, checks, distance, nn, 1);
             }
 
             logger.info("Required number of checks: %d \n",checks);;

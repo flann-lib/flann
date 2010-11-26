@@ -34,7 +34,7 @@
 
 #include "flann/algorithms/nn_index.h"
 #include "flann/algorithms/kdtree_index.h"
-#include "flann/algorithms/kdtree_simple_index.h"
+#include "flann/algorithms/kdtree_single_index.h"
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
@@ -53,8 +53,8 @@ NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementT
 	case LINEAR:
 		nnIndex = new LinearIndex<Distance>(dataset, (const LinearIndexParams&)params, distance);
 		break;
-	case KDTREE_SIMPLE:
-		nnIndex = new KDTreeSimpleIndex<Distance>(dataset, (const KDTreeSimpleIndexParams&)params, distance);
+	case KDTREE_SINGLE:
+		nnIndex = new KDTreeSingleIndex<Distance>(dataset, (const KDTreeSingleIndexParams&)params, distance);
 	    break;
     case KDTREE:
 		nnIndex = new KDTreeIndex<Distance>(dataset, (const KDTreeIndexParams&)params, distance);
@@ -65,9 +65,9 @@ NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementT
 	case COMPOSITE:
 		nnIndex = new CompositeIndex<Distance>(dataset, (const CompositeIndexParams&) params, distance);
 		break;
-//	case AUTOTUNED:
-//		nnIndex = new AutotunedIndex<Distance>(dataset, (const AutotunedIndexParams&) params, distance);
-//		break;
+	case AUTOTUNED:
+		nnIndex = new AutotunedIndex<Distance>(dataset, (const AutotunedIndexParams&) params, distance);
+		break;
 	default:
 		throw FLANNException("Unknown index type");
 	}

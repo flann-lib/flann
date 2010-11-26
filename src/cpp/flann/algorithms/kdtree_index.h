@@ -52,11 +52,10 @@ namespace flann
 {
 
 struct KDTreeIndexParams : public IndexParams {
-	KDTreeIndexParams(int trees_ = 4, int leaf_max_size_ = 4) :
-		IndexParams(KDTREE), trees(trees_), leaf_max_size(leaf_max_size_) {};
+	KDTreeIndexParams(int trees_ = 4) :
+		IndexParams(KDTREE), trees(trees_) {};
 
 	int trees;                 // number of randomized trees to use (for kdtree)
-	int leaf_max_size;
 
 	flann_algorithm_t getIndexType() const { return algorithm; }
 
@@ -119,10 +118,7 @@ class KDTreeIndex : public NNIndex<Distance>
 	/**
 	 *  Array of indices to vectors in the dataset.
 	 */
-	int** vind;
-
-	int leaf_max_size_;
-
+	int* vind;
 
 	/**
 	 * The dataset used by this index
@@ -141,8 +137,6 @@ class KDTreeIndex : public NNIndex<Distance>
 
 	/*--------------------- Internal Data Structures --------------------------*/
     struct Node {
-    	int *ind;
-    	int count;
     	/**
     	 * Dimension used for subdivision.
     	 */
@@ -200,13 +194,12 @@ public:
         veclen_ = dataset.cols;
 
         numTrees = params.trees;
-        leaf_max_size_ = params.leaf_max_size;
         trees = new NodePtr[numTrees];
 
 		// Create a permutable array of indices to the input vectors.
-		vind = new int*[numTrees];
-		for (int i = 0; i < numTrees; i++) {
-			vind[i] = NULL;
+		vind = new int[size_];
+		for (size_t i = 0; i < size_; i++) {
+			vind[i] = i;
 		}
 
         mean = new DistanceType[veclen_];
@@ -218,9 +211,6 @@ public:
 	 */
 	~KDTreeIndex()
 	{
-		for (int i = 0; i < numTrees; i++) {
-			if (vind[i]!=NULL) delete[] vind[i];
-		}
 		delete[] vind;
 		if (trees!=NULL) {
 			delete[] trees;
@@ -247,12 +237,8 @@ public:
 		/* Construct the randomized trees. */
 		for (int i = 0; i < numTrees; i++) {
 			/* Randomize the order of vectors to allow for unbiased sampling. */
-			vind[i] = new int[size_];
-			for (size_t j = 0; j < size_; j++) {
-				vind[i][j] = j;
-			}
-			randomizeVector(vind[i], size_);
-			trees[i] = divideTree(vind[i], size_ );
+			randomizeVector(vind, size_);
+			trees[i] = divideTree(vind, size_ );
 		}
 	}
 
@@ -371,10 +357,9 @@ private:
 		NodePtr node = pool.allocate<Node>(); // allocate memory
 
 		/* If too few exemplars remain, then make this a leaf node. */
-		if ( count <= leaf_max_size_) {
+		if ( count == 1) {
 			node->child1 = node->child2 = NULL;    /* Mark as leaf node. */
-			node->ind = ind;    /* Store index of this vec. */
-			node->count = count; /* and length */
+			node->divfeat = *ind;    /* Store index of this vec. */
 		}
 		else {
 			int idx;
@@ -574,18 +559,16 @@ private:
 				current checkID.
 			*/
 			float worst_dist = result_set.worstDist();
-			for (int i=0;i<node->count;++i) {
-				int index = node->ind[i];
-				if (checked[index] == true || checkCount>=maxCheck) {
-					if (result_set.full()) continue;
-				}
-				checked[index] = true;
-				checkCount++;
+			int index = node->divfeat;
+			if (checked[index] == true || checkCount>=maxCheck) {
+				if (result_set.full()) return;
+			}
+			checked[index] = true;
+			checkCount++;
 
-				DistanceType dist = distance(dataset[index], vec, veclen_);
-				if (dist<worst_dist) {
-					result_set.addPoint(dist,index);
-				}
+			DistanceType dist = distance(dataset[index], vec, veclen_);
+			if (dist<worst_dist) {
+				result_set.addPoint(dist,index);
 			}
 			return;
 		}
@@ -622,12 +605,10 @@ private:
 		/* If this is a leaf node, then do check and return. */
 		if (node->child1 == NULL  &&  node->child2 == NULL) {
 			float worst_dist = result_set.worstDist();
-			for (int i=0;i<node->count;++i) {
-				int index = node->ind[i];
-				DistanceType dist = distance(dataset[index], vec, veclen_);
-				if (dist<worst_dist) {
-					result_set.addPoint(dist,index);
-				}
+			int index = node->divfeat;
+			DistanceType dist = distance(dataset[index], vec, veclen_);
+			if (dist<worst_dist) {
+				result_set.addPoint(dist,index);
 			}
 			return;
 		}

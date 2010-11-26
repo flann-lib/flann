@@ -110,7 +110,10 @@ class FLANN:
         assert(npts >= num_neighbors)
 
         result = empty( (nqpts, num_neighbors), dtype=index_type)
-        dists = empty( (nqpts, num_neighbors), dtype=float32)
+        if self.__curindex_type==float64:
+            dists = empty( (nqpts, num_neighbors), dtype=float64)
+        else:
+            dists = empty( (nqpts, num_neighbors), dtype=float32)
                 
         self.__flann_parameters.update(kwargs)
 
@@ -220,7 +223,10 @@ class FLANN:
         assert(npts >= num_neighbors)
         
         result = empty( (nqpts, num_neighbors), dtype=index_type)
-        dists = empty( (nqpts, num_neighbors), dtype=float32)
+        if self.__curindex_type==float64:
+            dists = empty( (nqpts, num_neighbors), dtype=float64)
+        else:
+            dists = empty( (nqpts, num_neighbors), dtype=float32)
 
         self.__flann_parameters.update(kwargs)
 
@@ -250,7 +256,10 @@ class FLANN:
         assert(query.shape[0]==dim)
         
         result = empty( npts, dtype=index_type)
-        dists = empty( npts, dtype=float32)
+        if self.__curindex_type==float64:
+            dists = empty( npts, dtype=float64)
+        else:
+            dists = empty( npts, dtype=float32)
         
         self.__flann_parameters.update(kwargs)
 

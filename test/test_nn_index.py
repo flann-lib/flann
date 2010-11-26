@@ -45,12 +45,13 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
         for i in permutation(numtests):
             nns[i] = FLANN()
             nns[i].build_index(x[i])
-            
+
             # For kicks
             if rand() < 0.5:
                nns[i].kmeans(x[i], 5)
             if rand() < 0.5:
                nns[i].nn(x[i], x[i])
+
 
         for i in permutation(numtests):
             nnidx,nndist = nns[i].nn_index(x[i])

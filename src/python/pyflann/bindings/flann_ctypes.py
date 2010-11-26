@@ -232,6 +232,23 @@ flannlib.flann_find_nearest_neighbors_%(C)s.argtypes = [
 flann.find_nearest_neighbors[%(numpy)s] = flannlib.flann_find_nearest_neighbors_%(C)s
 """)
 
+# fix definition for the 'double' case
+
+flannlib.flann_find_nearest_neighbors_double.restype = c_int
+flannlib.flann_find_nearest_neighbors_double.argtypes = [ 
+        ndpointer(float64, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int, # rows
+        c_int, # cols
+        ndpointer(float64, ndim = 2, flags='aligned, c_contiguous'), # testset
+        c_int,  # tcount
+        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
+        ndpointer(float64, ndim = 2, flags='aligned, c_contiguous, writeable'), # dists
+        c_int, # nn
+        POINTER(FLANNParameters)  # flann_params
+]
+flann.find_nearest_neighbors[float64] = flannlib.flann_find_nearest_neighbors_double
+
+
 flann.find_nearest_neighbors_index = {}
 define_functions(r"""
 flannlib.flann_find_nearest_neighbors_index_%(C)s.restype = c_int
@@ -247,6 +264,18 @@ flannlib.flann_find_nearest_neighbors_index_%(C)s.argtypes = [
 flann.find_nearest_neighbors_index[%(numpy)s] = flannlib.flann_find_nearest_neighbors_index_%(C)s
 """)
 
+flannlib.flann_find_nearest_neighbors_index_double.restype = c_int
+flannlib.flann_find_nearest_neighbors_index_double.argtypes = [ 
+        FLANN_INDEX, # index_id
+        ndpointer(float64, ndim = 2, flags='aligned, c_contiguous'), # testset
+        c_int,  # tcount
+        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # result
+        ndpointer(float64, ndim = 2, flags='aligned, c_contiguous, writeable'), # dists
+        c_int, # nn
+        POINTER(FLANNParameters) # flann_params
+]
+flann.find_nearest_neighbors_index[float64] = flannlib.flann_find_nearest_neighbors_index_double
+
 flann.radius_search = {}
 define_functions(r"""
 flannlib.flann_radius_search_%(C)s.restype = c_int
@@ -261,6 +290,19 @@ flannlib.flann_radius_search_%(C)s.argtypes = [
 ]
 flann.radius_search[%(numpy)s] = flannlib.flann_radius_search_%(C)s
 """)
+
+flannlib.flann_radius_search_double.restype = c_int
+flannlib.flann_radius_search_double.argtypes = [ 
+        FLANN_INDEX, # index_id
+        ndpointer(float64, ndim = 1, flags='aligned, c_contiguous'), # query
+        ndpointer(int32, ndim = 1, flags='aligned, c_contiguous, writeable'), # indices
+        ndpointer(float64, ndim = 1, flags='aligned, c_contiguous, writeable'), # dists
+        c_int, # max_nn
+        c_float, # radius
+        POINTER(FLANNParameters) # flann_params
+]
+flann.radius_search[float64] = flannlib.flann_radius_search_double
+
 
 flann.compute_cluster_centers = {}
 define_functions(r"""
@@ -285,6 +327,7 @@ flannlib.flann_compute_cluster_centers_double.argtypes = [
         ndpointer(float64, flags='aligned, c_contiguous, writeable'), # result
         POINTER(FLANNParameters)  # flann_params
 ]
+flann.compute_cluster_centers[float64] = flannlib.flann_compute_cluster_centers_double
 
 
 flann.free_index = {}
