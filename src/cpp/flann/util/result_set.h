@@ -35,7 +35,6 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
-#include "flann/algorithms/dist.h"
 
 using namespace std;
 
@@ -53,34 +52,22 @@ struct BranchStruct {
 	T node;           /* Tree node at which search resumes */
 	float mindistsq;     /* Minimum distance to query for all nodes below. */
 
+	BranchStruct() {};
+	BranchStruct(const T& aNode, float dist) : node(aNode), mindistsq(dist) {};
+
 	bool operator<(const BranchStruct<T>& rhs)
 	{
         return mindistsq<rhs.mindistsq;
 	}
-
-    static BranchStruct<T> make_branch(const T& aNode, float dist)
-    {
-        BranchStruct<T> branch;
-        branch.node = aNode;
-        branch.mindistsq = dist;
-        return branch;
-    }
 };
 
 
-
-
-
-template <typename ELEM_TYPE>
 class ResultSet
 {
-protected:
-
 public:
-
 	virtual ~ResultSet() {};
 
-	virtual void init(const ELEM_TYPE* target_, int veclen_) = 0;
+	virtual void init() = 0;
 
 	virtual int* getNeighbors() = 0;
 
@@ -90,38 +77,25 @@ public:
 
 	virtual bool full() const = 0;
 
-	virtual bool addPoint(const ELEM_TYPE* point, int index) = 0;
+	virtual void addPoint(float dist, int index) = 0;
 
 	virtual float worstDist() const = 0;
 
 };
 
-
-template <typename ELEM_TYPE>
-class KNNResultSet : public ResultSet<ELEM_TYPE>
+class KNNResultSet : public ResultSet
 {
-	const ELEM_TYPE* target;
-	const ELEM_TYPE* target_end;
-    int veclen;
-
 	int* indices;
 	float* dists;
     int capacity;
-
 	int count;
 
-	float MAX_FLOAT;
-
 public:
-	KNNResultSet(int capacity_, ELEM_TYPE* target_ = NULL, int veclen_ = 0 ) :
-			target(target_), veclen(veclen_), capacity(capacity_), count(0)
+	KNNResultSet(int capacity_) : capacity(capacity_)
 	{
-		target_end = target + veclen;
-
-        indices = new int[capacity_];
-        dists = new float[capacity_];
-
-        MAX_FLOAT = numeric_limits<float>::max();
+        indices = new int[capacity_+1];
+        dists = new float[capacity_+1];
+        count = 0;
 	}
 
 	~KNNResultSet()
@@ -130,14 +104,11 @@ public:
 		delete[] dists;
 	}
 
-	void init(const ELEM_TYPE* target_, int veclen_)
+	void init()
 	{
-        target = target_;
-        veclen = veclen_;
-        target_end = target + veclen;
-        count = 0;
+		count = 0;
+		dists[capacity-1] = numeric_limits<float>::max();
 	}
-
 
 	int* getNeighbors()
 	{
@@ -160,42 +131,48 @@ public:
 	}
 
 
-	bool addPoint(const ELEM_TYPE* point, int index)
+	void addPoint(float dist, int index)
 	{
 //		for (int i=0;i<count;++i) {
 //			if (indices[i]==index) return false;
 //		}
-		float dist = euclidean_dist(target, target_end, point, 0, worstDist());
-
-		if (count<capacity) {
-			indices[count] = index;
-			dists[count] = dist;
-			++count;
+		int i;
+		for (i=count; i>0;--i) {
+//			if ( (dists[i-1]>dist) || (dist==dists[i-1] && indices[i-1]>index) ) {
+			if (dists[i-1]>dist) {
+				dists[i] = dists[i-1];
+				indices[i] = indices[i-1];
+			}
+			else break;
 		}
-		else if (dist < dists[count-1] || (dist == dists[count-1] && index < indices[count-1])) {
+		dists[i] = dist;
+		indices[i] = index;
+		if (count<capacity) count++;
+
+//		if (count<capacity) {
+//			indices[count] = index;
+//			dists[count] = dist;
+//			++count;
+//		}
+////		else if (dist < dists[count-1] || (dist == dists[count-1] && index < indices[count-1])) {
 //         else if (dist < dists[count-1]) {
-			indices[count-1] = index;
-			dists[count-1] = dist;
-		}
-		else {
-			return false;
-		}
-
-		int i = count-1;
-		// bubble up
-		while (i>=1 && (dists[i]<dists[i-1] || (dists[i]==dists[i-1] && indices[i]<indices[i-1]) ) ) {
+//			indices[count-1] = index;
+//			dists[count-1] = dist;
+//		}
+//
+//		register int i = count-1;
+//		// bubble up
+////		while (i>=1 && (dists[i]<dists[i-1] || (dists[i]==dists[i-1] && indices[i]<indices[i-1]) ) ) {
 //         while (i>=1 && (dists[i]<dists[i-1]) ) {
-			swap(indices[i],indices[i-1]);
-			swap(dists[i],dists[i-1]);
-			i--;
-		}
-
-		return true;
+//			swap(indices[i],indices[i-1]);
+//			swap(dists[i],dists[i-1]);
+//			i--;
+//		}
 	}
 
 	float worstDist() const
 	{
-		return (count<capacity) ? MAX_FLOAT : dists[count-1];
+		return dists[capacity-1];
 	}
 };
 
@@ -203,13 +180,8 @@ public:
 /**
  * A result-set class used when performing a radius based search.
  */
-template <typename ELEM_TYPE>
-class RadiusResultSet : public ResultSet<ELEM_TYPE>
+class RadiusResultSet : public ResultSet
 {
-	const ELEM_TYPE* target;
-	const ELEM_TYPE* target_end;
-    int veclen;
-
 	struct Item {
 		int index;
 		float dist;
@@ -254,13 +226,11 @@ public:
 		if (dists!=NULL) delete[] dists;
 	}
 
-	void init(const ELEM_TYPE* target_, int veclen_)
+	void init()
 	{
-        target = target_;
-        veclen = veclen_;
-        target_end = target + veclen;
-        items.clear();
-        sorted = false;
+		sorted = false;
+		items.clear();
+		count = 0;
 	}
 
 	int* getNeighbors()
@@ -299,17 +269,15 @@ public:
 		return true;
 	}
 
-	bool addPoint(const ELEM_TYPE* point, int index)
+	void addPoint(float dist, int index)
 	{
 		Item it;
 		it.index = index;
-		it.dist = flann_dist(target, target_end, point, 0, worstDist());
+		it.dist = dist;
 		if (it.dist<=radius) {
 			items.push_back(it);
 			push_heap(items.begin(), items.end());
-            return true;
 		}
-        return false;
 	}
 
 	float worstDist() const

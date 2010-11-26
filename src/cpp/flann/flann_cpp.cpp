@@ -37,8 +37,8 @@
 #include "flann/util/saving.h"
 #include "flann/nn/ground_truth.h"
 // index types
-#include "flann/algorithms/kdtree_index2.h"
 #include "flann/algorithms/kdtree_index.h"
+#include "flann/algorithms/kdtree_simple_index.h"
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
@@ -62,11 +62,6 @@ void log_verbosity(int level)
     }
 }
 
-void set_distance_type(flann_distance_t distance_type, int order)
-{
-	flann_distance_type = distance_type;
-	flann_minkowski_order = order;
-}
 
 IndexParams* IndexParams::createFromParameters(const FLANNParameters& p)
 {
@@ -84,7 +79,7 @@ public:
 	{
 		ParamsFactory::instance().register_<LinearIndexParams>(LINEAR);
 		ParamsFactory::instance().register_<KDTreeIndexParams>(KDTREE);
-		ParamsFactory::instance().register_<KDTreeIndex2Params>(KDTREE2);
+		ParamsFactory::instance().register_<KDTreeSimpleIndexParams>(KDTREE_SIMPLE);
 		ParamsFactory::instance().register_<KMeansIndexParams>(KMEANS);
 		ParamsFactory::instance().register_<CompositeIndexParams>(COMPOSITE);
 		ParamsFactory::instance().register_<AutotunedIndexParams>(AUTOTUNED);

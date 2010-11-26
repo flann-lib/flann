@@ -4,14 +4,19 @@ if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
 
-
 project(flann)
+string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
+include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
 set(FLANN_VERSION 1.5.0)
-STRING(REGEX MATCHALL "[0-9]" FLANN_VERSION_PARTS "${FLANN_VERSION}")                                                
-LIST(GET FLANN_VERSION_PARTS 0 FLANN_VERSION_MAJOR)                                                                  
-LIST(GET FLANN_VERSION_PARTS 1 FLANN_VERSION_MINOR)                                                                  
-LIST(GET FLANN_VERSION_PARTS 2 FLANN_VERSION_PATCH)                                                                  
+DISSECT_VERSION()
+GET_OS_INFO()
+
+# Add an "uninstall" target
+CONFIGURE_FILE ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
+    "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
+ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P
+    "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 
 if (NOT CMAKE_INSTALL_PREFIX)
     set(CMAKE_INSTALL_PREFIX /usr/local)
@@ -43,27 +48,6 @@ set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
 message("USE_MPI: ${USE_MPI}")
 
-
-# workaround a FindHDF5 bug
-macro(find_hdf5)
-    find_package(HDF5)
-
-    set( HDF5_IS_PARALLEL FALSE )
-    foreach( _dir ${HDF5_INCLUDE_DIRS} )
-        if( EXISTS "${_dir}/H5pubconf.h" )
-            file( STRINGS "${_dir}/H5pubconf.h" 
-                HDF5_HAVE_PARALLEL_DEFINE
-                REGEX "HAVE_PARALLEL 1" )
-            if( HDF5_HAVE_PARALLEL_DEFINE )
-                set( HDF5_IS_PARALLEL TRUE )
-            endif()
-        endif()
-    endforeach()
-    set( HDF5_IS_PARALLEL ${HDF5_IS_PARALLEL} CACHE BOOL
-        "HDF5 library compiled with parallel IO support" )
-    mark_as_advanced( HDF5_IS_PARALLEL )
-endmacro(find_hdf5)
-
 find_hdf5()
 if (USE_MPI OR HDF5_IS_PARALLEL)
     find_package(MPI)
@@ -94,82 +78,10 @@ endif(USE_MPI)
 #set the C/C++ include path to the "include" directory
 include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 
-
-add_custom_target(tests)
-add_custom_target(test)
-add_dependencies(test tests)
-
-
-
-
-
-
-macro(flann_add_gtest exe)
-    # add build target
-    add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
-    target_link_libraries(${exe} gtest)
-    # add dependency to 'tests' target
-    add_dependencies(tests ${exe})
-
-    # add target for running test
-    string(REPLACE "/" "_" _testname ${exe})
-    add_custom_target(test_${_testname}
-                    COMMAND ${exe}
-                    ARGS --gtest_print_time
-                    DEPENDS ${exe}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
-                    VERBATIM
-                    COMMENT "Runnint gtest test(s) ${exe}")
-    # add dependency to 'test' target
-    add_dependencies(test test_${_testname})
-endmacro(flann_add_gtest)
-
-
-
-macro(flann_add_pyunit file)
-    # find test file
-    set(_file_name _file_name-NOTFOUND)
-    find_file(_file_name ${file} ${CMAKE_CURRENT_SOURCE_DIR})
-    if(NOT _file_name)
-        message(FATAL_ERROR "Can't find pyunit file \"${file}\"")
-    endif(NOT _file_name)
-
-    # find python
-    find_package(PythonInterp REQUIRED)
-    
-    # add target for running test
-    string(REPLACE "/" "_" _testname ${file})
-    add_custom_target(pyunit_${_testname}
-                    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/bin/run_test.py ${_file_name}
-                    DEPENDS ${_file_name}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
-                    VERBATIM
-                    COMMENT "Running pyunit test(s) ${file}" )
-    # add dependency to 'test' target
-    add_dependencies(pyunit_${_testname} flann)
-    add_dependencies(test pyunit_${_testname})
-endmacro(flann_add_pyunit)
-
-
-macro(flann_download_test_data _name _md5)
-    string(REPLACE "/" "_" _dataset_name dataset_${_name})
-    
-    # find python
-    find_package(PythonInterp REQUIRED)
-    
-    add_custom_target(${_dataset_name}
-        COMMAND ${PROJECT_SOURCE_DIR}/bin/download_checkmd5.py http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/${_name} ${TEST_OUTPUT_PATH}/${_name} ${_md5}
-        VERBATIM)
-
-    # Also make sure that downloads are done before we run any tests
-    add_dependencies(tests ${_dataset_name})
-
-endmacro(flann_download_test_data)
-
 # require proper c++
 add_definitions( "-Wall -ansi -pedantic" )
 
-
+add_subdirectory( cmake )
 add_subdirectory( src )
 add_subdirectory( examples )
 add_subdirectory( test )

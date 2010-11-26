@@ -41,16 +41,16 @@ using namespace std;
 namespace flann
 {
 
-
-template <typename ELEM_TYPE>
 class ResultSet;
 
 /**
 * Nearest-neighbour index base class
 */
-template <typename ELEM_TYPE>
+template <typename Distance>
 class NNIndex
 {
+	typedef typename Distance::ElementType ElementType;
+
 public:
 
 	virtual ~NNIndex() {};
@@ -73,7 +73,7 @@ public:
 	/**
 	Method that searches for nearest-neighbors
 	*/
-	virtual void findNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, const SearchParams& searchParams) = 0;
+	virtual void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams) = 0;
 
 	/**
 	Number of features in this index.

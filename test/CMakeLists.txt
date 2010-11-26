@@ -1,4 +1,8 @@
 
+add_custom_target(tests)
+add_custom_target(test)
+add_dependencies(test tests)
+
 set(EXECUTABLE_OUTPUT_PATH ${TEST_OUTPUT_PATH})
 
 #add_executable(flann_mt_test flann_mt_test.cpp)

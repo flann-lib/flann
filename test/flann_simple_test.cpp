@@ -8,6 +8,7 @@
 #include <flann/io/hdf5.h>
 #include <flann/nn/ground_truth.h>
 
+using namespace flann;
 
 
 float compute_precision(const flann::Matrix<int>& match, const flann::Matrix<int>& indices)
@@ -87,7 +88,7 @@ protected:
 
 TEST_F(Flann_SIFT10K_Test, Linear)
 {
-	flann::Index<float> index(data, flann::LinearIndexParams());
+	Index<L2<float> > index(data, flann::LinearIndexParams());
 	start_timer("Building linear index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -103,7 +104,7 @@ TEST_F(Flann_SIFT10K_Test, Linear)
 
 TEST_F(Flann_SIFT10K_Test, KDTreeTest)
 {
-	flann::Index<float> index(data, flann::KDTreeIndexParams(4));
+	Index<L2<float> > index(data, flann::KDTreeIndexParams(4));
 	start_timer("Building randomised kd-tree index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -120,7 +121,7 @@ TEST_F(Flann_SIFT10K_Test, KDTreeTest)
 
 TEST_F(Flann_SIFT10K_Test, KMeansTree)
 {
-	flann::Index<float> index(data, flann::KMeansIndexParams(7, 3, CENTERS_RANDOM, 0.4));
+	Index<L2<float> > index(data, flann::KMeansIndexParams(7, 3, CENTERS_RANDOM, 0.4));
 	start_timer("Building hierarchical k-means index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -171,7 +172,7 @@ protected:
 
 TEST_F(Flann_SIFT10K_Test_byte, Linear)
 {
-	flann::Index<unsigned char> index(data, flann::LinearIndexParams());
+	flann::Index<L2<unsigned char> > index(data, flann::LinearIndexParams());
 	start_timer("Building linear index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -187,7 +188,7 @@ TEST_F(Flann_SIFT10K_Test_byte, Linear)
 
 TEST_F(Flann_SIFT10K_Test_byte, KDTreeTest)
 {
-	flann::Index<unsigned char> index(data, flann::KDTreeIndexParams(4));
+	flann::Index<L2<unsigned char> > index(data, flann::KDTreeIndexParams(4));
 	start_timer("Building randomised kd-tree index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -204,7 +205,7 @@ TEST_F(Flann_SIFT10K_Test_byte, KDTreeTest)
 
 TEST_F(Flann_SIFT10K_Test_byte, KMeansTree)
 {
-	flann::Index<unsigned char> index(data, flann::KMeansIndexParams(7, 3, CENTERS_RANDOM, 0.4));
+	flann::Index<L2<unsigned char> > index(data, flann::KMeansIndexParams(7, 3, CENTERS_RANDOM, 0.4));
 	start_timer("Building hierarchical k-means index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -254,7 +255,7 @@ protected:
 
 TEST_F(Flann_SIFT100K_Test, Linear)
 {
-	flann::Index<float> index(data, flann::LinearIndexParams());
+	Index<L2<float> > index(data, flann::LinearIndexParams());
 	start_timer("Building linear index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -271,7 +272,7 @@ TEST_F(Flann_SIFT100K_Test, Linear)
 
 TEST_F(Flann_SIFT100K_Test, KDTreeTest)
 {
-	flann::Index<float> index(data, flann::KDTreeIndexParams(4));
+	Index<L2<float> > index(data, flann::KDTreeIndexParams(4));
 	start_timer("Building randomised kd-tree index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -289,7 +290,7 @@ TEST_F(Flann_SIFT100K_Test, KDTreeTest)
 
 TEST_F(Flann_SIFT100K_Test, KMeansTreeTest)
 {
-	flann::Index<float> index(data, flann::KMeansIndexParams(32, 11, CENTERS_RANDOM, 0.2));
+	Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, CENTERS_RANDOM, 0.2));
 	start_timer("Building hierarchical k-means index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -310,7 +311,7 @@ TEST_F(Flann_SIFT100K_Test, AutotunedTest)
 {
     flann::log_verbosity(LOG_INFO);
 
-	flann::Index<float> index(data, flann::AutotunedIndexParams(0.8,0.01,0,0.1)); // 80% precision
+	Index<L2<float> > index(data, flann::AutotunedIndexParams(0.8,0.01,0,0.1)); // 80% precision
 	start_timer("Building autotuned index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -334,7 +335,7 @@ TEST_F(Flann_SIFT100K_Test, SavedTest)
 	// -------------------------------------
 	//      kd-tree index
 	printf("Loading kdtree index\n");
-	flann::Index<float> kdtree_index(data, flann::SavedIndexParams("kdtree.idx"));
+	flann::Index<L2<float> > kdtree_index(data, flann::SavedIndexParams("kdtree.idx"));
 
 	start_timer("Searching KNN...");
 	kdtree_index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
@@ -347,7 +348,7 @@ TEST_F(Flann_SIFT100K_Test, SavedTest)
 	// -------------------------------------
 	// kmeans index
 	printf("Loading kmeans index\n");
-	flann::Index<float> kmeans_index(data, flann::SavedIndexParams("kmeans_tree.idx"));
+	flann::Index<L2<float> > kmeans_index(data, flann::SavedIndexParams("kmeans_tree.idx"));
 
 	start_timer("Searching KNN...");
 	kmeans_index.knnSearch(query, indices, dists, 5, flann::SearchParams(96) );
@@ -360,7 +361,7 @@ TEST_F(Flann_SIFT100K_Test, SavedTest)
 	// -------------------------------------
 	// autotuned index
 	printf("Loading autotuned index\n");
-	flann::Index<float> autotuned_index(data, flann::SavedIndexParams("autotuned.idx"));
+	flann::Index<L2<float> > autotuned_index(data, flann::SavedIndexParams("autotuned.idx"));
 
 	const flann::IndexParams* index_params = autotuned_index.getIndexParameters();
 	printf("The index has the following parameters:\n");
@@ -416,7 +417,7 @@ protected:
 
 TEST_F(Flann_SIFT100K_Test_byte, Linear)
 {
-	flann::Index<unsigned char> index(data, flann::LinearIndexParams());
+	flann::Index<L2<unsigned char> > index(data, flann::LinearIndexParams());
 	start_timer("Building linear index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -434,7 +435,7 @@ TEST_F(Flann_SIFT100K_Test_byte, Linear)
 
 TEST_F(Flann_SIFT100K_Test_byte, KDTreeTest)
 {
-	flann::Index<unsigned char> index(data, flann::KDTreeIndexParams(4));
+	flann::Index<L2<unsigned char> > index(data, flann::KDTreeIndexParams(4));
 	start_timer("Building randomised kd-tree index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());
@@ -450,7 +451,7 @@ TEST_F(Flann_SIFT100K_Test_byte, KDTreeTest)
 
 TEST_F(Flann_SIFT100K_Test_byte, KMeansTree)
 {
-	flann::Index<unsigned char> index(data, flann::KMeansIndexParams(32, 11, CENTERS_RANDOM, 0.2));
+	flann::Index<L2<unsigned char> > index(data, flann::KMeansIndexParams(32, 11, CENTERS_RANDOM, 0.2));
 	start_timer("Building hierarchical k-means index...");
 	index.buildIndex();
 	printf("done (%g seconds)\n", stop_timer());

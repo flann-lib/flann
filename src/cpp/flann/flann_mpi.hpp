@@ -216,6 +216,8 @@ void Index<T>::knnSearch(const flann::Matrix<T>& queries, flann::Matrix<int>& in
 template<typename T>
 int Index<T>::radiusSearch(const flann::Matrix<T>& query, flann::Matrix<int>& indices, flann::Matrix<float>& dists, float radius, const SearchParams& params)
 {
+// TODO: fix this
+
 //	mpi::communicator world;
 //	flann::Matrix<int> local_indices(new int[indices.rows*indices.cols],indices.rows, indices.cols);
 //	flann::Matrix<float> local_dists(new float[dists.rows*dists.cols],dists.rows, dists.cols);

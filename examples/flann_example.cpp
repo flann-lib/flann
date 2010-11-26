@@ -4,20 +4,22 @@
 
 #include <stdio.h>
 
+using namespace flann;
+
 int main(int argc, char** argv)
 {
     int nn = 3;
 
-    flann::Matrix<float> dataset;
-    flann::Matrix<float> query;
-    flann::load_from_file(dataset, "dataset.hdf5","dataset");
-    flann::load_from_file(query, "dataset.hdf5","query");
+    Matrix<float> dataset;
+    Matrix<float> query;
+    load_from_file(dataset, "dataset.hdf5","dataset");
+    load_from_file(query, "dataset.hdf5","query");
 
-    flann::Matrix<int> indices(new int[query.rows*nn], query.rows, nn);
-    flann::Matrix<float> dists(new float[query.rows*nn], query.rows, nn);
+    Matrix<int> indices(new int[query.rows*nn], query.rows, nn);
+    Matrix<float> dists(new float[query.rows*nn], query.rows, nn);
 
     // construct an randomized kd-tree index using 4 kd-trees
-    flann::Index<float> index(dataset, flann::KDTreeIndexParams(4));
+    Index<L2<float> > index(dataset, flann::KDTreeIndexParams(4));
     index.buildIndex();                                                                                               
 
     // do a knn search, using 128 checks

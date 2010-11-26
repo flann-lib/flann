@@ -33,6 +33,8 @@
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
+#include "flann/algorithms/kdtree_index.h"
+#include "flann/algorithms/kmeans_index.h"
 
 namespace flann
 {
@@ -89,27 +91,32 @@ struct CompositeIndexParams : public IndexParams {
 
 
 
-template <typename ELEM_TYPE, typename DIST_TYPE = typename DistType<ELEM_TYPE>::type >
-class CompositeIndex : public NNIndex<ELEM_TYPE>
+template <typename Distance>
+class CompositeIndex : public NNIndex<Distance>
 {
-	KMeansIndex<ELEM_TYPE, DIST_TYPE>* kmeans;
-	KDTreeIndex<ELEM_TYPE, DIST_TYPE>* kdtree;
+	typedef typename Distance::ElementType ElementType;
+	typedef typename Distance::ResultType DistanceType;
 
-    const Matrix<ELEM_TYPE> dataset;
+	KMeansIndex<Distance>* kmeans;
+	KDTreeIndex<Distance>* kdtree;
+
+    const Matrix<ElementType> dataset;
 
     const IndexParams& index_params;
 
+    Distance distance;
 
 public:
 
-	CompositeIndex(const Matrix<ELEM_TYPE>& inputData, const CompositeIndexParams& params = CompositeIndexParams() ) :
-		dataset(inputData), index_params(params)
+	CompositeIndex(const Matrix<ElementType>& inputData, const CompositeIndexParams& params = CompositeIndexParams(),
+			Distance d = Distance()) :
+		dataset(inputData), index_params(params), distance(d)
 	{
 		KDTreeIndexParams kdtree_params(params.trees);
 		KMeansIndexParams kmeans_params(params.branching, params.iterations, params.centers_init, params.cb_index);
 
-		kdtree = new KDTreeIndex<ELEM_TYPE, DIST_TYPE>(inputData,kdtree_params);
-		kmeans = new KMeansIndex<ELEM_TYPE, DIST_TYPE>(inputData,kmeans_params);
+		kdtree = new KDTreeIndex<Distance>(inputData,kdtree_params, d);
+		kmeans = new KMeansIndex<Distance>(inputData,kmeans_params, d);
 
 	}
 
@@ -164,7 +171,7 @@ public:
     	kdtree->loadIndex(stream);
     }
 
-	void findNeighbors(ResultSet<ELEM_TYPE>& result, const ELEM_TYPE* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
 	{
 		kmeans->findNeighbors(result,vec,searchParams);
 		kdtree->findNeighbors(result,vec,searchParams);

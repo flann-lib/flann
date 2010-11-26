@@ -41,7 +41,7 @@ enum flann_algorithm_t {
 	KDTREE = 1,
 	KMEANS = 2,
 	COMPOSITE = 3,
-	KDTREE2 = 4,
+	KDTREE_SIMPLE = 4,
 	SAVED = 254,
 	AUTOTUNED = 255
 };
@@ -65,7 +65,7 @@ enum flann_distance_t {
 	MANHATTAN = 2,
 	MINKOWSKI = 3,
 	MAX_DIST   = 4,
-	HIK       = 5,
+	HIST_INTERSECT   = 5,
 	HELLINGER = 6,
 	CS        = 7,
 	CHI_SQUARE = 7,
@@ -74,16 +74,16 @@ enum flann_distance_t {
 };
 
 enum flann_datatype_t {
-	INT8 = 0,
-	INT16 = 1,
-	INT32 = 2,
-	INT64 = 3,
-	UINT8 = 4,
-	UINT16 = 5,
-	UINT32 = 6,
-	UINT64 = 7,
-	FLOAT32 = 8,
-	FLOAT64 = 9
+	FLANN_INT8 = 0,
+	FLANN_INT16 = 1,
+	FLANN_INT32 = 2,
+	FLANN_INT64 = 3,
+	FLANN_UINT8 = 4,
+	FLANN_UINT16 = 5,
+	FLANN_UINT32 = 6,
+	FLANN_UINT64 = 7,
+	FLANN_FLOAT32 = 8,
+	FLANN_FLOAT64 = 9
 };
 
 
@@ -97,6 +97,7 @@ struct FLANNParameters {
 
     /*  kdtree index parameters */
     int trees;                 /* number of randomized trees to use (for kdtree) */
+    int leaf_max_size;
 
     /* kmeans index parameters */
 	int branching;             /* branching factor (for kmeans tree) */
@@ -124,26 +125,6 @@ struct FLANNParameters {
 
 namespace flann {
 
-
-template <typename ELEM_TYPE>
-struct DistType
-{
-	typedef ELEM_TYPE type;
-};
-
-template <>
-struct DistType<unsigned char>
-{
-	typedef float type;
-};
-
-template <>
-struct DistType<int>
-{
-	typedef float type;
-};
-
-
 class FLANNException : public std::runtime_error {
  public:
    FLANNException(const char* message) : std::runtime_error(message) { }
@@ -159,7 +140,7 @@ protected:
 public:
 	static IndexParams* createFromParameters(const FLANNParameters& p);
 
-	virtual flann_algorithm_t getIndexType() const = 0;
+	virtual flann_algorithm_t getIndexType() const { return algorithm; };
 
 	virtual void fromParameters(const FLANNParameters& p) = 0;
 	virtual void toParameters(FLANNParameters& p) const = 0;

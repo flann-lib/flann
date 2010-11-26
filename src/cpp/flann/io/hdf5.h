@@ -104,11 +104,9 @@ void load_from_file(flann::Matrix<T>& dataset, const std::string& filename, cons
 	hsize_t dims_out[2];
 	H5Sget_simple_extent_dims(space_id, dims_out, NULL);
 
-	dataset.rows = dims_out[0];
-	dataset.cols = dims_out[1];
-	dataset.data = new T[dataset.rows*dataset.cols];
+	dataset = flann::Matrix<T>(new T[dims_out[0]*dims_out[1]], dims_out[0], dims_out[1]);
 
-	status = H5Dread(dataset_id, get_hdf5_type<T>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, dataset.data);
+	status = H5Dread(dataset_id, get_hdf5_type<T>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, dataset[0]);
 	CHECK_ERROR(status, "Error reading dataset");
 
 	H5Sclose(space_id);

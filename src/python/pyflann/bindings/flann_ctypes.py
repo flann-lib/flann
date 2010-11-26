@@ -85,7 +85,9 @@ class FLANNParameters(CustomStructure):
         ('algorithm', c_int),
         ('checks', c_int),
         ('cb_index', c_float),
+        ('eps', c_float),
         ('trees', c_int),
+        ('leaf_max_size', c_int),
         ('branching', c_int),
         ('iterations', c_int),
         ('centers_init', c_int),
@@ -99,8 +101,10 @@ class FLANNParameters(CustomStructure):
     _defaults_ = {
         'algorithm' : 'kdtree',
         'checks' : 32,
+        'eps' : 0.0,
         'cb_index' : 0.5,
         'trees' : 1,
+        'leaf_max_size' : 4,
         'branching' : 32,
         'iterations' : 5,
         'centers_init' : 'random',
@@ -112,7 +116,7 @@ class FLANNParameters(CustomStructure):
         'random_seed' : -1
   }
     _translation_ = {
-            "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "saved": 254, "autotuned" : 255, "default"   : 1},
+            "algorithm"     : {"linear"    : 0, "kdtree"    : 1, "kmeans"    : 2, "composite" : 3, "kdtree_simple" : 4, "saved": 254, "autotuned" : 255, "default"   : 1},
         "centers_init"  : {"random"    : 0, "gonzales"  : 1, "kmeanspp"  : 2, "default"   : 0},
         "log_level"     : {"none"      : 0, "fatal"     : 1, "error"     : 2, "warning"   : 3, "info"      : 4, "default"   : 2}
     }

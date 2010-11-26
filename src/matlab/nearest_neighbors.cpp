@@ -149,27 +149,32 @@ static void _find_nn(int nOutArray, mxArray *OutArray[], int nInArray, const mxA
     matlabStructToFlannStruct(pStruct, p);
 
     int* result = (int*)malloc(tcount*nn*sizeof(int));
-    float* dists = (float*)malloc(tcount*nn*sizeof(float));
+    float* dists = NULL;
+    double* ddists = NULL;
 
     /* do the search */
 	if (mxIsSingle(datasetMat)) {
 		float* dataset = (float*) mxGetData(datasetMat);
 		float* testset = (float*) mxGetData(testsetMat);
+	    dists = (float*)malloc(tcount*nn*sizeof(float));
 	    flann_find_nearest_neighbors_float(dataset,dcount,length,testset, tcount, result, dists, nn, &p);
 	}
 	else if (mxIsDouble(datasetMat)) {
 		double* dataset = (double*) mxGetData(datasetMat);
 		double* testset = (double*) mxGetData(testsetMat);
-	    flann_find_nearest_neighbors_double(dataset,dcount,length,testset, tcount, result, dists, nn, &p);
+	    ddists = (double*)malloc(tcount*nn*sizeof(double));
+	    flann_find_nearest_neighbors_double(dataset,dcount,length,testset, tcount, result, ddists, nn, &p);
 	}
 	else if (mxIsUint8(datasetMat)) {
 		unsigned char* dataset = (unsigned char*) mxGetData(datasetMat);
 		unsigned char* testset = (unsigned char*) mxGetData(testsetMat);
+	    dists = (float*)malloc(tcount*nn*sizeof(float));
 	    flann_find_nearest_neighbors_byte(dataset,dcount,length,testset, tcount, result, dists, nn, &p);
 	}
 	else if (mxIsInt32(datasetMat)) {
 		int* dataset = (int*) mxGetData(datasetMat);
 		int* testset = (int*) mxGetData(testsetMat);
+	    dists = (float*)malloc(tcount*nn*sizeof(float));
 	    flann_find_nearest_neighbors_int(dataset,dcount,length,testset, tcount, result, dists, nn, &p);
 	}
 
@@ -189,11 +194,19 @@ static void _find_nn(int nOutArray, mxArray *OutArray[], int nInArray, const mxA
 
         /* Get pointer to Output matrix and store result*/
         double* pDists = mxGetPr(OutArray[1]);
-        for (int i=0;i<tcount*nn;++i) {
-            pDists[i] = dists[i];
+        if (dists!=NULL) {
+            for (int i=0;i<tcount*nn;++i) {
+                pDists[i] = dists[i];
+            }
+        }
+        if (ddists!=NULL) {
+            for (int i=0;i<tcount*nn;++i) {
+                pDists[i] = ddists[i];
+            }
         }
     }
-    free(dists);
+    if (dists!=NULL) free(dists);
+    if (ddists!=NULL) free(ddists);
 }
 
 /**
@@ -227,7 +240,8 @@ static void _index_find_nn(int nOutArray, mxArray *OutArray[], int nInArray, con
 	int nn = (int)(*mxGetPr(nnMat));
 
 	int* result = (int*)malloc(tcount*nn*sizeof(int));
-    float* dists = (float*)malloc(tcount*nn*sizeof(float));
+    float* dists = NULL;
+    double* ddists = NULL;
 
 	const mxArray* pStruct = InArray[3];
 
@@ -235,31 +249,35 @@ static void _index_find_nn(int nOutArray, mxArray *OutArray[], int nInArray, con
     matlabStructToFlannStruct(pStruct, p);
 
 	if (mxIsSingle(testsetMat)) {
-		if (typedIndex->type != FLOAT32) {
+		if (typedIndex->type != FLANN_FLOAT32) {
 			mexErrMsgTxt("Index type must match testset type");
 		}
 		float* testset = (float*) mxGetData(testsetMat);
+		dists = (float*)malloc(tcount*nn*sizeof(float));
 		flann_find_nearest_neighbors_index_float(typedIndex->index,testset, tcount, result, dists, nn, &p);
 	}
 	else if (mxIsDouble(testsetMat)) {
-		if (typedIndex->type != FLOAT64) {
+		if (typedIndex->type != FLANN_FLOAT64) {
 			mexErrMsgTxt("Index type must match testset type");
 		}
 		double* testset = (double*) mxGetData(testsetMat);
-		flann_find_nearest_neighbors_index_double(typedIndex->index,testset, tcount, result, dists, nn, &p);
+		ddists = (double*)malloc(tcount*nn*sizeof(double));
+		flann_find_nearest_neighbors_index_double(typedIndex->index,testset, tcount, result, ddists, nn, &p);
 	}
 	else if (mxIsUint8(testsetMat)) {
-		if (typedIndex->type != UINT8) {
+		if (typedIndex->type != FLANN_UINT8) {
 			mexErrMsgTxt("Index type must match testset type");
 		}
 		unsigned char* testset = (unsigned char*) mxGetData(testsetMat);
+		dists = (float*)malloc(tcount*nn*sizeof(float));
 		flann_find_nearest_neighbors_index_byte(typedIndex->index,testset, tcount, result, dists, nn, &p);
 	}
 	else if (mxIsInt32(testsetMat)) {
-		if (typedIndex->type != INT32) {
+		if (typedIndex->type != FLANN_INT32) {
 			mexErrMsgTxt("Index type must match testset type");
 		}
 		int* testset = (int*) mxGetData(testsetMat);
+		dists = (float*)malloc(tcount*nn*sizeof(float));
 		flann_find_nearest_neighbors_index_int(typedIndex->index,testset, tcount, result, dists, nn, &p);
 	}
 
@@ -278,11 +296,19 @@ static void _index_find_nn(int nOutArray, mxArray *OutArray[], int nInArray, con
 
         /* Get pointer to Output matrix and store result*/
         double* pDists = mxGetPr(OutArray[1]);
-        for (int i=0;i<tcount*nn;++i) {
-            pDists[i] = dists[i]; // matlab uses 1-based indexing
+        if (dists!=NULL) {
+        	for (int i=0;i<tcount*nn;++i) {
+        		pDists[i] = dists[i];
+        	}
+        }
+        if (ddists!=NULL) {
+        	for (int i=0;i<tcount*nn;++i) {
+        		pDists[i] = ddists[i];
+        	}
         }
     }
-    free(dists);
+    if (dists!=NULL) free(dists);
+    if (ddists!=NULL) free(ddists);
 }
 
 
@@ -320,22 +346,22 @@ static void _build_index(int nOutArray, mxArray *OutArray[], int nInArray, const
 	if (mxIsSingle(datasetMat)) {
 		float* dataset = (float*) mxGetData(datasetMat);
 		typedIndex->index = flann_build_index_float(dataset,dcount,length, &speedup, &p);
-		typedIndex->type = FLOAT32;
+		typedIndex->type = FLANN_FLOAT32;
 	}
 	else if (mxIsDouble(datasetMat)) {
 		double* dataset = (double*) mxGetData(datasetMat);
 		typedIndex->index = flann_build_index_double(dataset,dcount,length, &speedup, &p);
-		typedIndex->type = FLOAT64;
+		typedIndex->type = FLANN_FLOAT64;
 	}
 	else if (mxIsUint8(datasetMat)) {
 		unsigned char* dataset = (unsigned char*) mxGetData(datasetMat);
 		typedIndex->index = flann_build_index_byte(dataset,dcount,length, &speedup, &p);
-		typedIndex->type = UINT8;
+		typedIndex->type = FLANN_UINT8;
 	}
 	else if (mxIsInt32(datasetMat)) {
 		int* dataset = (int*) mxGetData(datasetMat);
 		typedIndex->index = flann_build_index_int(dataset,dcount,length, &speedup, &p);
-		typedIndex->type = INT32;
+		typedIndex->type = FLANN_INT32;
 	}
 
     mxClassID classID;
@@ -376,16 +402,16 @@ static void _free_index(int nOutArray, mxArray *OutArray[], int nInArray, const 
 		mexErrMsgTxt("Expecting a single scalar argument: the index ID");
 	}
 	TypedIndex* typedIndex = *(TypedIndex**)mxGetData(InArray[0]);
-	if (typedIndex->type==FLOAT32) {
+	if (typedIndex->type==FLANN_FLOAT32) {
 		flann_free_index_float(typedIndex->index, NULL);
 	}
-	else if (typedIndex->type==FLOAT64) {
+	else if (typedIndex->type==FLANN_FLOAT64) {
 		flann_free_index_double(typedIndex->index, NULL);
 	}
-	else if (typedIndex->type==UINT8) {
+	else if (typedIndex->type==FLANN_UINT8) {
 		flann_free_index_byte(typedIndex->index, NULL);
 	}
-	else if (typedIndex->type==INT32) {
+	else if (typedIndex->type==FLANN_INT32) {
 		flann_free_index_int(typedIndex->index, NULL);
 	}
 	delete typedIndex;
@@ -460,16 +486,16 @@ static void _save_index(int nOutArray, mxArray *OutArray[], int nInArray, const 
 	char filename[128];
 	mxGetString(InArray[1],filename,128);
 
-	if (typedIndex->type==FLOAT32) {
+	if (typedIndex->type==FLANN_FLOAT32) {
 		flann_save_index_float(typedIndex->index, filename);
 	}
-	else if (typedIndex->type==FLOAT64) {
+	else if (typedIndex->type==FLANN_FLOAT64) {
 		flann_save_index_double(typedIndex->index, filename);
 	}
-	else if (typedIndex->type==UINT8) {
+	else if (typedIndex->type==FLANN_UINT8) {
 		flann_save_index_byte(typedIndex->index, filename);
 	}
-	else if (typedIndex->type==INT32) {
+	else if (typedIndex->type==FLANN_INT32) {
 		flann_save_index_int(typedIndex->index, filename);
 	}
 }
@@ -501,22 +527,22 @@ static void _load_index(int nOutArray, mxArray *OutArray[], int nInArray, const 
 	if (mxIsSingle(datasetMat)) {
 		float* dataset = (float*) mxGetData(datasetMat);
 		typedIndex->index = flann_load_index_float(filename, dataset,dcount,length);
-		typedIndex->type = FLOAT32;
+		typedIndex->type = FLANN_FLOAT32;
 	}
 	else if (mxIsDouble(datasetMat)) {
 		double* dataset = (double*) mxGetData(datasetMat);
 		typedIndex->index = flann_load_index_double(filename, dataset,dcount,length);
-		typedIndex->type = FLOAT64;
+		typedIndex->type = FLANN_FLOAT64;
 	}
 	else if (mxIsUint8(datasetMat)) {
 		unsigned char* dataset = (unsigned char*) mxGetData(datasetMat);
 		typedIndex->index = flann_load_index_byte(filename, dataset,dcount,length);
-		typedIndex->type = UINT8;
+		typedIndex->type = FLANN_UINT8;
 	}
 	else if (mxIsInt32(datasetMat)) {
 		int* dataset = (int*) mxGetData(datasetMat);
 		typedIndex->index = flann_load_index_int(filename, dataset,dcount,length);
-		typedIndex->type = INT32;
+		typedIndex->type = FLANN_INT32;
 	}
 
 	mxClassID classID;

@@ -221,7 +221,7 @@ LIBSPEC int flann_find_nearest_neighbors_double(double* dataset,
 										 double* testset,
 										 int trows,
 										 int* indices,
-										 float* dists,
+										 double* dists,
 										 int nn,
 										 struct FLANNParameters* flann_params);
 
@@ -280,7 +280,7 @@ LIBSPEC int flann_find_nearest_neighbors_index_double(flann_index_t index_id,
 											   double* testset,
 											   int trows,
 											   int* indices,
-											   float* dists,
+											   double* dists,
 											   int nn,
 											   struct FLANNParameters* flann_params);
 
@@ -334,7 +334,7 @@ LIBSPEC int flann_radius_search_float(flann_index_t index_ptr, /* the index */
 LIBSPEC int flann_radius_search_double(flann_index_t index_ptr, /* the index */
 										double* query,	/* query point */
 										int* indices, /* array for storing the indices found (will be modified) */
-										float* dists, /* similar, but for storing distances */
+										double* dists, /* similar, but for storing distances */
 										int max_nn,  /* size of arrays indices and dists */
 										float radius, /* search radius (squared radius for euclidian metric) */
 										struct FLANNParameters* flann_params);

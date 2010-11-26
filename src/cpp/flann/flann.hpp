@@ -59,14 +59,6 @@ Params:
 void log_verbosity(int level);
 
 
-/**
- * Sets the distance type to use throughout FLANN.
- * If distance type specified is MINKOWSKI, the second argument
- * specifies which order the minkowski distance should have.
- */
-void set_distance_type(flann_distance_t distance_type, int order);
-
-
 struct SavedIndexParams : public IndexParams {
 	SavedIndexParams(std::string filename_) : IndexParams(SAVED), filename(filename_) {}
 
@@ -93,21 +85,24 @@ struct SavedIndexParams : public IndexParams {
 	}
 };
 
-template<typename T>
+template<typename Distance>
 class Index {
-	NNIndex<T>* nnIndex;
+	typedef typename Distance::ElementType ElementType;
+	typedef typename Distance::ResultType DistanceType;
+	Distance distance;
+	NNIndex<Distance>* nnIndex;
     bool built;
 
 public:
-	Index(const Matrix<T>& features, const IndexParams& params);
+	Index(const Matrix<ElementType>& features, const IndexParams& params, Distance d = Distance() );
 
 	~Index();
 
 	void buildIndex();
 
-	void knnSearch(const Matrix<T>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& params);
+	void knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, int knn, const SearchParams& params);
 
-	int radiusSearch(const Matrix<T>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& params);
+	int radiusSearch(const Matrix<ElementType>& query, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params);
 
 	void save(std::string filename);
 
@@ -115,21 +110,23 @@ public:
 
 	int size() const;
 
-	NNIndex<T>* getIndex() { return nnIndex; }
+	NNIndex<Distance>* getIndex() { return nnIndex; }
 
 	const IndexParams* getIndexParameters() { return nnIndex->getParameters(); }
 };
 
 
-template<typename T>
-NNIndex<T>* load_saved_index(const Matrix<T>& dataset, const string& filename)
+template<typename Distance>
+NNIndex<Distance>* load_saved_index(const Matrix<typename Distance::ElementType>& dataset, const string& filename, Distance distance)
 {
+	typedef typename Distance::ElementType ElementType;
+
 	FILE* fin = fopen(filename.c_str(), "rb");
 	if (fin==NULL) {
 		return NULL;
 	}
 	IndexHeader header = load_header(fin);
-	if (header.data_type!=get_flann_datatype<T>()) {
+	if (header.data_type!=get_flann_datatype<ElementType>()) {
 		throw FLANNException("Datatype of saved index is different than of the one to be created.");
 	}
 	if (size_t(header.rows)!=dataset.rows || size_t(header.cols)!=dataset.cols) {
@@ -137,7 +134,7 @@ NNIndex<T>* load_saved_index(const Matrix<T>& dataset, const string& filename)
 	}
 
 	IndexParams* params = ParamsFactory::instance().create(header.index_type);
-	NNIndex<T>* nnIndex = create_index_by_type(dataset, *params);
+	NNIndex<Distance>* nnIndex = create_index_by_type<Distance>(dataset, *params, distance);
 	nnIndex->loadIndex(fin);
 	fclose(fin);
 
@@ -145,29 +142,29 @@ NNIndex<T>* load_saved_index(const Matrix<T>& dataset, const string& filename)
 }
 
 
-template<typename T>
-Index<T>::Index(const Matrix<T>& dataset, const IndexParams& params)
+template<typename Distance>
+Index<Distance>::Index(const Matrix<ElementType>& dataset, const IndexParams& params, Distance d ) : distance (d)
 {
 	flann_algorithm_t index_type = params.getIndexType();
     built = false;
 
 	if (index_type==SAVED) {
-		nnIndex = load_saved_index(dataset, ((const SavedIndexParams&)params).filename);
+		nnIndex = load_saved_index<Distance>(dataset, ((const SavedIndexParams&)params).filename, distance);
         built = true;
 	}
 	else {
-		nnIndex = create_index_by_type(dataset, params);
+		nnIndex = create_index_by_type<Distance>(dataset, params, distance);
 	}
 }
 
-template<typename T>
-Index<T>::~Index()
+template<typename Distance>
+Index<Distance>::~Index()
 {
 	delete nnIndex;
 }
 
-template<typename T>
-void Index<T>::buildIndex()
+template<typename Distance>
+void Index<Distance>::buildIndex()
 {
 	if (!built)	{
 		nnIndex->buildIndex();
@@ -175,8 +172,8 @@ void Index<T>::buildIndex()
 	}
 }
 
-template<typename T>
-void Index<T>::knnSearch(const Matrix<T>& queries, Matrix<int>& indices, Matrix<float>& dists, int knn, const SearchParams& searchParams)
+template<typename Distance>
+void Index<Distance>::knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, int knn, const SearchParams& searchParams)
 {
     if (!built) {
         throw FLANNException("You must build the index before searching.");
@@ -187,11 +184,11 @@ void Index<T>::knnSearch(const Matrix<T>& queries, Matrix<int>& indices, Matrix<
 	assert(int(indices.cols)>=knn);
 	assert(int(dists.cols)>=knn);
 
-    KNNResultSet<T> resultSet(knn);
+    KNNResultSet resultSet(knn);
 
     for (size_t i = 0; i < queries.rows; i++) {
-        T* target = queries[i];
-        resultSet.init(target, queries.cols);
+        ElementType* target = queries[i];
+        resultSet.init();
 
         nnIndex->findNeighbors(resultSet, target, searchParams);
 
@@ -202,8 +199,8 @@ void Index<T>::knnSearch(const Matrix<T>& queries, Matrix<int>& indices, Matrix<
     }
 }
 
-template<typename T>
-int Index<T>::radiusSearch(const Matrix<T>& query, Matrix<int>& indices, Matrix<float>& dists, float radius, const SearchParams& searchParams)
+template<typename Distance>
+int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& searchParams)
 {
     if (!built) {
         throw FLANNException("You must build the index before searching.");
@@ -214,9 +211,9 @@ int Index<T>::radiusSearch(const Matrix<T>& query, Matrix<int>& indices, Matrix<
 	}
 	assert(query.cols==nnIndex->veclen());
 
-	RadiusResultSet<T> resultSet(radius);
-	resultSet.init(query.data, query.cols);
-	nnIndex->findNeighbors(resultSet,query.data,searchParams);
+	RadiusResultSet resultSet(radius);
+	resultSet.init();
+	nnIndex->findNeighbors(resultSet, query[0] ,searchParams);
 
 	// TODO: optimise here
 	int* neighbors = resultSet.getNeighbors();
@@ -234,8 +231,8 @@ int Index<T>::radiusSearch(const Matrix<T>& query, Matrix<int>& indices, Matrix<
 }
 
 
-template<typename T>
-void Index<T>::save(string filename)
+template<typename Distance>
+void Index<Distance>::save(string filename)
 {
 	FILE* fout = fopen(filename.c_str(), "wb");
 	if (fout==NULL) {
@@ -247,23 +244,24 @@ void Index<T>::save(string filename)
 }
 
 
-template<typename T>
-int Index<T>::size() const
+template<typename Distance>
+int Index<Distance>::size() const
 {
 	return nnIndex->size();
 }
 
-template<typename T>
-int Index<T>::veclen() const
+template<typename Distance>
+int Index<Distance>::veclen() const
 {
 	return nnIndex->veclen();
 }
 
 
-template <typename ELEM_TYPE, typename DIST_TYPE>
-int hierarchicalClustering(const Matrix<ELEM_TYPE>& features, Matrix<DIST_TYPE>& centers, const KMeansIndexParams& params)
+template <typename Distance>
+int hierarchicalClustering(const Matrix<typename Distance::ElementType>& features, Matrix<typename Distance::ResultType>& centers,
+				const KMeansIndexParams& params, Distance d)
 {
-    KMeansIndex<ELEM_TYPE> kmeans(features, params);
+    KMeansIndex<Distance> kmeans(features, params, d);
 	kmeans.buildIndex();
 
     int clusterNum = kmeans.getClusterCenters(centers);
