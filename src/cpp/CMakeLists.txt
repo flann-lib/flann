@@ -22,7 +22,9 @@ set_target_properties(flann_cpp PROPERTIES
 )
 
 add_library(flann_s STATIC ${C_SOURCES})
+SET_TARGET_PROPERTIES( flann_s PROPERTIES COMPILE_FLAGS -fPIC)
 add_library(flann_cpp_s STATIC ${CPP_SOURCES})
+SET_TARGET_PROPERTIES( flann_cpp_s PROPERTIES COMPILE_FLAGS -fPIC)
 
 if(WIN32)
     install (

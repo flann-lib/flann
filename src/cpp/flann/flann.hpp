@@ -126,7 +126,7 @@ NNIndex<Distance>* load_saved_index(const Matrix<typename Distance::ElementType>
 		return NULL;
 	}
 	IndexHeader header = load_header(fin);
-	if (header.data_type!=get_flann_datatype<ElementType>()) {
+	if (header.data_type!=Datatype<ElementType>::type()) {
 		throw FLANNException("Datatype of saved index is different than of the one to be created.");
 	}
 	if (size_t(header.rows)!=dataset.rows || size_t(header.cols)!=dataset.cols) {

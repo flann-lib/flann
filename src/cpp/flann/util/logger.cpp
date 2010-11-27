@@ -28,7 +28,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#include "logger.h"
+#include "flann/util/logger.h"
 
 #include <cstdio>
 #include <cstdarg>

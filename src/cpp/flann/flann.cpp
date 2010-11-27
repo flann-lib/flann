@@ -94,6 +94,12 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
 		const IndexParams* index_params = index->getIndexParameters();
 		index_params->toParameters(*flann_params);
 
+        if (index->getIndex()->getType()==AUTOTUNED) {
+            AutotunedIndex<T>* autotuned_index = (AutotunedIndex<T>*)index->getIndex(); 
+            flann_params->checks = autotuned_index->getSearchParameters()->checks;
+            *speedup = autotuned_index->getSpeedup();
+        }
+
 		return index;
 	}
 	catch (runtime_error& e) {
@@ -408,6 +414,8 @@ int __flann_find_nearest_neighbors_index(flann_index_t index_ptr, typename Dista
 		index->knnSearch(Matrix<ElementType>(testset, tcount, index->veclen()),
 						m_indices,
 						m_dists, nn, SearchParams(flann_params->checks) );
+
+        return 0;
 	}
 	catch(runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());

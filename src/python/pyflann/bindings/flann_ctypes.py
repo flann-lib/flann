@@ -108,7 +108,7 @@ class FLANNParameters(CustomStructure):
         'branching' : 32,
         'iterations' : 5,
         'centers_init' : 'random',
-        'target_precision' : -1,
+        'target_precision' : 0.9,
         'build_weight' : 0.01,
         'memory_weight' : 0.0,
         'sample_fraction' : 0.1,
@@ -127,25 +127,38 @@ allowed_types = [ float32, float64, uint8, int32]
 
 FLANN_INDEX = c_void_p
 
-
 def load_flann_library():
 
     root_dir = os.path.abspath(os.path.dirname(__file__))
     
-    libname = 'libflann'
+    libname = 'libflann.so'
     if sys.platform == 'win32':
-        libname = 'flann'
+        libname = 'flann.dll'
+    elif sys.platform == 'darwin':
+        libname = 'libflann.dylib'
 
     flannlib = None
     loaded = False
-    while (not loaded) and root_dir!="/":
+
+    while (not loaded) and root_dir!=None:
         try:
-           # print "Trying ",os.path.join(root_dir,'lib')
-            flannlib = load_library(libname, os.path.join(root_dir,'lib'))
+            #print "Trying ",os.path.join(root_dir,'lib',libname)
+            flannlib = cdll[os.path.join(root_dir,'lib',libname)]
             loaded = True
         except Exception as e:
            # print e
-            root_dir = os.path.dirname(root_dir)
+            if root_dir == '/':
+                root_dir = None
+            else:
+                root_dir = os.path.dirname(root_dir)
+
+    if not loaded:
+        try:
+            #print "Trying",libname
+            flannlib=cdll[libname]
+            loaded = True
+        except:
+            pass
 
     return flannlib
 
@@ -396,7 +409,7 @@ flannlib.test_with_checks.argtypes = [
 def ensure_2d_array(array, flags, **kwargs):
     array = require(array, requirements = flags, **kwargs) 
     if len(array.shape) == 1:
-        array.shape = (-1,array.size)
+        array = array.reshape(-1,array.size)
     return array
 
 
