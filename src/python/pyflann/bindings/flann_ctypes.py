@@ -353,58 +353,6 @@ flannlib.flann_free_index_%(C)s.argtypes = [
 flann.free_index[%(numpy)s] = flannlib.flann_free_index_%(C)s
 """)
 
-flannlib.compute_ground_truth_float.restype = None
-flannlib.compute_ground_truth_float.argtypes = [ 
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
-        c_int, # dshape
-        c_int,
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
-        c_int, # tshape
-        c_int,
-        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous, writeable'), # matches
-        c_int, # mshape
-        c_int,
-        c_int # skip
-]
-
-flannlib.test_with_precision.restype = c_float
-flannlib.test_with_precision.argtypes = [
-        FLANN_INDEX, 
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
-        c_int, # dshape
-        c_int,
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
-        c_int, # tshape
-        c_int,
-        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous'), # matches
-        c_int, # mshape
-        c_int,
-        c_int, # nn
-        c_float, #precision
-        POINTER(c_int), # checks
-        c_int # skip
-]
-
-
-flannlib.test_with_checks.restype = c_float
-flannlib.test_with_checks.argtypes = [
-        FLANN_INDEX, 
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # dataset
-        c_int, # dshape
-        c_int,
-        ndpointer(float32, ndim = 2, flags='aligned, c_contiguous'), # testset
-        c_int, # tshape
-        c_int,
-        ndpointer(int32, ndim = 2, flags='aligned, c_contiguous'), # matches
-        c_int, # mshape
-        c_int,
-        c_int, # nn
-        c_int, # checks
-        POINTER(c_float), #precision
-        c_int # skip
-]
-
-
 
 def ensure_2d_array(array, flags, **kwargs):
     array = require(array, requirements = flags, **kwargs) 

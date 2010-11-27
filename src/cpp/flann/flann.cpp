@@ -95,7 +95,7 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
 		index_params->toParameters(*flann_params);
 
         if (index->getIndex()->getType()==AUTOTUNED) {
-            AutotunedIndex<T>* autotuned_index = (AutotunedIndex<T>*)index->getIndex(); 
+            AutotunedIndex<Distance>* autotuned_index = (AutotunedIndex<Distance>*)index->getIndex(); 
             flann_params->checks = autotuned_index->getSearchParameters()->checks;
             *speedup = autotuned_index->getSpeedup();
         }
@@ -762,4 +762,3 @@ EXPORTED int flann_compute_cluster_centers_int(int* dataset, int rows, int cols,
 	return _flann_compute_cluster_centers(dataset, rows, cols, clusters, result, flann_params);
 }
 
-}

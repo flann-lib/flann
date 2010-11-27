@@ -259,7 +259,7 @@ int Index<Distance>::veclen() const
 
 template <typename Distance>
 int hierarchicalClustering(const Matrix<typename Distance::ElementType>& features, Matrix<typename Distance::ResultType>& centers,
-				const KMeansIndexParams& params, Distance d)
+				const KMeansIndexParams& params, Distance d = Distance())
 {
     KMeansIndex<Distance> kmeans(features, params, d);
 	kmeans.buildIndex();
