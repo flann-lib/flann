@@ -1,16 +1,29 @@
-VER=1.5
+VER=1.6
 
 
 dist-src:
+	make clean doc
 	-rm -rf dist/flann-${VER}-src*
 	@mkdir -p dist/flann-${VER}-src
+	# src dir
 	cp -r src dist/flann-${VER}-src
+	find dist/flann-${VER}-src/src -name '*.dat' -delete
 	rm -rf dist/flann-${VER}-src/src/cpp/tests/test*
 	rm -rf dist/flann-${VER}-src/src/python/_tests
-	mkdir -p dist/flann-${VER}-src/doc
-	cp doc/manual.pdf dist/flann-${VER}-src/doc
+	# cmake dir
+	cp -r cmake dist/flann-${VER}-src
+	# bin dir
 	cp -r bin dist/flann-${VER}-src
+	# doc dir
+	cp -r doc dist/flann-${VER}-src
+	# examples dir
+	cp -r examples dist/flann-${VER}-src
+	# test dir
+	mkdir dist/flann-${VER}-src/test
+	cp -r test/*.py test/*.cpp test/*.txt dist/flann-${VER}-src/test
 	cp README dist/flann-${VER}-src
+	cp Makefile dist/flann-${VER}-src
+	cp CMakeLists.txt dist/flann-${VER}-src
 	(cd dist; zip -r -9 flann-${VER}-src.zip flann-${VER}-src)
 
 
