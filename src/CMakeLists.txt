@@ -1,4 +1,10 @@
 
 add_subdirectory( cpp )
-add_subdirectory( matlab )
-add_subdirectory( python )
+
+if (BUILD_MATLAB_BINDINGS)
+    add_subdirectory( matlab )
+endif()
+
+if (BUILD_PYTHON_BINDINGS)
+    add_subdirectory( python )
+endif()
