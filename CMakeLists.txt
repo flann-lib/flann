@@ -18,7 +18,7 @@ CONFIGURE_FILE ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
 ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P
     "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 
-if (NOT CMAKE_INSTALL_PREFIX)
+if (NOT DEFINED CMAKE_INSTALL_PREFIX)
     set(CMAKE_INSTALL_PREFIX /usr/local)
 endif()
 
@@ -28,7 +28,7 @@ endif()
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 
-if (NOT CMAKE_BUILD_TYPE)
+if (NOT DEFINED CMAKE_BUILD_TYPE)
     #set(CMAKE_BUILD_TYPE Release)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
     #set(CMAKE_BUILD_TYPE Debug)
