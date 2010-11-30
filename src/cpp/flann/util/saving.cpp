@@ -34,7 +34,7 @@ namespace flann
 {
 
 const char FLANN_SIGNATURE[] = "FLANN_INDEX";
-const char FLANN_VERSION[] = "1.6.0";
+const char FLANN_VERSION[] = "1.6.1";
 
 
 IndexHeader load_header(FILE* stream)

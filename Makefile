@@ -1,7 +1,5 @@
 .PHONY: tests test libs doc all clean examples
 
-PARAMS:=''
-
 BUILD_TYPE?='Release'
 INSTALL_PREFIX?=/usr/local
 BUILD_C_BINDINGS?=true
