@@ -8,7 +8,7 @@ setup_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 lib_path = os.path.abspath(os.path.join(setup_path,'../../../lib'))
 
 setup(name='flann',
-      version='1.6.0',
+      version='1.6.2',
       description='Fast Library for Approximate Nearest Neighbors',
       author='Marius Muja',
       author_email='mariusm@cs.ubc.ca',
