@@ -62,6 +62,7 @@ struct BranchStruct {
 };
 
 
+template <typename DistanceType>
 class ResultSet
 {
 public:
@@ -71,22 +72,23 @@ public:
 
 	virtual int* getNeighbors() = 0;
 
-	virtual float* getDistances() = 0;
+	virtual DistanceType* getDistances() = 0;
 
 	virtual size_t size() const = 0;
 
 	virtual bool full() const = 0;
 
-	virtual void addPoint(float dist, int index) = 0;
+	virtual void addPoint(DistanceType dist, int index) = 0;
 
-	virtual float worstDist() const = 0;
+	virtual DistanceType worstDist() const = 0;
 
 };
 
-class KNNResultSet : public ResultSet
+template <typename DistanceType>
+class KNNResultSet : public ResultSet<DistanceType>
 {
 	int* indices;
-	float* dists;
+	DistanceType* dists;
     int capacity;
 	int count;
 
@@ -94,7 +96,7 @@ public:
 	KNNResultSet(int capacity_) : capacity(capacity_)
 	{
         indices = new int[capacity_+1];
-        dists = new float[capacity_+1];
+        dists = new DistanceType[capacity_+1];
         count = 0;
 	}
 
@@ -107,7 +109,7 @@ public:
 	void init()
 	{
 		count = 0;
-		dists[capacity-1] = numeric_limits<float>::max();
+		dists[capacity-1] = (numeric_limits<DistanceType>::max) ();
 	}
 
 	int* getNeighbors()
@@ -115,7 +117,7 @@ public:
 		return indices;
 	}
 
-    float* getDistances()
+	DistanceType* getDistances()
     {
         return dists;
     }
@@ -131,7 +133,7 @@ public:
 	}
 
 
-	void addPoint(float dist, int index)
+	void addPoint(DistanceType dist, int index)
 	{
 //		for (int i=0;i<count;++i) {
 //			if (indices[i]==index) return false;
@@ -170,7 +172,7 @@ public:
 //		}
 	}
 
-	float worstDist() const
+	DistanceType worstDist() const
 	{
 		return dists[capacity-1];
 	}
@@ -180,11 +182,12 @@ public:
 /**
  * A result-set class used when performing a radius based search.
  */
-class RadiusResultSet : public ResultSet
+template <typename DistanceType>
+class RadiusResultSet : public ResultSet<DistanceType>
 {
 	struct Item {
 		int index;
-		float dist;
+		DistanceType dist;
 
 		bool operator<(Item rhs) {
 			return dist<rhs.dist;
@@ -192,11 +195,11 @@ class RadiusResultSet : public ResultSet
 	};
 
 	vector<Item> items;
-	float radius;
+	DistanceType radius;
 
 	bool sorted;
 	int* indices;
-	float* dists;
+	DistanceType* dists;
 	size_t count;
 
 private:
@@ -207,12 +210,12 @@ private:
 			if (dists!=NULL) delete[] dists;
 			count = items.size();
 			indices = new int[count];
-			dists = new float[count];
+			dists = new DistanceType[count];
 		}
 	}
 
 public:
-	RadiusResultSet(float radius_) :
+	RadiusResultSet(DistanceType radius_) :
 		radius(radius_), indices(NULL), dists(NULL)
 	{
 		sorted = false;
@@ -246,7 +249,7 @@ public:
 		return indices;
 	}
 
-    float* getDistances()
+	DistanceType* getDistances()
     {
 		if (!sorted) {
 			sorted = true;
@@ -270,7 +273,7 @@ public:
 		return true;
 	}
 
-	void addPoint(float dist, int index)
+	void addPoint(DistanceType dist, int index)
 	{
 		count++;
 //		Item it;
@@ -282,7 +285,7 @@ public:
 //		}
 	}
 
-	float worstDist() const
+	DistanceType worstDist() const
 	{
 		return radius;
 	}

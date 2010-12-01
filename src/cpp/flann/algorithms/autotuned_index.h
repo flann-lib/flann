@@ -221,7 +221,7 @@ public:
 	/**
 		Method that searches for nearest-neighbors
 	*/
-	virtual void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+	virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
 	{
 		if (searchParams.checks==-2) {
 			bestIndex->findNeighbors(result, vec, bestSearchParams);

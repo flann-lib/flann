@@ -297,7 +297,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
 //        int maxChecks = searchParams.checks;
         float epsError = 1+searchParams.eps;
@@ -493,7 +493,7 @@ private:
 	/**
 	 * Performs an exact search in the tree starting from a node.
 	 */
-	void searchLevel(ResultSet& result_set, const ElementType* vec, const NodePtr node, float mindistsq, const float epsError)
+	void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, float mindistsq, const float epsError)
 	{
 		/* If this is a leaf node, then do check and return. */
 		if (node->child1 == NULL && node->child2 == NULL) {

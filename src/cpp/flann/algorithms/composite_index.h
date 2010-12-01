@@ -171,7 +171,7 @@ public:
     	kdtree->loadIndex(stream);
     }
 
-	void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
 	{
 		kmeans->findNeighbors(result,vec,searchParams);
 		kdtree->findNeighbors(result,vec,searchParams);

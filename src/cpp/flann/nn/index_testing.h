@@ -75,13 +75,15 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
 		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches, int nn, int checks,
 		float& time, float& dist, const Distance& distance, int skipMatches)
 {
+	typedef typename Distance::ResultType DistanceType;
+
     if (matches.cols<size_t(nn)) {
         logger.info("matches.cols=%d, nn=%d\n",matches.cols,nn);
 
         throw FLANNException("Ground truth is not computed for as many neighbors as requested");
     }
 
-    KNNResultSet resultSet(nn+skipMatches);
+    KNNResultSet<DistanceType> resultSet(nn+skipMatches);
     SearchParams searchParams(checks);
 
     int correct;

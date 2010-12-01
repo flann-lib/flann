@@ -115,7 +115,7 @@ public:
 		/* nothing to do here for linear search */
     }
 
-	void findNeighbors(ResultSet& resultSet, const ElementType* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& searchParams)
 	{
 		for (size_t i=0;i<dataset.rows;++i) {
 			DistanceType dist = distance(dataset[i],vec, dataset.cols);

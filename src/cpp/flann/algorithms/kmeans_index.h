@@ -560,7 +560,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     searchParams = parameters that influence the search algorithm (checks, cb_index)
      */
-    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
 
         int maxChecks = searchParams.checks;
@@ -930,7 +930,7 @@ private:
      */
 
 
-	void findNN(KMeansNodePtr node, ResultSet& result, const ElementType* vec, int& checks, int maxChecks,
+	void findNN(KMeansNodePtr node, ResultSet<DistanceType>& result, const ElementType* vec, int& checks, int maxChecks,
 			Heap<BranchSt>* heap)
 	{
 		// Ignore those clusters that are too far away
@@ -1010,7 +1010,7 @@ private:
 	/**
 	 * Function the performs exact nearest neighbor search by traversing the entire tree.
 	 */
-	void findExactNN(KMeansNodePtr node, ResultSet& result, const ElementType* vec)
+	void findExactNN(KMeansNodePtr node, ResultSet<DistanceType>& result, const ElementType* vec)
 	{
 		// Ignore those clusters that are too far away
 		{
