@@ -107,7 +107,7 @@ public:
 	void init()
 	{
 		count = 0;
-		dists[capacity-1] = numeric_limits<float>::max();
+		dists[capacity-1] = (numeric_limits<float>::max) ();
 	}
 
 	int* getNeighbors()

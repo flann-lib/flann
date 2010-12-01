@@ -276,7 +276,7 @@ struct MinkowskiDistance
     template <typename U, typename V>
     ResultType accum_dist(const U& a, const V& b) const
     {
-    	return pow(abs(a-b),order);
+    	return pow(static_cast<ResultType>(abs(a-b)),order);
     }
 };
 
@@ -408,16 +408,16 @@ struct HellingerDistance
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-        	diff0 = sqrt(a[0]) - sqrt(b[0]);
-        	diff1 = sqrt(a[1]) - sqrt(b[1]);
-        	diff2 = sqrt(a[2]) - sqrt(b[2]);
-        	diff3 = sqrt(a[3]) - sqrt(b[3]);
+        	diff0 = sqrt(static_cast<ResultType>(a[0])) - sqrt(static_cast<ResultType>(b[0]));
+        	diff1 = sqrt(static_cast<ResultType>(a[1])) - sqrt(static_cast<ResultType>(b[1]));
+        	diff2 = sqrt(static_cast<ResultType>(a[2])) - sqrt(static_cast<ResultType>(b[2]));
+        	diff3 = sqrt(static_cast<ResultType>(a[3])) - sqrt(static_cast<ResultType>(b[3]));
         	result += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
         	a += 4;
         	b += 4;
         }
         while (a < last) {
-        	diff0 = sqrt(*a++) - sqrt(*b++);
+        	diff0 = sqrt(static_cast<ResultType>(*a++)) - sqrt(static_cast<ResultType>(*b++));
         	result += diff0 * diff0;
         }
         return result;
@@ -429,7 +429,7 @@ struct HellingerDistance
     template <typename U, typename V>
     ResultType accum_dist(const U& a, const V& b) const
     {
-    	return (sqrt(a) - sqrt(b));
+    	return (sqrt(static_cast<ResultType>(a)) - sqrt(static_cast<ResultType>(b)));
     }
 };
 
