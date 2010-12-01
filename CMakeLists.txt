@@ -8,7 +8,7 @@ project(flann)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
-set(FLANN_VERSION 1.6.1)
+set(FLANN_VERSION 1.6.2)
 DISSECT_VERSION()
 GET_OS_INFO()
 
