@@ -211,23 +211,27 @@ int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>&
 	}
 	assert(query.cols==nnIndex->veclen());
 
-	RadiusResultSet resultSet(radius);
-	resultSet.init();
-	nnIndex->findNeighbors(resultSet, query[0] ,searchParams);
+	ResultSet* resultSet = new RadiusCountResultSet(radius);
+//	RadiusCountResultSet resultSet(radius);
+	resultSet->init();
+	nnIndex->findNeighbors(*resultSet, query[0] ,searchParams);
+
+	int count = resultSet->size();
+	delete resultSet;
 
 	// TODO: optimise here
-	int* neighbors = resultSet.getNeighbors();
-	float* distances = resultSet.getDistances();
-	size_t count_nn = min(resultSet.size(), indices.cols);
+//	int* neighbors = resultSet.getNeighbors();
+//	float* distances = resultSet.getDistances();
+//	size_t count_nn = min(resultSet.size(), indices.cols);
+//
+//	assert (dists.cols>=count_nn);
+//
+//	for (size_t i=0;i<count_nn;++i) {
+//		indices[0][i] = neighbors[i];
+//		dists[0][i] = distances[i];
+//	}
 
-	assert (dists.cols>=count_nn);
-
-	for (size_t i=0;i<count_nn;++i) {
-		indices[0][i] = neighbors[i];
-		dists[0][i] = distances[i];
-	}
-
-	return count_nn;
+	return count;
 }
 
 

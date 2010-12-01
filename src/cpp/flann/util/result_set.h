@@ -261,7 +261,8 @@ public:
 
     size_t size() const
     {
-    	return items.size();
+//    	return items.size();
+    	return count;
     }
 
 	bool full() const
@@ -271,13 +272,14 @@ public:
 
 	void addPoint(float dist, int index)
 	{
-		Item it;
-		it.index = index;
-		it.dist = dist;
-		if (it.dist<=radius) {
-			items.push_back(it);
-			push_heap(items.begin(), items.end());
-		}
+		count++;
+//		Item it;
+//		it.index = index;
+//		it.dist = dist;
+//		if (it.dist<=radius) {
+//			items.push_back(it);
+//			push_heap(items.begin(), items.end());
+//		}
 	}
 
 	float worstDist() const
@@ -286,6 +288,35 @@ public:
 	}
 
 };
+
+class RadiusCountResultSet : public ResultSet
+{
+	float radius_;
+	int count_;
+public:
+	RadiusCountResultSet(float radius) : radius_(radius), count_ (0) {};
+
+	virtual void init() {}
+
+	virtual int* getNeighbors() { return NULL; }
+
+	virtual float* getDistances() { return NULL; }
+
+	virtual size_t size() const { return count_; };
+
+	virtual bool full() const { return true; };
+
+	virtual void addPoint(float dist, int index)
+	{
+		if (dist<radius_) {
+			count_++;
+		}
+	}
+
+	virtual float worstDist() const { return radius_; }
+
+};
+
 
 }
 
