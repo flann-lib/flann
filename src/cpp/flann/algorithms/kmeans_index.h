@@ -754,6 +754,7 @@ private:
             node->indices = indices;
             sort(node->indices,node->indices+indices_length);
             node->childs = NULL;
+            delete [] centers_idx;
 			return;
 		}
 

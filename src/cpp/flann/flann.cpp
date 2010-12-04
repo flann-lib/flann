@@ -91,6 +91,7 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
 		IndexParams* params = IndexParams::createFromParameters(*flann_params);
 		Index<Distance>* index = new Index<Distance>(Matrix<ElementType>(dataset,rows,cols), *params, d);
 		index->buildIndex();
+		delete params;
 		const IndexParams* index_params = index->getIndexParameters();
 		index_params->toParameters(*flann_params);
 
@@ -322,11 +323,13 @@ int __flann_find_nearest_neighbors(typename Distance::ElementType* dataset,  int
 		IndexParams* params = IndexParams::createFromParameters(*flann_params);
 		Index<Distance>* index = new Index<Distance>(Matrix<ElementType>(dataset,rows,cols), *params, d);
 		index->buildIndex();
+		delete params;
 		Matrix<int> m_indices(result,tcount, nn);
 		Matrix<DistanceType> m_dists(dists,tcount, nn);
 		index->knnSearch(Matrix<ElementType>(testset, tcount, index->veclen()),
 						m_indices,
 						m_dists, nn, SearchParams(flann_params->checks) );
+		delete index;
 		return 0;
 	}
 	catch(runtime_error& e) {
