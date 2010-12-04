@@ -73,7 +73,7 @@ float computeDistanceRaport(const Matrix<typename Distance::ElementType>& inputD
 template <typename Distance>
 float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename Distance::ElementType>& inputData,
 		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches, int nn, int checks,
-		float& time, float& dist, const Distance& distance, int skipMatches)
+		float& time, typename Distance::ResultType& dist, const Distance& distance, int skipMatches)
 {
 	typedef typename Distance::ResultType DistanceType;
 
@@ -86,6 +86,10 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
     KNNResultSet<DistanceType> resultSet(nn+skipMatches);
     SearchParams searchParams(checks);
 
+    int* indices = new int[nn+skipMatches];
+    DistanceType* dists = new DistanceType[nn+skipMatches];
+    int* neighbors = indices + skipMatches;
+
     int correct;
     float distR;
     StartStopTimer t;
@@ -96,14 +100,11 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
         correct = 0;
         distR = 0;
         for (size_t i = 0; i < testData.rows; i++) {
-        	typename Distance::ElementType* target = testData[i];
-            resultSet.init();
-            index.findNeighbors(resultSet,target, searchParams);
-            int* neighbors = resultSet.getNeighbors();
-            neighbors = neighbors+skipMatches;
+            resultSet.init(indices, dists);
+            index.findNeighbors(resultSet, testData[i], searchParams);
 
             correct += countCorrectMatches(neighbors,matches[i], nn);
-            distR += computeDistanceRaport<Distance>(inputData, target, neighbors, matches[i], testData.cols, nn, distance);
+            distR += computeDistanceRaport<Distance>(inputData, testData[i], neighbors, matches[i], testData.cols, nn, distance);
         }
         t.stop();
     }

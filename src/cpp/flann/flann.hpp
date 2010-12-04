@@ -184,18 +184,10 @@ void Index<Distance>::knnSearch(const Matrix<ElementType>& queries, Matrix<int>&
 	assert(int(indices.cols)>=knn);
 	assert(int(dists.cols)>=knn);
 
-    KNNResultSet resultSet(knn);
-
+    KNNResultSet<DistanceType> resultSet(knn);
     for (size_t i = 0; i < queries.rows; i++) {
-        ElementType* target = queries[i];
-        resultSet.init();
-
-        nnIndex->findNeighbors(resultSet, target, searchParams);
-
-        int* neighbors = resultSet.getNeighbors();
-        float* distances = resultSet.getDistances();
-        memcpy(indices[i], neighbors, knn*sizeof(int));
-        memcpy(dists[i], distances, knn*sizeof(float));
+        resultSet.init(indices[i], dists[i]);
+        nnIndex->findNeighbors(resultSet, queries[i], searchParams);
     }
 }
 
@@ -210,28 +202,12 @@ int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>&
 		return -1;
 	}
 	assert(query.cols==nnIndex->veclen());
+	assert(indices.cols==dists.cols);
 
-	ResultSet* resultSet = new RadiusCountResultSet(radius);
-//	RadiusCountResultSet resultSet(radius);
-	resultSet->init();
-	nnIndex->findNeighbors(*resultSet, query[0] ,searchParams);
+	RadiusResultSet<DistanceType> resultSet(radius, indices[0], dists[0], indices.cols);
+	nnIndex->findNeighbors(resultSet, query[0] ,searchParams);
 
-	int count = resultSet->size();
-	delete resultSet;
-
-	// TODO: optimise here
-//	int* neighbors = resultSet.getNeighbors();
-//	float* distances = resultSet.getDistances();
-//	size_t count_nn = min(resultSet.size(), indices.cols);
-//
-//	assert (dists.cols>=count_nn);
-//
-//	for (size_t i=0;i<count_nn;++i) {
-//		indices[0][i] = neighbors[i];
-//		dists[0][i] = distances[i];
-//	}
-
-	return count;
+	return resultSet.size();
 }
 
 
