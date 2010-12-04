@@ -556,13 +556,13 @@ private:
         // free all parameter structures, except the one returned
         for (size_t i=0;i<costs.size();++i) {
             if (costs[i].params != bestParams) {
-                free(costs[i].params);
+                delete costs[i].params;
             }
         }
 
         gt_matches.free();
-        sampledDataset.free();
         testDataset.free();
+        sampledDataset.free();
 
         return bestParams;
     }
@@ -635,6 +635,7 @@ private:
             speedup = linear/searchTime;
 
             gt_matches.free();
+            testDataset.free();
         }
 
         return speedup;

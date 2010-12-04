@@ -161,12 +161,15 @@ public:
  			return false;
 		}
 
-		/* Switch first node with last. */
-		swap(heap[1],heap[count]);
-
-		count -= 1;
-		heapify(1);      /* Move new node 1 to right position. */
-
+		
+		if (count == 1) {
+			count = 0;    /* For size 1, no need to swap node with itself */
+		} 
+        else {
+			swap(heap[1],heap[count]);  /* Switch first node with last. */
+			count -= 1;
+			heapify(1);      /* Move new node 1 to right position. */
+                }
 		value = heap[count + 1];
 		return true;  /* Return old last node. */
 	}
