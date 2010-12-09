@@ -75,7 +75,7 @@ void save_to_file(const flann::Matrix<T>& dataset, const std::string& filename, 
 	hid_t space_id = H5Screate_simple(2, dimsf, NULL);
 	hid_t memspace_id = H5Screate_simple(2, dimsf, NULL);
 
-	hid_t dataset_id = H5Dcreate(file_id, name.c_str(), get_hdf5_type<T>(), space_id, H5P_DEFAULT);
+	hid_t dataset_id = H5Dcreate2(file_id, name.c_str(), get_hdf5_type<T>(), space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	CHECK_ERROR(dataset_id,"Error creating dataset in file.");
 
 	status = H5Dwrite(dataset_id, get_hdf5_type<T>(), memspace_id, space_id, H5P_DEFAULT, dataset.data );
@@ -96,7 +96,7 @@ void load_from_file(flann::Matrix<T>& dataset, const std::string& filename, cons
 	hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 	CHECK_ERROR(file_id,"Error opening hdf5 file.");
 
-	hid_t dataset_id = H5Dopen(file_id, name.c_str());
+	hid_t dataset_id = H5Dopen2(file_id, name.c_str(), H5P_DEFAULT);
 	CHECK_ERROR(dataset_id,"Error opening dataset in file.");
 
 	hid_t space_id = H5Dget_space(dataset_id);
@@ -142,7 +142,7 @@ void load_from_file(flann::Matrix<T>& dataset, const std::string& filename, cons
 	hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDWR, plist_id);
 	CHECK_ERROR(file_id,"Error opening hdf5 file.");
     H5Pclose(plist_id);
-	hid_t dataset_id = H5Dopen(file_id, name.c_str());
+	hid_t dataset_id = H5Dopen2(file_id, name.c_str(), H5P_DEFAULT);
 	CHECK_ERROR(dataset_id,"Error opening dataset in file.");
 
 	hid_t space_id = H5Dget_space(dataset_id);
