@@ -31,11 +31,9 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-
 #include <cstdio>
 #include "flann/general.h"
 
-using namespace std;
 
 namespace flann
 {

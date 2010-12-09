@@ -36,8 +36,6 @@
 #include "flann/general.h"
 #include "flann/util/matrix.h"
 
-using namespace std;
-
 namespace flann
 {
 

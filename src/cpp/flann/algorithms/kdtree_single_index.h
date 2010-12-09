@@ -45,9 +45,6 @@
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
 
-using namespace std;
-
-
 namespace flann
 {
 
@@ -240,7 +237,7 @@ public:
 	{
 		for (int j = vec_size; j > 0; --j) {
 			int rnd = rand_int(j);
-			swap(vec[j-1], vec[rnd]);
+			std::swap(vec[j-1], vec[rnd]);
 		}
 	}
 
@@ -462,7 +459,7 @@ private:
 			while (left<=right && dataset[ind[left]][cutfeat]<cutval) ++left;
 			while (left<=right && dataset[ind[right]][cutfeat]>=cutval) --right;
 			if (left>right) break;
-			swap(ind[left], ind[right]); ++left; --right;
+			std::swap(ind[left], ind[right]); ++left; --right;
 		}
 		/* If either list is empty, it means that all remaining features
 		 * are identical. Split in the middle to maintain a balanced tree.
@@ -473,7 +470,7 @@ private:
 			while (left<=right && dataset[ind[left]][cutfeat]<=cutval) ++left;
 			while (left<=right && dataset[ind[right]][cutfeat]>cutval) --right;
 			if (left>right) break;
-			swap(ind[left], ind[right]); ++left; --right;
+			std::swap(ind[left], ind[right]); ++left; --right;
 		}
 		lim2 = left;
 	}

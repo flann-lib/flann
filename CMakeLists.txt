@@ -101,7 +101,9 @@ endif(USE_MPI)
 include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 
 # require proper c++
-add_definitions( "-Wall -ansi -pedantic" )
+#add_definitions( "-Wall -ansi -pedantic" )
+# HDF5 uses long long which is not ansi
+add_definitions( "-Wall" )
 
 add_subdirectory( cmake )
 add_subdirectory( src )

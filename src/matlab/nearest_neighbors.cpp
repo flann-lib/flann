@@ -582,7 +582,7 @@ static mexFunctionEntry __functionTable[] = {
 
 static void print_selector_error()
 {
-	ostringstream oss;
+    std::ostringstream oss;
 	oss << "Expecting first argument to be one of: ";
 
 	for (int i=0;i<sizeof(__functionTable)/sizeof(mexFunctionEntry); ++i) {

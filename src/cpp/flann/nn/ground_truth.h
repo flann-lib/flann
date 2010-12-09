@@ -67,8 +67,8 @@ void find_nearest(const Matrix<typename Distance::ElementType>& dataset, typenam
         int j = dcnt-1;
         // bubble up
         while (j>=1 && dists[j]<dists[j-1]) {
-            swap(dists[j],dists[j-1]);
-            swap(match[j],match[j-1]);
+            std::swap(dists[j],dists[j-1]);
+            std::swap(match[j],match[j-1]);
             j--;
         }
     }

@@ -42,8 +42,6 @@
 #include "flann/util/timer.h"
 
 
-using namespace std;
-
 namespace flann
 {
 
@@ -51,13 +49,15 @@ int countCorrectMatches(int* neighbors, int* groundTruth, int n);
 
 
 template <typename Distance>
-float computeDistanceRaport(const Matrix<typename Distance::ElementType>& inputData, typename Distance::ElementType* target,
+typename Distance::ResultType computeDistanceRaport(const Matrix<typename Distance::ElementType>& inputData, typename Distance::ElementType* target,
 		int* neighbors, int* groundTruth, int veclen, int n, const Distance& distance)
 {
-    float ret = 0;
+	typedef typename Distance::ResultType DistanceType;
+
+	DistanceType ret = 0;
     for (int i=0;i<n;++i) {
-        float den = distance(inputData[groundTruth[i]], target, veclen);
-        float num = distance(inputData[neighbors[i]], target, veclen);
+    	DistanceType den = distance(inputData[groundTruth[i]], target, veclen);
+    	DistanceType num = distance(inputData[neighbors[i]], target, veclen);
 
         if (den==0 && num==0) {
             ret += 1;
@@ -91,7 +91,7 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
     int* neighbors = indices + skipMatches;
 
     int correct;
-    float distR;
+    DistanceType distR;
     StartStopTimer t;
     int repeats = 0;
     while (t.value<0.2) {
@@ -127,11 +127,13 @@ float test_index_checks(NNIndex<Distance>& index, const Matrix<typename Distance
 		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
             int checks, float& precision, const Distance& distance, int nn = 1, int skipMatches = 0)
 {
+	typedef typename Distance::ResultType DistanceType;
+
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
     logger.info("---------------------------------------------------------\n");
 
     float time = 0;
-    float dist = 0;
+    DistanceType dist = 0;
     precision = search_with_ground_truth(index, inputData, testData, matches, nn, checks, time, dist, distance, skipMatches);
 
     return time;
@@ -142,6 +144,7 @@ float test_index_precision(NNIndex<Distance>& index, const Matrix<typename Dista
 		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
              float precision, int& checks, const Distance& distance, int nn = 1, int skipMatches = 0)
 {
+	typedef typename Distance::ResultType DistanceType;
 	const float SEARCH_EPS = 0.001;
 
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
@@ -152,7 +155,7 @@ float test_index_precision(NNIndex<Distance>& index, const Matrix<typename Dista
     int c1 = 1;
     float p1;
     float time;
-    float dist;
+    DistanceType dist;
 
     p2 = search_with_ground_truth(index, inputData, testData, matches, nn, c2, time, dist, distance, skipMatches);
 
@@ -213,10 +216,12 @@ float test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dist
 		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
                     float* precisions, int precisions_length, const Distance& distance, int nn = 1, int skipMatches = 0, float maxTime = 0)
 {
+	typedef typename Distance::ResultType DistanceType;
+
 	const float SEARCH_EPS = 0.001;
 
     // make sure precisions array is sorted
-    sort(precisions, precisions+precisions_length);
+    std::sort(precisions, precisions+precisions_length);
 
     int pindex = 0;
     float precision = precisions[pindex];
@@ -231,7 +236,7 @@ float test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dist
     float p1;
 
     float time;
-    float dist;
+    DistanceType dist;
 
     p2 = search_with_ground_truth(index, inputData, testData, matches, nn, c2, time, dist, distance, skipMatches);
 

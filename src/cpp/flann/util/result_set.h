@@ -36,8 +36,6 @@
 #include <limits>
 #include <vector>
 
-using namespace std;
-
 
 namespace flann
 {
@@ -94,7 +92,7 @@ public:
 		indices = indices_;
 		dists = dists_;
 		count = 0;
-		dists[capacity-1] = (numeric_limits<DistanceType>::max) ();
+		dists[capacity-1] = (std::numeric_limits<DistanceType>::max) ();
 	}
 
     size_t size() const
@@ -175,33 +173,13 @@ public:
 
 	void addPoint(DistanceType dist, int index)
 	{
-		if (capacity==0) {
-			count++;
-		}
-		else {
-			if (dist<radius && count<capacity) {
+		if (dist<radius) {
+			if (capacity>0 && count < capacity) {
 				dists[count] = dist;
 				indices[count] = index;
-				count++;
 			}
-//			int i;
-//			for (i=count; i>0;--i) {
-//				//			if ( (dists[i-1]>dist) || (dist==dists[i-1] && indices[i-1]>index) ) {
-//				if (dists[i-1]>dist) {
-//					if (i<capacity) {
-//						dists[i] = dists[i-1];
-//						indices[i] = indices[i-1];
-//					}
-//				}
-//				else break;
-//			}
-//			if (i<capacity) {
-//				dists[i] = dist;
-//				indices[i] = index;
-//			}
-//			if (count<capacity) count++;
+			count++;
 		}
-
 	}
 
 	DistanceType worstDist() const

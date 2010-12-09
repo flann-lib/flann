@@ -155,11 +155,12 @@ typedef ObjectFactory<IndexParams, flann_algorithm_t> ParamsFactory;
 
 
 struct SearchParams {
-	SearchParams(int checks_ = 32, float eps_ = 0) :
-		checks(checks_), eps(eps_) {};
+	SearchParams(int checks_ = 32, float eps_ = 0, bool sorted_ = true ) :
+		checks(checks_), eps(eps_), sorted(sorted_) {};
 
-	int checks;
-	float eps;
+	int checks;		// how many leafs to visit when searching for neighbours (-1 for unlimited)
+	float eps;		// search for eps-approximate neighbours (default: 0)
+	bool sorted;	// only for radius search, require neighbours sorted by distance (default: true)
 };
 
 }

@@ -34,7 +34,6 @@
 #include <cstdarg>
 #include <sstream>
 
-using namespace std;
 
 namespace flann
 {

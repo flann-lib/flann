@@ -39,7 +39,6 @@
 // index types
 #include "flann/algorithms/all_indices.h"
 
-using namespace std;
 
 #ifdef WIN32
 #define EXPORTED extern "C" __declspec(dllexport)
