@@ -223,7 +223,7 @@ public:
 	*/
 	virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
 	{
-		if (searchParams.checks==-2) {
+		if (searchParams.checks==CHECKS_AUTOTUNED) {
 			bestIndex->findNeighbors(result, vec, bestSearchParams);
 		}
 		else {

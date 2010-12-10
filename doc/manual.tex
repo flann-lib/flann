@@ -343,6 +343,19 @@ struct KMeansIndexParams : public IndexParams
 		  A value greater then zero also takes into account the size of the domain.}
 \end{description}
 
+\textbf{KDTreeSingleIndexParams} When passing an object of this type the index will contain a single kd-tree
+optimized for searching lower dimensionality data (for example 3D point clouds)
+\begin{Verbatim}[fontsize=\footnotesize]
+struct KDTreeSingleIndexParams : public IndexParams
+{
+      KDTreeSingleIndexParams( int max_leaf_size = 10 );
+};
+\end{Verbatim}
+\begin{description}
+ \item[max\_leaf\_size] The maximum number of points to have in a leaf for not branching the tree any more.
+\end{description}
+
+
 \textbf{CompositeIndexParams} When using a parameters object of this type the index created combines the randomized kd-trees 
 	and the hierarchical k-means tree.
 \begin{Verbatim}[fontsize=\footnotesize]
@@ -433,13 +446,28 @@ void Index::knnSearch(const Matrix<ElementType>& queries,
 \item[indices]{Matrix that will contain the indices of the K-nearest neighbors found (size should be at least $num\_queries \times knn$)}
 \item[dists]{Matrix that will contain the distances to the K-nearest neighbors found. (size should be at least $num\_queries \times knn$). The distance values are computed by the distance function used (see \texttt{flann::set\_distance\_type} below), for example in the case of euclidean distance function, this will contain the squared euclidean distances.}
 \item[knn]{Number of nearest neighbors to search for.}
-\item[params]{Search parameters. Structure currently contains a single field, \texttt{checks} specifying the number 
-of times the tree(s) in the index should be recursively traversed. A
+\item[params]{Search parameters.} Structure containing parameters used during search.
+
+\textbf{SearchParameters}
+\begin{Verbatim}[fontsize=\footnotesize]
+struct SearchParams
+{
+	SearchParams(int checks = 32,
+		  float eps = 0,
+		  bool sorted = true);
+};
+\end{Verbatim}
+\begin{description}
+ \item[checks] specifies the maximum leafs to visit when searching for neighbours. A
 higher value for this parameter would give better search precision, but
-also take more time. If automatic configuration was used when the
-index was created, the number of checks required to achieve the specified
-precision was also computed, in which case this parameter is ignored.}
+also take more time. For all leafs to be checked use the value \texttt{CHECKS\_UNLIMITED}.
+If automatic configuration was used when the index was created, the number of checks 
+required to achieve the specified precision was also computed, to use that value specify \texttt{CHECKS\_AUTOTUNED}.
+ \item[eps] Search for eps-approximate neighbors (only used by KDTreeSingleIndex).
+ \item[sorted] Used only by radius search, specifies if the neighbors returned should be sorted by distance.
 \end{description}
+\end{description}
+
 
 \subsubsection{flann::Index::radiusSearch}
 Performs a radius nearest neighbor search for a given query point.

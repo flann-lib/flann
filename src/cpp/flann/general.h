@@ -86,6 +86,9 @@ enum flann_datatype_t {
 	FLANN_FLOAT64 = 9
 };
 
+const int CHECKS_UNLIMITED = -1;
+const int CHECKS_AUTOTUNED = -2;
+
 
 struct FLANNParameters {
 	enum flann_algorithm_t algorithm; /* the algorithm to use */

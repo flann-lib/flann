@@ -217,7 +217,7 @@ int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>&
 	RadiusResultSet<DistanceType> result_set(radius, indices_ptr, dists_ptr, n);
 	nnIndex->findNeighbors(result_set, query[0], searchParams);
 	size_t cnt = result_set.size();
-	if (searchParams.sorted) {
+	if (n>0 && searchParams.sorted) {
 		std::sort(make_pair_iterator(dists_ptr, indices_ptr),
 				make_pair_iterator(dists_ptr+cnt, indices_ptr+cnt),
 				pair_iterator_compare<DistanceType*, int*>());

@@ -301,7 +301,7 @@ public:
         int maxChecks = searchParams.checks;
         float epsError = 1+searchParams.eps;
 
-        if (maxChecks<0) {
+        if (maxChecks==CHECKS_UNLIMITED) {
             getExactNeighbors(result, vec, epsError);
         } else {
             getNeighbors(result, vec, maxChecks, epsError);

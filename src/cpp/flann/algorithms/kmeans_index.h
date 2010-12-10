@@ -563,7 +563,7 @@ public:
 
         int maxChecks = searchParams.checks;
 
-        if (maxChecks<0) {
+        if (maxChecks==CHECKS_UNLIMITED) {
             findExactNN(root, result, vec);
         }
         else {
