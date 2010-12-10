@@ -4,6 +4,8 @@
 #    SET(MEXEXT_CMD mexext)
 #ENDIF(WIN32)
 
+SET(MEX_NAME nearest_neighbors)
+
 find_program(MEX_CMD mex)
 find_program(MEXEXT_CMD mexext)
 
@@ -18,7 +20,6 @@ if(MEX_CMD AND MEXEXT_CMD)
     if (MEX_PATH STREQUAL MEXEXT_PATH)
         message("Found MATLAB at: " ${MEX_PATH})
 
-        SET(MEX_NAME nearest_neighbors)
         EXECUTE_PROCESS(COMMAND ${MEXEXT_REAL_CMD} OUTPUT_VARIABLE MEX_EXTENSION OUTPUT_STRIP_TRAILING_WHITESPACE)
         SET(MEX_FILE ${CMAKE_CURRENT_BINARY_DIR}/${MEX_NAME}.${MEX_EXTENSION})
 
@@ -52,3 +53,4 @@ if(MEX_CMD AND MEXEXT_CMD)
 else()
     message("Cannot find MATLAB instalation. Make sure that the 'bin' directory from the MATLAB instalation is in PATH")
 endif()
+
