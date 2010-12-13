@@ -49,7 +49,7 @@ public:
 	First first;
 	Second second;
 
-	pair(const First& a, const Second& b) : first(a), second(b) {}
+	pair(First a, Second b) : first(a), second(b) {}
 
 	template<typename U, typename V>
 	pair(const pair<U,V>& x): first(x.first), second(x.second) {}
