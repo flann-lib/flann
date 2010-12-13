@@ -62,7 +62,7 @@ else:
             else:
                 dataset_name = 'dataset'
             h5file = h5py.File(filename)
-            h5file.create_dataset(dataset_name, dataset)
+            h5file.create_dataset(dataset_name, data=dataset)
             h5file.close()
         except Exception as e:
             h5file.close()

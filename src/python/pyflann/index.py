@@ -309,7 +309,7 @@ class FLANN:
             if dtype == None or dtype == pts.dtype:
                 return mean(pts, 0).reshape(1, pts.shape[1])
             else:
-                return dtype.type(mean(pts, 0).reshape(1, pts.shape[1]))
+                return dtype(mean(pts, 0).reshape(1, pts.shape[1]))
 
         return self.hierarchical_kmeans(pts, int(num_clusters), 1, 
                                         max_iterations, 
@@ -383,7 +383,7 @@ class FLANN:
         if dtype == None:
             return result
         else:
-            return dtype.type(result)
+            return dtype(result)
         
     ##########################################################################################
     # internal bookkeeping functions
