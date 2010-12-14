@@ -30,11 +30,17 @@
 
 #include "saving.h"
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#ifndef _FLANN_VERSION
+#error "FLANN version is not defined"
+#endif
+
 namespace flann
 {
 
 const char FLANN_SIGNATURE[] = "FLANN_INDEX";
-const char FLANN_VERSION[] = "1.6.4";
+const char FLANN_VERSION[] = TOSTRING(_FLANN_VERSION);
 
 
 IndexHeader load_header(FILE* stream)

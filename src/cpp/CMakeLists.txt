@@ -1,5 +1,7 @@
 #include_directories(${CMAKE_SOURCE_DIR}/include algorithms util nn .)
 
+add_definitions(-D_FLANN_VERSION=${FLANN_VERSION})
+
 file(GLOB_RECURSE C_SOURCES *.cpp)
 file(GLOB_RECURSE CPP_SOURCES *.cpp)
 

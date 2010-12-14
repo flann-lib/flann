@@ -79,7 +79,7 @@ else:
             
             for node in h5file.keys():
                 if node == dataset_name:
-                    data = h5file[node]
+                    data = numpy.array(h5file[node])
             h5file.close()
             return data
         except Exception as e:
