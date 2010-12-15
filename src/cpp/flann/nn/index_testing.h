@@ -110,6 +110,8 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
     }
     time = t.value/repeats;
 
+    delete[] indices;
+    delete[] dists;
 
     float precicion = (float)correct/(nn*testData.rows);
 
@@ -212,7 +214,7 @@ float test_index_precision(NNIndex<Distance>& index, const Matrix<typename Dista
 
 
 template <typename Distance>
-float test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Distance::ElementType>& inputData,
+void test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Distance::ElementType>& inputData,
 		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
                     float* precisions, int precisions_length, const Distance& distance, int nn = 1, int skipMatches = 0, float maxTime = 0)
 {
@@ -226,8 +228,8 @@ float test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dist
     int pindex = 0;
     float precision = precisions[pindex];
 
-    logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist");
-    logger.info("---------------------------------------------------------");
+    logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
+    logger.info("---------------------------------------------------------\n");
 
     int c2 = 1;
     float p2;
@@ -249,7 +251,7 @@ float test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dist
 
     if (pindex==precisions_length) {
         logger.info("Got as close as I can\n");
-        return time;
+        return;
     }
 
     for (int i=pindex;i<precisions_length;++i) {
@@ -260,7 +262,7 @@ float test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dist
             p1 = p2;
             c2 *=2;
             p2 = search_with_ground_truth(index, inputData, testData, matches, nn, c2, time, dist, distance, skipMatches);
-            if (maxTime> 0 && time > maxTime && p2<precision) return time;
+            if (maxTime> 0 && time > maxTime && p2<precision) return;
         }
 
         int cx;
@@ -298,7 +300,6 @@ float test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dist
         }
 
     }
-    return time;
 }
 
 }
