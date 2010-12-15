@@ -1,5 +1,6 @@
 add_custom_target(examples ALL)
 
+
 if (BUILD_C_BINDINGS)
     add_executable(flann_example_c flann_example.c)
     target_link_libraries(flann_example_c flann)
@@ -10,6 +11,8 @@ if (BUILD_C_BINDINGS)
 endif()
 
 if (HDF5_FOUND)
+    include_directories(${HDF5_INCLUDE_DIR})
+
     add_executable(flann_example_cpp flann_example.cpp)
     target_link_libraries(flann_example_cpp flann_cpp ${HDF5_LIBRARIES})
     if (HDF5_IS_PARALLEL)

@@ -24,6 +24,7 @@ flann_download_test_data(sift100K.h5 ae2b08f93f3d9f89f5d68566b0406102)
 flann_download_test_data(sift100K_byte.h5 b772255fd2044e9d2a5a0183953e4705)
 
 if (GTEST AND HDF5_FOUND)
+    include_directories(${HDF5_INCLUDE_DIR})
 	flann_add_gtest(flann_simple_test flann_simple_test.cpp)
 	    target_link_libraries(flann_simple_test flann_cpp ${HDF5_LIBRARIES})
     if (HDF5_IS_PARALLEL)
