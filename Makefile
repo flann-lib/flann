@@ -16,7 +16,7 @@ PARAMS=-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 
 all:
 	@-mkdir -p build
-	cd build && cmake ${PARAMS} .. && make all doc
+	cd build && cmake ${PARAMS} .. && make $@
 
 test:
 	@-mkdir -p build
@@ -36,7 +36,7 @@ examples:
 
 install:
 	@-mkdir -p build
-	cd build && cmake ${PARAMS} .. && make all doc install
+	cd build && cmake ${PARAMS} .. && make $@
 
 clean:
 	-cd build && make clean
