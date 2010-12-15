@@ -712,7 +712,7 @@ MACRO(ADD_LATEX_TARGETS)
     ADD_CUSTOM_TARGET(${dvi_target}
       DEPENDS ${output_dir}/${LATEX_TARGET}.dvi)
   ELSE (LATEX_DEFAULT_PDF)
-    ADD_CUSTOM_TARGET(${dvi_target} ALL
+    ADD_CUSTOM_TARGET(${dvi_target}
       DEPENDS ${output_dir}/${LATEX_TARGET}.dvi)
   ENDIF (LATEX_DEFAULT_PDF)
 
@@ -723,7 +723,7 @@ MACRO(ADD_LATEX_TARGETS)
       DEPENDS ${make_pdf_depends}
       )
     IF (LATEX_DEFAULT_PDF)
-      ADD_CUSTOM_TARGET(${pdf_target} ALL
+      ADD_CUSTOM_TARGET(${pdf_target}
         DEPENDS ${output_dir}/${LATEX_TARGET}.pdf)
     ELSE (LATEX_DEFAULT_PDF)
       ADD_CUSTOM_TARGET(${pdf_target}
