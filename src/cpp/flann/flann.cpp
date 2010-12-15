@@ -207,7 +207,7 @@ int _flann_save_index(flann_index_t index_ptr, char* filename)
 	}
 	else {
 		logger.error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
-		return NULL;
+		return -1;
 	}
 }
 
@@ -365,7 +365,7 @@ int _flann_find_nearest_neighbors(T* dataset,  int rows, int cols, T* testset, i
 	}
 	else {
 		logger.error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
-		return NULL;
+		return -1;
 	}
 }
 
@@ -453,7 +453,7 @@ int _flann_find_nearest_neighbors_index(flann_index_t index_ptr, T* testset, int
 	}
 	else {
 		logger.error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
-		return NULL;
+		return -1;
 	}
 }
 
@@ -550,7 +550,7 @@ int _flann_radius_search(flann_index_t index_ptr,
 	}
 	else {
 		logger.error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
-		return NULL;
+		return -1;
 	}
 }
 
@@ -657,7 +657,7 @@ int _flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
 	}
 	else {
 		logger.error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
-		return NULL;
+		return -1;
 	}
 }
 
@@ -736,7 +736,7 @@ int _flann_compute_cluster_centers(T* dataset, int rows, int cols, int clusters,
 	}
 	else {
 		logger.error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
-		return NULL;
+		return -1;
 	}
 }
 
