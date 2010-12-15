@@ -13,10 +13,9 @@ if (EXISTS ${PDFLATEX_COMPILER} AND EXISTS ${BIBTEX_COMPILER})
         COMMAND ${CMAKE_COMMAND} -E copy
         ARGS ${CMAKE_CURRENT_BINARY_DIR}/manual.pdf ${CMAKE_CURRENT_SOURCE_DIR}/manual.pdf
     )
-
-
-    install(
-        FILES manual.pdf
-        DESTINATION share/doc/flann
-    )
 endif()
+
+install(
+    FILES manual.pdf
+    DESTINATION share/doc/flann
+)
