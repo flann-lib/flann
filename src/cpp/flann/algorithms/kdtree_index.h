@@ -558,9 +558,7 @@ private:
 			*/
 			float worst_dist = result_set.worstDist();
 			int index = node->divfeat;
-			if (checked[index] == true || checkCount>=maxCheck) {
-				if (result_set.full()) return;
-			}
+			if (checked[index] || (checkCount>=maxCheck && result_set.full())) return;
 			checked[index] = true;
 			checkCount++;
 
