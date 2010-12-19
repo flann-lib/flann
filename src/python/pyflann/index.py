@@ -110,7 +110,7 @@ class FLANN:
         assert(npts >= num_neighbors)
 
         result = empty( (nqpts, num_neighbors), dtype=index_type)
-        if self.__curindex_type==float64:
+        if pts.dtype==float64:
             dists = empty( (nqpts, num_neighbors), dtype=float64)
         else:
             dists = empty( (nqpts, num_neighbors), dtype=float32)
