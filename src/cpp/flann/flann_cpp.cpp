@@ -40,12 +40,6 @@
 #include "flann/algorithms/all_indices.h"
 
 
-#ifdef WIN32
-#define EXPORTED extern "C" __declspec(dllexport)
-#else
-#define EXPORTED extern "C"
-#endif
-
 namespace flann
 {
 

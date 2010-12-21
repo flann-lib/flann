@@ -31,14 +31,14 @@
 
 
 #ifdef WIN32
-#define EXPORTED extern "C" __declspec(dllexport)
+#define EXPORTED  __declspec(dllexport)
 #else
-#define EXPORTED extern "C"
+#define EXPORTED
 #endif
 
 #define FLANN_FIRST_MATCH
 
-struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { 
+EXPORTED struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { 
     KDTREE, 
     32, 0.2, 0.0,
     4, 4,

@@ -57,7 +57,7 @@ extern "C" {
 typedef void* FLANN_INDEX; /* deprecated */
 typedef void* flann_index_t;
 
-extern struct FLANNParameters DEFAULT_FLANN_PARAMETERS;
+LIBSPEC extern struct FLANNParameters DEFAULT_FLANN_PARAMETERS;
 
 /**
 Sets the log level used for all flann functions (unless
