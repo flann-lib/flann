@@ -36,6 +36,7 @@
 #define EXPORTED extern "C"
 #endif
 
+#define FLANN_FIRST_MATCH
 
 struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { 
     KDTREE, 

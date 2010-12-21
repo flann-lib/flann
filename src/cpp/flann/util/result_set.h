@@ -110,8 +110,11 @@ public:
 	{
 		int i;
 		for (i=count; i>0;--i) {
-			//			if ( (dists[i-1]>dist) || (dist==dists[i-1] && indices[i-1]>index) ) {
+#ifdef FLANN_FIRST_MATCH 
+			if ( (dists[i-1]>dist) || (dist==dists[i-1] && indices[i-1]>index) ) {
+#else
 			if (dists[i-1]>dist) {
+#endif
 				if (i<capacity) {
 					dists[i] = dists[i-1];
 					indices[i] = indices[i-1];

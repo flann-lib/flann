@@ -1,6 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-# Now go to work
 from pyflann import *
 from copy import copy
 from numpy import *
