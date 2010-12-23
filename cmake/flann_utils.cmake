@@ -52,7 +52,7 @@ endmacro(find_hdf5)
 macro(flann_add_gtest exe)
     # add build target
     add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
-    target_link_libraries(${exe} gtest)
+    target_link_libraries(${exe} ${GTEST_LIBRARIES})
     # add dependency to 'tests' target
     add_dependencies(tests ${exe})
 

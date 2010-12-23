@@ -342,9 +342,6 @@ MACRO(LATEX_SETUP_VARIABLES)
   FIND_PROGRAM(IMAGEMAGICK_CONVERT convert
     DOC "The convert program that comes with ImageMagick (available at http://www.imagemagick.org)."
     )
-  IF (NOT IMAGEMAGICK_CONVERT)
-    MESSAGE(SEND_ERROR "Could not find convert program.  Please download ImageMagick from http://www.imagemagick.org and install.")
-  ENDIF (NOT IMAGEMAGICK_CONVERT)
 
   OPTION(LATEX_SMALL_IMAGES
     "If on, the raster images will be converted to 1/6 the original size.  This is because papers usually require 600 dpi images whereas most monitors only require at most 96 dpi.  Thus, smaller images make smaller files for web distributation and can make it faster to read dvi files."

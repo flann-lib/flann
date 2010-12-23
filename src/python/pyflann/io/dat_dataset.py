@@ -28,7 +28,6 @@ from __future__ import with_statement
 
 from pyflann.exceptions import FLANNException
 import numpy
-from scipy.io.numpyio import fwrite
 
 
 def is_number(s):
