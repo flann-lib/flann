@@ -3,20 +3,12 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/setup.py
 )
 
-INSTALL (
-    FILES setup.py
-    DESTINATION share/flann/python
-)
+if (PYTHON_INSTALL_PREFIX)
+    install(CODE "execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} setup.py install --prefix ${PYTHON_INSTALL_PREFIX}
+        WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\")")
+else()
+    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} setup.py install
+       WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\")")
+endif()
 
-INSTALL (
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pyflann
-    DESTINATION share/flann/python
-    PATTERN *.cpp EXCLUDE
-    PATTERN *.so EXCLUDE
-    PATTERN *.a EXCLUDE
-    PATTERN *.dat EXCLUDE
-    PATTERN *.txt EXCLUDE
-    PATTERN *.tpl EXCLUDE
-    PATTERN *~ EXCLUDE
-    PATTERN _tests EXCLUDE
-)

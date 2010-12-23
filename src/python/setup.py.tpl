@@ -5,7 +5,7 @@ import os.path
 import sys
 
 setup_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-lib_path = os.path.abspath(os.path.join(setup_path,'../../../lib'))
+lib_path = os.path.abspath(os.path.join(setup_path,'../../lib'))
 
 setup(name='flann',
       version='@FLANN_VERSION@',
