@@ -286,8 +286,7 @@ class FLANN:
     ##########################################################################################
     # Clustering functions
 
-    def kmeans(self, pts, num_clusters, centers_init = "random", 
-               max_iterations = None,
+    def kmeans(self, pts, num_clusters, max_iterations = None,
                dtype = None, **kwargs):
         """
         Runs kmeans on pts with num_clusters centroids.  Returns a
