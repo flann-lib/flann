@@ -44,7 +44,7 @@ EXPORTED struct FLANNParameters DEFAULT_FLANN_PARAMETERS = {
     4, 4,
     32, 11, CENTERS_RANDOM, 
     0.9, 0.01, 0, 0.1, 
-    LOG_NONE, 0 
+    FLANN_LOG_NONE, 0 
 };
 
 

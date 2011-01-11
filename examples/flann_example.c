@@ -91,7 +91,7 @@ int main(int argc, char** argv)
     p = DEFAULT_FLANN_PARAMETERS;
     p.algorithm = KDTREE;
     p.trees = 8;
-    p.log_level = LOG_INFO;
+    p.log_level = FLANN_LOG_INFO;
 	p.checks = 64;
     
     printf("Computing index.\n");
