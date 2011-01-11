@@ -43,17 +43,18 @@ void find_nearest(const Matrix<typename Distance::ElementType>& dataset, typenam
 		int skip = 0, Distance distance = Distance())
 {
 	typedef typename Distance::ElementType ElementType;
+	typedef typename Distance::ResultType DistanceType;
     int n = nn + skip;
 
     int* match = new int[n];
-    ElementType* dists = new ElementType[n];
+    DistanceType* dists = new DistanceType[n];
 
     dists[0] = distance(dataset[0], query, dataset.cols);
     match[0] = 0;
     int dcnt = 1;
 
     for (size_t i=1;i<dataset.rows;++i) {
-    	ElementType tmp = distance(dataset[i], query, dataset.cols);
+    	DistanceType tmp = distance(dataset[i], query, dataset.cols);
 
         if (dcnt<n) {
             match[dcnt] = i;
