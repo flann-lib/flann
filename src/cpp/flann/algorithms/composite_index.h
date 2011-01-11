@@ -102,7 +102,7 @@ class CompositeIndex : public NNIndex<Distance>
 
     const Matrix<ElementType> dataset;
 
-    const IndexParams& index_params;
+    const CompositeIndexParams index_params;
 
     Distance distance;
 

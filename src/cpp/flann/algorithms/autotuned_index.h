@@ -144,7 +144,7 @@ class AutotunedIndex : public NNIndex<Distance>
     /**
      * Index parameters
      */
-    const AutotunedIndexParams& index_params;
+    const AutotunedIndexParams index_params;
 
     Distance distance;
 public:
@@ -161,9 +161,11 @@ public:
     {
     	if (bestIndex!=NULL) {
     		delete bestIndex;
+            bestIndex = NULL;
     	}
     	if (bestParams!=NULL) {
     		delete bestParams;
+            bestParams = NULL;
     	}
     };
 

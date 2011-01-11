@@ -100,6 +100,7 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
             *speedup = autotuned_index->getSpeedup();
         }
 
+        delete params;
 		return index;
 	}
 	catch (std::runtime_error& e) {
@@ -620,9 +621,7 @@ int __flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
             throw FLANNException("Invalid index");
         }
         Index<Distance>* index = (Index<Distance>*) index_ptr;
-		const IndexParams* index_params = index->getIndexParameters();
         delete index;
-        delete index_params;
 
         return 0;
 	}

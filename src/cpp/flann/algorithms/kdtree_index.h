@@ -123,7 +123,7 @@ class KDTreeIndex : public NNIndex<Distance>
 	 */
 	const Matrix<ElementType> dataset;
 
-    const IndexParams& index_params;
+    const KDTreeIndexParams index_params;
 
 	size_t size_;
 	size_t veclen_;
