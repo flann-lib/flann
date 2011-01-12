@@ -419,7 +419,7 @@ private:
 		else index = count/2;
 
 		// in the unlikely case all values are equal
-		if (lim1==cnt || lim2==0) index = count/2;
+		if (lim1==count || lim2==0) index = count/2;
 	}
 
 
