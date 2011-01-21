@@ -309,7 +309,7 @@ TEST_F(Flann_SIFT100K_Test, KMeansTreeTest)
 
 TEST_F(Flann_SIFT100K_Test, AutotunedTest)
 {
-    flann::log_verbosity(LOG_INFO);
+    flann::log_verbosity(FLANN_LOG_INFO);
 
 	Index<L2<float> > index(data, flann::AutotunedIndexParams(0.8,0.01,0,0.1)); // 80% precision
 	start_timer("Building autotuned index...");

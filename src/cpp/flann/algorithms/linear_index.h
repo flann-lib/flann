@@ -66,7 +66,7 @@ class LinearIndex
 	typedef typename Distance::ResultType DistanceType;
 
 	const Matrix<ElementType> dataset;
-	const LinearIndexParams& index_params;
+	const LinearIndexParams index_params;
 
 	Distance distance;
 

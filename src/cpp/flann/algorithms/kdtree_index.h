@@ -123,7 +123,7 @@ class KDTreeIndex : public NNIndex<Distance>
 	 */
 	const Matrix<ElementType> dataset;
 
-    const IndexParams& index_params;
+    const KDTreeIndexParams index_params;
 
 	size_t size_;
 	size_t veclen_;
@@ -421,7 +421,7 @@ private:
 		/* If either list is empty, it means that all remaining features
 		 * are identical. Split in the middle to maintain a balanced tree.
 		*/
-		if (lim1==cnt || lim2==0) index = count/2;
+		if (lim1==count || lim2==0) index = count/2;
 	}
 
 

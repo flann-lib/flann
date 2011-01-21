@@ -134,7 +134,7 @@ class KMeansIndex : public NNIndex<Distance>
 	 */
     const Matrix<ElementType> dataset;
 
-    const IndexParams& index_params;
+    const KMeansIndexParams index_params;
 
     /**
     * Number of features in the dataset.
