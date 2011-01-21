@@ -10,6 +10,7 @@ dist-src:
 	find dist/flann-${VER}-src/src -name '*.dat' -delete
 	rm -rf dist/flann-${VER}-src/src/cpp/tests/test*
 	rm -rf dist/flann-${VER}-src/src/python/_tests
+	rm -rf dist/flann-${VER}-src/src/python/build
 	# cmake dir
 	cp -r cmake dist/flann-${VER}-src
 	# bin dir
