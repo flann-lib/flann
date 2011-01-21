@@ -171,7 +171,7 @@ class KDTreeSingleIndex : public NNIndex<Distance>
      * Array of k-d trees used to find neighbours.
      */
     NodePtr root_node;
-    typedef BranchStruct<NodePtr> BranchSt;
+    typedef BranchStruct<NodePtr, DistanceType> BranchSt;
     typedef BranchSt* Branch;
 
     BoundingBox bbox;

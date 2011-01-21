@@ -191,7 +191,7 @@ class KMeansIndex : public NNIndex<Distance>
     /**
      * Alias definition for a nicer syntax.
      */
-    typedef BranchStruct<KMeansNodePtr> BranchSt;
+    typedef BranchStruct<KMeansNodePtr, DistanceType> BranchSt;
 
 
 	/**

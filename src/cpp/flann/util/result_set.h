@@ -45,17 +45,17 @@ namespace flann
 	point, as well as the node at which the search resumes.
 */
 
-template <typename T>
+template <typename T, typename DistanceType>
 struct BranchStruct {
 	T node;           /* Tree node at which search resumes */
-	float mindistsq;     /* Minimum distance to query for all nodes below. */
+	DistanceType mindist;     /* Minimum distance to query for all nodes below. */
 
 	BranchStruct() {};
-	BranchStruct(const T& aNode, float dist) : node(aNode), mindistsq(dist) {};
+	BranchStruct(const T& aNode, DistanceType dist) : node(aNode), mindist(dist) {};
 
-	bool operator<(const BranchStruct<T>& rhs)
+	bool operator<(const BranchStruct<T, DistanceType>& rhs)
 	{
-        return mindistsq<rhs.mindistsq;
+        return mindist<rhs.mindist;
 	}
 };
 

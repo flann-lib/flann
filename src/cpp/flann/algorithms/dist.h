@@ -532,6 +532,7 @@ struct KL_Divergence
 };
 
 
+
 /*
  * This is a "zero iterator". It basically behaves like a zero filled
  * array to all algorithms that use arrays as iterators (STL style).

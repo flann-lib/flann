@@ -59,7 +59,8 @@ struct LinearIndexParams : public IndexParams {
 };
 
 template <typename Distance>
-class LinearIndex : public NNIndex<Distance>
+//class LinearIndex : public NNIndex<Distance>
+class LinearIndex
 {
 	typedef typename Distance::ElementType ElementType;
 	typedef typename Distance::ResultType DistanceType;
@@ -115,7 +116,15 @@ public:
 		/* nothing to do here for linear search */
     }
 
-	void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& searchParams)
+//	void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& searchParams)
+//	{
+//		for (size_t i=0;i<dataset.rows;++i) {
+//			DistanceType dist = distance(dataset[i],vec, dataset.cols);
+//			resultSet.addPoint(dist,i);
+//		}
+//	}
+
+	void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec)
 	{
 		for (size_t i=0;i<dataset.rows;++i) {
 			DistanceType dist = distance(dataset[i],vec, dataset.cols);

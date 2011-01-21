@@ -46,6 +46,8 @@ namespace flann {
 template <typename T>
 class Matrix {
 public:
+	typedef T type;
+
     size_t rows;
     size_t cols;
     T* data;
