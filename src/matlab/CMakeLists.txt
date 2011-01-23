@@ -23,19 +23,11 @@ if(MEX_CMD AND MEXEXT_CMD)
         EXECUTE_PROCESS(COMMAND ${MEXEXT_REAL_CMD} OUTPUT_VARIABLE MEX_EXTENSION OUTPUT_STRIP_TRAILING_WHITESPACE)
         SET(MEX_FILE ${CMAKE_CURRENT_BINARY_DIR}/${MEX_NAME}.${MEX_EXTENSION})
 
-        IF(WIN32)
-            SET(LIB_DEP flann.dll)
-        ELSEIF(APPLE)
-            SET(LIB_DEP libflann.dylib)
-        ELSE()
-            SET(LIB_DEP libflann.so)
-        ENDIF()
-
         ADD_CUSTOM_COMMAND(
             OUTPUT ${MEX_FILE}
             COMMAND ${MEX_REAL_CMD}
             ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${MEX_NAME}.cpp -I${PROJECT_SOURCE_DIR}/src/cpp -L${LIBRARY_OUTPUT_PATH} -lflann_s
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${MEX_NAME}.cpp ${LIBRARY_OUTPUT_PATH}/${LIB_DEP}
+            DEPENDS flann_s ${CMAKE_CURRENT_SOURCE_DIR}/${MEX_NAME}.cpp
             COMMENT "Building MEX extension ${MEX_FILE}"
         )
 
