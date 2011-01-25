@@ -145,7 +145,7 @@ public:
 			void* m = ::malloc(blocksize);
 			if (!m) {
                 fprintf(stderr,"Failed to allocate memory.\n");
-                exit(1);
+                return NULL;
 			}
 
 			/* Fill first word of new block with pointer to previous block. */
