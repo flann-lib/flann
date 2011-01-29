@@ -60,24 +60,26 @@ IndexParams* IndexParams::createFromParameters(const FLANNParameters& p)
 }
 
 
+} // namespace FLANN
+
+
+namespace {
 class StaticInit
 {
 public:
 	StaticInit()
 	{
-		ParamsFactory::instance().register_<LinearIndexParams>(LINEAR);
-		ParamsFactory::instance().register_<KDTreeIndexParams>(KDTREE);
-		ParamsFactory::instance().register_<KDTreeSingleIndexParams>(KDTREE_SINGLE);
-		ParamsFactory::instance().register_<KMeansIndexParams>(KMEANS);
-		ParamsFactory::instance().register_<CompositeIndexParams>(COMPOSITE);
-		ParamsFactory::instance().register_<AutotunedIndexParams>(AUTOTUNED);
+		flann::ParamsFactory::instance().register_<flann::LinearIndexParams>(LINEAR);
+		flann::ParamsFactory::instance().register_<flann::KDTreeIndexParams>(KDTREE);
+		flann::ParamsFactory::instance().register_<flann::KDTreeSingleIndexParams>(KDTREE_SINGLE);
+		flann::ParamsFactory::instance().register_<flann::KMeansIndexParams>(KMEANS);
+		flann::ParamsFactory::instance().register_<flann::CompositeIndexParams>(COMPOSITE);
+		flann::ParamsFactory::instance().register_<flann::AutotunedIndexParams>(AUTOTUNED);
 //		ParamsFactory::instance().register_<SavedIndexParams>(SAVED);
 	}
 };
-StaticInit __init;
 
-
-} // namespace FLANN
-
+static StaticInit __init;
+}
 
 
