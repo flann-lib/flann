@@ -582,7 +582,7 @@ private:
 			adding exceeds their value.
 		*/
 
-		DistanceType new_distsq = mindist + distance.accum_dist(val, node->divval);
+		DistanceType new_distsq = mindist + distance.accum_dist(val, node->divval, node->divfeat);
 //		if (2 * checkCount < maxCheck  ||  !result.full()) {
 		if (new_distsq*epsError < result_set.worstDist() ||  !result_set.full()) {
 			heap->insert( BranchSt(otherChild, new_distsq) );
@@ -622,7 +622,7 @@ private:
 			adding exceeds their value.
 		*/
 
-		DistanceType new_distsq = mindist + distance.accum_dist(val, node->divval);
+		DistanceType new_distsq = mindist + distance.accum_dist(val, node->divval, node->divfeat);
 
 		/* Call recursively to search next level down. */
 		searchLevelExact(result_set, vec, bestChild, mindist, epsError);

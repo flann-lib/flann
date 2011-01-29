@@ -480,8 +480,8 @@ private:
 		float distsq = 0.0;
 
 		for (size_t i=0;i<veclen();++i) {
-			if (vec[i]<bbox.low[i]) distsq += distance.accum_dist(vec[i], bbox.low[i]);
-			if (vec[i]>bbox.high[i]) distsq += distance.accum_dist(vec[i], bbox.high[i]);
+			if (vec[i]<bbox.low[i]) distsq += distance.accum_dist(vec[i], bbox.low[i], i);
+			if (vec[i]>bbox.high[i]) distsq += distance.accum_dist(vec[i], bbox.high[i], i);
 		}
 
 		return distsq;
@@ -518,18 +518,18 @@ private:
 			bestChild = node->child1;
 
 			otherChild = node->child2;
-			cut_dist = distance.accum_dist(val, node->divhigh);
+			cut_dist = distance.accum_dist(val, node->divhigh, node->divfeat);
 			if (val<node->lowval) {  // outside of cell, correct distance
-				cut_dist -= distance.accum_dist(val, node->lowval);
+				cut_dist -= distance.accum_dist(val, node->lowval, node->divfeat);
 			}
 		}
 		else {
 			bestChild = node->child2;
 
 			otherChild = node->child1;
-			cut_dist = distance.accum_dist( val, node->divlow);
+			cut_dist = distance.accum_dist( val, node->divlow, node->divfeat);
 			if (val>node->highval) {  // outside of cell, correct distance
-				cut_dist -= distance.accum_dist(val, node->highval);
+				cut_dist -= distance.accum_dist(val, node->highval, node->divfeat);
 			}
 		}
 
