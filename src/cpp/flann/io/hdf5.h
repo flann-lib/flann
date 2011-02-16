@@ -79,7 +79,7 @@ void save_to_file(const flann::Matrix<T>& dataset, const std::string& filename, 
 #if H5_VERS_MINOR >= 8
     dataset_id = H5Dcreate2(file_id, name.c_str(), get_hdf5_type<T>(), space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 #else
-    dataset_id = = H5Dcreate(file_id, name.c_str(), get_hdf5_type<T>(), space_id, H5P_DEFAULT);
+    dataset_id = H5Dcreate(file_id, name.c_str(), get_hdf5_type<T>(), space_id, H5P_DEFAULT);
 #endif
 	CHECK_ERROR(dataset_id,"Error creating dataset in file.");
 
