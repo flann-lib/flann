@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 
    /* index parameters are stored here */
    struct FLANNParameters p = DEFAULT_FLANN_PARAMETERS;
-   p.algorithm = AUTOTUNED;  /* or KDTREE, KMEANS, ... /*
+   p.algorithm = FLANN_INDEX_AUTOTUNED;  /* or FLANN_INDEX_KDTREE, FLANN_INDEX_KMEANS, ... /*
    p.target_precision = 0.9;  /* want 90% target precision */
 
    /* compute the 3 nearest-neighbors of each point in the testset */
@@ -323,7 +323,7 @@ struct KMeansIndexParams : public IndexParams
 {
 	KMeansIndexParams( int branching = 32,
 			int iterations = 11,
-			flann_centers_init_t centers_init = CENTERS_RANDOM,
+			flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM,
 			float cb_index = 0.2 );
 };
 \end{Verbatim}
@@ -364,7 +364,7 @@ struct CompositeIndexParams : public IndexParams
 	CompositeIndexParams( int trees = 4,
 			  int branching = 32,
 			  int iterations = 11,
-			  flann_centers_init_t centers_init = CENTERS_RANDOM, 
+			  flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM, 
 			  float cb_index = 0.2 );
 };
 \end{Verbatim}
@@ -605,27 +605,28 @@ The \texttt{algorithm} and \texttt{centers\_init} fields can take the
 following values:
 \begin{Verbatim}[fontsize=\footnotesize]
 enum flann_algorithm_t {
-	LINEAR = 0,
-	KDTREE = 1,
-	KMEANS = 2,
-	COMPOSITE = 3,
-	SAVED = 254,
-	AUTOTUNED = 255
+	FLANN_INDEX_LINEAR = 0,
+	FLANN_INDEX_KDTREE = 1,
+	FLANN_INDEX_KMEANS = 2,
+	FLANN_INDEX_COMPOSITE = 3,
+	FLANN_INDEX_KDTREE_SINGLE = 3,
+	FLANN_INDEX_SAVED = 254,
+	FLANN_INDEX_AUTOTUNED = 255
 };
 
 enum flann_centers_init_t {
-	CENTERS_RANDOM = 0,
-	CENTERS_GONZALES = 1,
-	CENTERS_KMEANSPP = 2
+	FLANN_CENTERS_RANDOM = 0,
+	FLANN_CENTERS_GONZALES = 1,
+	FLANN_CENTERS_KMEANSPP = 2
 };
 \end{Verbatim}
 The \texttt{algorithm} field is used to manually select the type of index
 used. The \texttt{centers\_init} field specifies how to choose the inital
 cluster centers when performing the hierarchical k-means clustering (in
-case the algorithm used is k-means): \texttt{CENTERS\_RANDOM} chooses the
-initial centers randomly, \texttt{CENTERS\_GONZALES} chooses the
+case the algorithm used is k-means): \texttt{FLANN\_CENTERS\_RANDOM} chooses the
+initial centers randomly, \texttt{FLANN\_CENTERS\_GONZALES} chooses the
 initial centers to be spaced apart from each other by using Gonzales' algorithm
-and \texttt{CENTERS\_KMEANSPP} chooses the initial centers using the algorithm
+and \texttt{FLANN\_CENTERS\_KMEANSPP} chooses the initial centers using the algorithm
 proposed in \cite{arthur_kmeanspp_2007}.
 
 The fields: \texttt{checks}, \texttt{cb\_index}, \texttt{trees}, \texttt{branching},  
@@ -640,11 +641,11 @@ The field \texttt{log\_level} controls the verbosity of the messages generated b
 library functions. It can take the following values:
 \begin{Verbatim}[fontsize=\footnotesize]
 enum flann_log_level_t {
-    LOG_NONE = 0,
-    LOG_FATAL = 1,
-    LOG_ERROR = 2,
-    LOG_WARN = 3,
-    LOG_INFO = 4
+    FLANN_LOG_NONE = 0,
+    FLANN_LOG_FATAL = 1,
+    FLANN_LOG_ERROR = 2,
+    FLANN_LOG_WARN = 3,
+    FLANN_LOG_INFO = 4
 };
 \end{Verbatim}
 \end{description}
@@ -751,16 +752,16 @@ void flann_set_distance_type(enum flann_distance_t distance_type, int order);
 \item[distance\_type] The distance type to use. Possible values are
 \begin{Verbatim}[fontsize=\footnotesize]
 enum flann_distance_t {
-	EUCLIDEAN = 1,  // squared euclidean distance
-	MANHATTAN = 2,
-	MINKOWSKI = 3,
-	HIK       = 5,
-	HELLINGER = 6,
-	CS        = 7,   // chi-square
-	KL        = 8,   // kullback-leibler divergence
+	FLANN_DIST_EUCLIDEAN = 1,  // squared euclidean distance
+	FLANN_DIST_MANHATTAN = 2,
+	FLANN_DIST_MINKOWSKI = 3,
+	FLANN_DIST_HIST_INTERSECT  = 5,
+	FlANN_DIST_HELLINGER = 6,
+	FLANN_DIST_CHI_SQUARE  = 7,   // chi-square
+	FLANN_DIST_KULLBACK_LEIBLER  = 8,   // kullback-leibler divergence
 };
 \end{Verbatim}
-\item[order] Used in for the \texttt{MINKOWSKI} distance type, to choose the order of the Minkowski distance.
+\item[order] Used in for the \texttt{FLANN\_DIST\_MINKOWSKI} distance type, to choose the order of the Minkowski distance.
 \end{description}
 
 

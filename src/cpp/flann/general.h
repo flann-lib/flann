@@ -37,19 +37,19 @@
 
 /* Nearest neighbour index algorithms */
 enum flann_algorithm_t {
-	LINEAR = 0,
-	KDTREE = 1,
-	KMEANS = 2,
-	COMPOSITE = 3,
-	KDTREE_SINGLE = 4,
-	SAVED = 254,
-	AUTOTUNED = 255
+	FLANN_INDEX_LINEAR = 0,
+	FLANN_INDEX_KDTREE = 1,
+	FLANN_INDEX_KMEANS = 2,
+	FLANN_INDEX_COMPOSITE = 3,
+	FLANN_INDEX_KDTREE_SINGLE = 4,
+	FLANN_INDEX_SAVED = 254,
+	FLANN_INDEX_AUTOTUNED = 255
 };
 
 enum flann_centers_init_t {
-	CENTERS_RANDOM = 0,
-	CENTERS_GONZALES = 1,
-	CENTERS_KMEANSPP = 2
+	FLANN_CENTERS_RANDOM = 0,
+	FLANN_CENTERS_GONZALES = 1,
+	FLANN_CENTERS_KMEANSPP = 2
 };
 
 enum flann_log_level_t {
@@ -61,16 +61,18 @@ enum flann_log_level_t {
 };
 
 enum flann_distance_t {
-	EUCLIDEAN = 1,
-	MANHATTAN = 2,
-	MINKOWSKI = 3,
-	MAX_DIST   = 4,
-	HIST_INTERSECT   = 5,
-	HELLINGER = 6,
-	CS        = 7,
-	CHI_SQUARE = 7,
-	KL        = 8,
-	KULLBACK_LEIBLER        = 8
+	FLANN_DIST_EUCLIDEAN = 1,
+	FLANN_DIST_L2 = 1,
+	FLANN_DIST_MANHATTAN = 2,
+	FLANN_DIST_L1 = 2,
+	FLANN_DIST_MINKOWSKI = 3,
+	FLANN_DIST_MAX   = 4,
+	FLANN_DIST_HIST_INTERSECT   = 5,
+	FLANN_DIST_HELLINGER = 6,
+	FLANN_DIST_CHI_SQUARE = 7,
+	FLANN_DIST_CS         = 7,
+	FLANN_DIST_KULLBACK_LEIBLER  = 8,
+	FLANN_DIST_KL                = 8
 };
 
 enum flann_datatype_t {
@@ -86,8 +88,8 @@ enum flann_datatype_t {
 	FLANN_FLOAT64 = 9
 };
 
-const int CHECKS_UNLIMITED = -1;
-const int CHECKS_AUTOTUNED = -2;
+const int FLANN_CHECKS_UNLIMITED = -1;
+const int FLANN_CHECKS_AUTOTUNED = -2;
 
 
 struct FLANNParameters {

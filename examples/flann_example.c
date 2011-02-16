@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     dists = (float*) malloc(tcount*nn*sizeof(float));
     
     p = DEFAULT_FLANN_PARAMETERS;
-    p.algorithm = KDTREE;
+    p.algorithm = FLANN_INDEX_KDTREE;
     p.trees = 8;
     p.log_level = FLANN_LOG_INFO;
 	p.checks = 64;

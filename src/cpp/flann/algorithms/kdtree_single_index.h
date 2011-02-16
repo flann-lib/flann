@@ -50,11 +50,9 @@ namespace flann
 
 struct KDTreeSingleIndexParams : public IndexParams {
 	KDTreeSingleIndexParams(int leaf_max_size_ = 10) :
-		IndexParams(KDTREE_SINGLE), leaf_max_size(leaf_max_size_) {};
+		IndexParams(FLANN_INDEX_KDTREE_SINGLE), leaf_max_size(leaf_max_size_) {};
 
 	int leaf_max_size;
-
-	flann_algorithm_t getIndexType() const { return algorithm; }
 
 	void fromParameters(const FLANNParameters& p)
 	{
@@ -194,7 +192,7 @@ public:
 
     flann_algorithm_t getType() const
     {
-        return KDTREE;
+        return FLANN_INDEX_KDTREE;
     }
 
 	/**

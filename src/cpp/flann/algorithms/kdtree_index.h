@@ -51,11 +51,9 @@ namespace flann
 
 struct KDTreeIndexParams : public IndexParams {
 	KDTreeIndexParams(int trees_ = 4) :
-		IndexParams(KDTREE), trees(trees_) {};
+		IndexParams(FLANN_INDEX_KDTREE), trees(trees_) {};
 
 	int trees;                 // number of randomized trees to use (for kdtree)
-
-	flann_algorithm_t getIndexType() const { return algorithm; }
 
 	void fromParameters(const FLANNParameters& p)
 	{
@@ -174,7 +172,7 @@ public:
 
     flann_algorithm_t getType() const
     {
-        return KDTREE;
+        return FLANN_INDEX_KDTREE;
     }
 
 	/**
@@ -301,7 +299,7 @@ public:
         int maxChecks = searchParams.checks;
         float epsError = 1+searchParams.eps;
 
-        if (maxChecks==CHECKS_UNLIMITED) {
+        if (maxChecks==FLANN_CHECKS_UNLIMITED) {
             getExactNeighbors(result, vec, epsError);
         } else {
             getNeighbors(result, vec, maxChecks, epsError);

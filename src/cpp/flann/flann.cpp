@@ -39,10 +39,10 @@
 #define FLANN_FIRST_MATCH
 
 EXPORTED struct FLANNParameters DEFAULT_FLANN_PARAMETERS = { 
-    KDTREE, 
+    FLANN_INDEX_KDTREE, 
     32, 0.2, 0.0,
     4, 4,
-    32, 11, CENTERS_RANDOM, 
+    32, 11, FLANN_CENTERS_RANDOM, 
     0.9, 0.01, 0, 0.1, 
     FLANN_LOG_NONE, 0 
 };
@@ -67,7 +67,7 @@ EXPORTED void flann_log_verbosity(int level)
     flann::log_verbosity(level);
 }
 
-flann_distance_t flann_distance_type = EUCLIDEAN;
+flann_distance_t flann_distance_type = FLANN_DIST_EUCLIDEAN;
 int flann_distance_order = 3;
 
 EXPORTED void flann_set_distance_type(flann_distance_t distance_type, int order)
@@ -94,7 +94,7 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
 		const IndexParams* index_params = index->getIndexParameters();
 		index_params->toParameters(*flann_params);
 
-        if (index->getIndex()->getType()==AUTOTUNED) {
+        if (index->getIndex()->getType()==FLANN_INDEX_AUTOTUNED) {
             AutotunedIndex<Distance>* autotuned_index = (AutotunedIndex<Distance>*)index->getIndex(); 
             flann_params->checks = autotuned_index->getSearchParameters()->checks;
             *speedup = autotuned_index->getSpeedup();
@@ -112,25 +112,25 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
 template<typename T>
 flann_index_t _flann_build_index(T* dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params)
 {
-	if (flann_distance_type==EUCLIDEAN) {
+	if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
 		return __flann_build_index<L2<T> >(dataset, rows, cols, speedup, flann_params);
 	}
-	else if (flann_distance_type==MANHATTAN) {
+	else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
 		return __flann_build_index<L1<T> >(dataset, rows, cols, speedup, flann_params);
 	}
-	else if (flann_distance_type==MINKOWSKI) {
+	else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
 		return __flann_build_index<MinkowskiDistance<T> >(dataset, rows, cols, speedup, flann_params, MinkowskiDistance<T>(flann_distance_order));
 	}
-	else if (flann_distance_type==HIST_INTERSECT) {
+	else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
 		return __flann_build_index<HistIntersectionDistance<T> >(dataset, rows, cols, speedup, flann_params);
 	}
-	else if (flann_distance_type==HELLINGER) {
+	else if (flann_distance_type==FLANN_DIST_HELLINGER) {
 		return __flann_build_index<HellingerDistance<T> >(dataset, rows, cols, speedup, flann_params);
 	}
-	else if (flann_distance_type==CHI_SQUARE) {
+	else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
 		return __flann_build_index<ChiSquareDistance<T> >(dataset, rows, cols, speedup, flann_params);
 	}
-	else if (flann_distance_type==KL) {
+	else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
 		return __flann_build_index<KL_Divergence<T> >(dataset, rows, cols, speedup, flann_params);
 	}
 	else {
@@ -186,25 +186,25 @@ int __flann_save_index(flann_index_t index_ptr, char* filename)
 template<typename T>
 int _flann_save_index(flann_index_t index_ptr, char* filename)
 {
-	if (flann_distance_type==EUCLIDEAN) {
+	if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
 		return __flann_save_index<L2<T> >(index_ptr, filename);
 	}
-	else if (flann_distance_type==MANHATTAN) {
+	else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
 		return __flann_save_index<L1<T> >(index_ptr, filename);
 	}
-	else if (flann_distance_type==MINKOWSKI) {
+	else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
 		return __flann_save_index<MinkowskiDistance<T> >(index_ptr, filename);
 	}
-	else if (flann_distance_type==HIST_INTERSECT) {
+	else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
 		return __flann_save_index<HistIntersectionDistance<T> >(index_ptr, filename);
 	}
-	else if (flann_distance_type==HELLINGER) {
+	else if (flann_distance_type==FLANN_DIST_HELLINGER) {
 		return __flann_save_index<HellingerDistance<T> >(index_ptr, filename);
 	}
-	else if (flann_distance_type==CHI_SQUARE) {
+	else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
 		return __flann_save_index<ChiSquareDistance<T> >(index_ptr, filename);
 	}
-	else if (flann_distance_type==KL) {
+	else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
 		return __flann_save_index<KL_Divergence<T> >(index_ptr, filename);
 	}
 	else {
@@ -256,25 +256,25 @@ flann_index_t __flann_load_index(char* filename, typename Distance::ElementType*
 template<typename T>
 flann_index_t _flann_load_index(char* filename, T* dataset, int rows, int cols)
 {
-	if (flann_distance_type==EUCLIDEAN) {
+	if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
 		return __flann_load_index<L2<T> >(filename, dataset, rows, cols);
 	}
-	else if (flann_distance_type==MANHATTAN) {
+	else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
 		return __flann_load_index<L1<T> >(filename, dataset, rows, cols);
 	}
-	else if (flann_distance_type==MINKOWSKI) {
+	else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
 		return __flann_load_index<MinkowskiDistance<T> >(filename, dataset, rows, cols, MinkowskiDistance<T>(flann_distance_order));
 	}
-	else if (flann_distance_type==HIST_INTERSECT) {
+	else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
 		return __flann_load_index<HistIntersectionDistance<T> >(filename, dataset, rows, cols);
 	}
-	else if (flann_distance_type==HELLINGER) {
+	else if (flann_distance_type==FLANN_DIST_HELLINGER) {
 		return __flann_load_index<HellingerDistance<T> >(filename, dataset, rows, cols);
 	}
-	else if (flann_distance_type==CHI_SQUARE) {
+	else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
 		return __flann_load_index<ChiSquareDistance<T> >(filename, dataset, rows, cols);
 	}
-	else if (flann_distance_type==KL) {
+	else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
 		return __flann_load_index<KL_Divergence<T> >(filename, dataset, rows, cols);
 	}
 	else {
@@ -344,25 +344,25 @@ template<typename T, typename R>
 int _flann_find_nearest_neighbors(T* dataset,  int rows, int cols, T* testset, int tcount,
 		int* result, R* dists, int nn, FLANNParameters* flann_params)
 {
-	if (flann_distance_type==EUCLIDEAN) {
+	if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
 		return __flann_find_nearest_neighbors<L2<T> >(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==MANHATTAN) {
+	else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
 		return __flann_find_nearest_neighbors<L1<T> >(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==MINKOWSKI) {
+	else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
 		return __flann_find_nearest_neighbors<MinkowskiDistance<T> >(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params, MinkowskiDistance<T>(flann_distance_order));
 	}
-	else if (flann_distance_type==HIST_INTERSECT) {
+	else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
 		return __flann_find_nearest_neighbors<HistIntersectionDistance<T> >(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==HELLINGER) {
+	else if (flann_distance_type==FLANN_DIST_HELLINGER) {
 		return __flann_find_nearest_neighbors<HellingerDistance<T> >(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==CHI_SQUARE) {
+	else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
 		return __flann_find_nearest_neighbors<ChiSquareDistance<T> >(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==KL) {
+	else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
 		return __flann_find_nearest_neighbors<KL_Divergence<T> >(dataset, rows, cols, testset, tcount, result, dists, nn, flann_params);
 	}
 	else {
@@ -432,25 +432,25 @@ template<typename T, typename R>
 int _flann_find_nearest_neighbors_index(flann_index_t index_ptr, T* testset, int tcount,
 		int* result, R* dists, int nn, FLANNParameters* flann_params)
 {
-	if (flann_distance_type==EUCLIDEAN) {
+	if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
 		return __flann_find_nearest_neighbors_index<L2<T> >(index_ptr, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==MANHATTAN) {
+	else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
 		return __flann_find_nearest_neighbors_index<L1<T> >(index_ptr, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==MINKOWSKI) {
+	else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
 		return __flann_find_nearest_neighbors_index<MinkowskiDistance<T> >(index_ptr, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==HIST_INTERSECT) {
+	else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
 		return __flann_find_nearest_neighbors_index<HistIntersectionDistance<T> >(index_ptr, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==HELLINGER) {
+	else if (flann_distance_type==FLANN_DIST_HELLINGER) {
 		return __flann_find_nearest_neighbors_index<HellingerDistance<T> >(index_ptr, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==CHI_SQUARE) {
+	else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
 		return __flann_find_nearest_neighbors_index<ChiSquareDistance<T> >(index_ptr, testset, tcount, result, dists, nn, flann_params);
 	}
-	else if (flann_distance_type==KL) {
+	else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
 		return __flann_find_nearest_neighbors_index<KL_Divergence<T> >(index_ptr, testset, tcount, result, dists, nn, flann_params);
 	}
 	else {
@@ -529,25 +529,25 @@ int _flann_radius_search(flann_index_t index_ptr,
 										float radius,
 										FLANNParameters* flann_params)
 {
-	if (flann_distance_type==EUCLIDEAN) {
+	if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
 		return __flann_radius_search<L2<T> >(index_ptr, query, indices, dists, max_nn, radius, flann_params);
 	}
-	else if (flann_distance_type==MANHATTAN) {
+	else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
 		return __flann_radius_search<L1<T> >(index_ptr, query, indices, dists, max_nn, radius, flann_params);
 	}
-	else if (flann_distance_type==MINKOWSKI) {
+	else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
 		return __flann_radius_search<MinkowskiDistance<T> >(index_ptr, query, indices, dists, max_nn, radius, flann_params);
 	}
-	else if (flann_distance_type==HIST_INTERSECT) {
+	else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
 		return __flann_radius_search<HistIntersectionDistance<T> >(index_ptr, query, indices, dists, max_nn, radius, flann_params);
 	}
-	else if (flann_distance_type==HELLINGER) {
+	else if (flann_distance_type==FLANN_DIST_HELLINGER) {
 		return __flann_radius_search<HellingerDistance<T> >(index_ptr, query, indices, dists, max_nn, radius, flann_params);
 	}
-	else if (flann_distance_type==CHI_SQUARE) {
+	else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
 		return __flann_radius_search<ChiSquareDistance<T> >(index_ptr, query, indices, dists, max_nn, radius, flann_params);
 	}
-	else if (flann_distance_type==KL) {
+	else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
 		return __flann_radius_search<KL_Divergence<T> >(index_ptr, query, indices, dists, max_nn, radius, flann_params);
 	}
 	else {
@@ -634,25 +634,25 @@ int __flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
 template<typename T>
 int _flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
 {
-	if (flann_distance_type==EUCLIDEAN) {
+	if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
 		return __flann_free_index<L2<T> >(index_ptr, flann_params);
 	}
-	else if (flann_distance_type==MANHATTAN) {
+	else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
 		return __flann_free_index<L1<T> >(index_ptr, flann_params);
 	}
-	else if (flann_distance_type==MINKOWSKI) {
+	else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
 		return __flann_free_index<MinkowskiDistance<T> >(index_ptr, flann_params);
 	}
-	else if (flann_distance_type==HIST_INTERSECT) {
+	else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
 		return __flann_free_index<HistIntersectionDistance<T> >(index_ptr, flann_params);
 	}
-	else if (flann_distance_type==HELLINGER) {
+	else if (flann_distance_type==FLANN_DIST_HELLINGER) {
 		return __flann_free_index<HellingerDistance<T> >(index_ptr, flann_params);
 	}
-	else if (flann_distance_type==CHI_SQUARE) {
+	else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
 		return __flann_free_index<ChiSquareDistance<T> >(index_ptr, flann_params);
 	}
-	else if (flann_distance_type==KL) {
+	else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
 		return __flann_free_index<KL_Divergence<T> >(index_ptr, flann_params);
 	}
 	else {
@@ -713,25 +713,25 @@ int __flann_compute_cluster_centers(typename Distance::ElementType* dataset, int
 template<typename T, typename R>
 int _flann_compute_cluster_centers(T* dataset, int rows, int cols, int clusters, R* result, FLANNParameters* flann_params)
 {
-	if (flann_distance_type==EUCLIDEAN) {
+	if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
 		return __flann_compute_cluster_centers<L2<T> >(dataset, rows, cols, clusters, result, flann_params);
 	}
-	else if (flann_distance_type==MANHATTAN) {
+	else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
 		return __flann_compute_cluster_centers<L1<T> >(dataset, rows, cols, clusters, result, flann_params);
 	}
-	else if (flann_distance_type==MINKOWSKI) {
+	else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
 		return __flann_compute_cluster_centers<MinkowskiDistance<T> >(dataset, rows, cols, clusters, result, flann_params, MinkowskiDistance<T>(flann_distance_order));
 	}
-	else if (flann_distance_type==HIST_INTERSECT) {
+	else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
 		return __flann_compute_cluster_centers<HistIntersectionDistance<T> >(dataset, rows, cols, clusters, result, flann_params);
 	}
-	else if (flann_distance_type==HELLINGER) {
+	else if (flann_distance_type==FLANN_DIST_HELLINGER) {
 		return __flann_compute_cluster_centers<HellingerDistance<T> >(dataset, rows, cols, clusters, result, flann_params);
 	}
-	else if (flann_distance_type==CHI_SQUARE) {
+	else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
 		return __flann_compute_cluster_centers<ChiSquareDistance<T> >(dataset, rows, cols, clusters, result, flann_params);
 	}
-	else if (flann_distance_type==KL) {
+	else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
 		return __flann_compute_cluster_centers<KL_Divergence<T> >(dataset, rows, cols, clusters, result, flann_params);
 	}
 	else {

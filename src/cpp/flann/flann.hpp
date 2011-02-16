@@ -61,11 +61,9 @@ void log_verbosity(int level);
 
 
 struct SavedIndexParams : public IndexParams {
-	SavedIndexParams(std::string filename_) : IndexParams(SAVED), filename(filename_) {}
+	SavedIndexParams(std::string filename_) : IndexParams(FLANN_INDEX_SAVED), filename(filename_) {}
 
 	std::string filename;		// filename of the stored index
-
-	flann_algorithm_t getIndexType() const { return algorithm; }
 
 	void fromParameters(const FLANNParameters& p)
 	{
@@ -150,7 +148,7 @@ Index<Distance>::Index(const Matrix<ElementType>& dataset, const IndexParams& pa
 	flann_algorithm_t index_type = params.getIndexType();
     built = false;
 
-	if (index_type==SAVED) {
+	if (index_type==FLANN_INDEX_SAVED) {
 		nnIndex = load_saved_index<Distance>(dataset, ((const SavedIndexParams&)params).filename, distance);
         built = true;
 	}

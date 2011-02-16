@@ -69,12 +69,12 @@ class StaticInit
 public:
 	StaticInit()
 	{
-		flann::ParamsFactory::instance().register_<flann::LinearIndexParams>(LINEAR);
-		flann::ParamsFactory::instance().register_<flann::KDTreeIndexParams>(KDTREE);
-		flann::ParamsFactory::instance().register_<flann::KDTreeSingleIndexParams>(KDTREE_SINGLE);
-		flann::ParamsFactory::instance().register_<flann::KMeansIndexParams>(KMEANS);
-		flann::ParamsFactory::instance().register_<flann::CompositeIndexParams>(COMPOSITE);
-		flann::ParamsFactory::instance().register_<flann::AutotunedIndexParams>(AUTOTUNED);
+		flann::ParamsFactory::instance().register_<flann::LinearIndexParams>(FLANN_INDEX_LINEAR);
+		flann::ParamsFactory::instance().register_<flann::KDTreeIndexParams>(FLANN_INDEX_KDTREE);
+		flann::ParamsFactory::instance().register_<flann::KDTreeSingleIndexParams>(FLANN_INDEX_KDTREE_SINGLE);
+		flann::ParamsFactory::instance().register_<flann::KMeansIndexParams>(FLANN_INDEX_KMEANS);
+		flann::ParamsFactory::instance().register_<flann::CompositeIndexParams>(FLANN_INDEX_COMPOSITE);
+		flann::ParamsFactory::instance().register_<flann::AutotunedIndexParams>(FLANN_INDEX_AUTOTUNED);
 //		ParamsFactory::instance().register_<SavedIndexParams>(SAVED);
 	}
 };

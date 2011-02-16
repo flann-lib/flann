@@ -50,22 +50,22 @@ NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementT
 
 	NNIndex<Distance>* nnIndex;
 	switch (index_type) {
-	case LINEAR:
+	case FLANN_INDEX_LINEAR:
 		nnIndex = new LinearIndex<Distance>(dataset, (const LinearIndexParams&)params, distance);
 		break;
-	case KDTREE_SINGLE:
+	case FLANN_INDEX_KDTREE_SINGLE:
 		nnIndex = new KDTreeSingleIndex<Distance>(dataset, (const KDTreeSingleIndexParams&)params, distance);
 	    break;
-    case KDTREE:
+    case FLANN_INDEX_KDTREE:
 		nnIndex = new KDTreeIndex<Distance>(dataset, (const KDTreeIndexParams&)params, distance);
 		break;
-	case KMEANS:
+	case FLANN_INDEX_KMEANS:
 		nnIndex = new KMeansIndex<Distance>(dataset, (const KMeansIndexParams&)params, distance);
 		break;
-	case COMPOSITE:
+	case FLANN_INDEX_COMPOSITE:
 		nnIndex = new CompositeIndex<Distance>(dataset, (const CompositeIndexParams&) params, distance);
 		break;
-	case AUTOTUNED:
+	case FLANN_INDEX_AUTOTUNED:
 		nnIndex = new AutotunedIndex<Distance>(dataset, (const AutotunedIndexParams&) params, distance);
 		break;
 	default:
