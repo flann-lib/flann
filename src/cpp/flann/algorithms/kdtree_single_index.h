@@ -52,7 +52,7 @@ namespace flann
 
 struct KDTreeSingleIndexParams : public IndexParams {
 	KDTreeSingleIndexParams(int leaf_max_size_ = 10, bool reorder_ = true, int dim_ = -1) :
-		IndexParams(KDTREE_SINGLE), leaf_max_size(leaf_max_size_), 
+		IndexParams(FLANN_INDEX_KDTREE_SINGLE), leaf_max_size(leaf_max_size_), 
 		reorder(reorder_), dim(dim_) {};
 
 	int leaf_max_size;
@@ -170,7 +170,7 @@ public:
 
     flann_algorithm_t getType() const
     {
-        return KDTREE;
+        return FLANN_INDEX_KDTREE_SINGLE;
     }
 
 	/**
@@ -486,11 +486,11 @@ private:
 
 		for (size_t i=0;i<dim;++i) {
 			if (vec[i]<root_bbox[i].low) {
-                dists[i] = distance.accum_dist(vec[i], root_bbox[i].low);
+                dists[i] = distance.accum_dist(vec[i], root_bbox[i].low, i);
                 distsq += dists[i];
             }
 			if (vec[i]>root_bbox[i].high) {
-                dists[i] = distance.accum_dist(vec[i], root_bbox[i].high);
+                dists[i] = distance.accum_dist(vec[i], root_bbox[i].high, i);
                 distsq += dists[i];
             }
 		}
@@ -530,12 +530,12 @@ private:
 		if ((diff1+diff2)<0) {
 			bestChild = node->child1;
 			otherChild = node->child2;
-			cut_dist = distance.accum_dist(val, node->divhigh);
+			cut_dist = distance.accum_dist(val, node->divhigh, idx);
 		}
 		else {
 			bestChild = node->child2;
 			otherChild = node->child1;
-			cut_dist = distance.accum_dist( val, node->divlow);
+			cut_dist = distance.accum_dist( val, node->divlow, idx);
 		}
 
 		/* Call recursively to search next level down. */
