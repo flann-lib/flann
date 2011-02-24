@@ -29,17 +29,7 @@ function flann_set_distance_type(type, order)
 %
 % Marius Muja, March 2009
 
-    distances = struct('euclidean', 1, 
-                        'manhattan', 2, 
-                        'minkowski', 3, 
-                        'max_dist', 4,
-                        'hik', 5,
-                        'hellinger', 6,
-                        'chi_square', 7,
-                        'cs', 7,
-                        'kullback_leibler', 8,
-                        'kl', 8,
-                        );
+    distances = struct('euclidean', 1, 'manhattan', 2, 'minkowski', 3, 'max_dist', 4, 'hik', 5, 'hellinger', 6, 'chi_square', 7, 'cs', 7, 'kullback_leibler', 8, 'kl', 8);
     function id = value2id(map,value)
         id = map.(value);
     end
