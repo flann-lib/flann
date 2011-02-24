@@ -45,31 +45,35 @@
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
 
+#include <stdio.h>
+
 namespace flann
 {
 
 struct KDTreeSingleIndexParams : public IndexParams {
-	KDTreeSingleIndexParams(int leaf_max_size_ = 10) :
-		IndexParams(FLANN_INDEX_KDTREE_SINGLE), leaf_max_size(leaf_max_size_) {};
+	KDTreeSingleIndexParams(int leaf_max_size_ = 10, bool reorder_ = true, int dim_ = -1) :
+		IndexParams(KDTREE_SINGLE), leaf_max_size(leaf_max_size_), 
+		reorder(reorder_), dim(dim_) {};
 
 	int leaf_max_size;
+    bool reorder;
+    int dim;
+
+	flann_algorithm_t getIndexType() const { return algorithm; }
 
 	void fromParameters(const FLANNParameters& p)
 	{
 		assert(p.algorithm==algorithm);
-//		trees = p.trees;
 	}
 
 	void toParameters(FLANNParameters& p) const
 	{
 		p.algorithm = algorithm;
-//		p.trees = trees;
 	}
 
 	void print() const
 	{
 		logger.info("Index type: %d\n",(int)algorithm);
-//		logger.info("Trees: %d\n", trees);
 	}
 
 };
@@ -93,35 +97,40 @@ class KDTreeSingleIndex : public NNIndex<Distance>
 	int* vind;
 
 	int leaf_max_size_;
+    bool reorder_;
 
 
 	/**
 	 * The dataset used by this index
 	 */
 	const Matrix<ElementType> dataset;
-
+    Matrix<ElementType> data;
     const KDTreeSingleIndexParams index_params;
 
 	size_t size_;
-	size_t veclen_;
+	size_t dim;
 
 
 	/*--------------------- Internal Data Structures --------------------------*/
     struct Node {
-    	int *ind;
-    	int count;
-    	/**
-    	 * Dimension used for subdivision.
-    	 */
-    	int divfeat;
-		/**
-		 * The values used for subdivision.
-		 */
-		DistanceType divlow, divhigh;
-		/**
-		 * Values indicating the borders of the cell in the splitting dimension
-		 */
-		DistanceType lowval, highval;
+        union {
+            struct {
+                /**
+                * Indices of points in leaf node
+                */
+                int left, right;
+            };
+            struct {
+                /**
+                * Dimension used for subdivision.
+                */
+                int divfeat;
+                /**
+                * The values used for subdivision.
+                */
+                DistanceType divlow, divhigh;
+            };
+        };
 		/**
 		 * The child nodes.
 		 */
@@ -129,42 +138,13 @@ class KDTreeSingleIndex : public NNIndex<Distance>
     };
 	typedef Node* NodePtr;
 
-	struct BoundingBox {
-		ElementType* low;
-		ElementType* high;
-		size_t size;
+    
+    struct Interval {
+        ElementType low, high;
+    };
 
-		BoundingBox() {
-			low = NULL;
-			high = NULL;
-		}
-
-		~BoundingBox() {
-			if (low!=NULL) delete[] low;
-			if (high!=NULL) delete[] high;
-		}
-
-		void computeFromData(const Matrix<ElementType>& data)
-		{
-			assert(data.rows>0);
-			size = data.cols;
-			low = new ElementType[size];
-			high = new ElementType[size];
-
-			for (size_t i=0;i<size;++i) {
-				low[i] = data[0][i];
-				high[i] = data[0][i];
-			}
-
-			for (size_t k=1;k<data.rows;++k) {
-				for (size_t i=0;i<size;++i) {
-					if (data[k][i]<low[i]) low[i] = data[k][i];
-					if (data[k][i]>high[i]) high[i] = data[k][i];
-				}
-			}
-		}
-	};
-
+    typedef std::vector<Interval> BoundingBox;
+    
     /**
      * Array of k-d trees used to find neighbours.
      */
@@ -172,7 +152,7 @@ class KDTreeSingleIndex : public NNIndex<Distance>
     typedef BranchStruct<NodePtr, DistanceType> BranchSt;
     typedef BranchSt* Branch;
 
-    BoundingBox bbox;
+    BoundingBox root_bbox;
 
 	/**
 	 * Pooled memory allocator.
@@ -186,13 +166,11 @@ class KDTreeSingleIndex : public NNIndex<Distance>
 public:
 
 	Distance distance;
-
 	int count_leaf;
-
 
     flann_algorithm_t getType() const
     {
-        return FLANN_INDEX_KDTREE;
+        return KDTREE;
     }
 
 	/**
@@ -207,16 +185,16 @@ public:
 		dataset(inputData), index_params(params), distance(d)
 	{
         size_ = dataset.rows;
-        veclen_ = dataset.cols;
+        dim = dataset.cols;
+        if (params.dim>0) dim = params.dim;
         leaf_max_size_ = params.leaf_max_size;
+        reorder_ = params.reorder;
 
 		// Create a permutable array of indices to the input vectors.
 		vind = new int[size_];
 		for (size_t i = 0; i < size_; i++) {
 			vind[i] = i;
 		}
-		randomizeVector(vind, size_);
-		bbox.computeFromData(dataset);
 
         count_leaf = 0;
 	}
@@ -229,22 +207,25 @@ public:
 		delete[] vind;
 	}
 
-
-	template <typename Vector>
-	void randomizeVector(Vector& vec, int vec_size)
-	{
-		for (int j = vec_size; j > 0; --j) {
-			int rnd = rand_int(j);
-			std::swap(vec[j-1], vec[rnd]);
-		}
-	}
-
 	/**
 	 * Builds the index
 	 */
 	void buildIndex()
 	{
-		root_node = divideTree(vind, size_ ); 	// construct the tree
+        computeBoundingBox(root_bbox);
+		root_node = divideTree(0, size_, root_bbox ); 	// construct the tree
+        
+        if (reorder_) {
+            data = flann::Matrix<ElementType>(new ElementType[size_*dim], size_, dim);
+            for (size_t i=0;i<size_;++i) {
+                for (size_t j=0;j<dim;++j) {
+                    data[i][j] = dataset[vind[i]][j];
+                }
+            }
+        }
+        else {
+            data = dataset;
+        }
 	}
 
     void saveIndex(FILE* stream)
@@ -271,7 +252,7 @@ public:
     */
     size_t veclen() const
     {
-        return veclen_;
+        return dim;
     }
 
 	/**
@@ -294,11 +275,11 @@ public:
      */
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-//        int maxChecks = searchParams.checks;
         float epsError = 1+searchParams.eps;
-
-		float distsq = computeInitialDistance(vec);
-		searchLevel(result, vec, root_node, distsq, epsError);
+        
+        std::vector<DistanceType> dists(dim,0);
+		DistanceType distsq = computeInitialDistances(vec, dists);
+		searchLevel(result, vec, root_node, distsq, dists, epsError);
     }
 
 	const IndexParams* getParameters() const
@@ -334,6 +315,22 @@ private:
     }
 
 
+    void computeBoundingBox(BoundingBox& bbox)
+    {
+        bbox.resize(dim);
+        for (size_t i=0;i<dim;++i) {
+            bbox[i].low = dataset[0][i];
+            bbox[i].high = dataset[0][i];
+        }
+        for (size_t k=1;k<dataset.rows;++k) {
+            for (size_t i=0;i<dim;++i) {
+                if (dataset[k][i]<bbox[i].low) bbox[i].low = dataset[k][i];
+                if (dataset[k][i]>bbox[i].high) bbox[i].high = dataset[k][i];
+            }
+        }
+    }
+
+
 	/**
 	 * Create a tree node that subdivides the list of vecs from vind[first]
 	 * to vind[last].  The routine is called recursively on each sublist.
@@ -343,49 +340,54 @@ private:
 	 * 			first = index of the first vector
 	 * 			last = index of the last vector
 	 */
-	NodePtr divideTree(int* ind, int count)
+	NodePtr divideTree(int left, int right, BoundingBox& bbox)
 	{
 		NodePtr node = pool.allocate<Node>(); // allocate memory
 
 		/* If too few exemplars remain, then make this a leaf node. */
-		if ( count <= leaf_max_size_) {
+		if ( (right-left) <= leaf_max_size_) {
 			node->child1 = node->child2 = NULL;    /* Mark as leaf node. */
-			node->ind = ind;    /* Store index of this vec. */
-			node->count = count; /* and length */
+			node->left = left;
+			node->right = right;
+            
+            // compute bounding-box of leaf points
+            for (size_t i=0;i<dim;++i) {
+                bbox[i].low = dataset[vind[left]][i];
+                bbox[i].high = dataset[vind[left]][i];
+            }
+            for (int k=left+1;k<right;++k) {
+                for (size_t i=0;i<dim;++i) {
+                    if (bbox[i].low>dataset[vind[k]][i]) bbox[i].low=dataset[vind[k]][i];
+                    if (bbox[i].high<dataset[vind[k]][i]) bbox[i].high=dataset[vind[k]][i];
+                }
+            }
 		}
 		else {
-			int idx;
-			int cutfeat;
-			DistanceType cutval;
-			ElementType min_val, max_val;
+            int idx;                                                                       
+            int cutfeat;                                                                   
+            DistanceType cutval;                                                                               
+            middleSplit(vind+left, right-left, idx, cutfeat, cutval, bbox);                                 
+            
+            node->divfeat = cutfeat;
+            
+            BoundingBox left_bbox(bbox);
+            left_bbox[cutfeat].high = cutval;
+            node->child1 = divideTree(left, left+idx, left_bbox);
 
-			middleSplit(ind, count, idx, cutfeat, cutval);
-
-			node->divfeat = cutfeat;
-			node->lowval = bbox.low[cutfeat];
-			node->highval = bbox.high[cutfeat];
-
-			computeMinMax(ind, idx, cutfeat, min_val, max_val);
-			bbox.high[cutfeat] = max_val;
-			node->divlow = max_val;
-			node->child1 = divideTree(ind, idx);
-			bbox.high[cutfeat] = node->highval;
-
-			computeMinMax(ind+idx, count-idx, cutfeat, min_val, max_val);
-			bbox.low[cutfeat] = min_val;
-			node->divhigh = min_val;
-			node->child2 = divideTree(ind+idx, count-idx);
-			bbox.low[cutfeat] = node->lowval;
-		}
+            BoundingBox right_bbox(bbox);
+            right_bbox[cutfeat].low = cutval;
+            node->child2 = divideTree(left+idx, right, right_bbox);
+            
+            node->divlow = left_bbox[cutfeat].high;
+            node->divhigh = right_bbox[cutfeat].low;
+            
+            for (size_t i=0;i<dim;++i) {
+                bbox[i].low = std::min(left_bbox[i].low, right_bbox[i].low);
+                bbox[i].high = std::max(left_bbox[i].high, right_bbox[i].high);
+            }
+        }
 
 		return node;
-	}
-
-	ElementType computeSpead(int* ind, int count, int dim)
-	{
-		ElementType min_elem, max_elem;
-		computeMinMax(ind, count, dim, min_elem, max_elem);
-		return max_elem-min_elem;
 	}
 
 	void computeMinMax(int* ind, int count, int dim, ElementType& min_elem, ElementType& max_elem)
@@ -399,37 +401,42 @@ private:
 		}
 	}
 
-	void middleSplit(int* ind, int count, int& index, int& cutfeat, DistanceType& cutval)
+	void middleSplit(int* ind, int count, int& index, int& cutfeat, DistanceType& cutval, const BoundingBox& bbox)
 	{
-		const float EPS=0.00001;
-		ElementType max_span = bbox.high[0]-bbox.low[0];
-		for (size_t i=1;i<veclen_;++i) {
-			ElementType span = bbox.high[i]-bbox.low[i];
+        // find the largest span from the approximate bounding box
+		ElementType max_span = bbox[0].high-bbox[0].low;
+        cutfeat = 0;
+        cutval = (bbox[0].high+bbox[0].low)/2;
+		for (size_t i=1;i<dim;++i) {
+			ElementType span = bbox[i].low-bbox[i].low;
 			if (span>max_span) {
 				max_span = span;
+                cutfeat = i;
+                cutval = (bbox[i].high+bbox[i].low)/2;
 			}
 		}
-		ElementType max_spread = -1;
-		cutfeat = 0;
-		for (size_t i=0;i<veclen_;++i) {
-			ElementType span = bbox.high[i]-bbox.low[i];
-			if (span>(1-EPS)*max_span) {
-				ElementType spread = computeSpead(ind, count, i);
-				if (spread>max_spread) {
+		
+		// compute exact span on the found dimension
+        ElementType min_elem, max_elem;
+        computeMinMax(ind, count, cutfeat, min_elem, max_elem);
+        cutval = (min_elem+max_elem)/2;
+        max_span = max_elem - min_elem;
+        
+        // check if a dimension of a largest span exists
+		size_t k = cutfeat;
+		for (size_t i=0;i<dim;++i) {
+            if (i==k) continue;
+			ElementType span = bbox[i].high-bbox[i].low;
+			if (span>max_span) {
+                computeMinMax(ind, count, i, min_elem, max_elem);
+                span = max_elem - min_elem;
+				if (span>max_span) {
+                    max_span = span;
 					cutfeat = i;
-					max_spread = spread;
+                    cutval = (min_elem+max_elem)/2;
 				}
 			}
 		}
-		// split in the middle
-		DistanceType split_val = (bbox.low[cutfeat]+bbox.high[cutfeat])/2;
-		ElementType min_elem, max_elem;
-		computeMinMax(ind, count, cutfeat, min_elem, max_elem);
-
-		if (split_val<min_elem) cutval = min_elem;
-		else if (split_val>max_elem) cutval = max_elem;
-		else cutval = split_val;
-
 		int lim1, lim2;
 		planeSplit(ind, count, cutfeat, cutval, lim1, lim2);
 
@@ -473,13 +480,19 @@ private:
 		lim2 = left;
 	}
 
-	float computeInitialDistance(const ElementType* vec)
+	DistanceType computeInitialDistances(const ElementType* vec, std::vector<DistanceType>& dists)
 	{
-		float distsq = 0.0;
+		DistanceType distsq = 0.0;
 
-		for (size_t i=0;i<veclen();++i) {
-			if (vec[i]<bbox.low[i]) distsq += distance.accum_dist(vec[i], bbox.low[i], i);
-			if (vec[i]>bbox.high[i]) distsq += distance.accum_dist(vec[i], bbox.high[i], i);
+		for (size_t i=0;i<dim;++i) {
+			if (vec[i]<root_bbox[i].low) {
+                dists[i] = distance.accum_dist(vec[i], root_bbox[i].low);
+                distsq += dists[i];
+            }
+			if (vec[i]>root_bbox[i].high) {
+                dists[i] = distance.accum_dist(vec[i], root_bbox[i].high);
+                distsq += dists[i];
+            }
 		}
 
 		return distsq;
@@ -488,56 +501,53 @@ private:
 	/**
 	 * Performs an exact search in the tree starting from a node.
 	 */
-	void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, float mindistsq, const float epsError)
+	void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindistsq, 
+                     std::vector<DistanceType>& dists, const float epsError)
 	{
 		/* If this is a leaf node, then do check and return. */
 		if (node->child1 == NULL && node->child2 == NULL) {
-			count_leaf += node->count;
-			float worst_dist = result_set.worstDist();
-			for (int i=0;i<node->count;++i) {
-				int index = node->ind[i];
-				float dist = distance(vec, dataset[index], veclen_, worst_dist);
+			count_leaf += (node->right-node->left);
+			DistanceType worst_dist = result_set.worstDist();
+			for (int i=node->left;i<node->right;++i) {
+				int index = reorder_ ? i : vind[i];
+				DistanceType dist = distance(vec, data[index], dim, worst_dist);
 				if (dist<worst_dist) {
-					result_set.addPoint(dist,index);
+					result_set.addPoint(dist,vind[i]);
 				}
 			}
 			return;
 		}
 
 		/* Which child branch should be taken first? */
-		ElementType val = vec[node->divfeat];
+        int idx = node->divfeat;
+		ElementType val = vec[idx];
 		DistanceType diff1 = val - node->divlow;
 		DistanceType diff2 = val - node->divhigh;
 
 		NodePtr bestChild;
 		NodePtr otherChild;
-		float cut_dist = 0;
+		DistanceType cut_dist;
 		if ((diff1+diff2)<0) {
 			bestChild = node->child1;
-
 			otherChild = node->child2;
-			cut_dist = distance.accum_dist(val, node->divhigh, node->divfeat);
-			if (val<node->lowval) {  // outside of cell, correct distance
-				cut_dist -= distance.accum_dist(val, node->lowval, node->divfeat);
-			}
+			cut_dist = distance.accum_dist(val, node->divhigh);
 		}
 		else {
 			bestChild = node->child2;
-
 			otherChild = node->child1;
-			cut_dist = distance.accum_dist( val, node->divlow, node->divfeat);
-			if (val>node->highval) {  // outside of cell, correct distance
-				cut_dist -= distance.accum_dist(val, node->highval, node->divfeat);
-			}
+			cut_dist = distance.accum_dist( val, node->divlow);
 		}
 
 		/* Call recursively to search next level down. */
-		searchLevel(result_set, vec, bestChild, mindistsq, epsError);
+		searchLevel(result_set, vec, bestChild, mindistsq, dists, epsError);
 
-		mindistsq = mindistsq + cut_dist;
+        DistanceType dst = dists[idx];
+		mindistsq = mindistsq + cut_dist - dst;
+        dists[idx] = cut_dist;
 		if (mindistsq*epsError<=result_set.worstDist()) {
-			searchLevel(result_set, vec, otherChild, mindistsq, epsError);
+			searchLevel(result_set, vec, otherChild, mindistsq, dists, epsError);
 		}
+        dists[idx] = dst;
 	}
 
 };   // class KDTree
