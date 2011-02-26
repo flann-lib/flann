@@ -205,6 +205,7 @@ public:
 	~KDTreeSingleIndex()
 	{
 		delete[] vind;
+        if (reorder_) data.free();
 	}
 
 	/**
@@ -216,6 +217,7 @@ public:
 		root_node = divideTree(0, size_, root_bbox ); 	// construct the tree
         
         if (reorder_) {
+            data.free();
             data = flann::Matrix<ElementType>(new ElementType[size_*dim], size_, dim);
             for (size_t i=0;i<size_;++i) {
                 for (size_t j=0;j<dim;++j) {
