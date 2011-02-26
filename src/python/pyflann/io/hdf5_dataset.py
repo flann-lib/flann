@@ -31,7 +31,7 @@ import numpy
 have_h5py = True
 try:
     import h5py
-except Exception as e:
+except Exception,e:
     have_h5py = False
 
 if not have_h5py:
@@ -64,7 +64,7 @@ else:
             h5file = h5py.File(filename)
             h5file.create_dataset(dataset_name, data=dataset)
             h5file.close()
-        except Exception as e:
+        except Exception,e:
             h5file.close()
             raise FLANNException(e)
 
@@ -82,7 +82,7 @@ else:
                     data = numpy.array(h5file[node])
             h5file.close()
             return data
-        except Exception as e:
+        except Exception,e:
             h5file.close()
             raise FLANNException(e)
             

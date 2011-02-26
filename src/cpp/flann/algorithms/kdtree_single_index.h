@@ -45,8 +45,6 @@
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
 
-#include <stdio.h>
-
 namespace flann
 {
 

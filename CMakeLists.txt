@@ -103,7 +103,13 @@ include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 # require proper c++
 #add_definitions( "-Wall -ansi -pedantic" )
 # HDF5 uses long long which is not ansi
-add_definitions( "-Wall" )
+if (WIN32)
+    # lots of warnings with cl.exe right now
+    # TODO: fix this
+    add_definitions( "-w" )
+else(WIN32)
+    add_definitions( "-Wall" )
+endif(WIN32)
 
 add_subdirectory( cmake )
 add_subdirectory( src )

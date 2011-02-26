@@ -33,7 +33,7 @@
 #include "flann/algorithms/nn_index.h"
 #include <cstdio>
 #include <cstring>
-
+#include <vector>
 
 namespace flann
 {
@@ -103,14 +103,58 @@ void save_value(FILE* stream, const T& value, int count = 1)
 	fwrite(&value, sizeof(value),count, stream);
 }
 
+template<typename T>
+void save_value(FILE* stream, const flann::Matrix<T>& value, int count = 1)
+{
+    fwrite(&value, sizeof(value),1, stream);
+    fwrite(value.data, sizeof(T),value.rows*value.cols, stream);
+}
+
+template<typename T>
+void save_value(FILE* stream, const std::vector<T>& value)
+{
+    size_t size = value.size();
+    fwrite(&size, sizeof(size_t), 1, stream);
+    fwrite(&value[0], sizeof(T), size, stream);
+}
 
 template<typename T>
 void load_value(FILE* stream, T& value, int count = 1)
 {
-	int read_cnt = fread(&value, sizeof(value),count, stream);
-	if (read_cnt!=count) {
-		throw FLANNException("Cannot read from file");
-	}
+    int read_cnt = fread(&value, sizeof(value), count, stream);
+    if (read_cnt != count) {
+        throw FLANNException("Cannot read from file");
+    }
+}
+
+template<typename T>
+void load_value(FILE* stream, flann::Matrix<T>& value)
+{
+    int read_cnt = fread(&value, sizeof(value), 1, stream);
+    if (read_cnt != 1) {
+        throw FLANNException("Cannot read from file");
+    }
+    value.data = new T[value.rows*value.cols];
+    read_cnt = fread(value.data, sizeof(T), value.rows*value.cols, stream);
+    if (read_cnt != int(value.rows*value.cols)) {
+        throw FLANNException("Cannot read from file");
+    }    
+}
+
+
+template<typename T>
+void load_value(FILE* stream, std::vector<T>& value)
+{
+    size_t size;
+    int read_cnt = fread(&size, sizeof(size_t), 1, stream);
+    if (read_cnt!=1) {
+        throw FLANNException("Cannot read from file");
+    }
+    value.resize(size);
+    read_cnt = fread(&value[0], sizeof(T), size, stream);
+    if (read_cnt!=int(size)) {
+        throw FLANNException("Cannot read from file");
+    }
 }
 
 }

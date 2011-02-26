@@ -44,6 +44,7 @@
 namespace flann
 {
 
+typedef ObjectFactory<IndexParams, flann_algorithm_t> ParamsFactory;
 
 template<typename Distance>
  NNIndex<Distance>* index_by_type(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)

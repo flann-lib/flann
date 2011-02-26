@@ -36,6 +36,7 @@
 #include "flann/nn/index_testing.h"
 #include "flann/util/saving.h"
 #include "flann/nn/ground_truth.h"
+#include "flann/util/object_factory.h"
 // index types
 #include "flann/algorithms/all_indices.h"
 
@@ -45,7 +46,7 @@ namespace flann
 
 void log_verbosity(int level)
 {
-    if (level>=0) {
+    if (level >= 0) {
         logger.setLevel(level);
     }
 }
@@ -53,30 +54,31 @@ void log_verbosity(int level)
 
 IndexParams* IndexParams::createFromParameters(const FLANNParameters& p)
 {
-	IndexParams* params = ParamsFactory::instance().create(p.algorithm);
-	params->fromParameters(p);
+    IndexParams* params = ParamsFactory::instance().create(p.algorithm);
+    params->fromParameters(p);
 
-	return params;
+    return params;
 }
 
 
 } // namespace FLANN
 
 
-namespace {
+namespace
+{
 class StaticInit
 {
+    typedef flann::ObjectFactory<flann::IndexParams, flann_algorithm_t> ParamsFactory;
 public:
-	StaticInit()
-	{
-		flann::ParamsFactory::instance().register_<flann::LinearIndexParams>(FLANN_INDEX_LINEAR);
-		flann::ParamsFactory::instance().register_<flann::KDTreeIndexParams>(FLANN_INDEX_KDTREE);
-		flann::ParamsFactory::instance().register_<flann::KDTreeSingleIndexParams>(FLANN_INDEX_KDTREE_SINGLE);
-		flann::ParamsFactory::instance().register_<flann::KMeansIndexParams>(FLANN_INDEX_KMEANS);
-		flann::ParamsFactory::instance().register_<flann::CompositeIndexParams>(FLANN_INDEX_COMPOSITE);
-		flann::ParamsFactory::instance().register_<flann::AutotunedIndexParams>(FLANN_INDEX_AUTOTUNED);
-//		ParamsFactory::instance().register_<SavedIndexParams>(SAVED);
-	}
+    StaticInit() {
+        ParamsFactory::instance().register_<flann::LinearIndexParams>(FLANN_INDEX_LINEAR);
+        ParamsFactory::instance().register_<flann::KDTreeIndexParams>(FLANN_INDEX_KDTREE);
+        ParamsFactory::instance().register_<flann::KDTreeSingleIndexParams>(FLANN_INDEX_KDTREE_SINGLE);
+        ParamsFactory::instance().register_<flann::KMeansIndexParams>(FLANN_INDEX_KMEANS);
+        ParamsFactory::instance().register_<flann::CompositeIndexParams>(FLANN_INDEX_COMPOSITE);
+        ParamsFactory::instance().register_<flann::AutotunedIndexParams>(FLANN_INDEX_AUTOTUNED);
+//  ParamsFactory::instance().register_<SavedIndexParams>(SAVED);
+    }
 };
 
 static StaticInit __init;

@@ -145,7 +145,7 @@ def load_flann_library():
             #print "Trying ",os.path.join(root_dir,'lib',libname)
             flannlib = cdll[os.path.join(root_dir,'lib',libname)]
             loaded = True
-        except Exception as e:
+        except Exception,e:
            # print e
             if root_dir == '/':
                 root_dir = None

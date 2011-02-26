@@ -47,7 +47,7 @@ void seed_random(unsigned int seed);
 /*
  * Generates a random double value.
  */
-double rand_double(double high = 1.0, double low=0);
+double rand_double(double high = 1.0, double low = 0);
 
 /*
  * Generates a random integer value.
@@ -64,70 +64,71 @@ int rand_int(int high = RAND_MAX, int low = 0);
  */
 class UniqueRandom
 {
-	int* vals;
+    int* vals;
     int size;
-	int counter;
+    int counter;
 
 public:
-	/**
-	 * Constructor.
-	 * Params:
-	 *     n = the size of the interval from which to generate
-	 *     		random numbers.
-	 */
-	UniqueRandom(int n) : vals(NULL) {
-		init(n);
-	}
+    /**
+     * Constructor.
+     * Params:
+     *     n = the size of the interval from which to generate
+     *       random numbers.
+     */
+    UniqueRandom(int n) : vals(NULL) {
+        init(n);
+    }
 
-	~UniqueRandom()
-	{
-		delete[] vals;
-	}
+    ~UniqueRandom() {
+        delete[] vals;
+    }
 
-	/**
-	 * Initializes the number generator.
-	 * Params:
-	 * 		n = the size of the interval from which to generate
-	 *     		random numbers.
-	 */
-	void init(int n)
-	{
-    	// create and initialize an array of size n
-		if (vals == NULL || n!=size) {
+    /**
+     * Initializes the number generator.
+     * Params:
+     *   n = the size of the interval from which to generate
+     *       random numbers.
+     */
+    void init(int n) {
+        // create and initialize an array of size n
+        if (vals == NULL || n != size) {
             delete[] vals;
-	        size = n;
+            size = n;
             vals = new int[size];
-    	}
-    	for(int i=0;i<size;++i) {
-			vals[i] = i;
-		}
+        }
+        for (int i = 0;i < size;++i) {
+            vals[i] = i;
+        }
 
-		// shuffle the elements in the array
+        // shuffle the elements in the array
         // Fisher-Yates shuffle
-		for (int i=size;i>0;--i) {
-// 			int rand = cast(int) (drand48() * n);
-			int rnd = rand_int(i);
-			assert(rnd >=0 && rnd < i);
-			std::swap(vals[i-1], vals[rnd]);
-		}
+        for (int i = size;i > 0;--i) {
+//    int rand = cast(int) (drand48() * n);
+            int rnd = rand_int(i);
+            assert(rnd >= 0 && rnd < i);
+            std::swap(vals[i-1], vals[rnd]);
+        }
 
-		counter = 0;
-	}
+        counter = 0;
+    }
 
-	/**
-	 * Return a distinct random integer in greater or equal to 0 and less
-	 * than 'n' on each call. It should be called maximum 'n' times.
-	 * Returns: a random integer
-	 */
-	int next() {
-		if (counter==size) {
-			return -1;
-		} else {
-			return vals[counter++];
-		}
-	}
+    /**
+     * Return a distinct random integer in greater or equal to 0 and less
+     * than 'n' on each call. It should be called maximum 'n' times.
+     * Returns: a random integer
+     */
+    int next() {
+        if (counter == size) {
+            return -1;
+        }
+        else {
+            return vals[counter++];
+        }
+    }
 };
 
 }
 
 #endif //RANDOM_H
+
+

@@ -58,5 +58,5 @@ def save(dataset, filename, format = None, **kwargs):
             format = extension[1:]
         handler = dataset_formats[format]
         handler.save(dataset, filename, **kwargs)
-    except Exception as e:
+    except Exception,e:
         raise FLANNException(e)

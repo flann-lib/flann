@@ -37,221 +37,226 @@
 
 namespace flann
 {
-namespace mpi
-{
+namespace mpi {
 
 template<typename DistanceType>
-struct SearchResults
-{
-	flann::Matrix<int> indices;
-	flann::Matrix<DistanceType> dists;
+struct SearchResults {
+    flann::Matrix<int> indices;
+    flann::Matrix<DistanceType> dists;
 
-	template<typename Archive>
-	void serialize(Archive& ar, const unsigned int version)
-	{
-		ar & indices.rows;
-		ar & indices.cols;
-        if(Archive::is_loading::value) {
+    template<typename Archive>
+    void serialize(Archive& ar, const unsigned int version) {
+        ar & indices.rows;
+        ar & indices.cols;
+        if (Archive::is_loading::value) {
             indices.data = new int[indices.rows*indices.cols];
         }
-		ar & boost::serialization::make_array(indices.data, indices.rows*indices.cols);
-        if(Archive::is_saving::value) {
-        	indices.free();
+        ar & boost::serialization::make_array(indices.data, indices.rows*indices.cols);
+        if (Archive::is_saving::value) {
+            indices.free();
         }
-		ar & dists.rows;
-		ar & dists.cols;
-        if(Archive::is_loading::value) {
+        ar & dists.rows;
+        ar & dists.cols;
+        if (Archive::is_loading::value) {
             dists.data = new DistanceType[dists.rows*dists.cols];
         }
-		ar & boost::serialization::make_array(dists.data, dists.rows*dists.cols);
-        if(Archive::is_saving::value) {
-        	dists.free();
+        ar & boost::serialization::make_array(dists.data, dists.rows*dists.cols);
+        if (Archive::is_saving::value) {
+            dists.free();
         }
-	}
+    }
 };
 
 template<typename DistanceType>
-struct ResultsMerger
-{
-	SearchResults<DistanceType> operator()(SearchResults<DistanceType> a, SearchResults<DistanceType> b)
-	{
-		SearchResults<DistanceType> results;
-		results.indices.rows = a.indices.rows;
-		results.indices.cols = a.indices.cols;
-		results.indices.data = new int[results.indices.rows*results.indices.cols];
-		results.dists.rows = a.dists.rows;
-		results.dists.cols = a.dists.cols;
-		results.dists.data = new DistanceType[results.dists.rows*results.dists.cols];
+struct ResultsMerger {
+    SearchResults<DistanceType> operator()(SearchResults<DistanceType> a, SearchResults<DistanceType> b) {
+        SearchResults<DistanceType> results;
+        results.indices.rows = a.indices.rows;
+        results.indices.cols = a.indices.cols;
+        results.indices.data = new int[results.indices.rows*results.indices.cols];
+        results.dists.rows = a.dists.rows;
+        results.dists.cols = a.dists.cols;
+        results.dists.data = new DistanceType[results.dists.rows*results.dists.cols];
 
 
-		for (size_t i=0;i<results.dists.rows;++i) {
-			size_t idx = 0;
-			size_t a_idx = 0;
-			size_t b_idx = 0;
-			while (idx<results.dists.cols) {
-				if (a.dists[i][a_idx]<=b.dists[i][b_idx]) {
-					results.dists[i][idx] = a.dists[i][a_idx];
-					results.indices[i][idx] = a.indices[i][a_idx];
-					idx++;
-					a_idx++;
-				}
-				else {
-					results.dists[i][idx] = b.dists[i][b_idx];
-					results.indices[i][idx] = b.indices[i][b_idx];
-					idx++;
-					b_idx++;
-				}
-			}
-		}
+        for (size_t i = 0;i < results.dists.rows;++i) {
+            size_t idx = 0;
+            size_t a_idx = 0;
+            size_t b_idx = 0;
+            while (idx < results.dists.cols) {
+                if (a.dists[i][a_idx] <= b.dists[i][b_idx]) {
+                    results.dists[i][idx] = a.dists[i][a_idx];
+                    results.indices[i][idx] = a.indices[i][a_idx];
+                    idx++;
+                    a_idx++;
+                }
+                else {
+                    results.dists[i][idx] = b.dists[i][b_idx];
+                    results.indices[i][idx] = b.indices[i][b_idx];
+                    idx++;
+                    b_idx++;
+                }
+            }
+        }
 
-		a.indices.free();
-		a.dists.free();
-		b.indices.free();
-		b.dists.free();
-		return results;
-	}
+        a.indices.free();
+        a.dists.free();
+        b.indices.free();
+        b.dists.free();
+        return results;
+    }
 };
 
 
 
 template<typename Distance>
-class Index {
-	typedef typename Distance::ElementType ElementType;
-	typedef typename Distance::ResultType DistanceType;
+class Index
+{
+    typedef typename Distance::ElementType ElementType;
+    typedef typename Distance::ResultType DistanceType;
 
-	flann::Index<Distance>* flann_index;
-	flann::Matrix<ElementType> dataset;
-	int size_;
-	int offset_;
+    flann::Index<Distance>* flann_index;
+    flann::Matrix<ElementType> dataset;
+    int size_;
+    int offset_;
 
 public:
-	Index(const std::string& file_name,
-			const std::string& dataset_name,
-			const IndexParams& params);
+    Index(const std::string& file_name,
+          const std::string& dataset_name,
+          const IndexParams& params);
 
-	~Index();
+    ~Index();
 
-	void buildIndex() { flann_index->buildIndex(); }
+    void buildIndex() {
+        flann_index->buildIndex();
+    }
 
-	void knnSearch(const flann::Matrix<ElementType>& queries,
-			flann::Matrix<int>& indices,
-			flann::Matrix<DistanceType>& dists,
-			int knn, const
-			SearchParams& params);
+    void knnSearch(const flann::Matrix<ElementType>& queries,
+                   flann::Matrix<int>& indices,
+                   flann::Matrix<DistanceType>& dists,
+                   int knn, const
+                   SearchParams& params);
 
-	int radiusSearch(const flann::Matrix<ElementType>& query,
-			flann::Matrix<int>& indices,
-			flann::Matrix<DistanceType>& dists,
-			float radius,
-			const SearchParams& params);
+    int radiusSearch(const flann::Matrix<ElementType>& query,
+                     flann::Matrix<int>& indices,
+                     flann::Matrix<DistanceType>& dists,
+                     float radius,
+                     const SearchParams& params);
 
-//	void save(std::string filename);
+// void save(std::string filename);
 
-	int veclen() const { return flann_index->veclen(); }
+    int veclen() const {
+        return flann_index->veclen();
+    }
 
-	int size() const { return size_; }
+    int size() const {
+        return size_;
+    }
 
-	const IndexParams* getIndexParameters() { return flann_index->getParameters(); }
+    const IndexParams* getIndexParameters() {
+        return flann_index->getParameters();
+    }
 };
 
 
 template<typename Distance>
 Index<Distance>::Index(const std::string& file_name, const std::string& dataset_name, const IndexParams& params)
 {
-	boost::mpi::communicator world;
-	flann_algorithm_t index_type = params.getIndexType();
-	if (index_type==SAVED) {
-		throw FLANNException("Saving/loading of MPI indexes is not currently supported.");
-	}
-	flann::mpi::load_from_file(dataset,file_name, dataset_name);
-	flann_index = new flann::Index<Distance>(dataset, params);
+    boost::mpi::communicator world;
+    flann_algorithm_t index_type = params.getIndexType();
+    if (index_type == SAVED) {
+        throw FLANNException("Saving/loading of MPI indexes is not currently supported.");
+    }
+    flann::mpi::load_from_file(dataset, file_name, dataset_name);
+    flann_index = new flann::Index<Distance>(dataset, params);
 
-	std::vector<int> sizes;
-	// get the sizes of all MPI indices
-	all_gather(world, flann_index->size(), sizes);
-	size_ = 0;
-	offset_ = 0;
-	for (size_t i=0;i<sizes.size();++i) {
-		if (i<world.rank()) offset_ += sizes[i];
-		size_ += sizes[i];
-	}
+    std::vector<int> sizes;
+    // get the sizes of all MPI indices
+    all_gather(world, flann_index->size(), sizes);
+    size_ = 0;
+    offset_ = 0;
+    for (size_t i = 0;i < sizes.size();++i) {
+        if (i < world.rank()) offset_ += sizes[i];
+        size_ += sizes[i];
+    }
 }
 
 template<typename Distance>
 Index<Distance>::~Index()
 {
-	delete flann_index;
-	dataset.free();
+    delete flann_index;
+    dataset.free();
 }
 
 template<typename Distance>
 void Index<Distance>::knnSearch(const flann::Matrix<ElementType>& queries, flann::Matrix<int>& indices, flann::Matrix<DistanceType>& dists, int knn, const SearchParams& params)
 {
-	boost::mpi::communicator world;
-	flann::Matrix<int> local_indices(new int[queries.rows*knn],queries.rows, knn);
-	flann::Matrix<ElementType> local_dists(new ElementType[queries.rows*knn],queries.rows, knn);
+    boost::mpi::communicator world;
+    flann::Matrix<int> local_indices(new int[queries.rows*knn], queries.rows, knn);
+    flann::Matrix<ElementType> local_dists(new ElementType[queries.rows*knn], queries.rows, knn);
 
-	flann_index->knnSearch(queries, local_indices, local_dists, knn, params);
-	for (size_t i=0;i<local_indices.rows;++i) {
-		for (size_t j=0;j<local_indices.cols;++j) {
-			local_indices[i][j] += offset_;
-		}
-	}
-	SearchResults<DistanceType> local_results;
-	local_results.indices = local_indices;
-	local_results.dists = local_dists;
-	SearchResults<DistanceType> results;
+    flann_index->knnSearch(queries, local_indices, local_dists, knn, params);
+    for (size_t i = 0;i < local_indices.rows;++i) {
+        for (size_t j = 0;j < local_indices.cols;++j) {
+            local_indices[i][j] += offset_;
+        }
+    }
+    SearchResults<DistanceType> local_results;
+    local_results.indices = local_indices;
+    local_results.dists = local_dists;
+    SearchResults<DistanceType> results;
 
-	// perform MPI reduce
-	reduce(world, local_results, results, ResultsMerger<DistanceType>(), 0);
+    // perform MPI reduce
+    reduce(world, local_results, results, ResultsMerger<DistanceType>(), 0);
 
-	if (world.rank()==0) {
-		for (int i=0;i<results.indices.rows;++i) {
-			for (int j=0;j<results.indices.cols;++j) {
-				indices[i][j] = results.indices[i][j];
-				dists[i][j] = results.dists[i][j];
-			}
-		}
-		results.indices.free();
-		results.dists.free();
-	}
+    if (world.rank() == 0) {
+        for (int i = 0;i < results.indices.rows;++i) {
+            for (int j = 0;j < results.indices.cols;++j) {
+                indices[i][j] = results.indices[i][j];
+                dists[i][j] = results.dists[i][j];
+            }
+        }
+        results.indices.free();
+        results.dists.free();
+    }
 }
 
 template<typename Distance>
 int Index<Distance>::radiusSearch(const flann::Matrix<ElementType>& query, flann::Matrix<int>& indices, flann::Matrix<DistanceType>& dists, float radius, const SearchParams& params)
 {
-	boost::mpi::communicator world;
-	flann::Matrix<int> local_indices(new int[indices.rows*indices.cols], indices.rows, indices.cols);
-	flann::Matrix<DistanceType> local_dists(new DistanceType[dists.rows*dists.cols], dists.rows, dists.cols);
+    boost::mpi::communicator world;
+    flann::Matrix<int> local_indices(new int[indices.rows*indices.cols], indices.rows, indices.cols);
+    flann::Matrix<DistanceType> local_dists(new DistanceType[dists.rows*dists.cols], dists.rows, dists.cols);
 
-	flann_index->radiusSearch(query, local_indices, local_dists, radius, params);
-	for (size_t i=0;i<local_indices.rows;++i) {
-		for (size_t j=0;j<local_indices.cols;++j) {
-			local_indices[i][j] += offset_;
-		}
-	}
-	SearchResults<DistanceType> local_results;
-	local_results.indices = local_indices;
-	local_results.dists = local_dists;
-	SearchResults<DistanceType> results;
+    flann_index->radiusSearch(query, local_indices, local_dists, radius, params);
+    for (size_t i = 0;i < local_indices.rows;++i) {
+        for (size_t j = 0;j < local_indices.cols;++j) {
+            local_indices[i][j] += offset_;
+        }
+    }
+    SearchResults<DistanceType> local_results;
+    local_results.indices = local_indices;
+    local_results.dists = local_dists;
+    SearchResults<DistanceType> results;
 
-	// perform MPI reduce
-	reduce(world, local_results, results, ResultsMerger<DistanceType>(), 0);
+    // perform MPI reduce
+    reduce(world, local_results, results, ResultsMerger<DistanceType>(), 0);
 
-	if (world.rank()==0) {
-		for (int i=0;i<std::min(results.indices.rows, indices.rows);++i) {
-			for (int j=0;j<std::min(results.indices.cols, indices.cols);++j) {
-				indices[i][j] = results.indices[i][j];
-				dists[i][j] = results.dists[i][j];
-			}
-		}
-		results.indices.free();
-		results.dists.free();
-	}
-	return 0;
+    if (world.rank() == 0) {
+        for (int i = 0;i < std::min(results.indices.rows, indices.rows);++i) {
+            for (int j = 0;j < std::min(results.indices.cols, indices.cols);++j) {
+                indices[i][j] = results.indices[i][j];
+                dists[i][j] = results.dists[i][j];
+            }
+        }
+        results.indices.free();
+        results.dists.free();
+    }
+    return 0;
 }
 
-} } //namespace flann::mpi
+}
+} //namespace flann::mpi
 
 //namespace boost { namespace mpi {
 //  template<>
