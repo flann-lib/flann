@@ -41,6 +41,7 @@
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
 #include "flann/util/heap.h"
+#include "flann/util/logger.h"
 #include "flann/util/allocator.h"
 #include "flann/util/random.h"
 #include "flann/util/saving.h"

@@ -68,7 +68,7 @@ struct KMeansIndexParams : public IndexParams {
 
 	void fromParameters(const FLANNParameters& p)
 	{
-		assert(p.algorithm==KMEANS);
+		assert(p.algorithm==FLANN_INDEX_KMEANS);
 		branching = p.branching;
 		iterations = p.iterations;
 		centers_init = p.centers_init;

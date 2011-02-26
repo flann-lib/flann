@@ -91,24 +91,24 @@ public:
 	pair_iterator(SortIterator si, PermuteIterator pi) : si_(si), pi_(pi) { }
 
 	// operators
-	self& operator++( ) { ++si_; ++pi_; return *this; }
-	self operator++(int) { self tmp = *this; si_++; pi_++; return tmp; }
-	self& operator--( ) { --si_; --pi_; return *this; }
-	self operator--(int) { self tmp = *this; si_--; pi_--; return tmp; }
-	self& operator+=(difference_type x) { si_ += x; pi_ += x; return *this; }
-	self& operator-=(difference_type x) {si_ -= x; pi_ -= x; return *this; }
-	reference operator[](difference_type n) { return reference(*(si_+n),*(si_+n)); }
-	reference operator*() const { return reference(*si_,*pi_); }
-	self operator+(difference_type y) { return self(si_+y, pi_+y); }
-	self operator-(difference_type y) { return self(si_-y, pi_-y); }
-	bool operator==(const self& y) { return si_ == y.si_; }
-	bool operator!=(const self& y) { return si_ != y.si_; }
-	bool operator<(const self& y) { return si_ < y.si_;	}
-	difference_type operator-(const self& y) { return si_ - y.si_;	}
+	inline self& operator++( ) { ++si_; ++pi_; return *this; }
+	inline self operator++(int) { self tmp = *this; si_++; pi_++; return tmp; }
+	inline self& operator--( ) { --si_; --pi_; return *this; }
+	inline self operator--(int) { self tmp = *this; si_--; pi_--; return tmp; }
+	inline self& operator+=(difference_type x) { si_ += x; pi_ += x; return *this; }
+	inline self& operator-=(difference_type x) {si_ -= x; pi_ -= x; return *this; }
+	inline reference operator[](difference_type n) { return reference(*(si_+n),*(si_+n)); }
+	inline reference operator*() const { return reference(*si_,*pi_); }
+	inline self operator+(difference_type y) { return self(si_+y, pi_+y); }
+	inline self operator-(difference_type y) { return self(si_-y, pi_-y); }
+	inline bool operator==(const self& y) { return si_ == y.si_; }
+	inline bool operator!=(const self& y) { return si_ != y.si_; }
+	inline bool operator<(const self& y) { return si_ < y.si_;	}
+	inline difference_type operator-(const self& y) { return si_ - y.si_;	}
 
 	// friend operators
-	friend self operator+(difference_type x, const self& y) { return y + x;	}
-	friend self operator-(difference_type x, const self& y) { return y - x; }
+	friend inline self operator+(difference_type x, const self& y) { return y + x;	}
+	friend inline self operator-(difference_type x, const self& y) { return y - x; }
 private:
 	SortIterator si_;
 	PermuteIterator pi_;
@@ -121,14 +121,14 @@ typename pair_iterator_traits<SortIterator, PermuteIterator>::value_type,
 bool>
 {
 	typedef typename pair_iterator_traits<SortIterator, PermuteIterator>::value_type T;
-	bool operator()(const  T& t1, const T& t2)
+	inline bool operator()(const  T& t1, const T& t2)
 	{
 		return (t1.first < t2.first);
 	}
 };
 
 template <class SortIterator, class PermuteIterator>
-pair_iterator<SortIterator, PermuteIterator> make_pair_iterator(SortIterator si, PermuteIterator pi)
+inline pair_iterator<SortIterator, PermuteIterator> make_pair_iterator(SortIterator si, PermuteIterator pi)
 {
 	return pair_iterator<SortIterator, PermuteIterator>(si, pi);
 }
