@@ -94,7 +94,7 @@ class KDTreeSingleIndex : public NNIndex<Distance>
 	/**
 	 *  Array of indices to vectors in the dataset.
 	 */
-	int* vind;
+	std::vector<int> vind;
 
 	int leaf_max_size_;
     bool reorder_;
@@ -191,7 +191,7 @@ public:
         reorder_ = params.reorder;
 
 		// Create a permutable array of indices to the input vectors.
-		vind = new int[size_];
+        vind.resize(size_);
 		for (size_t i = 0; i < size_; i++) {
 			vind[i] = i;
 		}
@@ -204,7 +204,6 @@ public:
 	 */
 	~KDTreeSingleIndex()
 	{
-		delete[] vind;
         if (reorder_) data.free();
 	}
 
@@ -232,13 +231,34 @@ public:
 
     void saveIndex(FILE* stream)
     {
-    	save_tree(stream, root_node);
+        save_value(stream, size_);
+        save_value(stream, dim);
+        save_value(stream, root_bbox);
+        save_value(stream, reorder_);
+        save_value(stream, leaf_max_size_);
+        save_value(stream, vind);
+        if (reorder_) {
+            save_value(stream, data);
+        }
+        save_tree(stream, root_node);
     }
 
 
     void loadIndex(FILE* stream)
     {
-    	load_tree(stream, root_node);
+        load_value(stream, size_);
+        load_value(stream, dim);
+        load_value(stream, root_bbox);
+        load_value(stream, reorder_);
+        load_value(stream, leaf_max_size_);
+        load_value(stream, vind);
+        if (reorder_) {
+            load_value(stream, data);
+        }
+        else {
+            data = dataset;
+        }
+        load_tree(stream, root_node);
     }
 
     /**
@@ -368,7 +388,7 @@ private:
             int idx;                                                                       
             int cutfeat;                                                                   
             DistanceType cutval;                                                                               
-            middleSplit(vind+left, right-left, idx, cutfeat, cutval, bbox);                                 
+            middleSplit(&vind[0]+left, right-left, idx, cutfeat, cutval, bbox);                                 
             
             node->divfeat = cutfeat;
             
@@ -482,23 +502,23 @@ private:
 		lim2 = left;
 	}
 
-	DistanceType computeInitialDistances(const ElementType* vec, std::vector<DistanceType>& dists)
-	{
-		DistanceType distsq = 0.0;
+    DistanceType computeInitialDistances(const ElementType* vec, std::vector<DistanceType>& dists)
+    {
+        DistanceType distsq = 0.0;
 
-		for (size_t i=0;i<dim;++i) {
-			if (vec[i]<root_bbox[i].low) {
+        for (size_t i = 0;i < dim;++i) {
+            if (vec[i] < root_bbox[i].low) {
                 dists[i] = distance.accum_dist(vec[i], root_bbox[i].low, i);
                 distsq += dists[i];
             }
-			if (vec[i]>root_bbox[i].high) {
+            if (vec[i] > root_bbox[i].high) {
                 dists[i] = distance.accum_dist(vec[i], root_bbox[i].high, i);
                 distsq += dists[i];
             }
-		}
+        }
 
-		return distsq;
-	}
+        return distsq;
+    }
 
 	/**
 	 * Performs an exact search in the tree starting from a node.
