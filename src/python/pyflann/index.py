@@ -205,7 +205,7 @@ class FLANN:
             raise FLANNException("build_index(...) method not called first or current index deleted.")
 
         if not qpts.dtype.type in allowed_types:
-            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+            raise FLANNException("Cannot handle type: %s"%qpts.dtype)
 
         if self.__curindex_type != qpts.dtype.type:
             raise FLANNException("Index and query must have the same type")
@@ -247,9 +247,9 @@ class FLANN:
             raise FLANNException("build_index(...) method not called first or current index deleted.")
 
         if not query.dtype.type in allowed_types:
-            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+            raise FLANNException("Cannot handle type: %s"%query.dtype)
 
-        if self.__curindex_type != qpts.dtype.type:
+        if self.__curindex_type != query.dtype.type:
             raise FLANNException("Index and query must have the same type")
 
         npts, dim = self.__curindex_data.shape        
