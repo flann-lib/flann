@@ -345,7 +345,6 @@ struct HistIntersectionDistance
     ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType worst_dist = -1) const
     {
         ResultType result = ResultType();
-        ResultType diff0, diff1, diff2, diff3;
         ResultType min0, min1, min2, min3;
     	Iterator1 last = a + size;
     	Iterator1 lastgroup = last - 3;
@@ -353,14 +352,10 @@ struct HistIntersectionDistance
     	/* Process 4 items with each loop for efficiency. */
     	while (a < lastgroup) {
     		min0 = a[0] < b[0] ? a[0] : b[0];
-    		diff0 = a[0] + b[0] - 2*min0;
     		min1 = a[1] < b[1] ? a[1] : b[1];
-    		diff1 = a[1] + b[1] - 2*min1;
     		min2 = a[2] < b[2] ? a[2] : b[2];
-    		diff2 = a[2] + b[2] - 2*min2;
     		min3 = a[3] < b[3] ? a[3] : b[3];
-    		diff3 = a[3] + b[3] - 2*min3;
-    		result += diff0 +diff1 + diff2 + diff3;
+    		result += min0 + min1 + min2 + min3;
     		a += 4;
     		b += 4;
     		if (worst_dist>0 && result>worst_dist) {
@@ -370,8 +365,7 @@ struct HistIntersectionDistance
     	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
     	while (a < last) {
     		min0 = *a < *b ? *a : *b;
-    		diff0 = *a++ + *b++ - 2*min0;
-    		result += diff0;
+    		result += min0;
     	}
     	return result;
     }
@@ -382,7 +376,7 @@ struct HistIntersectionDistance
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int dim) const
     {
-    	return (a+b-2*(a<b?a:b));
+    	return (a<b?a:b);
     }
 };
 
