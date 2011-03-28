@@ -32,6 +32,7 @@
 #define LOGGER_H
 
 #include <cstdio>
+#include <stdarg.h>
 #include "flann/general.h"
 
 
