@@ -22,6 +22,7 @@ flann_download_test_data(sift10K.h5 0964a910946d2dd5fe28337507a8abc3)
 flann_download_test_data(sift10K_byte.h5 f835e0148df4618a81f67febfda2b4d0)
 flann_download_test_data(sift100K.h5 ae2b08f93f3d9f89f5d68566b0406102)
 flann_download_test_data(sift100K_byte.h5 b772255fd2044e9d2a5a0183953e4705)
+flann_download_test_data(cloud.h5 b9f7030c844774baa264c3644129d9c3)
 
 if (GTEST_FOUND AND HDF5_FOUND)
     include_directories(${HDF5_INCLUDE_DIR})
