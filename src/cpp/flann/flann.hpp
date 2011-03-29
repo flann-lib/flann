@@ -223,7 +223,7 @@ int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>&
                   pair_iterator_compare<DistanceType*, int*>());
     }
 
-    return cnt;
+    return result_set.size();
 }
 
 
