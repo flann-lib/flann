@@ -37,4 +37,4 @@ FLANN is distributed under the terms of the [BSD License](https://github.com/mar
 Bug reporting
 -------------
 
-Please report bugs, issues or wanted features in FLANN using [github's issue tracker](http://github.com/mariusmuja/flann/issues).
+Please report bugs or feature requests using [github's issue tracker](http://github.com/mariusmuja/flann/issues).
