@@ -109,9 +109,11 @@ struct HierarchicalClusteringIndexParams : public IndexParams {
 template <typename Distance>
 class HierarchicalClusteringIndex : public NNIndex<Distance>
 {
+public:
 	typedef typename Distance::ElementType ElementType;
 	typedef typename Distance::ResultType DistanceType;
 
+private:
 
 	/**
 	 * Parameters used by this index

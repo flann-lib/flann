@@ -105,9 +105,10 @@ struct KMeansIndexParams : public IndexParams {
 template <typename Distance>
 class KMeansIndex : public NNIndex<Distance>
 {
+public:
 	typedef typename Distance::ElementType ElementType;
 	typedef typename Distance::ResultType DistanceType;
-
+private:
 	/**
 	 * The branching factor used in the hierarchical k-means clustering
 	 */

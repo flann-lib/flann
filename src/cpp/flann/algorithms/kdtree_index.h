@@ -86,8 +86,10 @@ struct KDTreeIndexParams : public IndexParams {
 template <typename Distance>
 class KDTreeIndex : public NNIndex<Distance>
 {
+public:
 	typedef typename Distance::ElementType ElementType;
 	typedef typename Distance::ResultType DistanceType;
+private:
 
 	enum {
 		/**
