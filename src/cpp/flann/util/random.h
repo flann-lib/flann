@@ -34,7 +34,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cassert>
-
+#include "flann/general.h"
 
 namespace flann
 {
@@ -42,17 +42,17 @@ namespace flann
 /**
  * Seeds the random number generator
  */
-void seed_random(unsigned int seed);
+FLANN_EXPORT void seed_random(unsigned int seed);
 
 /*
  * Generates a random double value.
  */
-double rand_double(double high = 1.0, double low = 0);
+FLANN_EXPORT double rand_double(double high = 1.0, double low = 0);
 
 /*
  * Generates a random integer value.
  */
-int rand_int(int high = RAND_MAX, int low = 0);
+FLANN_EXPORT int rand_int(int high = RAND_MAX, int low = 0);
 
 
 /**
