@@ -41,22 +41,23 @@ namespace flann
 {
 
 /* This record represents a branch point when finding neighbors in
-	the tree.  It contains a record of the minimum distance to the query
-	point, as well as the node at which the search resumes.
-*/
+    the tree.  It contains a record of the minimum distance to the query
+    point, as well as the node at which the search resumes.
+ */
 
 template <typename T, typename DistanceType>
-struct BranchStruct {
-	T node;           /* Tree node at which search resumes */
-	DistanceType mindist;     /* Minimum distance to query for all nodes below. */
+struct BranchStruct
+{
+    T node;           /* Tree node at which search resumes */
+    DistanceType mindist;     /* Minimum distance to query for all nodes below. */
 
-	BranchStruct() {};
-	BranchStruct(const T& aNode, DistanceType dist) : node(aNode), mindist(dist) {};
+    BranchStruct() {}
+    BranchStruct(const T& aNode, DistanceType dist) : node(aNode), mindist(dist) {}
 
-	bool operator<(const BranchStruct<T, DistanceType>& rhs)
-	{
+    bool operator<(const BranchStruct<T, DistanceType>& rhs)
+    {
         return mindist<rhs.mindist;
-	}
+    }
 };
 
 
@@ -64,75 +65,75 @@ template <typename DistanceType>
 class ResultSet
 {
 public:
-	virtual ~ResultSet() {};
+    virtual ~ResultSet() {}
 
-	virtual bool full() const = 0;
+    virtual bool full() const = 0;
 
-	virtual void addPoint(DistanceType dist, int index) = 0;
+    virtual void addPoint(DistanceType dist, int index) = 0;
 
-	virtual DistanceType worstDist() const = 0;
+    virtual DistanceType worstDist() const = 0;
 
 };
 
 template <typename DistanceType>
 class KNNResultSet : public ResultSet<DistanceType>
 {
-	int* indices;
-	DistanceType* dists;
+    int* indices;
+    DistanceType* dists;
     int capacity;
-	int count;
+    int count;
 
 public:
-	KNNResultSet(int capacity_) : capacity(capacity_), count(0)
-	{
-	}
+    KNNResultSet(int capacity_) : capacity(capacity_), count(0)
+    {
+    }
 
-	void init(int* indices_, DistanceType* dists_)
-	{
-		indices = indices_;
-		dists = dists_;
-		count = 0;
-		dists[capacity-1] = (std::numeric_limits<DistanceType>::max) ();
-	}
+    void init(int* indices_, DistanceType* dists_)
+    {
+        indices = indices_;
+        dists = dists_;
+        count = 0;
+        dists[capacity-1] = (std::numeric_limits<DistanceType>::max)();
+    }
 
     size_t size() const
     {
-    	return count;
+        return count;
     }
 
-	bool full() const
-	{
-		return count == capacity;
-	}
+    bool full() const
+    {
+        return count == capacity;
+    }
 
 
-	void addPoint(DistanceType dist, int index)
-	{
-		int i;
-		for (i=count; i>0;--i) {
-#ifdef FLANN_FIRST_MATCH 
-			if ( (dists[i-1]>dist) || (dist==dists[i-1] && indices[i-1]>index) ) {
+    void addPoint(DistanceType dist, int index)
+    {
+        int i;
+        for (i=count; i>0; --i) {
+#ifdef FLANN_FIRST_MATCH
+            if ( (dists[i-1]>dist) || ((dist==dists[i-1])&&(indices[i-1]>index)) ) {
 #else
-			if (dists[i-1]>dist) {
+            if (dists[i-1]>dist) {
 #endif
-				if (i<capacity) {
-					dists[i] = dists[i-1];
-					indices[i] = indices[i-1];
-				}
-			}
-			else break;
-		}
-		if (i<capacity) {
-			dists[i] = dist;
-			indices[i] = index;
-		}
-		if (count<capacity) count++;
-	}
+                if (i<capacity) {
+                    dists[i] = dists[i-1];
+                    indices[i] = indices[i-1];
+                }
+            }
+            else break;
+        }
+        if (i<capacity) {
+            dists[i] = dist;
+            indices[i] = index;
+        }
+        if (count<capacity) count++;
+    }
 
-	DistanceType worstDist() const
-	{
-		return dists[capacity-1];
-	}
+    DistanceType worstDist() const
+    {
+        return dists[capacity-1];
+    }
 };
 
 
@@ -142,53 +143,53 @@ public:
 template <typename DistanceType>
 class RadiusResultSet : public ResultSet<DistanceType>
 {
-	DistanceType radius;
-	int* indices;
-	DistanceType* dists;
-	size_t capacity;
-	size_t count;
+    DistanceType radius;
+    int* indices;
+    DistanceType* dists;
+    size_t capacity;
+    size_t count;
 
 public:
-	RadiusResultSet(DistanceType radius_, int* indices_, DistanceType* dists_, int capacity_) :
-		radius(radius_), indices(indices_), dists(dists_), capacity(capacity_)
-	{
-		init();
-	}
+    RadiusResultSet(DistanceType radius_, int* indices_, DistanceType* dists_, int capacity_) :
+        radius(radius_), indices(indices_), dists(dists_), capacity(capacity_)
+    {
+        init();
+    }
 
-	~RadiusResultSet()
-	{
-	}
+    ~RadiusResultSet()
+    {
+    }
 
-	void init()
-	{
-		count = 0;
-	}
+    void init()
+    {
+        count = 0;
+    }
 
     size_t size() const
     {
-    	return count;
+        return count;
     }
 
-	bool full() const
-	{
-		return true;
-	}
+    bool full() const
+    {
+        return true;
+    }
 
-	void addPoint(DistanceType dist, int index)
-	{
-		if (dist<radius) {
-			if (capacity>0 && count < capacity) {
-				dists[count] = dist;
-				indices[count] = index;
-			}
-			count++;
-		}
-	}
+    void addPoint(DistanceType dist, int index)
+    {
+        if (dist<radius) {
+            if ((capacity>0)&&(count < capacity)) {
+                dists[count] = dist;
+                indices[count] = index;
+            }
+            count++;
+        }
+    }
 
-	DistanceType worstDist() const
-	{
-		return radius;
-	}
+    DistanceType worstDist() const
+    {
+        return radius;
+    }
 
 };
 

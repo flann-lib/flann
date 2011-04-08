@@ -41,8 +41,8 @@ namespace flann
 int countCorrectMatches(int* neighbors, int* groundTruth, int n)
 {
     int count = 0;
-    for (int i=0;i<n;++i) {
-        for (int k=0;k<n;++k) {
+    for (int i=0; i<n; ++i) {
+        for (int k=0; k<n; ++k) {
             if (neighbors[i]==groundTruth[k]) {
                 count++;
                 break;

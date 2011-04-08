@@ -38,15 +38,24 @@
 namespace flann
 {
 
-template <typename T> struct Datatype {};
-template<> struct Datatype<char> { static flann_datatype_t type() { return FLANN_INT8; } };
-template<> struct Datatype<short> { static flann_datatype_t type() { return FLANN_INT16; } };
-template<> struct Datatype<int> { static flann_datatype_t type() { return FLANN_INT32; } };
-template<> struct Datatype<unsigned char> { static flann_datatype_t type() { return FLANN_UINT8; } };
-template<> struct Datatype<unsigned short> { static flann_datatype_t type() { return FLANN_UINT16; } };
-template<> struct Datatype<unsigned int> { static flann_datatype_t type() { return FLANN_UINT32; } };
-template<> struct Datatype<float> { static flann_datatype_t type() { return FLANN_FLOAT32; } };
-template<> struct Datatype<double> { static flann_datatype_t type() { return FLANN_FLOAT64; } };
+template <typename T>
+struct Datatype {};
+template<>
+struct Datatype<char> { static flann_datatype_t type() { return FLANN_INT8; } };
+template<>
+struct Datatype<short> { static flann_datatype_t type() { return FLANN_INT16; } };
+template<>
+struct Datatype<int> { static flann_datatype_t type() { return FLANN_INT32; } };
+template<>
+struct Datatype<unsigned char> { static flann_datatype_t type() { return FLANN_UINT8; } };
+template<>
+struct Datatype<unsigned short> { static flann_datatype_t type() { return FLANN_UINT16; } };
+template<>
+struct Datatype<unsigned int> { static flann_datatype_t type() { return FLANN_UINT32; } };
+template<>
+struct Datatype<float> { static flann_datatype_t type() { return FLANN_FLOAT32; } };
+template<>
+struct Datatype<double> { static flann_datatype_t type() { return FLANN_FLOAT64; } };
 
 
 
@@ -58,12 +67,12 @@ FLANN_EXPORT extern const char FLANN_VERSION[];
  */
 struct IndexHeader
 {
-	char signature[16];
-	char version[16];
-	flann_datatype_t data_type;
-	flann_algorithm_t index_type;
-	int rows;
-	int cols;
+    char signature[16];
+    char version[16];
+    flann_datatype_t data_type;
+    flann_algorithm_t index_type;
+    int rows;
+    int cols;
 };
 
 /**
@@ -75,17 +84,17 @@ struct IndexHeader
 template<typename Distance>
 void save_header(FILE* stream, const NNIndex<Distance>& index)
 {
-	IndexHeader header;
-	memset(header.signature, 0 , sizeof(header.signature));
-	strcpy(header.signature, FLANN_SIGNATURE);
-	memset(header.version, 0 , sizeof(header.version));
-	strcpy(header.version, FLANN_VERSION);
-	header.data_type = Datatype<typename Distance::ElementType>::type();
-	header.index_type = index.getType();
-	header.rows = index.size();
-	header.cols = index.veclen();
+    IndexHeader header;
+    memset(header.signature, 0, sizeof(header.signature));
+    strcpy(header.signature, FLANN_SIGNATURE);
+    memset(header.version, 0, sizeof(header.version));
+    strcpy(header.version, FLANN_VERSION);
+    header.data_type = Datatype<typename Distance::ElementType>::type();
+    header.index_type = index.getType();
+    header.rows = index.size();
+    header.cols = index.veclen();
 
-	std::fwrite(&header, sizeof(header),1,stream);
+    std::fwrite(&header, sizeof(header),1,stream);
 }
 
 
@@ -100,7 +109,7 @@ FLANN_EXPORT IndexHeader load_header(FILE* stream);
 template<typename T>
 void save_value(FILE* stream, const T& value, int count = 1)
 {
-	fwrite(&value, sizeof(value),count, stream);
+    fwrite(&value, sizeof(value),count, stream);
 }
 
 template<typename T>
@@ -138,7 +147,7 @@ void load_value(FILE* stream, flann::Matrix<T>& value)
     read_cnt = fread(value.data, sizeof(T), value.rows*value.cols, stream);
     if (read_cnt != int(value.rows*value.cols)) {
         throw FLANNException("Cannot read from file");
-    }    
+    }
 }
 
 

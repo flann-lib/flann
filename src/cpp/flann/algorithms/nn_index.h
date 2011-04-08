@@ -43,62 +43,62 @@ template <typename DistanceType>
 class ResultSet;
 
 /**
-* Nearest-neighbour index base class
-*/
+ * Nearest-neighbour index base class
+ */
 template <typename Distance>
 class NNIndex
 {
-	typedef typename Distance::ElementType ElementType;
-	typedef typename Distance::ResultType DistanceType;
+    typedef typename Distance::ElementType ElementType;
+    typedef typename Distance::ResultType DistanceType;
 
 public:
 
-	virtual ~NNIndex() {};
+    virtual ~NNIndex() {}
 
-	/**
-	Method responsible with building the index.
-	*/
-	virtual void buildIndex() = 0;
+    /**
+       Method responsible with building the index.
+     */
+    virtual void buildIndex() = 0;
 
-	/**
-	Saves the index to a stream
-	*/
-	virtual void saveIndex(FILE* stream) = 0;
+    /**
+       Saves the index to a stream
+     */
+    virtual void saveIndex(FILE* stream) = 0;
 
-	/**
-	Loads the index from a stream
-	*/
-	virtual void loadIndex(FILE* stream) = 0;
+    /**
+       Loads the index from a stream
+     */
+    virtual void loadIndex(FILE* stream) = 0;
 
-	/**
-	Method that searches for nearest-neighbors
-	*/
-	virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;
+    /**
+       Method that searches for nearest-neighbors
+     */
+    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;
 
-	/**
-	Number of features in this index.
-	*/
-	virtual size_t size() const = 0;
+    /**
+       Number of features in this index.
+     */
+    virtual size_t size() const = 0;
 
-	/**
-	The length of each vector in this index.
-	*/
-	virtual size_t veclen() const = 0;
+    /**
+       The length of each vector in this index.
+     */
+    virtual size_t veclen() const = 0;
 
-	/**
-	The amount of memory (in bytes) this index uses.
-	*/
-	virtual int usedMemory() const = 0;
+    /**
+       The amount of memory (in bytes) this index uses.
+     */
+    virtual int usedMemory() const = 0;
 
-	/**
-	* Algorithm name
-	*/
-	virtual flann_algorithm_t getType() const = 0;
+    /**
+     * Algorithm name
+     */
+    virtual flann_algorithm_t getType() const = 0;
 
-	/**
-	 * Returns the parameters used for the index
-	 */
-	virtual const IndexParams* getParameters() const = 0;
+    /**
+     * Returns the parameters used for the index
+     */
+    virtual const IndexParams* getParameters() const = 0;
 
 };
 

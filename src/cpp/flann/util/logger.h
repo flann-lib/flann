@@ -46,11 +46,11 @@ FLANN_EXPORT class Logger
 
 public:
 
-    Logger() : stream(stdout), logLevel(FLANN_LOG_WARN) {};
+    Logger() : stream(stdout), logLevel(FLANN_LOG_WARN) {}
 
     ~Logger()
     {
-        if (stream!=NULL && stream!=stdout) {
+        if ((stream!=NULL)&&(stream!=stdout)) {
             fclose(stream);
         }
     }

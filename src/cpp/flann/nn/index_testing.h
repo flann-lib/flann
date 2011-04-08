@@ -50,16 +50,16 @@ FLANN_EXPORT int countCorrectMatches(int* neighbors, int* groundTruth, int n);
 
 template <typename Distance>
 typename Distance::ResultType computeDistanceRaport(const Matrix<typename Distance::ElementType>& inputData, typename Distance::ElementType* target,
-		int* neighbors, int* groundTruth, int veclen, int n, const Distance& distance)
+                                                    int* neighbors, int* groundTruth, int veclen, int n, const Distance& distance)
 {
-	typedef typename Distance::ResultType DistanceType;
+    typedef typename Distance::ResultType DistanceType;
 
-	DistanceType ret = 0;
-    for (int i=0;i<n;++i) {
-    	DistanceType den = distance(inputData[groundTruth[i]], target, veclen);
-    	DistanceType num = distance(inputData[neighbors[i]], target, veclen);
+    DistanceType ret = 0;
+    for (int i=0; i<n; ++i) {
+        DistanceType den = distance(inputData[groundTruth[i]], target, veclen);
+        DistanceType num = distance(inputData[neighbors[i]], target, veclen);
 
-        if (den==0 && num==0) {
+        if ((den==0)&&(num==0)) {
             ret += 1;
         }
         else {
@@ -72,10 +72,10 @@ typename Distance::ResultType computeDistanceRaport(const Matrix<typename Distan
 
 template <typename Distance>
 float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename Distance::ElementType>& inputData,
-		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches, int nn, int checks,
-		float& time, typename Distance::ResultType& dist, const Distance& distance, int skipMatches)
+                               const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches, int nn, int checks,
+                               float& time, typename Distance::ResultType& dist, const Distance& distance, int skipMatches)
 {
-	typedef typename Distance::ResultType DistanceType;
+    typedef typename Distance::ResultType DistanceType;
 
     if (matches.cols<size_t(nn)) {
         logger.info("matches.cols=%d, nn=%d\n",matches.cols,nn);
@@ -118,7 +118,7 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
     dist = distR/(testData.rows*nn);
 
     logger.info("%8d %10.4g %10.5g %10.5g %10.5g\n",
-            checks, precicion, time, 1000.0 * time / testData.rows, dist);
+                checks, precicion, time, 1000.0 * time / testData.rows, dist);
 
     return precicion;
 }
@@ -126,10 +126,10 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
 
 template <typename Distance>
 float test_index_checks(NNIndex<Distance>& index, const Matrix<typename Distance::ElementType>& inputData,
-		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
-            int checks, float& precision, const Distance& distance, int nn = 1, int skipMatches = 0)
+                        const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
+                        int checks, float& precision, const Distance& distance, int nn = 1, int skipMatches = 0)
 {
-	typedef typename Distance::ResultType DistanceType;
+    typedef typename Distance::ResultType DistanceType;
 
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
     logger.info("---------------------------------------------------------\n");
@@ -143,11 +143,11 @@ float test_index_checks(NNIndex<Distance>& index, const Matrix<typename Distance
 
 template <typename Distance>
 float test_index_precision(NNIndex<Distance>& index, const Matrix<typename Distance::ElementType>& inputData,
-		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
-             float precision, int& checks, const Distance& distance, int nn = 1, int skipMatches = 0)
+                           const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
+                           float precision, int& checks, const Distance& distance, int nn = 1, int skipMatches = 0)
 {
-	typedef typename Distance::ResultType DistanceType;
-	const float SEARCH_EPS = 0.001;
+    typedef typename Distance::ResultType DistanceType;
+    const float SEARCH_EPS = 0.001;
 
     logger.info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
     logger.info("---------------------------------------------------------\n");
@@ -202,7 +202,8 @@ float test_index_precision(NNIndex<Distance>& index, const Matrix<typename Dista
         c2 = cx;
         p2 = realPrecision;
 
-    } else {
+    }
+    else {
         logger.info("No need for linear estimation\n");
         cx = c2;
         realPrecision = p2;
@@ -215,12 +216,12 @@ float test_index_precision(NNIndex<Distance>& index, const Matrix<typename Dista
 
 template <typename Distance>
 void test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Distance::ElementType>& inputData,
-		const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
-                    float* precisions, int precisions_length, const Distance& distance, int nn = 1, int skipMatches = 0, float maxTime = 0)
+                           const Matrix<typename Distance::ElementType>& testData, const Matrix<int>& matches,
+                           float* precisions, int precisions_length, const Distance& distance, int nn = 1, int skipMatches = 0, float maxTime = 0)
 {
-	typedef typename Distance::ResultType DistanceType;
+    typedef typename Distance::ResultType DistanceType;
 
-	const float SEARCH_EPS = 0.001;
+    const float SEARCH_EPS = 0.001;
 
     // make sure precisions array is sorted
     std::sort(precisions, precisions+precisions_length);
@@ -254,7 +255,7 @@ void test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dista
         return;
     }
 
-    for (int i=pindex;i<precisions_length;++i) {
+    for (int i=pindex; i<precisions_length; ++i) {
 
         precision = precisions[i];
         while (p2<precision) {
@@ -262,7 +263,7 @@ void test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dista
             p1 = p2;
             c2 *=2;
             p2 = search_with_ground_truth(index, inputData, testData, matches, nn, c2, time, dist, distance, skipMatches);
-            if (maxTime> 0 && time > maxTime && p2<precision) return;
+            if ((maxTime> 0)&&(time > maxTime)&&(p2<precision)) return;
         }
 
         int cx;
@@ -293,7 +294,8 @@ void test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dista
             c2 = cx;
             p2 = realPrecision;
 
-        } else {
+        }
+        else {
             logger.info("No need for linear estimation\n");
             cx = c2;
             realPrecision = p2;

@@ -37,43 +37,44 @@
 namespace flann
 {
 
-struct LinearIndexParams : public IndexParams {
-	LinearIndexParams() : IndexParams(FLANN_INDEX_LINEAR) {};
+struct LinearIndexParams : public IndexParams
+{
+    LinearIndexParams() : IndexParams(FLANN_INDEX_LINEAR) {}
 
-	void fromParameters(const FLANNParameters& p)
-	{
-		assert(p.algorithm==algorithm);
-	}
+    void fromParameters(const FLANNParameters& p)
+    {
+        assert(p.algorithm==algorithm);
+    }
 
-	void toParameters(FLANNParameters& p) const
-	{
-		p.algorithm = algorithm;
-	}
+    void toParameters(FLANNParameters& p) const
+    {
+        p.algorithm = algorithm;
+    }
 
-	void print() const
-	{
-		logger.info("Index type: %d\n",(int)algorithm);
-	}
+    void print() const
+    {
+        logger.info("Index type: %d\n",(int)algorithm);
+    }
 };
 
 template <typename Distance>
 class LinearIndex : public NNIndex<Distance>
 {
-	typedef typename Distance::ElementType ElementType;
-	typedef typename Distance::ResultType DistanceType;
+    typedef typename Distance::ElementType ElementType;
+    typedef typename Distance::ResultType DistanceType;
 
-	const Matrix<ElementType> dataset;
-	const LinearIndexParams index_params;
+    const Matrix<ElementType> dataset;
+    const LinearIndexParams index_params;
 
-	Distance distance;
+    Distance distance;
 
 public:
 
-	LinearIndex(const Matrix<ElementType>& inputData, const LinearIndexParams& params = LinearIndexParams(),
-			Distance d = Distance()) :
-		dataset(inputData), index_params(params), distance(d)
-	{
-	}
+    LinearIndex(const Matrix<ElementType>& inputData, const LinearIndexParams& params = LinearIndexParams(),
+                Distance d = Distance()) :
+        dataset(inputData), index_params(params), distance(d)
+    {
+    }
 
     flann_algorithm_t getType() const
     {
@@ -81,50 +82,50 @@ public:
     }
 
 
-	size_t size() const
-	{
-		return dataset.rows;
-	}
+    size_t size() const
+    {
+        return dataset.rows;
+    }
 
-	size_t veclen() const
-	{
-		return dataset.cols;
-	}
+    size_t veclen() const
+    {
+        return dataset.cols;
+    }
 
 
-	int usedMemory() const
-	{
-		return 0;
-	}
+    int usedMemory() const
+    {
+        return 0;
+    }
 
-	void buildIndex()
-	{
-		/* nothing to do here for linear search */
-	}
+    void buildIndex()
+    {
+        /* nothing to do here for linear search */
+    }
 
     void saveIndex(FILE* stream)
     {
-		/* nothing to do here for linear search */
+        /* nothing to do here for linear search */
     }
 
 
     void loadIndex(FILE* stream)
     {
-		/* nothing to do here for linear search */
+        /* nothing to do here for linear search */
     }
 
-	void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& searchParams)
-	{
-		for (size_t i=0;i<dataset.rows;++i) {
-			DistanceType dist = distance(dataset[i],vec, dataset.cols);
-			resultSet.addPoint(dist,i);
-		}
-	}
+    void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& searchParams)
+    {
+        for (size_t i=0; i<dataset.rows; ++i) {
+            DistanceType dist = distance(dataset[i],vec, dataset.cols);
+            resultSet.addPoint(dist,i);
+        }
+    }
 
-	const IndexParams* getParameters() const
-	{
-		return &index_params;
-	}
+    const IndexParams* getParameters() const
+    {
+        return &index_params;
+    }
 
 };
 

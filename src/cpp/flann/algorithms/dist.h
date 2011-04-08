@@ -40,7 +40,7 @@ namespace flann
 {
 
 template<typename T>
-inline T abs(T x) { return (x<0)?-x:x; }
+inline T abs(T x) { return (x<0) ? -x : x; }
 
 template<>
 inline int abs<int>(int x) { return ::abs(x); }
@@ -56,17 +56,19 @@ inline long double abs<long double>(long double x) { return fabsl(x); }
 
 
 template<typename T>
-struct Accumulator
-{
-    typedef T Type;
-};
-
-template<> struct Accumulator<unsigned char>  { typedef float Type; };
-template<> struct Accumulator<unsigned short> { typedef float Type; };
-template<> struct Accumulator<unsigned int> { typedef float Type; };
-template<> struct Accumulator<char>   { typedef float Type; };
-template<> struct Accumulator<short>  { typedef float Type; };
-template<> struct Accumulator<int> { typedef float Type; };
+struct Accumulator { typedef T Type; };
+template<>
+struct Accumulator<unsigned char>  { typedef float Type; };
+template<>
+struct Accumulator<unsigned short> { typedef float Type; };
+template<>
+struct Accumulator<unsigned int> { typedef float Type; };
+template<>
+struct Accumulator<char>   { typedef float Type; };
+template<>
+struct Accumulator<short>  { typedef float Type; };
+template<>
+struct Accumulator<int> { typedef float Type; };
 
 /**
  * Squared Euclidean distance functor.
@@ -86,8 +88,8 @@ struct L2_Simple
         ResultType result = ResultType();
         ResultType diff;
         for(size_t i = 0; i < size; ++i ) {
-        	diff = *a++ - *b++;
-        	result += diff*diff;
+            diff = *a++ - *b++;
+            result += diff*diff;
         }
         return result;
     }
@@ -95,7 +97,7 @@ struct L2_Simple
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int dim) const
     {
-    	return (a-b)*(a-b);
+        return (a-b)*(a-b);
     }
 };
 
@@ -124,29 +126,29 @@ struct L2
     {
         ResultType result = ResultType();
         ResultType diff0, diff1, diff2, diff3;
-    	Iterator1 last = a + size;
-    	Iterator1 lastgroup = last - 3;
+        Iterator1 last = a + size;
+        Iterator1 lastgroup = last - 3;
 
-    	/* Process 4 items with each loop for efficiency. */
-    	while (a < lastgroup) {
-    		diff0 = a[0] - b[0];
-    		diff1 = a[1] - b[1];
-    		diff2 = a[2] - b[2];
-    		diff3 = a[3] - b[3];
-    		result += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
-    		a += 4;
-    		b += 4;
+        /* Process 4 items with each loop for efficiency. */
+        while (a < lastgroup) {
+            diff0 = a[0] - b[0];
+            diff1 = a[1] - b[1];
+            diff2 = a[2] - b[2];
+            diff3 = a[3] - b[3];
+            result += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
+            a += 4;
+            b += 4;
 
-    		if (worst_dist>0 && result>worst_dist) {
-    			return result;
-    		}
-    	}
-    	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
-    	while (a < last) {
-    		diff0 = *a++ - *b++;
-    		result += diff0 * diff0;
-    	}
-    	return result;
+            if ((worst_dist>0)&&(result>worst_dist)) {
+                return result;
+            }
+        }
+        /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+        while (a < last) {
+            diff0 = *a++ - *b++;
+            result += diff0 * diff0;
+        }
+        return result;
     }
 
     /**
@@ -158,7 +160,7 @@ struct L2
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int dim) const
     {
-    	return (a-b)*(a-b);
+        return (a-b)*(a-b);
     }
 };
 
@@ -183,29 +185,29 @@ struct L1
     {
         ResultType result = ResultType();
         ResultType diff0, diff1, diff2, diff3;
-    	Iterator1 last = a + size;
-    	Iterator1 lastgroup = last - 3;
+        Iterator1 last = a + size;
+        Iterator1 lastgroup = last - 3;
 
-    	/* Process 4 items with each loop for efficiency. */
-    	while (a < lastgroup) {
-    		diff0 = abs(a[0] - b[0]);
-    		diff1 = abs(a[1] - b[1]);
-    		diff2 = abs(a[2] - b[2]);
-    		diff3 = abs(a[3] - b[3]);
-    		result += diff0 + diff1 + diff2 + diff3;
-    		a += 4;
-    		b += 4;
+        /* Process 4 items with each loop for efficiency. */
+        while (a < lastgroup) {
+            diff0 = abs(a[0] - b[0]);
+            diff1 = abs(a[1] - b[1]);
+            diff2 = abs(a[2] - b[2]);
+            diff3 = abs(a[3] - b[3]);
+            result += diff0 + diff1 + diff2 + diff3;
+            a += 4;
+            b += 4;
 
-    		if (worst_dist>0 && result>worst_dist) {
-    			return result;
-    		}
-    	}
-    	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
-    	while (a < last) {
-    		diff0 = abs(*a++ - *b++);
-    		result += diff0;
-    	}
-    	return result;
+            if ((worst_dist>0)&&(result>worst_dist)) {
+                return result;
+            }
+        }
+        /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+        while (a < last) {
+            diff0 = abs(*a++ - *b++);
+            result += diff0;
+        }
+        return result;
     }
 
     /**
@@ -214,7 +216,7 @@ struct L1
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int dim) const
     {
-    	return abs(a-b);
+        return abs(a-b);
     }
 };
 
@@ -228,7 +230,7 @@ struct MinkowskiDistance
 
     int order;
 
-    MinkowskiDistance(int order_) : order(order_) {};
+    MinkowskiDistance(int order_) : order(order_) {}
 
     /**
      *  Compute the Minkowsky (L_p) distance between two vectors.
@@ -244,29 +246,29 @@ struct MinkowskiDistance
     {
         ResultType result = ResultType();
         ResultType diff0, diff1, diff2, diff3;
-    	Iterator1 last = a + size;
-    	Iterator1 lastgroup = last - 3;
+        Iterator1 last = a + size;
+        Iterator1 lastgroup = last - 3;
 
-    	/* Process 4 items with each loop for efficiency. */
-    	while (a < lastgroup) {
-    		diff0 = abs(a[0] - b[0]);
-    		diff1 = abs(a[1] - b[1]);
-    		diff2 = abs(a[2] - b[2]);
-    		diff3 = abs(a[3] - b[3]);
-    		result += pow(diff0,order) + pow(diff1,order) + pow(diff2,order) + pow(diff3,order);
-    		a += 4;
-    		b += 4;
+        /* Process 4 items with each loop for efficiency. */
+        while (a < lastgroup) {
+            diff0 = abs(a[0] - b[0]);
+            diff1 = abs(a[1] - b[1]);
+            diff2 = abs(a[2] - b[2]);
+            diff3 = abs(a[3] - b[3]);
+            result += pow(diff0,order) + pow(diff1,order) + pow(diff2,order) + pow(diff3,order);
+            a += 4;
+            b += 4;
 
-    		if (worst_dist>0 && result>worst_dist) {
-    			return result;
-    		}
-    	}
-    	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
-    	while (a < last) {
-    		diff0 = abs(*a++ - *b++);
-    		result += pow(diff0,order);
-    	}
-    	return result;
+            if ((worst_dist>0)&&(result>worst_dist)) {
+                return result;
+            }
+        }
+        /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+        while (a < last) {
+            diff0 = abs(*a++ - *b++);
+            result += pow(diff0,order);
+        }
+        return result;
     }
 
     /**
@@ -275,7 +277,7 @@ struct MinkowskiDistance
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int dim) const
     {
-    	return pow(static_cast<ResultType>(abs(a-b)),order);
+        return pow(static_cast<ResultType>(abs(a-b)),order);
     }
 };
 
@@ -297,32 +299,32 @@ struct MaxDistance
     {
         ResultType result = ResultType();
         ResultType diff0, diff1, diff2, diff3;
-    	Iterator1 last = a + size;
-    	Iterator1 lastgroup = last - 3;
+        Iterator1 last = a + size;
+        Iterator1 lastgroup = last - 3;
 
-    	/* Process 4 items with each loop for efficiency. */
-    	while (a < lastgroup) {
-    		diff0 = abs(a[0] - b[0]);
-    		diff1 = abs(a[1] - b[1]);
-    		diff2 = abs(a[2] - b[2]);
-    		diff3 = abs(a[3] - b[3]);
-    		if (diff0>result) result = diff0;
-    		if (diff1>result) result = diff1;
-    		if (diff2>result) result = diff2;
-    		if (diff3>result) result = diff3;
-    		a += 4;
-    		b += 4;
+        /* Process 4 items with each loop for efficiency. */
+        while (a < lastgroup) {
+            diff0 = abs(a[0] - b[0]);
+            diff1 = abs(a[1] - b[1]);
+            diff2 = abs(a[2] - b[2]);
+            diff3 = abs(a[3] - b[3]);
+            if (diff0>result) {result = diff0; }
+            if (diff1>result) {result = diff1; }
+            if (diff2>result) {result = diff2; }
+            if (diff3>result) {result = diff3; }
+            a += 4;
+            b += 4;
 
-    		if (worst_dist>0 && result>worst_dist) {
-    			return result;
-    		}
-    	}
-    	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
-    	while (a < last) {
-    		diff0 = abs(*a++ - *b++);
-    		result = (diff0>result) ? diff0 : result;
-    	}
-    	return result;
+            if ((worst_dist>0)&&(result>worst_dist)) {
+                return result;
+            }
+        }
+        /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+        while (a < last) {
+            diff0 = abs(*a++ - *b++);
+            result = (diff0>result) ? diff0 : result;
+        }
+        return result;
     }
 
     /* This distance functor is not dimension-wise additive, which
@@ -346,28 +348,28 @@ struct HistIntersectionDistance
     {
         ResultType result = ResultType();
         ResultType min0, min1, min2, min3;
-    	Iterator1 last = a + size;
-    	Iterator1 lastgroup = last - 3;
+        Iterator1 last = a + size;
+        Iterator1 lastgroup = last - 3;
 
-    	/* Process 4 items with each loop for efficiency. */
-    	while (a < lastgroup) {
-    		min0 = a[0] < b[0] ? a[0] : b[0];
-    		min1 = a[1] < b[1] ? a[1] : b[1];
-    		min2 = a[2] < b[2] ? a[2] : b[2];
-    		min3 = a[3] < b[3] ? a[3] : b[3];
-    		result += min0 + min1 + min2 + min3;
-    		a += 4;
-    		b += 4;
-    		if (worst_dist>0 && result>worst_dist) {
-    			return result;
-    		}
-    	}
-    	/* Process last 0-3 pixels.  Not needed for standard vector lengths. */
-    	while (a < last) {
-    		min0 = *a < *b ? *a : *b;
-    		result += min0;
-    	}
-    	return result;
+        /* Process 4 items with each loop for efficiency. */
+        while (a < lastgroup) {
+            min0 = a[0] < b[0] ? a[0] : b[0];
+            min1 = a[1] < b[1] ? a[1] : b[1];
+            min2 = a[2] < b[2] ? a[2] : b[2];
+            min3 = a[3] < b[3] ? a[3] : b[3];
+            result += min0 + min1 + min2 + min3;
+            a += 4;
+            b += 4;
+            if ((worst_dist>0)&&(result>worst_dist)) {
+                return result;
+            }
+        }
+        /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+        while (a < last) {
+            min0 = *a < *b ? *a : *b;
+            result += min0;
+        }
+        return result;
     }
 
     /**
@@ -376,7 +378,7 @@ struct HistIntersectionDistance
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int dim) const
     {
-    	return (a<b?a:b);
+        return a<b ? a : b;
     }
 };
 
@@ -401,17 +403,17 @@ struct HellingerDistance
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-        	diff0 = sqrt(static_cast<ResultType>(a[0])) - sqrt(static_cast<ResultType>(b[0]));
-        	diff1 = sqrt(static_cast<ResultType>(a[1])) - sqrt(static_cast<ResultType>(b[1]));
-        	diff2 = sqrt(static_cast<ResultType>(a[2])) - sqrt(static_cast<ResultType>(b[2]));
-        	diff3 = sqrt(static_cast<ResultType>(a[3])) - sqrt(static_cast<ResultType>(b[3]));
-        	result += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
-        	a += 4;
-        	b += 4;
+            diff0 = sqrt(static_cast<ResultType>(a[0])) - sqrt(static_cast<ResultType>(b[0]));
+            diff1 = sqrt(static_cast<ResultType>(a[1])) - sqrt(static_cast<ResultType>(b[1]));
+            diff2 = sqrt(static_cast<ResultType>(a[2])) - sqrt(static_cast<ResultType>(b[2]));
+            diff3 = sqrt(static_cast<ResultType>(a[3])) - sqrt(static_cast<ResultType>(b[3]));
+            result += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
+            a += 4;
+            b += 4;
         }
         while (a < last) {
-        	diff0 = sqrt(static_cast<ResultType>(*a++)) - sqrt(static_cast<ResultType>(*b++));
-        	result += diff0 * diff0;
+            diff0 = sqrt(static_cast<ResultType>(*a++)) - sqrt(static_cast<ResultType>(*b++));
+            result += diff0 * diff0;
         }
         return result;
     }
@@ -422,7 +424,7 @@ struct HellingerDistance
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int dim) const
     {
-    	return (sqrt(static_cast<ResultType>(a)) - sqrt(static_cast<ResultType>(b)));
+        return sqrt(static_cast<ResultType>(a)) - sqrt(static_cast<ResultType>(b));
     }
 };
 
@@ -444,19 +446,19 @@ struct ChiSquareDistance
         Iterator1 last = a + size;
 
         while (a < last) {
-        	sum = *a + *b;
-        	if (sum>0) {
-        		diff = *a - *b;
-        		result += diff*diff/sum;
-        	}
-        	++a;
-        	++b;
+            sum = *a + *b;
+            if (sum>0) {
+                diff = *a - *b;
+                result += diff*diff/sum;
+            }
+            ++a;
+            ++b;
 
-    		if (worst_dist>0 && result>worst_dist) {
-    			return result;
-    		}
+            if ((worst_dist>0)&&(result>worst_dist)) {
+                return result;
+            }
         }
-    	return result;
+        return result;
     }
 
     /**
@@ -470,10 +472,10 @@ struct ChiSquareDistance
 
         sum = a+b;
         if (sum>0) {
-        	diff = a-b;
-        	result = diff*diff/sum;
+            diff = a-b;
+            result = diff*diff/sum;
         }
-    	return result;
+        return result;
     }
 };
 
@@ -494,20 +496,20 @@ struct KL_Divergence
         Iterator1 last = a + size;
 
         while (a < last) {
-        	if (*a != 0) {
-        		ResultType ratio = *a / *b;
-        		if (ratio>0) {
-        			result += *a * log(ratio);
-        		}
-        	}
-        	++a;
-        	++b;
+            if (* a != 0) {
+                ResultType ratio = *a / *b;
+                if (ratio>0) {
+                    result += *a * log(ratio);
+                }
+            }
+            ++a;
+            ++b;
 
-    		if (worst_dist>0 && result>worst_dist) {
-    			return result;
-    		}
+            if ((worst_dist>0)&&(result>worst_dist)) {
+                return result;
+            }
         }
-    	return result;
+        return result;
     }
 
     /**
@@ -517,11 +519,11 @@ struct KL_Divergence
     inline ResultType accum_dist(const U& a, const V& b, int dim) const
     {
         ResultType result = ResultType();
-		ResultType ratio = a / b;
-		if (ratio>0) {
-			result = a * log(ratio);
-		}
-    	return result;
+        ResultType ratio = a / b;
+        if (ratio>0) {
+            result = a * log(ratio);
+        }
+        return result;
     }
 };
 
@@ -535,27 +537,33 @@ struct KL_Divergence
  * zero-filled array.
  */
 template <typename T>
-struct ZeroIterator {
+struct ZeroIterator
+{
 
-	T operator*() {
-		return 0;
-	}
+    T operator*()
+    {
+        return 0;
+    }
 
-	T operator[](int index) {
-		return 0;
-	}
+    T operator[](int index)
+    {
+        return 0;
+    }
 
-	ZeroIterator<T>& operator ++() {
-		return *this;
-	}
+    ZeroIterator<T>& operator ++()
+    {
+        return *this;
+    }
 
-	ZeroIterator<T>& operator ++(int) {
-		return *this;
-	}
+    ZeroIterator<T>& operator ++(int)
+    {
+        return *this;
+    }
 
-	ZeroIterator<T>& operator+=(int) {
-		return *this;
-	}
+    ZeroIterator<T>& operator+=(int)
+    {
+        return *this;
+    }
 
 };
 

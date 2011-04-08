@@ -75,11 +75,13 @@ public:
      *     n = the size of the interval from which to generate
      *       random numbers.
      */
-    UniqueRandom(int n) : vals(NULL) {
+    UniqueRandom(int n) : vals(NULL)
+    {
         init(n);
     }
 
-    ~UniqueRandom() {
+    ~UniqueRandom()
+    {
         delete[] vals;
     }
 
@@ -89,21 +91,22 @@ public:
      *   n = the size of the interval from which to generate
      *       random numbers.
      */
-    void init(int n) {
+    void init(int n)
+    {
         // create and initialize an array of size n
-        if (vals == NULL || n != size) {
+        if ((vals == NULL)||(n != size)) {
             delete[] vals;
             size = n;
             vals = new int[size];
         }
-        for (int i = 0;i < size;++i) {
+        for (int i = 0; i < size; ++i) {
             vals[i] = i;
         }
 
         // shuffle the elements in the array
         // Fisher-Yates shuffle
-        for (int i = size;i > 0;--i) {
-//    int rand = cast(int) (drand48() * n);
+        for (int i = size; i > 0; --i) {
+            //    int rand = cast(int) (drand48() * n);
             int rnd = rand_int(i);
             assert(rnd >= 0 && rnd < i);
             std::swap(vals[i-1], vals[rnd]);
@@ -117,7 +120,8 @@ public:
      * than 'n' on each call. It should be called maximum 'n' times.
      * Returns: a random integer
      */
-    int next() {
+    int next()
+    {
         if (counter == size) {
             return -1;
         }

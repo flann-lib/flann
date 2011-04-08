@@ -30,7 +30,7 @@
 
 #include "saving.h"
 
-#define STRINGIFY(x) #x
+#define STRINGIFY(x) # x
 #define TOSTRING(x) STRINGIFY(x)
 #ifndef _FLANN_VERSION
 #error "FLANN version is not defined"
@@ -45,18 +45,18 @@ const char FLANN_VERSION[] = TOSTRING(_FLANN_VERSION);
 
 IndexHeader load_header(FILE* stream)
 {
-	IndexHeader header;
-	int read_size = fread(&header,sizeof(header),1,stream);
+    IndexHeader header;
+    int read_size = fread(&header,sizeof(header),1,stream);
 
-	if (read_size!=1) {
-		throw FLANNException("Invalid index file, cannot read");
-	}
+    if (read_size!=1) {
+        throw FLANNException("Invalid index file, cannot read");
+    }
 
-	if (strcmp(header.signature,FLANN_SIGNATURE)!=0) {
-		throw FLANNException("Invalid index file, wrong signature");
-	}
+    if (strcmp(header.signature,FLANN_SIGNATURE)!=0) {
+        throw FLANNException("Invalid index file, wrong signature");
+    }
 
-	return header;
+    return header;
 
 }
 

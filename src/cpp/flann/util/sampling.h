@@ -43,18 +43,18 @@ Matrix<T> random_sample(Matrix<T>& srcMatrix, long size, bool remove = false)
     UniqueRandom rand(srcMatrix.rows);
     Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
 
-    T *src,*dest;
-    for (long i=0;i<size;++i) {
+    T* src,* dest;
+    for (long i=0; i<size; ++i) {
         long r = rand.next();
         dest = newSet[i];
         src = srcMatrix[r];
-        for (size_t j=0;j<srcMatrix.cols;++j) {
+        for (size_t j=0; j<srcMatrix.cols; ++j) {
             dest[j] = src[j];
         }
         if (remove) {
             dest = srcMatrix[srcMatrix.rows-i-1];
             src = srcMatrix[r];
-            for (size_t j=0;j<srcMatrix.cols;++j) {
+            for (size_t j=0; j<srcMatrix.cols; ++j) {
                 std::swap(*src,*dest);
                 src++;
                 dest++;
@@ -63,7 +63,7 @@ Matrix<T> random_sample(Matrix<T>& srcMatrix, long size, bool remove = false)
     }
 
     if (remove) {
-    	srcMatrix.rows -= size;
+        srcMatrix.rows -= size;
     }
 
     return newSet;
@@ -75,12 +75,12 @@ Matrix<T> random_sample(const Matrix<T>& srcMatrix, size_t size)
     UniqueRandom rand(srcMatrix.rows);
     Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
 
-    T *src,*dest;
-    for (size_t i=0;i<size;++i) {
+    T* src,* dest;
+    for (size_t i=0; i<size; ++i) {
         long r = rand.next();
         dest = newSet[i];
         src = srcMatrix[r];
-        for (size_t j=0;j<srcMatrix.cols;++j) {
+        for (size_t j=0; j<srcMatrix.cols; ++j) {
             dest[j] = src[j];
         }
     }
