@@ -50,8 +50,8 @@ template<> struct Datatype<double> { static flann_datatype_t type() { return FLA
 
 
 
-extern const char FLANN_SIGNATURE[];
-extern const char FLANN_VERSION[];
+FLANN_EXPORT extern const char FLANN_SIGNATURE[];
+FLANN_EXPORT extern const char FLANN_VERSION[];
 
 /**
  * Structure representing the index header.
@@ -94,7 +94,7 @@ void save_header(FILE* stream, const NNIndex<Distance>& index)
  * @param stream - Stream to load from
  * @return Index header
  */
-IndexHeader load_header(FILE* stream);
+FLANN_EXPORT IndexHeader load_header(FILE* stream);
 
 
 template<typename T>

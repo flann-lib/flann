@@ -45,7 +45,7 @@
 namespace flann
 {
 
-int countCorrectMatches(int* neighbors, int* groundTruth, int n);
+FLANN_EXPORT int countCorrectMatches(int* neighbors, int* groundTruth, int n);
 
 
 template <typename Distance>

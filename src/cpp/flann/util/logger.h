@@ -39,7 +39,7 @@
 namespace flann
 {
 
-class Logger
+FLANN_EXPORT class Logger
 {
     FILE* stream;
     int logLevel;
@@ -83,7 +83,7 @@ public:
     int info(const char* fmt, ...);
 };
 
-extern Logger logger;
+FLANN_EXPORT extern Logger logger;
 
 }
 

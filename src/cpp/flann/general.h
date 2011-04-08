@@ -184,7 +184,7 @@ protected:
     IndexParams(flann_algorithm_t algorithm_) : algorithm(algorithm_) {};
 
 public:
-    static IndexParams* createFromParameters(const FLANNParameters& p);
+    FLANN_EXPORT static IndexParams* createFromParameters(const FLANNParameters& p);
 
     virtual flann_algorithm_t getIndexType() const {
         return algorithm;
