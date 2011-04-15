@@ -6,8 +6,13 @@
 
 SET(MEX_NAME nearest_neighbors)
 
-find_program(MEX_CMD mex)
-find_program(MEXEXT_CMD mexext)
+if(WIN32)
+    find_program(MEX_CMD mex.bat)
+    find_program(MEXEXT_CMD mexext.bat)
+else()
+    find_program(MEX_CMD mex)
+    find_program(MEXEXT_CMD mexext)
+endif()
 
 find_program(OCT_CMD mkoctfile)
 
