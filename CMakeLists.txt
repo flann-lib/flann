@@ -116,3 +116,9 @@ add_subdirectory( src )
 add_subdirectory( examples )
 add_subdirectory( test )
 add_subdirectory( doc )
+
+set(CPACK_GENERATOR "DEB;RPM;")
+include(InstallRequiredSystemLibraries)
+set(CPACK_PACKAGE_CONTACT "Marius Muja")
+include(CPack)
+
