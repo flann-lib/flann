@@ -52,30 +52,34 @@ namespace flann
 
 
 /**
-Sets the log level used for all flann functions
+   Sets the log level used for all flann functions
 
-Params:
+   Params:
     level = verbosity level
-*/
+ */
 FLANN_EXPORT void log_verbosity(int level);
 
 
-struct SavedIndexParams : public IndexParams {
+struct SavedIndexParams : public IndexParams
+{
     SavedIndexParams(std::string filename_) : IndexParams(FLANN_INDEX_SAVED), filename(filename_) {}
 
     std::string filename;  // filename of the stored index
 
-    void fromParameters(const FLANNParameters& p) {
+    void fromParameters(const FLANNParameters& p)
+    {
         assert(p.algorithm == algorithm);
         //filename = p.filename;
-    };
+    }
 
-    void toParameters(FLANNParameters& p) const {
+    void toParameters(FLANNParameters& p) const
+    {
         p.algorithm = algorithm;
         //p.filename = filename.c_str();
-    };
+    }
 
-    void print() const {
+    void print() const
+    {
         logger.info("Index type: %d\n", (int)algorithm);
         logger.info("Filename: %s\n", filename.c_str());
     }
@@ -108,11 +112,13 @@ public:
 
     int size() const;
 
-    NNIndex<Distance>* getIndex() {
+    NNIndex<Distance>* getIndex()
+    {
         return nnIndex;
     }
 
-    const IndexParams* getIndexParameters() {
+    const IndexParams* getIndexParameters()
+    {
         return nnIndex->getParameters();
     }
 };
@@ -131,7 +137,7 @@ NNIndex<Distance>* load_saved_index(const Matrix<typename Distance::ElementType>
     if (header.data_type != Datatype<ElementType>::type()) {
         throw FLANNException("Datatype of saved index is different than of the one to be created.");
     }
-    if (size_t(header.rows) != dataset.rows || size_t(header.cols) != dataset.cols) {
+    if ((size_t(header.rows) != dataset.rows)||(size_t(header.cols) != dataset.cols)) {
         throw FLANNException("The index saved belongs to a different dataset");
     }
 
@@ -217,7 +223,7 @@ int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>&
     RadiusResultSet<DistanceType> result_set(radius, indices_ptr, dists_ptr, n);
     nnIndex->findNeighbors(result_set, query[0], searchParams);
     size_t cnt = std::min(result_set.size(), (size_t)n);
-    if (n > 0 && searchParams.sorted) {
+    if ((n > 0)&& searchParams.sorted) {
         std::sort(make_pair_iterator(dists_ptr, indices_ptr),
                   make_pair_iterator(dists_ptr + cnt, indices_ptr + cnt),
                   pair_iterator_compare<DistanceType*, int*>());

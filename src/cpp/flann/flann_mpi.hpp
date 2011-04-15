@@ -37,30 +37,33 @@
 
 namespace flann
 {
-namespace mpi {
+namespace mpi
+{
 
 template<typename DistanceType>
-struct SearchResults {
+struct SearchResults
+{
     flann::Matrix<int> indices;
     flann::Matrix<DistanceType> dists;
 
     template<typename Archive>
-    void serialize(Archive& ar, const unsigned int version) {
-        ar & indices.rows;
-        ar & indices.cols;
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar& indices.rows;
+        ar& indices.cols;
         if (Archive::is_loading::value) {
             indices.data = new int[indices.rows*indices.cols];
         }
-        ar & boost::serialization::make_array(indices.data, indices.rows*indices.cols);
+        ar& boost::serialization::make_array(indices.data, indices.rows*indices.cols);
         if (Archive::is_saving::value) {
             indices.free();
         }
-        ar & dists.rows;
-        ar & dists.cols;
+        ar& dists.rows;
+        ar& dists.cols;
         if (Archive::is_loading::value) {
             dists.data = new DistanceType[dists.rows*dists.cols];
         }
-        ar & boost::serialization::make_array(dists.data, dists.rows*dists.cols);
+        ar& boost::serialization::make_array(dists.data, dists.rows*dists.cols);
         if (Archive::is_saving::value) {
             dists.free();
         }
@@ -68,8 +71,10 @@ struct SearchResults {
 };
 
 template<typename DistanceType>
-struct ResultsMerger {
-    SearchResults<DistanceType> operator()(SearchResults<DistanceType> a, SearchResults<DistanceType> b) {
+struct ResultsMerger
+{
+    SearchResults<DistanceType> operator()(SearchResults<DistanceType> a, SearchResults<DistanceType> b)
+    {
         SearchResults<DistanceType> results;
         results.indices.rows = a.indices.rows;
         results.indices.cols = a.indices.cols;
@@ -79,7 +84,7 @@ struct ResultsMerger {
         results.dists.data = new DistanceType[results.dists.rows*results.dists.cols];
 
 
-        for (size_t i = 0;i < results.dists.rows;++i) {
+        for (size_t i = 0; i < results.dists.rows; ++i) {
             size_t idx = 0;
             size_t a_idx = 0;
             size_t b_idx = 0;
@@ -127,7 +132,8 @@ public:
 
     ~Index();
 
-    void buildIndex() {
+    void buildIndex()
+    {
         flann_index->buildIndex();
     }
 
@@ -143,17 +149,20 @@ public:
                      float radius,
                      const SearchParams& params);
 
-// void save(std::string filename);
+    // void save(std::string filename);
 
-    int veclen() const {
+    int veclen() const
+    {
         return flann_index->veclen();
     }
 
-    int size() const {
+    int size() const
+    {
         return size_;
     }
 
-    const IndexParams* getIndexParameters() {
+    const IndexParams* getIndexParameters()
+    {
         return flann_index->getParameters();
     }
 };
@@ -175,7 +184,7 @@ Index<Distance>::Index(const std::string& file_name, const std::string& dataset_
     all_gather(world, flann_index->size(), sizes);
     size_ = 0;
     offset_ = 0;
-    for (size_t i = 0;i < sizes.size();++i) {
+    for (size_t i = 0; i < sizes.size(); ++i) {
         if (i < world.rank()) offset_ += sizes[i];
         size_ += sizes[i];
     }
@@ -196,8 +205,8 @@ void Index<Distance>::knnSearch(const flann::Matrix<ElementType>& queries, flann
     flann::Matrix<ElementType> local_dists(new ElementType[queries.rows*knn], queries.rows, knn);
 
     flann_index->knnSearch(queries, local_indices, local_dists, knn, params);
-    for (size_t i = 0;i < local_indices.rows;++i) {
-        for (size_t j = 0;j < local_indices.cols;++j) {
+    for (size_t i = 0; i < local_indices.rows; ++i) {
+        for (size_t j = 0; j < local_indices.cols; ++j) {
             local_indices[i][j] += offset_;
         }
     }
@@ -210,8 +219,8 @@ void Index<Distance>::knnSearch(const flann::Matrix<ElementType>& queries, flann
     reduce(world, local_results, results, ResultsMerger<DistanceType>(), 0);
 
     if (world.rank() == 0) {
-        for (int i = 0;i < results.indices.rows;++i) {
-            for (int j = 0;j < results.indices.cols;++j) {
+        for (int i = 0; i < results.indices.rows; ++i) {
+            for (int j = 0; j < results.indices.cols; ++j) {
                 indices[i][j] = results.indices[i][j];
                 dists[i][j] = results.dists[i][j];
             }
@@ -229,8 +238,8 @@ int Index<Distance>::radiusSearch(const flann::Matrix<ElementType>& query, flann
     flann::Matrix<DistanceType> local_dists(new DistanceType[dists.rows*dists.cols], dists.rows, dists.cols);
 
     flann_index->radiusSearch(query, local_indices, local_dists, radius, params);
-    for (size_t i = 0;i < local_indices.rows;++i) {
-        for (size_t j = 0;j < local_indices.cols;++j) {
+    for (size_t i = 0; i < local_indices.rows; ++i) {
+        for (size_t j = 0; j < local_indices.cols; ++j) {
             local_indices[i][j] += offset_;
         }
     }
@@ -243,8 +252,8 @@ int Index<Distance>::radiusSearch(const flann::Matrix<ElementType>& query, flann
     reduce(world, local_results, results, ResultsMerger<DistanceType>(), 0);
 
     if (world.rank() == 0) {
-        for (int i = 0;i < std::min(results.indices.rows, indices.rows);++i) {
-            for (int j = 0;j < std::min(results.indices.cols, indices.cols);++j) {
+        for (int i = 0; i < std::min(results.indices.rows, indices.rows); ++i) {
+            for (int j = 0; j < std::min(results.indices.cols, indices.cols); ++j) {
                 indices[i][j] = results.indices[i][j];
                 dists[i][j] = results.dists[i][j];
             }

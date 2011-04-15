@@ -39,52 +39,50 @@ namespace flann
 template<typename BaseClass, typename DerivedClass>
 BaseClass* createObject()
 {
-	return new DerivedClass();
+    return new DerivedClass();
 }
 
 template<typename BaseClass, typename UniqueIdType>
 class ObjectFactory
 {
-	typedef BaseClass* (*CreateObjectFunc)();
-	std::map<UniqueIdType, CreateObjectFunc> object_registry;
+    typedef BaseClass* (*CreateObjectFunc)();
+    std::map<UniqueIdType, CreateObjectFunc> object_registry;
 
-	// singleton class, private constructor
-	ObjectFactory() {};
+    // singleton class, private constructor
+    ObjectFactory() {}
 
 public:
-   typedef typename std::map<UniqueIdType, CreateObjectFunc>::iterator Iterator;
+    typedef typename std::map<UniqueIdType, CreateObjectFunc>::iterator Iterator;
 
 
-   template<typename DerivedClass>
-   bool register_(UniqueIdType id)
-   {
-      if (object_registry.find(id) != object_registry.end())
-               return false;
+    template<typename DerivedClass>
+    bool register_(UniqueIdType id)
+    {
+        if (object_registry.find(id) != object_registry.end()) return false;
 
-      object_registry[id] = &createObject<BaseClass, DerivedClass>;
-      return true;
-   }
+        object_registry[id] = &createObject<BaseClass, DerivedClass>;
+        return true;
+    }
 
-   bool unregister(UniqueIdType id)
-   {
-      return (object_registry.erase(id) == 1);
-   }
+    bool unregister(UniqueIdType id)
+    {
+        return object_registry.erase(id) == 1;
+    }
 
-   BaseClass* create(UniqueIdType id)
-   {
-      Iterator iter = object_registry.find(id);
+    BaseClass* create(UniqueIdType id)
+    {
+        Iterator iter = object_registry.find(id);
 
-      if (iter == object_registry.end())
-         return NULL;
+        if (iter == object_registry.end()) return NULL;
 
-      return ((*iter).second)();
-   }
+        return ((*iter).second)();
+    }
 
-   static ObjectFactory<BaseClass,UniqueIdType>& instance()
-   {
-	   static ObjectFactory<BaseClass,UniqueIdType> the_factory;
-	   return the_factory;
-   }
+    static ObjectFactory<BaseClass,UniqueIdType>& instance()
+    {
+        static ObjectFactory<BaseClass,UniqueIdType> the_factory;
+        return the_factory;
+    }
 
 };
 

@@ -393,7 +393,7 @@ int flann_find_nearest_neighbors_int(int* dataset,  int rows, int cols, int* tes
 
 template<typename Distance>
 int __flann_find_nearest_neighbors_index(flann_index_t index_ptr, typename Distance::ElementType* testset, int tcount,
-        int* result, typename Distance::ResultType* dists, int nn, FLANNParameters* flann_params)
+                                         int* result, typename Distance::ResultType* dists, int nn, FLANNParameters* flann_params)
 {
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
@@ -403,7 +403,7 @@ int __flann_find_nearest_neighbors_index(flann_index_t index_ptr, typename Dista
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
-        Index<Distance>* index = (Index<Distance>*) index_ptr;
+        Index<Distance>* index = (Index<Distance>*)index_ptr;
 
         Matrix<int> m_indices(result,tcount, nn);
         Matrix<DistanceType> m_dists(dists, tcount, nn);
@@ -497,7 +497,7 @@ int __flann_radius_search(flann_index_t index_ptr,
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
-        Index<Distance>* index = (Index<Distance>*) index_ptr;
+        Index<Distance>* index = (Index<Distance>*)index_ptr;
 
         Matrix<int> m_indices(indices, 1, max_nn);
         Matrix<DistanceType> m_dists(dists, 1, max_nn);
@@ -614,7 +614,7 @@ int __flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
         if (index_ptr==NULL) {
             throw FLANNException("Invalid index");
         }
-        Index<Distance>* index = (Index<Distance>*) index_ptr;
+        Index<Distance>* index = (Index<Distance>*)index_ptr;
         delete index;
 
         return 0;
@@ -697,7 +697,8 @@ int __flann_compute_cluster_centers(typename Distance::ElementType* dataset, int
         int clusterNum = hierarchicalClustering<Distance>(inputData, centers, params, d);
 
         return clusterNum;
-    } catch (std::runtime_error& e) {
+    }
+    catch (std::runtime_error& e) {
         logger.error("Caught exception: %s\n",e.what());
         return -1;
     }

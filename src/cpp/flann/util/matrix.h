@@ -35,18 +35,20 @@
 
 #include "flann/general.h"
 
-namespace flann {
+namespace flann
+{
 
 
 
 /**
-* Class that implements a simple rectangular matrix stored in a memory buffer and
-* provides convenient matrix-like access using the [] operators.
-*/
+ * Class that implements a simple rectangular matrix stored in a memory buffer and
+ * provides convenient matrix-like access using the [] operators.
+ */
 template <typename T>
-class Matrix {
+class Matrix
+{
 public:
-	typedef T type;
+    typedef T type;
 
     size_t rows;
     size_t cols;
@@ -57,9 +59,9 @@ public:
     }
 
     Matrix(T* data_, long rows_, long cols_) :
-    	 rows(rows_), cols(cols_), data(data_)
-	{
-	}
+        rows(rows_), cols(cols_), data(data_)
+    {
+    }
 
     /**
      * Convenience function for deallocating the storage data.
@@ -69,13 +71,13 @@ public:
         if (data!=NULL) delete[] data;
     }
 
-	~Matrix()
-	{
-	}
+    ~Matrix()
+    {
+    }
 
     /**
-    * Operator that return a (pointer to a) row of the data.
-    */
+     * Operator that return a (pointer to a) row of the data.
+     */
     T* operator[](size_t index)
     {
         return data+index*cols;
@@ -91,15 +93,15 @@ public:
 class UntypedMatrix
 {
 public:
-	size_t rows;
-	size_t cols;
+    size_t rows;
+    size_t cols;
     void* data;
     flann_datatype_t type;
 
     UntypedMatrix(void* data_, long rows_, long cols_) :
-    	 rows(rows_), cols(cols_), data(data_)
-	{
-	}
+        rows(rows_), cols(cols_), data(data_)
+    {
+    }
 
     ~UntypedMatrix()
     {
@@ -109,7 +111,7 @@ public:
     template<typename T>
     Matrix<T> as()
     {
-    	return Matrix<T>((T*)data, rows, cols);
+        return Matrix<T>((T*)data, rows, cols);
     }
 };
 

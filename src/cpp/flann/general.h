@@ -50,13 +50,15 @@
 #define ARRAY_LEN(a) (sizeof(a)/sizeof(a[0]))
 
 /* Nearest neighbour index algorithms */
-enum flann_algorithm_t {
+enum flann_algorithm_t
+{
     FLANN_INDEX_LINEAR = 0,
     FLANN_INDEX_KDTREE = 1,
     FLANN_INDEX_KMEANS = 2,
     FLANN_INDEX_COMPOSITE = 3,
     FLANN_INDEX_KDTREE_SINGLE = 4,
-    FLANN_INDEX_LSH = 5,
+    FLANN_INDEX_HIERARCHICAL = 5,
+    FLANN_INDEX_LSH = 6,
     FLANN_INDEX_SAVED = 254,
     FLANN_INDEX_AUTOTUNED = 255,
 
@@ -70,7 +72,8 @@ enum flann_algorithm_t {
     AUTOTUNED = 255
 };
 
-enum flann_centers_init_t {
+enum flann_centers_init_t
+{
     FLANN_CENTERS_RANDOM = 0,
     FLANN_CENTERS_GONZALES = 1,
     FLANN_CENTERS_KMEANSPP = 2,
@@ -81,7 +84,8 @@ enum flann_centers_init_t {
     CENTERS_KMEANSPP = 2
 };
 
-enum flann_log_level_t {
+enum flann_log_level_t
+{
     FLANN_LOG_NONE = 0,
     FLANN_LOG_FATAL = 1,
     FLANN_LOG_ERROR = 2,
@@ -89,7 +93,8 @@ enum flann_log_level_t {
     FLANN_LOG_INFO = 4,
 };
 
-enum flann_distance_t {
+enum flann_distance_t
+{
     FLANN_DIST_EUCLIDEAN = 1,
     FLANN_DIST_L2 = 1,
     FLANN_DIST_MANHATTAN = 2,
@@ -115,7 +120,8 @@ enum flann_distance_t {
     KULLBACK_LEIBLER  = 8
 };
 
-enum flann_datatype_t {
+enum flann_datatype_t
+{
     FLANN_INT8 = 0,
     FLANN_INT16 = 1,
     FLANN_INT32 = 2,
@@ -132,7 +138,8 @@ const int FLANN_CHECKS_UNLIMITED = -1;
 const int FLANN_CHECKS_AUTOTUNED = -2;
 
 
-struct FLANNParameters {
+struct FLANNParameters
+{
     enum flann_algorithm_t algorithm; /* the algorithm to use */
 
     /* search time parameters */
@@ -184,16 +191,18 @@ public:
 };
 
 
-struct IndexParams {
+struct IndexParams
+{
 protected:
-    IndexParams(flann_algorithm_t algorithm_) : algorithm(algorithm_) {};
+    IndexParams(flann_algorithm_t algorithm_) : algorithm(algorithm_) {}
 
 public:
-    static IndexParams* createFromParameters(const FLANNParameters& p);
+    FLANN_EXPORT static IndexParams* createFromParameters(const FLANNParameters& p);
 
-    virtual flann_algorithm_t getIndexType() const {
+    virtual flann_algorithm_t getIndexType() const
+    {
         return algorithm;
-    };
+    }
 
     virtual void fromParameters(const FLANNParameters& p) = 0;
     virtual void toParameters(FLANNParameters& p) const = 0;
@@ -204,9 +213,10 @@ public:
 };
 
 
-struct SearchParams {
+struct SearchParams
+{
     SearchParams(int checks_ = 32, float eps_ = 0, bool sorted_ = true ) :
-            checks(checks_), eps(eps_), sorted(sorted_) {};
+        checks(checks_), eps(eps_), sorted(sorted_) {}
 
     int checks;  // how many leafs to visit when searching for neighbours (-1 for unlimited)
     float eps;  // search for eps-approximate neighbours (default: 0)

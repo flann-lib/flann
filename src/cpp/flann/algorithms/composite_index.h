@@ -40,15 +40,18 @@ namespace flann
 {
 
 
-struct CompositeIndexParams : public IndexParams {
+struct CompositeIndexParams : public IndexParams
+{
     CompositeIndexParams(int trees_ = 4, int branching_ = 32, int iterations_ = 11,
                          flann_centers_init_t centers_init_ = FLANN_CENTERS_RANDOM, float cb_index_ = 0.2 ) :
-            IndexParams(FLANN_INDEX_COMPOSITE),
-            trees(trees_),
-            branching(branching_),
-            iterations(iterations_),
-            centers_init(centers_init_),
-            cb_index(cb_index_) {};
+        IndexParams(FLANN_INDEX_COMPOSITE),
+        trees(trees_),
+        branching(branching_),
+        iterations(iterations_),
+        centers_init(centers_init_),
+        cb_index(cb_index_)
+    {
+    }
 
     int trees;                 // number of randomized trees to use (for kdtree)
     int branching;             // branching factor (for kmeans tree)
@@ -108,7 +111,7 @@ public:
 
     CompositeIndex(const Matrix<ElementType>& inputData, const CompositeIndexParams& params = CompositeIndexParams(),
                    Distance d = Distance()) :
-            dataset(inputData), index_params(params), distance(d)
+        dataset(inputData), index_params(params), distance(d)
     {
         KDTreeIndexParams kdtree_params(params.trees);
         KMeansIndexParams kmeans_params(params.branching, params.iterations, params.centers_init, params.cb_index);
