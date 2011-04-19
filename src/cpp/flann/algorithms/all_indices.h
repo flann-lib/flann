@@ -38,6 +38,7 @@
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
+#include "flann/algorithms/lsh_index.h"
 #include "flann/algorithms/autotuned_index.h"
 
 
@@ -68,6 +69,9 @@ NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementT
         break;
     case FLANN_INDEX_AUTOTUNED:
         nnIndex = new AutotunedIndex<Distance>(dataset, (const AutotunedIndexParams&)params, distance);
+        break;
+    case FLANN_INDEX_LSH:
+        nnIndex = new LshIndex<Distance>(dataset, (const LshIndexParams&)params, distance);
         break;
     default:
         throw FLANNException("Unknown index type");

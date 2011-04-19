@@ -132,13 +132,9 @@ template<typename Distance>
       {
         lsh::LshTable<ElementType> & table = tables_[i];
         table = lsh::LshTable<ElementType>(feature_size_, index_params_.key_size_);
-        if (!table.use_speed_)
-          table.buckets_space_.rehash(dataset_.rows * 1.2);
+
         // Add the features to the table
-        for (int i = 0; i < dataset_.rows; ++i)
-          table.add(i, dataset_(i));
-        // Now that the table is full, optimize it for speed/space
-        table.optimize();
+        table.add(dataset_);
       }
       is_index_used_.resize(dataset_.rows);
     }
@@ -195,17 +191,7 @@ template<typename Distance>
      */
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-      int maxChecks = searchParams.checks;
-      float epsError = 1 + searchParams.eps;
-
-      if (maxChecks == FLANN_CHECKS_UNLIMITED)
-      {
-        getExactNeighbors(result, vec, epsError);
-      }
-      else
-      {
-        getNeighbors(result, vec, maxChecks, epsError);
-      }
+      getNeighbors(vec, result);
     }
 
     const IndexParams* getParameters() const
@@ -271,7 +257,7 @@ template<typename Distance>
           is_index_used_.reset(*training_index);
 
           // Compute the Hamming distance
-          hamming_distance = Distance(vec, dataset_ + (*training_index) * sizeof(ElementType), dataset_.cols);
+          hamming_distance = distance_(vec, dataset_.data + (*training_index) * sizeof(ElementType), dataset_.cols);
           if ((!do_radius) || (hamming_distance < radius))
           {
             // Insert the new element
@@ -299,7 +285,7 @@ template<typename Distance>
         is_index_used_.reset(*training_index);
 
         // Compute the Hamming distance
-        hamming_distance = Distance(vec, dataset_ + (*training_index) * sizeof(ElementType), dataset_.cols);
+        hamming_distance = distance_(vec, dataset_.data + (*training_index) * sizeof(ElementType), dataset_.cols);
         if (hamming_distance < worst_distance)
         {
           if (do_k)
@@ -314,10 +300,51 @@ template<typename Distance>
 
             // Keep track of the worst score
             worst_distance = score_index_heap.front().first;
-          } else
+          }
+          else
             // Insert the new element
             score_index_heap.push_back(ScoreIndexPair(hamming_distance, *training_index));
         }
+      }
+    }
+
+    /** Performs the approximate nearest-neighbor search.
+     * This is a slower version than the above as it uses the ResultSet
+     * @param vec the feature to analyze
+     */
+    void getNeighbors(const ElementType* vec, ResultSet<DistanceType>& result)
+    {
+      static std::vector<ScoreIndexPair> score_index_heap;
+      static std::vector<lsh::FeatureIndex> unique_indices;
+
+      unique_indices.clear();
+      score_index_heap.clear();
+
+      // Figure out a list of unique indices to query
+      BOOST_FOREACH(const lsh::LshTable<ElementType> & table, tables_)
+            {
+              // First, insert the matching bucket if it is not empty
+              table.addToUniqueIndices(vec, unique_indices, is_index_used_);
+
+              // Checking neighboring buckets
+              if (index_params_.do_multi_probe_)
+                table.addNeighborsToUniqueIndices(vec, unique_indices, is_index_used_);
+            }
+
+      // Go over each descriptor index
+      std::vector<lsh::FeatureIndex>::const_iterator training_index = unique_indices.begin();
+      std::vector<lsh::FeatureIndex>::const_iterator last_training_index = unique_indices.end();
+      DistanceType hamming_distance;
+
+      // Process the rest of the candidates
+      for (; training_index < last_training_index; ++training_index)
+      {
+        // Reset the usage of the index
+        is_index_used_.reset(*training_index);
+
+        // Compute the Hamming distance
+        hamming_distance = distance_(vec, dataset_.data + (*training_index) * sizeof(ElementType), dataset_.cols);
+        result.addPoint(hamming_distance, *training_index);
       }
     }
 
@@ -330,7 +357,7 @@ template<typename Distance>
     /** The size of the features (as ElementType[]) */
     unsigned int feature_size_;
 
-    const LshIndexParams index_params_;
+    LshIndexParams index_params_;
 
     /** Structure used when uniquifying indices */
     boost::dynamic_bitset<> is_index_used_;

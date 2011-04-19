@@ -40,6 +40,7 @@
 #include <boost/foreach.hpp>
 #include <boost/unordered_map.hpp>
 #include <stdint.h>
+#include <iostream>
 
 #include "flann/util/matrix.h"
 
@@ -106,11 +107,23 @@ template<typename ElementType>
     typedef std::vector<Bucket> BucketsSpeed;
 
     /** Default constructor
-     * Create the mask and allocate the memory
-     * @param feature_size is the size of the feature (considered as a char[])
-     * @param subsignature_size is the number of bits that are turned on in the feature
      */
-    LshTable(unsigned int feature_size, unsigned int feature_number);
+    LshTable()
+    {
+      std::cerr << "LSH is not implemented for that type" << std::endl;
+      throw;
+    }
+
+    /** Default constructor
+     * Create the mask and allocate the memory
+     * @param feature_size is the size of the feature (considered as a ElementType[])
+     * @param key_size is the number of bits that are turned on in the feature
+     */
+    LshTable(unsigned int feature_size, unsigned int key_size)
+    {
+      std::cerr << "LSH is not implemented for that type" << std::endl;
+      throw;
+    }
 
     /** Add a feature to the table
      * @param value the value to store for that feature
@@ -124,6 +137,20 @@ template<typename ElementType>
         buckets_speed_[key].push_back(value);
       else
         buckets_space_[key].push_back(value);
+    }
+
+    /** Add a set of features to the table
+     * @param dataset the values to store
+     */
+    void add(Matrix<ElementType> dataset)
+    {
+      if (!use_speed_)
+        buckets_space_.rehash((buckets_space_.size() + dataset.rows) * 1.2);
+      // Add the features to the table
+      for (unsigned int i = 0; i < dataset.rows; ++i)
+        add(i, dataset[i]);
+      // Now that the table is full, optimize it for speed/space
+      optimize();
     }
 
     /** Return the bucket matching the feature
@@ -162,7 +189,7 @@ template<typename ElementType>
     void addNeighborsToUniqueIndices(const ElementType * feature, Bucket & unique_indices,
                                      boost::dynamic_bitset<> & is_index_used) const
     {
-      size_t key = this->getSubsignature(feature.data);
+      size_t key = computeKey(feature);
       // Generate other buckets
       if (use_speed_)
       {
@@ -211,6 +238,53 @@ template<typename ElementType>
       addBucketToUniqueIndices(this->operator ()(feature), unique_indices, is_index_used);
     }
 
+  private:
+    /** Perform merge sort on several lists of indices
+     * This code is much faster than trying to do a k-wy merge on the different buckets
+     * @param indices
+     * @param unique_indices
+     */
+    void addBucketToUniqueIndices(const Bucket & bucket, Bucket & unique_indices,
+                                  boost::dynamic_bitset<> & is_index_used) const
+    {
+      BOOST_FOREACH(lsh::FeatureIndex index, bucket)
+            {
+              if (is_index_used.test(index))
+                continue;
+              is_index_used.set(index);
+              unique_indices.push_back(index);
+            }
+    }
+
+    /** Compute the sub-signature of a feature
+     */
+    size_t computeKey(const ElementType* feature) const
+    {
+      // TODO throw an error
+      return 1;
+    }
+
+    /** Initialize some variables
+     */
+    void initialize(size_t key_size)
+    {
+      use_speed_ = false;
+      key_size_ = key_size;
+
+      // Fill the XOR mask
+      xor_masks_.reserve(key_size_ * (key_size_ + 1) / 2);
+      for (unsigned int i = 0; i < key_size_; ++i)
+      {
+        size_t sub_signature_1 = (1 << i);
+        xor_masks_.push_back(sub_signature_1);
+        for (unsigned int j = i + 1; j < key_size_; ++j)
+        {
+          size_t sub_signature_2 = sub_signature_1 ^ (1 << j);
+          xor_masks_.push_back(sub_signature_2);
+        }
+      }
+    }
+
     /** Optimize the table for speed/space
      */
     void optimize()
@@ -256,53 +330,6 @@ template<typename ElementType>
 
         // Empty the array
         buckets_speed_.clear();
-      }
-    }
-
-  private:
-    /** Perform merge sort on several lists of indices
-     * This code is much faster than trying to do a k-wy merge on the different buckets
-     * @param indices
-     * @param unique_indices
-     */
-    void addBucketToUniqueIndices(const Bucket & bucket, Bucket & unique_indices,
-                                  boost::dynamic_bitset<> & is_index_used)
-    {
-      BOOST_FOREACH(lsh::FeatureIndex index, bucket)
-            {
-              if (is_index_used.test(index))
-                continue;
-              is_index_used.set(index);
-              unique_indices.push_back(index);
-            }
-    }
-
-    /** Compute the sub-signature of a feature
-     */
-    size_t computeKey(const ElementType* feature) const
-    {
-      // TODO throw an error
-      return 1;
-    }
-
-    /** Initialize some variables
-     */
-    void initialize(size_t key_size)
-    {
-      use_speed_ = false;
-      key_size_ = key_size;
-
-      // Fill the XOR mask
-      xor_masks_.reserve(key_size_ * (key_size_ + 1) / 2);
-      for (unsigned int i = 0; i < key_size_; ++i)
-      {
-        size_t sub_signature_1 = (1 << i);
-        xor_masks_.push_back(sub_signature_1);
-        for (unsigned int j = i + 1; j < key_size_; ++j)
-        {
-          size_t sub_signature_2 = sub_signature_1 ^ (1 << j);
-          xor_masks_.push_back(sub_signature_2);
-        }
       }
     }
 
