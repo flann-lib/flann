@@ -70,6 +70,10 @@ struct Accumulator<short>  { typedef float Type; };
 template<>
 struct Accumulator<int> { typedef float Type; };
 
+// Forward declaration
+template<typename ElementType>
+  class ZeroIterator;
+
 /**
  * Squared Euclidean distance functor.
  *
@@ -355,6 +359,19 @@ struct HammingLUT
     return result;
   }
 
+  /** this will count the bits in a
+   */
+  ResultType operator()(const unsigned char* a, int size) const
+  {
+    ResultType result = 0;
+    for (int i = 0; i < size; i++)
+    {
+      result += byteBitsLookUp(a[i]);
+    }
+    return result;
+  }
+
+
   /** \brief given a byte, count the bits using a compile time generated look up table
    *  \param b the byte to count bits.  The look up table has an entry for all
    *  values of b, where that entry is the number of bits.
@@ -479,10 +496,10 @@ template<class T>
   struct Hamming
   {
     typedef T ElementType;
-    typedef int ResultType;
+    typedef typename Accumulator<T>::Type ResultType;
 
     template<typename Iterator1, typename Iterator2>
-      ResultType operator()(Iterator1 a, Iterator2 b, size_t size) const
+      ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType worst_dist = -1) const
       {
         ResultType result = 0;
 #if __GNUC__
@@ -529,11 +546,69 @@ template<class T>
           result += __builtin_popcountll(a_final ^ b_final);
         }
 #else
-        Iterator1 a_end = a+size;
-        for (; a < a_end; ++a, ++b)
-        result += byteBitsLookUp((*a) ^ (*b));
+        HammingLUT lut;
+        result = lut(reinterpret_cast<const unsigned char*> (a),
+            reinterpret_cast<const unsigned char*> (b), size * sizeof(pop_t));
 #endif
         return result;
+      }
+
+    template<typename Iterator>
+      ResultType operator()(Iterator a, ZeroIterator<ElementType> b, size_t size, ResultType worst_dist = -1) const
+      {
+      ResultType result = 0;
+#if __GNUC__
+#if ANDROID && HAVE_NEON
+      static uint64_t features = android_getCpuFeatures();
+      if ((features & ANDROID_CPU_ARM_FEATURE_NEON))
+      {
+        for (size_t i = 0; i < size; i += 16)
+        {
+          uint8x16_t A_vec = vld1q_u8 (a + i);
+
+          uint8x16_t bitsSet += vcntq_u8 (A_vec);
+          //uint16x8_t vpadalq_u8 (uint16x8_t, uint8x16_t)
+          uint16x8_t bitSet8 = vpaddlq_u8 (bitsSet);
+          uint32x4_t bitSet4 = vpaddlq_u16 (bitSet8)s;
+
+          uint64x2_t bitSet2 = vpaddlq_u32 (bitSet4);
+          result += vgetq_lane_u64 (bitSet2,0);
+          result += vgetq_lane_u64 (bitSet2,1);
+        }
+      }
+      else
+#endif
+      //for portability just use unsigned long -- and use the __builtin_popcountll (see docs for __builtin_popcountll)
+      typedef unsigned long long pop_t;
+      const size_t modulo = size % sizeof(pop_t);
+      const pop_t * a2 = reinterpret_cast<const pop_t*> (a);
+      const pop_t * a2_end = a2 + (size / sizeof(pop_t));
+
+      for (; a2 != a2_end; ++a2)
+        result += __builtin_popcountll(*a2);
+
+        if (modulo)
+        {
+          //in the case where size is not dividable by sizeof(size_t)
+          //need to mask off the bits at the end
+          pop_t a_final = 0;
+          memcpy(&a_final, a2, modulo);
+          result += __builtin_popcountll(a_final);
+        }
+#else
+        result = HammingLUT()(reinterpret_cast<const unsigned char*> (a), size * sizeof(pop_t));
+#endif
+        return result;
+      }
+
+    /**
+     * Partial distance, used by the kd-tree.
+     */
+    template<typename U, typename V>
+      inline ResultType accum_dist(const U& a, const V& b, int dim) const
+      {
+        return HammingLUT()(reinterpret_cast<const unsigned char*> (&a), reinterpret_cast<const unsigned char*> (&b),
+                            sizeof(U));
       }
   };
 
@@ -755,12 +830,12 @@ struct ZeroIterator
         return 0;
     }
 
-    ZeroIterator<T>& operator ++()
+    const ZeroIterator<T>& operator ++()
     {
         return *this;
     }
 
-    ZeroIterator<T>& operator ++(int)
+    ZeroIterator<T> operator ++(int)
     {
         return *this;
     }
