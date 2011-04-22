@@ -27,6 +27,7 @@ endif()
 set_target_properties(flann_cpp PROPERTIES
    VERSION ${FLANN_VERSION}
    SOVERSION ${FLANN_SOVERSION}
+   DEFINE_SYMBOL FLANN_EXPORTS
 ) 
 
 if (BUILD_C_BINDINGS)
@@ -46,6 +47,7 @@ if (BUILD_C_BINDINGS)
     set_target_properties(flann PROPERTIES
        VERSION ${FLANN_VERSION}
        SOVERSION ${FLANN_SOVERSION}
+       DEFINE_SYMBOL FLANN_EXPORTS
     ) 
 endif()
 
