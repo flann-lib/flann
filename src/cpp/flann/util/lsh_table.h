@@ -495,8 +495,9 @@ template<>
     stats.bucket_size_max_ = stats.bucket_sizes_.back();
 
     // TODO compute mean and std
-    float mean, stddev;
-    stats.bucket_size_std_dev = stddev;
+    /*float mean, stddev;
+    stats.bucket_size_mean_ = mean;
+    stats.bucket_size_std_dev = stddev;*/
 
     // Include a histogram of the buckets
     unsigned int bin_start = 0;
