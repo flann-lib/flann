@@ -168,7 +168,7 @@ template<typename Distance>
      */
     size_t veclen() const
     {
-      return index_params_.key_size_;
+      return feature_size_;
     }
 
     /**
@@ -343,7 +343,7 @@ template<typename Distance>
         is_index_used_.reset(*training_index);
 
         // Compute the Hamming distance
-        hamming_distance = distance_(vec, dataset_.data + (*training_index) * sizeof(ElementType), dataset_.cols);
+        hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
         result.addPoint(hamming_distance, *training_index);
       }
     }
