@@ -31,10 +31,11 @@
 #ifndef RESULTSET_H
 #define RESULTSET_H
 
-
 #include <algorithm>
 #include <limits>
 #include <vector>
+
+#include <boost/foreach.hpp>
 
 
 namespace flann
@@ -54,7 +55,7 @@ struct BranchStruct
     BranchStruct() {}
     BranchStruct(const T& aNode, DistanceType dist) : node(aNode), mindist(dist) {}
 
-    bool operator<(const BranchStruct<T, DistanceType>& rhs)
+    bool operator<(const BranchStruct<T, DistanceType>& rhs) const
     {
         return mindist<rhs.mindist;
     }
@@ -82,6 +83,16 @@ class KNNResultSet : public ResultSet<DistanceType>
     DistanceType* dists;
     int capacity;
     int count;
+    std::vector<int> indices_;
+    struct DistIndex
+    {
+      int index_;
+      DistanceType dist_;
+      bool operator<(const DistIndex & dist_index)
+      {
+        return dist_ < dist_index.dist_;
+      }
+    };
 
 public:
     KNNResultSet(int capacity_) : capacity(capacity_), count(0)
@@ -193,6 +204,255 @@ public:
 
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** Class that holds the k NN neighbors
+ * Faster than KNNResultSet as it uses a binary heap and does not maintain two arrays
+ */
+template<typename DistanceType>
+  class ResultVector : public ResultSet<DistanceType>
+  {
+  public:
+    typedef std::pair<float, unsigned int> DistIndexPair;
+
+    /** Check the status of the set
+     * @return true if we have k NN
+     */
+    inline bool full() const
+    {
+      return is_full_;
+    }
+
+    /** Remove all elements in the set
+     */
+    virtual void clear() = 0;
+
+    /** Copy the set to two C arrays
+     * @param indices pointer to a C array of indices
+     * @param dist pointer to a C array of distances
+     */
+    void copy(int * indices, DistanceType * dist)
+    {
+      BOOST_FOREACH (const DistIndexPair & dist_index, dist_indices_)
+            {
+              *dist = dist_index.first;
+              *indices = dist_index.second;
+              ++indices;
+              ++dist;
+            }
+    }
+
+    /** Copy the set to two C arrays but sort it according to the distance first
+     * @param indices pointer to a C array of indices
+     * @param dist pointer to a C array of distances
+     */
+    void sortAndCopy(int * indices, DistanceType * dist)
+    {
+      // First, sort the array (which may be a heap if it is full)
+      if (is_full_)
+        std::sort_heap(dist_indices_.begin(), dist_indices_.end());
+      else
+        std::sort(dist_indices_.begin(), dist_indices_.end());
+      // Then copy the data
+      copy(indices, dist);
+    }
+
+  protected:
+    /** Flag to say if the set is full */
+    bool is_full_;
+
+    /** The nearest neighbors */
+    std::vector<DistIndexPair> dist_indices_;
+  };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** Class that holds the k NN neighbors
+ * Faster than KNNResultSet as it uses a binary heap and does not maintain two arrays
+ */
+template<typename DistanceType>
+  class KNNResultVector : public ResultVector<DistanceType>
+  {
+  public:
+    /** Constructor
+     * @param capacity the number of neighbors to store at max
+     */
+    KNNResultVector(unsigned int capacity)
+    {
+      this->capacity_ = capacity;
+      this->is_full_ = false;
+      dist_indices_.reserve(capacity_);
+      this->clear();
+    }
+
+    /** Add a possible candidate to the best neighbors
+     * @param dist distance for that neighbor
+     * @param index index of that neighbor
+     */
+    inline void addPoint(DistanceType dist, int index)
+    {
+      addPointImpl(dist, index);
+    }
+
+    /** Remove all elements in the set
+     */
+    void clear() {
+      dist_indices_.clear();
+      worst_distance_ = std::numeric_limits<DistanceType>::max();
+      is_full_ = false;
+    }
+
+    /** Check the status of the set
+     * @return true if we have k NN
+     */
+    inline bool full() const
+    {
+      return is_full_;
+    }
+
+    /** The distance of the furthest neighbor
+     * If we don't have enough neighbors, it returns the max float
+     * @return
+     */
+    inline DistanceType worstDist() const
+    {
+      return worst_distance_;
+    }
+  protected:
+    /** Add a possible candidate to the best neighbors
+     * @param dist distance for that neighbor
+     * @param index index of that neighbor
+     */
+    void addPointImpl(DistanceType dist, int index)
+    {
+      if (is_full_)
+      {
+        // Don't do anything if we are worse than the worst
+        if (dist > worst_distance_)
+          return;
+        // Remove the worst element
+        std::pop_heap(dist_indices_.begin(), dist_indices_.end());
+        // Insert the new element
+        dist_indices_.back() = typename ResultVector<DistanceType>::DistIndexPair(dist, index);
+        std::push_heap(dist_indices_.begin(), dist_indices_.end());
+        worst_distance_ = dist_indices_.front().first;
+      }
+      else {
+        dist_indices_.push_back(typename ResultVector<DistanceType>::DistIndexPair(dist, index));
+        // Once we are full, make sure it is a heap
+        if (dist_indices_.size()==capacity_) {
+          std::make_heap(dist_indices_.begin(), dist_indices_.end());
+          is_full_ = true;
+          worst_distance_ = dist_indices_.front().first;
+        }
+      }
+    }
+
+    using ResultVector<DistanceType>::dist_indices_;
+    using ResultVector<DistanceType>::is_full_;
+
+    /** The maximum number of neighbors to consider */
+    unsigned int capacity_;
+
+    /** The worst distance found so far */
+    DistanceType worst_distance_;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** Class that holds the radius nearest neighbors
+ * It is more accurate than RadiusResult as it is not limited in the number of neighbors
+ */
+template<typename DistanceType>
+  class RadiusResultVector : public ResultVector<DistanceType>
+  {
+  public:
+    /** Constructor
+     * @param capacity the number of neighbors to store at max
+     */
+    RadiusResultVector(float radius) :
+      radius_(radius)
+    {
+      is_full_ = false;
+    }
+
+    /** Add a possible candidate to the best neighbors
+     * @param dist distance for that neighbor
+     * @param index index of that neighbor
+     */
+    void addPoint(DistanceType dist, int index)
+    {
+      if (dist <= radius_)
+        dist_indices_.push_back(DistIndexPair(dist, index));
+    }
+
+    /** Remove all elements in the set
+     */
+    inline void clear() {
+      dist_indices_.clear();
+    }
+
+
+    /** Check the status of the set
+     * @return alwys false
+     */
+    inline bool full() const
+    {
+      return false;
+    }
+
+    /** The distance of the furthest neighbor
+     * If we don't have enough neighbors, it returns the max float
+     * @return
+     */
+    inline DistanceType worstDist() const
+    {
+      return radius_;
+    }
+  private:
+    using ResultVector<DistanceType>::dist_indices_;
+    using ResultVector<DistanceType>::is_full_;
+
+    /** The furthest distance a neighbor can be */
+    float radius_;
+  };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** Class that holds the k NN neighbors within a radius distance
+ */
+template<typename DistanceType>
+  class KNNRadiusResultVector : public KNNResultVector<DistanceType>
+  {
+  public:
+    /** Constructor
+     * @param capacity the number of neighbors to store at max
+     */
+    KNNRadiusResultVector(unsigned int capacity, float radius)
+    {
+      this->capacity_ = capacity;
+      this->is_full_ = false;
+      this->radius_ = radius;
+      this->dist_indices_.reserve(capacity_);
+      this->clear();
+    }
+
+    /** Add a possible candidate to the best neighbors
+     * @param dist distance for that neighbor
+     * @param index index of that neighbor
+     */
+    inline void addPoint(DistanceType dist, int index)
+    {
+      if (dist < radius_)
+        this->addPointImpl(dist, index);
+    }
+  private:
+    /** The maximum number of neighbors to consider */
+    unsigned int capacity_;
+
+    /** The maximum distance of a neighbor */
+    float radius_;
+  };
 
 }
 
