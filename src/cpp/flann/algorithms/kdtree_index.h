@@ -119,7 +119,7 @@ private:
     /**
      *  Array of indices to vectors in the dataset.
      */
-    int* vind;
+    std::vector<int> vind_;
 
     /**
      * The dataset used by this index
@@ -199,10 +199,9 @@ public:
         trees = new NodePtr[numTrees];
 
         // Create a permutable array of indices to the input vectors.
-        vind = new int[size_];
-        for (size_t i = 0; i < size_; i++) {
-            vind[i] = i;
-        }
+        vind_.resize(size_);
+        for (size_t i = 0; i < size_; ++i)
+            vind_[i] = i;
 
         mean = new DistanceType[veclen_];
         var = new DistanceType[veclen_];
@@ -213,22 +212,11 @@ public:
      */
     ~KDTreeIndex()
     {
-        delete[] vind;
         if (trees!=NULL) {
             delete[] trees;
         }
         delete[] mean;
         delete[] var;
-    }
-
-
-    template <typename Vector>
-    void randomizeVector(Vector& vec, int vec_size)
-    {
-        for (int j = vec_size; j > 0; --j) {
-            int rnd = rand_int(j);
-            std::swap(vec[j-1], vec[rnd]);
-        }
     }
 
     /**
@@ -239,8 +227,8 @@ public:
         /* Construct the randomized trees. */
         for (int i = 0; i < numTrees; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
-            randomizeVector(vind, size_);
-            trees[i] = divideTree(vind, size_ );
+            std::random_shuffle(vind_.begin(), vind_.end());
+            trees[i] = divideTree(&(vind_.front()), size_ );
         }
     }
 
