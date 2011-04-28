@@ -291,7 +291,27 @@ template<typename DistanceType>
      */
     inline void addPoint(DistanceType dist, int index)
     {
-      addPointImpl(dist, index);
+      if (is_full_)
+      {
+        // Don't do anything if we are worse than the worst
+        if (dist > worst_distance_)
+          return;
+        // Remove the worst element
+        std::pop_heap(dist_indices_.begin(), dist_indices_.end());
+        // Insert the new element
+        dist_indices_.back() = typename ResultVector<DistanceType>::DistIndexPair(dist, index);
+        std::push_heap(dist_indices_.begin(), dist_indices_.end());
+        worst_distance_ = dist_indices_.front().first;
+      }
+      else {
+        dist_indices_.push_back(typename ResultVector<DistanceType>::DistIndexPair(dist, index));
+        // Once we are full, make sure it is a heap
+        if (dist_indices_.size()==capacity_) {
+          std::make_heap(dist_indices_.begin(), dist_indices_.end());
+          is_full_ = true;
+          worst_distance_ = dist_indices_.front().first;
+        }
+      }
     }
 
     /** Remove all elements in the set
@@ -319,35 +339,6 @@ template<typename DistanceType>
       return worst_distance_;
     }
   protected:
-    /** Add a possible candidate to the best neighbors
-     * @param dist distance for that neighbor
-     * @param index index of that neighbor
-     */
-    void addPointImpl(DistanceType dist, int index)
-    {
-      if (is_full_)
-      {
-        // Don't do anything if we are worse than the worst
-        if (dist > worst_distance_)
-          return;
-        // Remove the worst element
-        std::pop_heap(dist_indices_.begin(), dist_indices_.end());
-        // Insert the new element
-        dist_indices_.back() = typename ResultVector<DistanceType>::DistIndexPair(dist, index);
-        std::push_heap(dist_indices_.begin(), dist_indices_.end());
-        worst_distance_ = dist_indices_.front().first;
-      }
-      else {
-        dist_indices_.push_back(typename ResultVector<DistanceType>::DistIndexPair(dist, index));
-        // Once we are full, make sure it is a heap
-        if (dist_indices_.size()==capacity_) {
-          std::make_heap(dist_indices_.begin(), dist_indices_.end());
-          is_full_ = true;
-          worst_distance_ = dist_indices_.front().first;
-        }
-      }
-    }
-
     using ResultVector<DistanceType>::dist_indices_;
     using ResultVector<DistanceType>::is_full_;
 
@@ -431,22 +422,23 @@ template<typename DistanceType>
     KNNRadiusResultVector(unsigned int capacity, float radius)
     {
       this->capacity_ = capacity;
-      this->is_full_ = false;
       this->radius_ = radius;
       this->dist_indices_.reserve(capacity_);
       this->clear();
     }
 
-    /** Add a possible candidate to the best neighbors
-     * @param dist distance for that neighbor
-     * @param index index of that neighbor
+    /** Remove all elements in the set
      */
-    inline void addPoint(DistanceType dist, int index)
-    {
-      if (dist < radius_)
-        this->addPointImpl(dist, index);
+    void clear() {
+      dist_indices_.clear();
+      worst_distance_ = radius_;
+      is_full_ = false;
     }
   private:
+    using KNNResultVector<DistanceType>::dist_indices_;
+    using KNNResultVector<DistanceType>::is_full_;
+    using KNNResultVector<DistanceType>::worst_distance_;
+
     /** The maximum number of neighbors to consider */
     unsigned int capacity_;
 
