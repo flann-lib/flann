@@ -32,6 +32,7 @@
 #define HEAP_H
 
 #include <algorithm>
+#include <vector>
 
 namespace flann
 {
@@ -42,8 +43,6 @@ namespace flann
  * The priority queue is implemented with a heap.  A heap is a complete
  * (full) binary tree in which each parent is less than both of its
  * children, but the order of the children is unspecified.
- * Note that a heap uses 1-based indexing to allow for power-of-2
- * location of parents and children.  We ignore element 0 of Heap array.
  */
 template <typename T>
 class Heap
@@ -53,7 +52,7 @@ class Heap
      * Storage array for the heap.
      * Type T must be comparable.
      */
-    T* heap;
+    std::vector<T> heap;
     int length;
 
     /**
@@ -73,19 +72,9 @@ public:
 
     Heap(int size)
     {
-        length = size+1;
-        heap = new T[length];  // heap uses 1-based indexing
+        length = size;
+        heap.reserve(length);
         count = 0;
-    }
-
-
-    /**
-     * Destructor.
-     *
-     */
-    ~Heap()
-    {
-        delete[] heap;
     }
 
     /**
@@ -112,9 +101,15 @@ public:
      */
     void clear()
     {
-        count = 0;
+      heap.clear();
+      count = 0;
     }
 
+    struct CompareT {
+      bool operator()(const T & t_1, const T & t_2) const {
+        return (!(t_1 < t_2));
+      }
+    };
 
     /**
      * Insert a new element in the heap.
@@ -128,21 +123,14 @@ public:
     void insert(T value)
     {
         /* If heap is full, then return without adding this element. */
-        if (count == length-1) {
+        if (count == length) {
             return;
         }
 
-        int loc = ++(count);   /* Remember 1-based indexing. */
-
-        /* Keep moving parents down until a place is found for this node. */
-        int par = loc / 2;                 /* Location of parent. */
-        while (par > 0  && value < heap[par]) {
-            heap[loc] = heap[par];     /* Move parent down to loc. */
-            loc = par;
-            par = loc / 2;
-        }
-        /* Insert the element at the determined location. */
-        heap[loc] = value;
+        heap.push_back(value);
+        static CompareT compareT;
+        std::push_heap(heap.begin(), heap.end(), compareT);
+        ++count;
     }
 
 
@@ -160,50 +148,14 @@ public:
             return false;
         }
 
+        value = heap[0];
+        static CompareT compareT;
+        std::pop_heap(heap.begin(), heap.end(), compareT);
+        heap.pop_back();
+        --count;
 
-        if (count == 1) {
-            count = 0;    /* For size 1, no need to swap node with itself */
-        }
-        else {
-            std::swap(heap[1],heap[count]);  /* Switch first node with last. */
-            count -= 1;
-            heapify(1);      /* Move new node 1 to right position. */
-        }
-        value = heap[count + 1];
         return true;  /* Return old last node. */
     }
-
-
-    /**
-     * Reorganizes the heap (a parent is smaller than its children)
-     * starting with a node.
-     *
-     * Params:
-     *     parent = node form which to start heap reorganization.
-     */
-    void heapify(int parent)
-    {
-        int minloc = parent;
-
-        /* Check the left child */
-        int left = 2 * parent;
-        if ((left <= count)&&(heap[left] < heap[parent])) {
-            minloc = left;
-        }
-
-        /* Check the right child */
-        int right = left + 1;
-        if ((right <= count)&&(heap[right] < heap[minloc])) {
-            minloc = right;
-        }
-
-        /* If a child was smaller, than swap parent with it and Heapify. */
-        if (minloc != parent) {
-            std::swap(heap[parent],heap[minloc]);
-            heapify(minloc);
-        }
-    }
-
 };
 
 }
