@@ -33,9 +33,8 @@
 
 #ifdef WIN32
 /* win32 dll export/import directives */
+
 #ifdef FLANN_EXPORTS
-/* using flann_EXPORTS here since it's automatically defined by cmake
- * when building a library */
 #define FLANN_EXPORT __declspec(dllexport)
 #else
 #define FLANN_EXPORT __declspec(dllimport)
