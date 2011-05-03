@@ -230,7 +230,7 @@ public:
         for (int i = 0; i < numTrees; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
             std::random_shuffle(vind_.begin(), vind_.end());
-            trees[i] = divideTree(&(vind_.front()), size_ );
+            trees[i] = divideTree(vind_.data(), size_ );
         }
     }
 
