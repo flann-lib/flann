@@ -30,6 +30,11 @@ set_target_properties(flann_cpp PROPERTIES
    DEFINE_SYMBOL FLANN_EXPORTS
 ) 
 
+add_library(flann_cpp-gd SHARED ${CPP_SOURCES})
+set_target_properties(flann_cpp-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
+add_library(flann_cpp_s-gd STATIC ${CPP_SOURCES})
+set_target_properties(flann_cpp_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
+
 if (BUILD_C_BINDINGS)
     add_library(flann_s STATIC ${C_SOURCES})
     if(CMAKE_COMPILER_IS_GNUCC)
@@ -63,7 +68,7 @@ endif(WIN32)
 
 
 install (
-    TARGETS flann_cpp flann_cpp_s
+    TARGETS flann_cpp flann_cpp_s flann_cpp-gd flann_cpp_s-gd
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
