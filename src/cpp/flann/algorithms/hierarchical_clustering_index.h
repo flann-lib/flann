@@ -652,15 +652,12 @@ private:
                 if (result.full()) return;
             }
             checks += node->size;
-            DistanceType worst_dist = result.worstDist();
             for (int i=0; i<node->size; ++i) {
                 int index = node->indices[i];
                 if (!checked[index]) {
                     DistanceType dist = distance(dataset[index], vec, veclen_);
-                    if (dist<worst_dist) {
-                        result.addPoint(dist, index);
-                        checked[index] = true;
-                    }
+                    result.addPoint(dist, index);
+                    checked[index] = true;
                 }
             }
         }

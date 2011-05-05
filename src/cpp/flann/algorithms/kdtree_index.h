@@ -591,12 +591,9 @@ private:
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
-            DistanceType worst_dist = result_set.worstDist();
             int index = node->divfeat;
             DistanceType dist = distance(dataset[index], vec, veclen_);
-            if (dist<worst_dist) {
-                result_set.addPoint(dist,index);
-            }
+            result_set.addPoint(dist,index);
             return;
         }
 
