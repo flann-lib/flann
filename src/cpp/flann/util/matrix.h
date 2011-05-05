@@ -71,21 +71,21 @@ public:
         if (data!=NULL) delete[] data;
     }
 
-    ~Matrix()
-    {
-    }
-
     /**
      * Operator that return a (pointer to a) row of the data.
      */
-    T* operator[](size_t index)
+    T* operator[](size_t index) const
     {
         return data+index*cols;
     }
 
-    T* operator[](size_t index) const
+    /** Copy a row to some other memory location
+     * @param i the index of the row to copy
+     * @param other_row the location where to copy it to
+     */
+    void copyRow(size_t index, T* other_row)
     {
-        return data+index*cols;
+      memcpy(other_row, data + index * cols, cols);
     }
 };
 
