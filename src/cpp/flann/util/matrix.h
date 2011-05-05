@@ -78,15 +78,6 @@ public:
     {
         return data+index*cols;
     }
-
-    /** Copy a row to some other memory location
-     * @param i the index of the row to copy
-     * @param other_row the location where to copy it to
-     */
-    void copyRow(size_t index, T* other_row)
-    {
-      memcpy(other_row, data + index * cols, cols);
-    }
 };
 
 

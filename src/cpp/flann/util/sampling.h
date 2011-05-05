@@ -45,9 +45,9 @@ Matrix<T> random_sample(Matrix<T>& srcMatrix, long size, bool remove = false)
 
     for (long i=0; i<size; ++i) {
         long r = rand.next();
-        srcMatrix.copyRow(r, newSet[i]);
+        std::copy(srcMatrix[r], srcMatrix[r] + srcMatrix.cols, newSet[i]);
         if (remove)
-          srcMatrix.copyRow(r, srcMatrix[srcMatrix.rows-i-1]);
+          std::copy(srcMatrix[r], srcMatrix[r] + srcMatrix.cols, srcMatrix[srcMatrix.rows - i - 1]);
     }
 
     if (remove) {
