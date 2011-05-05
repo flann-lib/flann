@@ -80,7 +80,8 @@ class KNNResultSet : public ResultSet<DistanceType>
     DistanceType* dists;
     int capacity;
     int count;
-    std::vector<int> indices_;
+    DistanceType worst_distance_;
+
     struct DistIndex
     {
       int index_;
@@ -101,7 +102,8 @@ public:
         indices = indices_;
         dists = dists_;
         count = 0;
-        dists[capacity-1] = (std::numeric_limits<DistanceType>::max)();
+        worst_distance_ = (std::numeric_limits<DistanceType>::max)();
+        indices[capacity-1] = worst_distance_;
     }
 
     size_t size() const
@@ -117,30 +119,30 @@ public:
 
     void addPoint(DistanceType dist, int index)
     {
+        if (dist > worst_distance_)
+          return;
         int i;
-        for (i=count; i>0; --i) {
+        if (count<capacity)
+          ++count;
+        for (i=count-1; i>0; --i) {
 #ifdef FLANN_FIRST_MATCH
             if ( (dists[i-1]>dist) || ((dist==dists[i-1])&&(indices[i-1]>index)) ) {
 #else
             if (dists[i-1]>dist) {
 #endif
-                if (i<capacity) {
-                    dists[i] = dists[i-1];
-                    indices[i] = indices[i-1];
-                }
+                dists[i] = dists[i-1];
+                indices[i] = indices[i-1];
             }
             else break;
         }
-        if (i<capacity) {
-            dists[i] = dist;
-            indices[i] = index;
-        }
-        if (count<capacity) count++;
+        dists[i] = dist;
+        indices[i] = index;
+        worst_distance_ = indices[capacity-1];
     }
 
     DistanceType worstDist() const
     {
-        return dists[capacity-1];
+        return worst_distance_;
     }
 };
 
