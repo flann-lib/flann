@@ -202,7 +202,7 @@ void Index<Distance>::knnSearch(const flann::Matrix<ElementType>& queries, flann
 {
     boost::mpi::communicator world;
     flann::Matrix<int> local_indices(new int[queries.rows*knn], queries.rows, knn);
-    flann::Matrix<ElementType> local_dists(new ElementType[queries.rows*knn], queries.rows, knn);
+    flann::Matrix<DistanceType> local_dists(new DistanceType[queries.rows*knn], queries.rows, knn);
 
     flann_index->knnSearch(queries, local_indices, local_dists, knn, params);
     for (size_t i = 0; i < local_indices.rows; ++i) {
