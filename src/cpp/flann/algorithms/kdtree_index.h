@@ -36,10 +36,9 @@
 #include <cassert>
 #include <cstring>
 
-#include <boost/dynamic_bitset.hpp>
-
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
+#include "flann/util/dynamic_bitset.h"
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
 #include "flann/util/heap.h"
@@ -513,7 +512,7 @@ private:
 
         int checkCount = 0;
         Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
-        boost::dynamic_bitset<> checked(size_);
+        DynamicBitset checked(size_);
 
         /* Search once through each tree down to root. */
         for (i = 0; i < numTrees; ++i) {
@@ -537,7 +536,7 @@ private:
      *  at least "mindistsq".
      */
     void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, NodePtr node, DistanceType mindist, int& checkCount, int maxCheck,
-                     float epsError, Heap<BranchSt>* heap, boost::dynamic_bitset<>& checked)
+                     float epsError, Heap<BranchSt>* heap, DynamicBitset& checked)
     {
         if (result_set.worstDist()<mindist) {
             //			printf("Ignoring branch, too far\n");

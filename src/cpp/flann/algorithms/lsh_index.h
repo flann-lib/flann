@@ -229,15 +229,16 @@ template<typename Distance>
       score_index_heap.clear();
 
       // Figure out a list of unique indices to query
-      BOOST_FOREACH(const lsh::LshTable<ElementType> & table, tables_)
-            {
-              // First, insert the matching bucket if it is not empty
-              table.add_to_unique_indices(vec, unique_indices, is_index_used_);
+      for (typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin(); table
+          != tables_.end(); ++table)
+      {
+        // First, insert the matching bucket if it is not empty
+        table->add_to_unique_indices(vec, unique_indices, is_index_used_);
 
-              // Checking neighboring buckets
-              if (index_params_.do_multi_probe_)
-                table.add_neighbors_to_unique_indices(vec, unique_indices, is_index_used_);
-            }
+        // Checking neighboring buckets
+        if (index_params_.do_multi_probe_)
+          table->add_neighbors_to_unique_indices(vec, unique_indices, is_index_used_);
+      }
 
       checked_average += unique_indices.size();
 
@@ -321,15 +322,16 @@ template<typename Distance>
       score_index_heap.clear();
 
       // Figure out a list of unique indices to query
-      BOOST_FOREACH(const lsh::LshTable<ElementType> & table, tables_)
-            {
-              // First, insert the matching bucket if it is not empty
-              table.addToUniqueIndices(vec, unique_indices, is_index_used_);
+      for (typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin(); table
+          != tables_.end(); ++table)
+      {
+        // First, insert the matching bucket if it is not empty
+        table->addToUniqueIndices(vec, unique_indices, is_index_used_);
 
-              // Checking neighboring buckets
-              if (index_params_.do_multi_probe_)
-                table.addNeighborsToUniqueIndices(vec, unique_indices, is_index_used_);
-            }
+        // Checking neighboring buckets
+        if (index_params_.do_multi_probe_)
+          table->addNeighborsToUniqueIndices(vec, unique_indices, is_index_used_);
+      }
 
       // Go over each descriptor index
       std::vector<lsh::FeatureIndex>::const_iterator training_index = unique_indices.begin();
@@ -360,7 +362,7 @@ template<typename Distance>
     LshIndexParams index_params_;
 
     /** Structure used when uniquifying indices */
-    boost::dynamic_bitset<> is_index_used_;
+    DynamicBitset is_index_used_;
 
     Distance distance_;
   };

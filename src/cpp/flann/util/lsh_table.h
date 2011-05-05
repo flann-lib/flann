@@ -36,12 +36,18 @@
 #define LSH_TABLE_H_
 
 #include <algorithm>
-#include <boost/dynamic_bitset.hpp>
-#include <boost/foreach.hpp>
-#include <boost/unordered_map.hpp>
-#include <stdint.h>
 #include <iostream>
+#include <limits.h>
+// TODO as soon as we use C++0x, use the code in USE_UNORDERED_MAP
+#if USE_UNORDERED_MAP
+#include <unordered_map>
+#else
+#include <map>
+#endif
+#include <math.h>
+#include <stdint.h>
 
+#include "flann/util/dynamic_bitset.h"
 #include "flann/util/matrix.h"
 
 namespace flann
@@ -101,7 +107,12 @@ template<typename ElementType>
   public:
     /** A container of all the feature indices. Optimized for space
      */
-    typedef boost::unordered_map<BucketKey, Bucket> BucketsSpace;
+#if USE_UNORDERED_MAP
+    typedef std::unordered_map<BucketKey, Bucket> BucketsSpace;
+#else
+    typedef std::map<BucketKey, Bucket> BucketsSpace;
+#endif
+
     /** A container of all the feature indices. Optimized for speed
      */
     typedef std::vector<Bucket> BucketsSpeed;
@@ -142,8 +153,10 @@ template<typename ElementType>
      */
     void add(Matrix<ElementType> dataset)
     {
+#if USE_UNORDERED_MAP
       if (!use_speed_)
-        buckets_space_.rehash((buckets_space_.size() + dataset.rows) * 1.2);
+      buckets_space_.rehash((buckets_space_.size() + dataset.rows) * 1.2);
+#endif
       // Add the features to the table
       for (unsigned int i = 0; i < dataset.rows; ++i)
         add(i, dataset[i]);
@@ -165,7 +178,7 @@ template<typename ElementType>
       }
       else
       {
-        boost::unordered_map<BucketKey, Bucket>::const_iterator bucket = buckets_space_.find(computeKey(feature));
+        BucketsSpace::const_iterator bucket = buckets_space_.find(computeKey(feature));
         if (bucket != buckets_space_.end())
           // If we have the bucket return it
           return bucket->second;
@@ -185,42 +198,42 @@ template<typename ElementType>
      * @param is_index_used mask indicating whether an index is used or not
      */
     void addNeighborsToUniqueIndices(const ElementType * feature, Bucket & unique_indices,
-                                     boost::dynamic_bitset<> & is_index_used) const
+                                     DynamicBitset & is_index_used) const
     {
       size_t key = computeKey(feature);
       // Generate other buckets
       if (use_speed_)
       {
         // That means we get the buckets from an array
-        BOOST_FOREACH(BucketKey xor_mask, xor_masks_)
-                // Insert this new bucket as a neighbor
-                addBucketToUniqueIndices(buckets_speed_[key ^ xor_mask], unique_indices, is_index_used);
+        for (std::vector<BucketKey>::const_iterator xor_mask = xor_masks_.begin(); xor_mask != xor_masks_.end(); ++xor_mask)
+          // Insert this new bucket as a neighbor
+          addBucketToUniqueIndices(buckets_speed_[key ^ (*xor_mask)], unique_indices, is_index_used);
       }
       else
       {
         if (key_bitset_.empty())
         {
           // That means we have to check for the hash table for the presence of a key
-          boost::unordered_map<BucketKey, Bucket>::const_iterator bucket_it, bucket_end = buckets_space_.end();
-          BOOST_FOREACH(BucketKey xor_mask, xor_masks_)
-                {
-                  bucket_it = buckets_space_.find(key ^ xor_mask);
-                  // Stop here if that bucket does not exist
-                  if (bucket_it != bucket_end)
-                    // Insert this new bucket as a neighbor
-                    addBucketToUniqueIndices(bucket_it->second, unique_indices, is_index_used);
-                }
+          BucketsSpace::const_iterator bucket_it, bucket_end = buckets_space_.end();
+          for (std::vector<BucketKey>::const_iterator xor_mask = xor_masks_.begin(); xor_mask != xor_masks_.end(); ++xor_mask)
+          {
+            bucket_it = buckets_space_.find(key ^ (*xor_mask));
+            // Stop here if that bucket does not exist
+            if (bucket_it != bucket_end)
+              // Insert this new bucket as a neighbor
+              addBucketToUniqueIndices(bucket_it->second, unique_indices, is_index_used);
+          }
         }
         else
         {
           // That means we can check the bitset for the presence of a key
-          BOOST_FOREACH(BucketKey xor_mask, xor_masks_)
-                {
-                  size_t sub_key = key ^ xor_mask;
-                  if (key_bitset_.test(sub_key))
-                    // Insert this new bucket as a neighbor
-                    addBucketToUniqueIndices(buckets_space_.at(sub_key), unique_indices, is_index_used);
-                }
+          for (std::vector<BucketKey>::const_iterator xor_mask = xor_masks_.begin(); xor_mask != xor_masks_.end(); ++xor_mask)
+          {
+            size_t sub_key = key ^ (*xor_mask);
+            if (key_bitset_.test(sub_key))
+              // Insert this new bucket as a neighbor
+              addBucketToUniqueIndices(buckets_space_.at(sub_key), unique_indices, is_index_used);
+          }
         }
       }
     }
@@ -230,8 +243,7 @@ template<typename ElementType>
      * @param unique_indices list of indice to which we add neighboring buckets
      * @param is_index_used mask indicating whether an index is used or not
      */
-    void addToUniqueIndices(const ElementType * feature, Bucket & unique_indices,
-                            boost::dynamic_bitset<> & is_index_used) const
+    void addToUniqueIndices(const ElementType * feature, Bucket & unique_indices, DynamicBitset & is_index_used) const
     {
       addBucketToUniqueIndices(this->operator ()(feature), unique_indices, is_index_used);
     }
@@ -242,16 +254,16 @@ template<typename ElementType>
      * @param indices
      * @param unique_indices
      */
-    void addBucketToUniqueIndices(const Bucket & bucket, Bucket & unique_indices,
-                                  boost::dynamic_bitset<> & is_index_used) const
+    void addBucketToUniqueIndices(const Bucket & bucket, Bucket & unique_indices, DynamicBitset & is_index_used) const
     {
-      BOOST_FOREACH(lsh::FeatureIndex index, bucket)
-            {
-              if (is_index_used.test(index))
-                continue;
-              is_index_used.set(index);
-              unique_indices.push_back(index);
-            }
+      for (Bucket::const_iterator pindex = bucket.begin(); pindex != bucket.end(); ++pindex)
+      {
+        FeatureIndex index = *pindex;
+        if (is_index_used.test(index))
+          continue;
+        is_index_used.set(index);
+        unique_indices.push_back(index);
+      }
     }
 
     /** Compute the sub-signature of a feature
@@ -296,8 +308,8 @@ template<typename ElementType>
         key_bitset_.resize(1 << key_size_);
         key_bitset_.reset();
         // Try with the BucketsSpace
-        BOOST_FOREACH(const BucketsSpace::value_type & key_bucket, buckets_space_)
-                key_bitset_.set(key_bucket.first);
+        for (BucketsSpace::const_iterator key_bucket = buckets_space_.begin(); key_bucket != buckets_space_.end(); ++key_bucket)
+          key_bitset_.set(key_bucket->first);
         // Try with the BucketsSpeed
         for (unsigned int i = 0; i < buckets_speed_.size(); ++i)
           if (!buckets_speed_[i].empty())
@@ -312,8 +324,8 @@ template<typename ElementType>
         use_speed_ = true;
         // Fill the array version of it
         buckets_speed_.resize(1 << key_size_);
-        BOOST_FOREACH(const BucketsSpace::value_type & key_bucket, buckets_space_)
-                buckets_speed_[key_bucket.first] = key_bucket.second;
+        for (BucketsSpace::const_iterator key_bucket = buckets_space_.begin(); key_bucket != buckets_space_.end(); ++key_bucket)
+          buckets_speed_[key_bucket->first] = key_bucket->second;
 
         // Empty the hash table
         buckets_space_.clear();
@@ -351,7 +363,7 @@ template<typename ElementType>
     /** If the subkey is small enough, it will keep track of which subkeys are set through that bitset
      * That is just a speedup so that we don't look in the hash table (which can be mush slower that checking a bitset)
      */
-    boost::dynamic_bitset<> key_bitset_;
+    DynamicBitset key_bitset_;
 
     /** The XOR masks to apply to a key to get the neighboring buckets
      */
@@ -381,19 +393,21 @@ template<>
     // Allocate the mask
     mask_ = std::vector<size_t>(ceil((float)(feature_size * sizeof(char)) / (float)sizeof(size_t)), 0);
 
+    // A bit brutal but fast to code
+    std::vector<size_t> indices(feature_size * CHAR_BIT);
+    for (size_t i = 0; i < feature_size * CHAR_BIT; ++i)
+      indices[i] = i;
+    std::random_shuffle(indices.begin(), indices.end());
+
     // Generate a random set of order of subsignature_size_ bits
-    boost::dynamic_bitset<> allocated_bits(feature_size * CHAR_BIT);
-    while (allocated_bits.count() < key_size_)
+    for (unsigned int i = 0; i < key_size_; ++i)
     {
-      size_t index = std::rand() % allocated_bits.size();
-      if (allocated_bits.test(index))
-        continue;
-      allocated_bits.set(index);
+      size_t index = indices[i];
 
       // Set that bit in the mask
       size_t divisor = CHAR_BIT * sizeof(size_t);
       size_t idx = index / divisor; //pick the right size_t index
-      mask_[idx] += size_t(1) << (index % divisor); //use modulo to find the bit offset
+      mask_[idx] |= size_t(1) << (index % divisor); //use modulo to find the bit offset
     }
 
     // Set to 1 if you want to display the mask for debug
@@ -429,24 +443,25 @@ template<>
     size_t subsignature = 0;
     size_t bit_index = 1;
 
-    BOOST_FOREACH(size_t mask_block, mask_)
-          {
-            // get the mask and signature blocks
-            size_t feature_block = *feature_block_ptr;
-            while (mask_block)
-            {
-              // Get the lowest set bit in the mask block
-              size_t lowest_bit = mask_block & (-mask_block);
-              // Add it to the current subsignature if necessary
-              subsignature += (feature_block & lowest_bit) ? bit_index : 0;
-              // Reset the bit in the mask block
-              mask_block ^= lowest_bit;
-              // increment the bit index for the subsignature
-              bit_index <<= 1;
-            }
-            // Check the next feature block
-            ++feature_block_ptr;
-          }
+    for (std::vector<size_t>::const_iterator pmask_block = mask_.begin(); pmask_block != mask_.end(); ++pmask_block)
+    {
+      // get the mask and signature blocks
+      size_t feature_block = *feature_block_ptr;
+      size_t mask_block = *pmask_block;
+      while (mask_block)
+      {
+        // Get the lowest set bit in the mask block
+        size_t lowest_bit = mask_block & (-mask_block);
+        // Add it to the current subsignature if necessary
+        subsignature += (feature_block & lowest_bit) ? bit_index : 0;
+        // Reset the bit in the mask block
+        mask_block ^= lowest_bit;
+        // increment the bit index for the subsignature
+        bit_index <<= 1;
+      }
+      // Check the next feature block
+      ++feature_block_ptr;
+    }
     return subsignature;
   }
 
@@ -466,21 +481,21 @@ template<>
 
     if (!buckets_speed_.empty())
     {
-      BOOST_FOREACH(const Bucket& bucket, buckets_speed_)
-            {
-              stats.bucket_sizes_.push_back(bucket.size());
-              stats.bucket_size_mean_ += bucket.size();
-            }
+      for (BucketsSpeed::const_iterator pbucket = buckets_speed_.begin(); pbucket != buckets_speed_.end(); ++pbucket)
+      {
+        stats.bucket_sizes_.push_back(pbucket->size());
+        stats.bucket_size_mean_ += pbucket->size();
+      }
       stats.bucket_size_mean_ /= buckets_speed_.size();
       stats.n_buckets_ = buckets_speed_.size();
     }
     else
     {
-      BOOST_FOREACH(const BucketsSpace::value_type& x, buckets_space_)
-            {
-              stats.bucket_sizes_.push_back(x.second.size());
-              stats.bucket_size_mean_ += x.second.size();
-            }
+      for (BucketsSpace::const_iterator x = buckets_space_.begin(); x != buckets_space_.end(); ++x)
+      {
+        stats.bucket_sizes_.push_back(x->second.size());
+        stats.bucket_size_mean_ += x->second.size();
+      }
       stats.bucket_size_mean_ /= buckets_space_.size();
       stats.n_buckets_ = buckets_space_.size();
     }
@@ -496,8 +511,8 @@ template<>
 
     // TODO compute mean and std
     /*float mean, stddev;
-    stats.bucket_size_mean_ = mean;
-    stats.bucket_size_std_dev = stddev;*/
+     stats.bucket_size_mean_ = mean;
+     stats.bucket_size_std_dev = stddev;*/
 
     // Include a histogram of the buckets
     unsigned int bin_start = 0;

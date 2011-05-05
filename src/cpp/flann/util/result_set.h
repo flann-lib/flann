@@ -35,9 +35,6 @@
 #include <limits>
 #include <vector>
 
-#include <boost/foreach.hpp>
-
-
 namespace flann
 {
 
@@ -233,13 +230,14 @@ template<typename DistanceType>
      */
     void copy(int * indices, DistanceType * dist)
     {
-      BOOST_FOREACH (const DistIndexPair & dist_index, dist_indices_)
-            {
-              *dist = dist_index.first;
-              *indices = dist_index.second;
-              ++indices;
-              ++dist;
-            }
+      for (std::vector<DistIndexPair>::const_iterator dist_index = dist_indices_.begin(); dist_index
+          != dist_indices_.end(); ++dist_index)
+      {
+        *dist = dist_index->first;
+        *indices = dist_index->second;
+        ++indices;
+        ++dist;
+      }
     }
 
     /** Copy the set to two C arrays but sort it according to the distance first

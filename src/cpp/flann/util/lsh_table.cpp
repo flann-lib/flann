@@ -32,8 +32,6 @@
  * Author: Vincent Rabaud
  *************************************************************************/
 
-#include <boost/foreach.hpp>
-#include <boost/functional/hash.hpp>
 #include <iostream>
 #include <iomanip>
 #include <list>

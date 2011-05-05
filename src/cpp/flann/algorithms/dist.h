@@ -33,6 +33,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <string.h>
 
 #include "flann/general.h"
 
