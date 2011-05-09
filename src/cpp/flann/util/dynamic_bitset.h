@@ -45,6 +45,10 @@ typedef boost::dynamic_bitset<> DynamicBitset;
 
 #include "flann/algorithms/dist.h"
 
+/** Class re-implementing the boost version of it
+ * This helps not depending on boost, it also does not do the bound checks
+ * and has a way to reset a block for speed
+ */
 class DynamicBitset
 {
 public:
@@ -86,6 +90,17 @@ public:
     bitset_[index / cell_bit_size_] &= ~(size_t(1) << (index % cell_bit_size_));
   }
 
+  /** @brief sets a specific bit to 0, and more bits too
+   * This function is useful when resetting a given set of bits so that the
+   * whole bitset ends up being 0: if that's the case, we don't care about setting
+   * other bits to 0
+   * @param
+   */
+  void reset_block(size_t index)
+  {
+    bitset_[index / cell_bit_size_] = 0;
+  }
+
   /** @param resize the bitset so that it contains at least size bits
    * @param size
    */
@@ -116,7 +131,7 @@ public:
    */
   bool test(size_t index) const
   {
-    return ((bitset_[index / cell_bit_size_] >> (index % cell_bit_size_)) & size_t(1));
+    return (bitset_[index / cell_bit_size_] & (size_t(1) << (index % cell_bit_size_)));
   }
 
 private:

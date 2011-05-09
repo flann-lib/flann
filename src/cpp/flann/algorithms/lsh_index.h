@@ -255,7 +255,7 @@ template<typename Distance>
         for (; training_index < last_training_index; ++training_index)
         {
           // Reset the usage of the index
-          is_index_used_.reset(*training_index);
+          is_index_used_.reset_block(*training_index);
 
           // Compute the Hamming distance
           hamming_distance = distance_(vec, dataset_.data + (*training_index) * sizeof(ElementType), dataset_.cols);
@@ -283,7 +283,7 @@ template<typename Distance>
       for (; training_index < last_training_index; ++training_index)
       {
         // Reset the usage of the index
-        is_index_used_.reset(*training_index);
+        is_index_used_.reset_block(*training_index);
 
         // Compute the Hamming distance
         hamming_distance = distance_(vec, dataset_.data + (*training_index) * sizeof(ElementType), dataset_.cols);
@@ -342,7 +342,7 @@ template<typename Distance>
       for (; training_index < last_training_index; ++training_index)
       {
         // Reset the usage of the index
-        is_index_used_.reset(*training_index);
+        is_index_used_.reset_block(*training_index);
 
         // Compute the Hamming distance
         hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
