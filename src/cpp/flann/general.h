@@ -197,6 +197,8 @@ public:
         return algorithm;
     }
 
+    virtual ~IndexParams() {};
+
     virtual void fromParameters(const FLANNParameters& p) = 0;
     virtual void toParameters(FLANNParameters& p) const = 0;
 
