@@ -192,12 +192,15 @@ void Index<Distance>::knnSearch(const Matrix<ElementType>& queries, Matrix<int>&
     assert(int(indices.cols) >= knn);
     assert(int(dists.cols) >= knn);
 
+
     KNNResultSet<DistanceType> resultSet(knn);
     for (size_t i = 0; i < queries.rows; i++) {
         resultSet.init(indices[i], dists[i]);
         nnIndex->findNeighbors(resultSet, queries[i], searchParams);
     }
+
 }
+
 
 template<typename Distance>
 int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& searchParams)
@@ -220,16 +223,18 @@ int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>&
         indices_ptr = indices[0];
         dists_ptr = dists[0];
     }
-    RadiusResultSet<DistanceType> result_set(radius, indices_ptr, dists_ptr, n);
-    nnIndex->findNeighbors(result_set, query[0], searchParams);
-    size_t cnt = std::min(result_set.size(), (size_t)n);
-    if ((n > 0)&& searchParams.sorted) {
-        std::sort(make_pair_iterator(dists_ptr, indices_ptr),
-                  make_pair_iterator(dists_ptr + cnt, indices_ptr + cnt),
-                  pair_iterator_compare<DistanceType*, int*>());
+
+    RadiusResultVector<DistanceType> resultSet(radius, (n>0));
+    resultSet.clear();
+    nnIndex->findNeighbors(resultSet, query[0], searchParams);
+    if (n>0) {
+        if (searchParams.sorted)
+            resultSet.sortAndCopy(indices_ptr, dists_ptr, n);
+        else
+            resultSet.copy(indices_ptr, dists_ptr, n);
     }
 
-    return result_set.size();
+    return resultSet.size();
 }
 
 
