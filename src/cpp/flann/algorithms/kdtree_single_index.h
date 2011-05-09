@@ -391,7 +391,7 @@ private:
             int idx;
             int cutfeat;
             DistanceType cutval;
-            middleSplit(&vind[0]+left, right-left, idx, cutfeat, cutval, bbox);
+            middleSplit_(&vind[0]+left, right-left, idx, cutfeat, cutval, bbox);
 
             node->divfeat = cutfeat;
 
@@ -462,6 +462,48 @@ private:
                 }
             }
         }
+        int lim1, lim2;
+        planeSplit(ind, count, cutfeat, cutval, lim1, lim2);
+
+        if (lim1>count/2) index = lim1;
+        else if (lim2<count/2) index = lim2;
+        else index = count/2;
+    }
+
+
+    void middleSplit_(int* ind, int count, int& index, int& cutfeat, DistanceType& cutval, const BoundingBox& bbox)
+    {
+        const float EPS=0.00001;
+        ElementType max_span = bbox[0].high-bbox[0].low;
+        for (size_t i=1;i<dim;++i) {
+            ElementType span = bbox[i].high-bbox[i].low;
+            if (span>max_span) {
+                max_span = span;
+            }
+        }
+        ElementType max_spread = -1;
+        cutfeat = 0;
+        for (size_t i=0;i<dim;++i) {
+            ElementType span = bbox[i].high-bbox[i].low;
+            if (span>(1-EPS)*max_span) {
+                ElementType min_elem, max_elem;
+                computeMinMax(ind, count, cutfeat, min_elem, max_elem);
+                ElementType spread = max_elem-min_elem;;
+                if (spread>max_spread) {
+                    cutfeat = i;
+                    max_spread = spread;
+                }
+            }
+        }
+        // split in the middle
+        DistanceType split_val = (bbox[cutfeat].low+bbox[cutfeat].high)/2;
+        ElementType min_elem, max_elem;
+        computeMinMax(ind, count, cutfeat, min_elem, max_elem);
+
+        if (split_val<min_elem) cutval = min_elem;
+        else if (split_val>max_elem) cutval = max_elem;
+        else cutval = split_val;
+
         int lim1, lim2;
         planeSplit(ind, count, cutfeat, cutval, lim1, lim2);
 
