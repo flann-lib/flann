@@ -132,8 +132,10 @@ def load_flann_library():
     root_dir = os.path.abspath(os.path.dirname(__file__))
     
     libname = 'libflann.so'
+    libdir = 'lib'
     if sys.platform == 'win32':
         libname = 'flann.dll'
+        libdir = 'DLLs'
     elif sys.platform == 'darwin':
         libname = 'libflann.dylib'
 
@@ -143,14 +145,15 @@ def load_flann_library():
     while (not loaded) and root_dir!=None:
         try:
             #print "Trying ",os.path.join(root_dir,'lib',libname)
-            flannlib = cdll[os.path.join(root_dir,'lib',libname)]
+            flannlib = cdll[os.path.join(root_dir,libdir,libname)]
             loaded = True
         except Exception,e:
            # print e
-            if root_dir == '/':
+            tmp = os.path.dirname(root_dir)
+            if tmp == root_dir:
                 root_dir = None
             else:
-                root_dir = os.path.dirname(root_dir)
+                root_dir = tmp
 
     if not loaded:
         try:
@@ -164,8 +167,7 @@ def load_flann_library():
 
 flannlib = load_flann_library()
 if flannlib == None:
-    print 'Cannot load dynamic library. Did you compile FLANN?'
-    sys.exit(1)
+    raise ImportError('Cannot load dynamic library. Did you compile FLANN?')
 
 class FlannLib: pass
 flann = FlannLib()
@@ -359,4 +361,3 @@ def ensure_2d_array(array, flags, **kwargs):
     if len(array.shape) == 1:
         array = array.reshape(-1,array.size)
     return array
-
