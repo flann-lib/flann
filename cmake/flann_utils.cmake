@@ -78,9 +78,6 @@ macro(flann_add_pyunit file)
         message(FATAL_ERROR "Can't find pyunit file \"${file}\"")
     endif(NOT _file_name)
 
-    # find python
-    find_package(PythonInterp)
-    
     # add target for running test
     string(REPLACE "/" "_" _testname ${file})
     add_custom_target(pyunit_${_testname}
@@ -95,14 +92,12 @@ macro(flann_add_pyunit file)
 endmacro(flann_add_pyunit)
 
 
+
 macro(flann_download_test_data _name _md5)
     string(REPLACE "/" "_" _dataset_name dataset_${_name})
     
-    # find python
-    find_package(PythonInterp)
-    
     add_custom_target(${_dataset_name}
-        COMMAND ${PROJECT_SOURCE_DIR}/bin/download_checkmd5.py http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/${_name} ${TEST_OUTPUT_PATH}/${_name} ${_md5}
+        COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/bin/download_checkmd5.py http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/${_name} ${TEST_OUTPUT_PATH}/${_name} ${_md5}
         VERBATIM)
 
     # Also make sure that downloads are done before we run any tests

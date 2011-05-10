@@ -1,4 +1,4 @@
-VER=1.6.8
+VER=1.6.9
 
 
 dist-src:
@@ -22,7 +22,7 @@ dist-src:
 	# test dir
 	mkdir dist/flann-${VER}-src/test
 	cp -r test/*.py test/*.cpp test/*.txt dist/flann-${VER}-src/test
-	cp README dist/flann-${VER}-src
+	cp README.md dist/flann-${VER}-src
 	cp Makefile dist/flann-${VER}-src
 	cp CMakeLists.txt dist/flann-${VER}-src
 	(cd dist; zip -r -9 flann-${VER}-src.zip flann-${VER}-src)
