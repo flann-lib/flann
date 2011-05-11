@@ -32,7 +32,10 @@
 #define RESULTSET_H
 
 #include <algorithm>
+#include <cstring>
+#include <iostream>
 #include <limits>
+#include <set>
 #include <vector>
 
 namespace flann
@@ -103,7 +106,7 @@ public:
         dists = dists_;
         count = 0;
         worst_distance_ = (std::numeric_limits<DistanceType>::max)();
-        indices[capacity-1] = worst_distance_;
+        dists[capacity-1] = worst_distance_;
     }
 
     size_t size() const
@@ -119,26 +122,37 @@ public:
 
     void addPoint(DistanceType dist, int index)
     {
-        if (dist > worst_distance_)
-          return;
-        int i;
-        if (count<capacity)
-          ++count;
-        for (i=count-1; i>0; --i) {
+      if (dist >= worst_distance_)
+        return;
+      int i;
+      for (i = count; i > 0; --i)
+      {
 #ifdef FLANN_FIRST_MATCH
-            if ( (dists[i-1]>dist) || ((dist==dists[i-1])&&(indices[i-1]>index)) ) {
+          if ( (dists[i-1]>dist) || ((dist==dists[i-1])&&(indices[i-1]>index)) )
 #else
-            if (dists[i-1]>dist) {
+          if (dists[i-1]>dist)
 #endif
-                dists[i] = dists[i-1];
-                indices[i] = indices[i-1];
+            continue;
+          else {
+            // Check for duplicate indices
+            int j = i - 1;
+            while ((j >= 0) && (dists[j] == dist))
+            {
+              if (indices[j] == index)
+                return;
+              --j;
             }
-            else
-              break;
-        }
-        dists[i] = dist;
-        indices[i] = index;
-        worst_distance_ = indices[capacity-1];
+            break;
+          }
+      }
+
+      if (count < capacity)
+        ++count;
+      memmove(indices + i + 1, indices + i, (count - i - 1) * sizeof(int));
+      memmove(dists + i + 1, dists + i, (count - i - 1) * sizeof(DistanceType));
+      dists[i] = dist;
+      indices[i] = index;
+      worst_distance_ = dists[capacity-1];
     }
 
     DistanceType worstDist() const
@@ -213,7 +227,20 @@ template<typename DistanceType>
   class ResultVector : public ResultSet<DistanceType>
   {
   public:
-    typedef std::pair<float, unsigned int> DistIndexPair;
+    struct DistIndex
+    {
+    public:
+      DistIndex(float dist, unsigned int index) :
+        dist_(dist), index_(index)
+      {
+      }
+      bool operator<(const DistIndex dist_index) const
+      {
+        return (dist_ < dist_index.dist_) || ((dist_ == dist_index.dist_) && index_ < dist_index.index_);
+      }
+      float dist_;
+      unsigned int index_;
+    };
 
     /** Check the status of the set
      * @return true if we have k NN
@@ -231,39 +258,28 @@ template<typename DistanceType>
      * @param indices pointer to a C array of indices
      * @param dist pointer to a C array of distances
      */
-    void copy(int * indices, DistanceType * dist)
-    {
-      for (std::vector<DistIndexPair>::const_iterator dist_index = dist_indices_.begin(); dist_index
-          != dist_indices_.end(); ++dist_index)
-      {
-        *dist = dist_index->first;
-        *indices = dist_index->second;
-        ++indices;
-        ++dist;
-      }
-    }
+    virtual void copy(int * indices, DistanceType * dist) const = 0;
 
     /** Copy the set to two C arrays but sort it according to the distance first
      * @param indices pointer to a C array of indices
      * @param dist pointer to a C array of distances
      */
-    void sortAndCopy(int * indices, DistanceType * dist)
-    {
-      // First, sort the array (which may be a heap if it is full)
-      if (is_full_)
-        std::sort_heap(dist_indices_.begin(), dist_indices_.end());
-      else
-        std::sort(dist_indices_.begin(), dist_indices_.end());
-      // Then copy the data
-      copy(indices, dist);
-    }
+    virtual void sortAndCopy(int * indices, DistanceType * dist) = 0;
 
+    /** The distance of the furthest neighbor
+     * If we don't have enough neighbors, it returns the max float
+     * @return
+     */
+    inline DistanceType worstDist() const
+    {
+      return worst_distance_;
+    }
   protected:
     /** Flag to say if the set is full */
     bool is_full_;
 
-    /** The nearest neighbors */
-    std::vector<DistIndexPair> dist_indices_;
+    /** The worst distance found so far */
+    DistanceType worst_distance_;
   };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -282,7 +298,6 @@ template<typename DistanceType>
     {
       this->capacity_ = capacity;
       this->is_full_ = false;
-      dist_indices_.reserve(capacity_);
       this->clear();
     }
 
@@ -293,28 +308,20 @@ template<typename DistanceType>
     inline void addPoint(DistanceType dist, int index)
     {
       // Don't do anything if we are worse than the worst
-      if (dist > worst_distance_)
+      if (dist >= worst_distance_)
         return;
+      dist_indices_.insert(DistIndex(dist, index));
+
       if (is_full_)
       {
-        // Remove the worst element
-        std::pop_heap(dist_indices_.begin(), dist_indices_.end());
-        // Insert the new element
-        dist_indices_.back() = typename ResultVector<DistanceType>::DistIndexPair(dist, index);
-
-        std::push_heap(dist_indices_.begin(), dist_indices_.end());
-        worst_distance_ = dist_indices_.front().first;
+        if (dist_indices_.size() > capacity_)
+          dist_indices_.erase(*dist_indices_.rbegin());
+        worst_distance_ = dist_indices_.rbegin()->dist_;
       }
-      else
+      else if (dist_indices_.size() == capacity_)
       {
-        dist_indices_.push_back(typename ResultVector<DistanceType>::DistIndexPair(dist, index));
-        // Once we are full, make sure it is a heap
-        if (dist_indices_.size() == capacity_)
-        {
-          std::make_heap(dist_indices_.begin(), dist_indices_.end());
-          is_full_ = true;
-          worst_distance_ = dist_indices_.front().first;
-        }
+        is_full_ = true;
+        worst_distance_ = dist_indices_.rbegin()->dist_;
       }
     }
 
@@ -326,31 +333,38 @@ template<typename DistanceType>
       is_full_ = false;
     }
 
-    /** Check the status of the set
-     * @return true if we have k NN
+    /** Copy the set to two C arrays
+     * @param indices pointer to a C array of indices
+     * @param dist pointer to a C array of distances
      */
-    inline bool full() const
+    void copy(int * indices, DistanceType * dist) const
     {
-      return is_full_;
+      for (typename std::set<DistIndex>::const_iterator dist_index = dist_indices_.begin(), dist_index_end =
+          dist_indices_.end(); dist_index != dist_index_end; ++dist_index, ++indices, ++dist)
+      {
+        *indices = dist_index->index_;
+        *dist = dist_index->dist_;
+      }
     }
 
-    /** The distance of the furthest neighbor
-     * If we don't have enough neighbors, it returns the max float
-     * @return
+    /** Copy the set to two C arrays but sort it according to the distance first
+     * @param indices pointer to a C array of indices
+     * @param dist pointer to a C array of distances
      */
-    inline DistanceType worstDist() const
-    {
-      return worst_distance_;
+    virtual void sortAndCopy(int * indices, DistanceType * dist) {
+      copy(indices, dist);
     }
+
   protected:
-    using ResultVector<DistanceType>::dist_indices_;
+    typedef typename ResultVector<DistanceType>::DistIndex DistIndex;
     using ResultVector<DistanceType>::is_full_;
+    using ResultVector<DistanceType>::worst_distance_;
 
     /** The maximum number of neighbors to consider */
     unsigned int capacity_;
 
-    /** The worst distance found so far */
-    DistanceType worst_distance_;
+    /** The best candidates so far */
+    std::set<DistIndex> dist_indices_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
