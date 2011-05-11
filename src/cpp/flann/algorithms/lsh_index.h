@@ -36,9 +36,10 @@
 #define LSH_INDEX_H_
 
 #include <algorithm>
-#include <map>
 #include <cassert>
 #include <cstring>
+#include <map>
+#include <vector>
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
@@ -56,8 +57,9 @@ namespace flann
 
 struct LshIndexParams : public IndexParams
 {
-  LshIndexParams(unsigned int table_number, unsigned int key_size, bool do_multi_probe = true) :
-    IndexParams(FLANN_INDEX_LSH), table_number_(table_number), key_size_(key_size), do_multi_probe_(do_multi_probe)
+  LshIndexParams(unsigned int table_number, unsigned int key_size, unsigned int multi_probe_level) :
+    IndexParams(FLANN_INDEX_LSH), table_number_(table_number), key_size_(key_size),
+        multi_probe_level_(multi_probe_level)
   {
   }
 
@@ -66,7 +68,7 @@ struct LshIndexParams : public IndexParams
     assert(p.algorithm==algorithm);
     table_number_ = p.table_number_;
     key_size_ = p.key_size_;
-    do_multi_probe_ = p.do_multi_probe_;
+    multi_probe_level_ = p.multi_probe_level_;
   }
 
   void toParameters(FLANNParameters& p) const
@@ -74,7 +76,7 @@ struct LshIndexParams : public IndexParams
     p.algorithm = algorithm;
     p.table_number_ = table_number_;
     p.key_size_ = key_size_;
-    p.do_multi_probe_ = do_multi_probe_;
+    p.multi_probe_level_ = multi_probe_level_;
   }
 
   void print() const
@@ -88,8 +90,8 @@ struct LshIndexParams : public IndexParams
   unsigned int table_number_;
   /** The length of the key in the hash tables */
   unsigned int key_size_;
-  /** Flag indicating if we use multi-probe LSH */
-  bool do_multi_probe_;
+  /** Number of levels to use in multi-probe (0 for standard LSH) */
+  unsigned int multi_probe_level_;
 };
 
 /**
@@ -120,6 +122,7 @@ template<typename Distance>
       dataset_(input_data), index_params_(params), distance_(d)
     {
       feature_size_ = dataset_.cols;
+      fill_xor_mask(0, index_params_.key_size_, index_params_.multi_probe_level_, xor_masks_);
     }
 
     /**
@@ -136,7 +139,6 @@ template<typename Distance>
         // Add the features to the table
         table.add(dataset_);
       }
-      is_index_used_.resize(dataset_.rows);
     }
 
     void saveIndex(FILE* stream)
@@ -211,6 +213,26 @@ template<typename Distance>
       }
     };
 
+    /** Fills the different xor masks to use when getting the neighbors in multi-probe LSH
+     * @param key the key we build neighbors from
+     * @param lowest_index the lowest index of the bit set
+     * @param level the multi-probe level we are at
+     * @param xor_masks all the xor mask
+     */
+    void fill_xor_mask(lsh::BucketKey key, int lowest_index, unsigned int level,
+                       std::vector<lsh::BucketKey> & xor_masks)
+    {
+      xor_masks.push_back(key);
+      if (level == 0)
+        return;
+      for (int index = lowest_index - 1; index >= 0; --index)
+      {
+        // Create a new key
+        lsh::BucketKey new_key = key | (1 << index);
+        fill_xor_mask(new_key, index, level - 1, xor_masks);
+      }
+    }
+
     /** Performs the approximate nearest-neighbor search.
      * @param vec the feature to analyze
      * @param do_radius flag indicating if we check the radius too
@@ -223,88 +245,83 @@ template<typename Distance>
                       float &checked_average)
     {
       static std::vector<ScoreIndexPair> score_index_heap;
-      static std::vector<lsh::FeatureIndex> unique_indices;
-
-      unique_indices.clear();
-      score_index_heap.clear();
-
-      // Figure out a list of unique indices to query
-      for (typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin(); table
-          != tables_.end(); ++table)
-      {
-        // First, insert the matching bucket if it is not empty
-        table->add_to_unique_indices(vec, unique_indices, is_index_used_);
-
-        // Checking neighboring buckets
-        if (index_params_.do_multi_probe_)
-          table->add_neighbors_to_unique_indices(vec, unique_indices, is_index_used_);
-      }
-
-      checked_average += unique_indices.size();
-
-      // Go over each descriptor index
-      std::vector<lsh::FeatureIndex>::const_iterator training_index = unique_indices.begin();
-      std::vector<lsh::FeatureIndex>::const_iterator last_training_index = unique_indices.end();
-      DistanceType worst_distance;
-      DistanceType hamming_distance;
 
       if (do_k)
       {
-        // Get at least k_nn nearest neighbors first
-        score_index_heap.reserve(k_nn);
-        for (; training_index < last_training_index; ++training_index)
+        unsigned int worst_score = std::numeric_limits<unsigned int>::max();
+        typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin();
+        typename std::vector<lsh::LshTable<ElementType> >::const_iterator table_end = tables_.end();
+        for (; table != table_end; ++table)
         {
-          // Reset the usage of the index
-          is_index_used_.reset_block(*training_index);
-
-          // Compute the Hamming distance
-          hamming_distance = distance_(vec, dataset_.data + (*training_index) * sizeof(ElementType), dataset_.cols);
-          if ((!do_radius) || (hamming_distance < radius))
+          size_t key = table->getKey(vec);
+          std::vector<lsh::BucketKey>::const_iterator xor_mask = xor_masks_.begin();
+          std::vector<lsh::BucketKey>::const_iterator xor_mask_end = xor_masks_.end();
+          for (; xor_mask != xor_mask_end; ++xor_mask)
           {
-            // Insert the new element
-            score_index_heap.push_back(ScoreIndexPair(hamming_distance, training_index));
+            size_t sub_key = key ^ (*xor_mask);
+            const lsh::Bucket * bucket = table->getBucketFromKey(sub_key);
+            if (bucket == 0)
+              continue;
 
-            if (score_index_heap.size() == k_nn)
-              break;
+            // Go over each descriptor index
+            std::vector<lsh::FeatureIndex>::const_iterator training_index = bucket->begin();
+            std::vector<lsh::FeatureIndex>::const_iterator last_training_index = bucket->end();
+            DistanceType hamming_distance;
+
+            // Process the rest of the candidates
+            for (; training_index < last_training_index; ++training_index)
+            {
+              hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
+
+              if (hamming_distance < worst_score)
+              {
+                // Insert the new element
+                score_index_heap.push_back(ScoreIndexPair(hamming_distance, training_index));
+                std::push_heap(score_index_heap.begin(), score_index_heap.end());
+
+                if (score_index_heap.size() > (unsigned int)k_nn)
+                {
+                  // Remove the highest distance value as we have too many elements
+                  std::pop_heap(score_index_heap.begin(), score_index_heap.end());
+                  score_index_heap.pop_back();
+                  // Keep track of the worst score
+                  worst_score = score_index_heap.front().first;
+                }
+              }
+            }
           }
-        }
-        // if we are going to analyze more candidates, make sure we have a heap
-        if (training_index != last_training_index)
-        {
-          std::make_heap(score_index_heap.begin(), score_index_heap.end());
-          worst_distance = score_index_heap.front().first;
         }
       }
       else
-        // In radius search only, no pre-filling, no heap
-        worst_distance = radius;
-
-      // Process the rest of the candidates
-      for (; training_index < last_training_index; ++training_index)
       {
-        // Reset the usage of the index
-        is_index_used_.reset_block(*training_index);
-
-        // Compute the Hamming distance
-        hamming_distance = distance_(vec, dataset_.data + (*training_index) * sizeof(ElementType), dataset_.cols);
-        if (hamming_distance < worst_distance)
+        typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin();
+        typename std::vector<lsh::LshTable<ElementType> >::const_iterator table_end = tables_.end();
+        for (; table != table_end; ++table)
         {
-          if (do_k)
+          size_t key = table->getKey(vec);
+          std::vector<lsh::BucketKey>::const_iterator xor_mask = xor_masks_.begin();
+          std::vector<lsh::BucketKey>::const_iterator xor_mask_end = xor_masks_.end();
+          for (; xor_mask != xor_mask_end; ++xor_mask)
           {
-            // Remove the highest distance value as we will have too many elements
-            std::pop_heap(score_index_heap.begin(), score_index_heap.end());
-            // No need to do a pop_back as we replace the last element
+            size_t sub_key = key ^ (*xor_mask);
+            const lsh::Bucket * bucket = table->getBucketFromKey(sub_key);
+            if (bucket == 0)
+              continue;
 
-            // Insert the new element
-            score_index_heap.back() = ScoreIndexPair(hamming_distance, *training_index);
-            std::push_heap(score_index_heap.begin(), score_index_heap.end());
+            // Go over each descriptor index
+            std::vector<lsh::FeatureIndex>::const_iterator training_index = bucket->begin();
+            std::vector<lsh::FeatureIndex>::const_iterator last_training_index = bucket->end();
+            DistanceType hamming_distance;
 
-            // Keep track of the worst score
-            worst_distance = score_index_heap.front().first;
+            // Process the rest of the candidates
+            for (; training_index < last_training_index; ++training_index)
+            {
+              // Compute the Hamming distance
+              hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
+              if (hamming_distance < radius)
+                score_index_heap.push_back(ScoreIndexPair(hamming_distance, training_index));
+            }
           }
-          else
-            // Insert the new element
-            score_index_heap.push_back(ScoreIndexPair(hamming_distance, *training_index));
         }
       }
     }
@@ -315,38 +332,33 @@ template<typename Distance>
      */
     void getNeighbors(const ElementType* vec, ResultSet<DistanceType>& result)
     {
-      static std::vector<ScoreIndexPair> score_index_heap;
-      static std::vector<lsh::FeatureIndex> unique_indices;
-
-      unique_indices.clear();
-      score_index_heap.clear();
-
-      // Figure out a list of unique indices to query
-      for (typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin(); table
-          != tables_.end(); ++table)
+      typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin();
+      typename std::vector<lsh::LshTable<ElementType> >::const_iterator table_end = tables_.end();
+      for (; table != table_end; ++table)
       {
-        // First, insert the matching bucket if it is not empty
-        table->addToUniqueIndices(vec, unique_indices, is_index_used_);
+        size_t key = table->getKey(vec);
+        std::vector<lsh::BucketKey>::const_iterator xor_mask = xor_masks_.begin();
+        std::vector<lsh::BucketKey>::const_iterator xor_mask_end = xor_masks_.end();
+        for (; xor_mask != xor_mask_end; ++xor_mask)
+        {
+          size_t sub_key = key ^ (*xor_mask);
+          const lsh::Bucket * bucket = table->getBucketFromKey(sub_key);
+          if (bucket == 0)
+            continue;
 
-        // Checking neighboring buckets
-        if (index_params_.do_multi_probe_)
-          table->addNeighborsToUniqueIndices(vec, unique_indices, is_index_used_);
-      }
+          // Go over each descriptor index
+          std::vector<lsh::FeatureIndex>::const_iterator training_index = bucket->begin();
+          std::vector<lsh::FeatureIndex>::const_iterator last_training_index = bucket->end();
+          DistanceType hamming_distance;
 
-      // Go over each descriptor index
-      std::vector<lsh::FeatureIndex>::const_iterator training_index = unique_indices.begin();
-      std::vector<lsh::FeatureIndex>::const_iterator last_training_index = unique_indices.end();
-      DistanceType hamming_distance;
-
-      // Process the rest of the candidates
-      for (; training_index < last_training_index; ++training_index)
-      {
-        // Reset the usage of the index
-        is_index_used_.reset_block(*training_index);
-
-        // Compute the Hamming distance
-        hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
-        result.addPoint(hamming_distance, *training_index);
+          // Process the rest of the candidates
+          for (; training_index < last_training_index; ++training_index)
+          {
+            // Compute the Hamming distance
+            hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
+            result.addPoint(hamming_distance, *training_index);
+          }
+        }
       }
     }
 
@@ -361,8 +373,13 @@ template<typename Distance>
 
     LshIndexParams index_params_;
 
-    /** Structure used when uniquifying indices */
-    DynamicBitset is_index_used_;
+    /** The XOR masks to apply to a key to get the neighboring buckets
+     */
+    std::vector<lsh::BucketKey> xor_masks_;
+
+    /** How far should we look for neighbors in multi-probe LSH
+     */
+    unsigned int multi_probe_level_;
 
     Distance distance_;
   };

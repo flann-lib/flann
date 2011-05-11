@@ -165,7 +165,7 @@ struct FLANNParameters
     /* LSH parameters */
     unsigned int table_number_; /** The number of hash tables to use */
     unsigned int key_size_;     /** The length of the key in the hash tables */
-    char do_multi_probe_;       /** Flag indicating if we use multi-probe LSH */
+    unsigned int multi_probe_level_; /** Number of levels to use in multi-probe LSH, 0 for standard LSH */
 
     /* other parameters */
     enum flann_log_level_t log_level;    /* determines the verbosity of each flann function */

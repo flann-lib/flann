@@ -133,7 +133,8 @@ public:
                 dists[i] = dists[i-1];
                 indices[i] = indices[i-1];
             }
-            else break;
+            else
+              break;
         }
         dists[i] = dist;
         indices[i] = index;
@@ -291,22 +292,25 @@ template<typename DistanceType>
      */
     inline void addPoint(DistanceType dist, int index)
     {
+      // Don't do anything if we are worse than the worst
+      if (dist > worst_distance_)
+        return;
       if (is_full_)
       {
-        // Don't do anything if we are worse than the worst
-        if (dist > worst_distance_)
-          return;
         // Remove the worst element
         std::pop_heap(dist_indices_.begin(), dist_indices_.end());
         // Insert the new element
         dist_indices_.back() = typename ResultVector<DistanceType>::DistIndexPair(dist, index);
+
         std::push_heap(dist_indices_.begin(), dist_indices_.end());
         worst_distance_ = dist_indices_.front().first;
       }
-      else {
+      else
+      {
         dist_indices_.push_back(typename ResultVector<DistanceType>::DistIndexPair(dist, index));
         // Once we are full, make sure it is a heap
-        if (dist_indices_.size()==capacity_) {
+        if (dist_indices_.size() == capacity_)
+        {
           std::make_heap(dist_indices_.begin(), dist_indices_.end());
           is_full_ = true;
           worst_distance_ = dist_indices_.front().first;

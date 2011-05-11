@@ -141,7 +141,7 @@ template<typename ElementType>
     void add(unsigned int value, const ElementType * feature)
     {
       // Add the value to the corresponding bucket
-      BucketKey key = computeKey(feature);
+      BucketKey key = getKey(feature);
       if (use_speed_)
         buckets_speed_[key].push_back(value);
       else
@@ -164,50 +164,17 @@ template<typename ElementType>
       optimize();
     }
 
-    /** Return the bucket matching the feature
-     */
-    const Bucket & operator()(const ElementType * feature) const
-    {
-      if (use_speed_)
-      {
-        const Bucket & bucket = buckets_speed_[computeKey(feature)];
-        if (bucket.empty())
-          return EMPTY_BUCKET;
-        else
-          return bucket;
-      }
-      else
-      {
-        BucketsSpace::const_iterator bucket = buckets_space_.find(computeKey(feature));
-        if (bucket != buckets_space_.end())
-          // If we have the bucket return it
-          return bucket->second;
-        else
-          return EMPTY_BUCKET;
-      }
-    }
-
-    /** Get statistics about the table
+    /** Get a bucket given the key
+     * @param key
      * @return
      */
-    LshStats getStats() const;
-
-    /** Add the neighboring buckets of a feature to a unique list of indices
-     * @param key the key to get neighboring keys from
-     * @param unique_indices list of indice to which we add neighboring buckets
-     * @param is_index_used mask indicating whether an index is used or not
-     */
-    void addNeighborsToUniqueIndices(const ElementType * feature, Bucket & unique_indices,
-                                     DynamicBitset & is_index_used) const
+    inline const Bucket * getBucketFromKey(BucketKey key) const
     {
-      size_t key = computeKey(feature);
       // Generate other buckets
       if (use_speed_)
       {
         // That means we get the buckets from an array
-        for (std::vector<BucketKey>::const_iterator xor_mask = xor_masks_.begin(); xor_mask != xor_masks_.end(); ++xor_mask)
-          // Insert this new bucket as a neighbor
-          addBucketToUniqueIndices(buckets_speed_[key ^ (*xor_mask)], unique_indices, is_index_used);
+        return &buckets_speed_[key];
       }
       else
       {
@@ -215,85 +182,45 @@ template<typename ElementType>
         {
           // That means we have to check for the hash table for the presence of a key
           BucketsSpace::const_iterator bucket_it, bucket_end = buckets_space_.end();
-          for (std::vector<BucketKey>::const_iterator xor_mask = xor_masks_.begin(); xor_mask != xor_masks_.end(); ++xor_mask)
-          {
-            bucket_it = buckets_space_.find(key ^ (*xor_mask));
-            // Stop here if that bucket does not exist
-            if (bucket_it != bucket_end)
-              // Insert this new bucket as a neighbor
-              addBucketToUniqueIndices(bucket_it->second, unique_indices, is_index_used);
-          }
+          bucket_it = buckets_space_.find(key);
+          // Stop here if that bucket does not exist
+          if (bucket_it == bucket_end)
+            return 0;
+          else
+            return &bucket_it->second;
         }
         else
         {
           // That means we can check the bitset for the presence of a key
-          for (std::vector<BucketKey>::const_iterator xor_mask = xor_masks_.begin(); xor_mask != xor_masks_.end(); ++xor_mask)
-          {
-            size_t sub_key = key ^ (*xor_mask);
-            if (key_bitset_.test(sub_key))
-              // Insert this new bucket as a neighbor
-              addBucketToUniqueIndices(buckets_space_.at(sub_key), unique_indices, is_index_used);
-          }
+          if (key_bitset_.test(key))
+            return &buckets_space_.at(key);
+          else
+            return 0;
         }
-      }
-    }
-
-    /** Add the bucket of a feature to a unique list of indices
-     * @param key the key to get neighboring keys from
-     * @param unique_indices list of indice to which we add neighboring buckets
-     * @param is_index_used mask indicating whether an index is used or not
-     */
-    void addToUniqueIndices(const ElementType * feature, Bucket & unique_indices, DynamicBitset & is_index_used) const
-    {
-      addBucketToUniqueIndices(this->operator ()(feature), unique_indices, is_index_used);
-    }
-
-  private:
-    /** Perform merge sort on several lists of indices
-     * This code is much faster than trying to do a k-wy merge on the different buckets
-     * @param indices
-     * @param unique_indices
-     */
-    void addBucketToUniqueIndices(const Bucket & bucket, Bucket & unique_indices, DynamicBitset & is_index_used) const
-    {
-      for (Bucket::const_iterator pindex = bucket.begin(); pindex != bucket.end(); ++pindex)
-      {
-        FeatureIndex index = *pindex;
-        if (is_index_used.test(index))
-          continue;
-        is_index_used.set(index);
-        unique_indices.push_back(index);
       }
     }
 
     /** Compute the sub-signature of a feature
      */
-    size_t computeKey(const ElementType* feature) const
+    size_t getKey(const ElementType* feature) const
     {
       std::cerr << "LSH is not implemented for that type" << std::endl;
       throw;
       return 1;
     }
 
+    /** Get statistics about the table
+     * @return
+     */
+    LshStats getStats() const;
+
+  private:
     /** Initialize some variables
      */
     void initialize(size_t key_size)
     {
       use_speed_ = false;
       key_size_ = key_size;
-
-      // Fill the XOR mask
-      xor_masks_.reserve(key_size_ * (key_size_ + 1) / 2);
-      for (unsigned int i = 0; i < key_size_; ++i)
-      {
-        size_t sub_signature_1 = (1 << i);
-        xor_masks_.push_back(sub_signature_1);
-        for (unsigned int j = i + 1; j < key_size_; ++j)
-        {
-          size_t sub_signature_2 = sub_signature_1 ^ (1 << j);
-          xor_masks_.push_back(sub_signature_2);
-        }
-      }
     }
 
     /** Optimize the table for speed/space
@@ -301,9 +228,9 @@ template<typename ElementType>
     void optimize()
     {
       // If the bitset is going to use less than 10% of the RAM of the hash map (at least 1 size_t for the key and two
-      // for the vector) or less than 8MB (key_size_ <= 26)
+      // for the vector) or less than 512MB (key_size_ <= 32)
       if (((std::max(buckets_space_.size(), buckets_speed_.size()) * CHAR_BIT * 3 * sizeof(BucketKey)) / 10
-          >= ((size_t)1 << key_size_)) || (key_size_ <= 26))
+          >= ((size_t)1 << key_size_)) || (key_size_ <= 32))
       {
         key_bitset_.resize(1 << key_size_);
         key_bitset_.reset();
@@ -344,10 +271,6 @@ template<typename ElementType>
       }
     }
 
-    /** Empty bucket
-     */
-    static const Bucket EMPTY_BUCKET;
-
     /** The vector of all the buckets if they are held for speed
      */
     BucketsSpeed buckets_speed_;
@@ -365,10 +288,6 @@ template<typename ElementType>
      */
     DynamicBitset key_bitset_;
 
-    /** The XOR masks to apply to a key to get the neighboring buckets
-     */
-    std::vector<BucketKey> xor_masks_;
-
     /** The size of the sub-signature in bits
      */
     unsigned int key_size_;
@@ -379,9 +298,6 @@ template<typename ElementType>
      */
     std::vector<size_t> mask_;
   };
-
-template<typename ElementType>
-  const Bucket LshTable<ElementType>::EMPTY_BUCKET = Bucket();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Specialization for unsigned char
@@ -431,7 +347,7 @@ template<>
  * @param feature the feature to analyze
  */
 template<>
-  inline size_t LshTable<unsigned char>::computeKey(const unsigned char* feature) const
+  inline size_t LshTable<unsigned char>::getKey(const unsigned char* feature) const
   {
     // no need to check if T is dividable by sizeof(size_t) like in the Hamming
     // distance computation as we have a mask
