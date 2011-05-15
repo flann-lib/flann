@@ -356,7 +356,7 @@ template<typename DistanceType>
     RadiusResultVector(float radius, float store_neighbors =  true) :
       radius_(radius), store_neighbors_(store_neighbors)
     {
-      is_full_ = false;
+      is_full_ = true;
     }
 
     /** Add a possible candidate to the best neighbors
@@ -389,7 +389,7 @@ template<typename DistanceType>
      */
     inline bool full() const
     {
-      return false;
+      return true;
     }
 
     /** Returns the number of points in the set
