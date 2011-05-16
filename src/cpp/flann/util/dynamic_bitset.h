@@ -67,7 +67,14 @@ public:
     reset();
   }
 
-  /** @param checks if the bitset is empty
+  /** Sets all the bits to 0
+   */
+  void clear()
+  {
+    std::fill(bitset_.begin(), bitset_.end(), 0);
+  }
+
+  /** @brief checks if the bitset is empty
    * @return true if the bitset is empty
    */
   bool empty() const
