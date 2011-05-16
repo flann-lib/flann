@@ -192,7 +192,7 @@ void Index<Distance>::knnSearch(const Matrix<ElementType>& queries, Matrix<int>&
     assert(int(indices.cols) >= knn);
     assert(int(dists.cols) >= knn);
 
-#if 1
+#if 0
     KNNResultSet<DistanceType> resultSet(knn);
     for (size_t i = 0; i < queries.rows; i++) {
         resultSet.init(indices[i], dists[i]);
