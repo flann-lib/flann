@@ -142,10 +142,25 @@ template<typename ElementType>
     {
       // Add the value to the corresponding bucket
       BucketKey key = getKey(feature);
-      if (use_speed_)
-        buckets_speed_[key].push_back(value);
-      else
-        buckets_space_[key].push_back(value);
+
+      switch (speed_level_)
+      {
+        case kArray:
+          // That means we get the buckets from an array
+          buckets_speed_[key].push_back(value);
+          break;
+        case kBitsetHash:
+          // That means we can check the bitset for the presence of a key
+          key_bitset_.set(key);
+          buckets_space_[key].push_back(value);
+          break;
+        case kHash:
+        {
+          // That means we have to check for the hash table for the presence of a key
+          buckets_space_[key].push_back(value);
+          break;
+        }
+      }
     }
 
     /** Add a set of features to the table
@@ -171,14 +186,20 @@ template<typename ElementType>
     inline const Bucket * getBucketFromKey(BucketKey key) const
     {
       // Generate other buckets
-      if (use_speed_)
+      switch (speed_level_)
       {
-        // That means we get the buckets from an array
-        return &buckets_speed_[key];
-      }
-      else
-      {
-        if (key_bitset_.empty())
+        case kArray:
+          // That means we get the buckets from an array
+          return &buckets_speed_[key];
+          break;
+        case kBitsetHash:
+          // That means we can check the bitset for the presence of a key
+          if (key_bitset_.test(key))
+            return &buckets_space_.at(key);
+          else
+            return 0;
+          break;
+        case kHash:
         {
           // That means we have to check for the hash table for the presence of a key
           BucketsSpace::const_iterator bucket_it, bucket_end = buckets_space_.end();
@@ -188,16 +209,10 @@ template<typename ElementType>
             return 0;
           else
             return &bucket_it->second;
-        }
-        else
-        {
-          // That means we can check the bitset for the presence of a key
-          if (key_bitset_.test(key))
-            return &buckets_space_.at(key);
-          else
-            return 0;
+          break;
         }
       }
+      return 0;
     }
 
     /** Compute the sub-signature of a feature
@@ -215,11 +230,21 @@ template<typename ElementType>
     LshStats getStats() const;
 
   private:
+    /** defines the speed fo the implementation
+     * kArray uses a vector for storing data
+     * kBitsetHash uses a hash map but checks for the validity of a key with a bitset
+     * kHash uses a hash map only
+     */
+    enum SpeedLevel
+    {
+      kArray, kBitsetHash, kHash
+    };
+
     /** Initialize some variables
      */
     void initialize(size_t key_size)
     {
-      use_speed_ = false;
+      speed_level_ = kHash;
       key_size_ = key_size;
     }
 
@@ -227,28 +252,14 @@ template<typename ElementType>
      */
     void optimize()
     {
-      // If the bitset is going to use less than 10% of the RAM of the hash map (at least 1 size_t for the key and two
-      // for the vector) or less than 512MB (key_size_ <= 32)
-      if (((std::max(buckets_space_.size(), buckets_speed_.size()) * CHAR_BIT * 3 * sizeof(BucketKey)) / 10
-          >= ((size_t)1 << key_size_)) || (key_size_ <= 32))
-      {
-        key_bitset_.resize(1 << key_size_);
-        key_bitset_.reset();
-        // Try with the BucketsSpace
-        for (BucketsSpace::const_iterator key_bucket = buckets_space_.begin(); key_bucket != buckets_space_.end(); ++key_bucket)
-          key_bitset_.set(key_bucket->first);
-        // Try with the BucketsSpeed
-        for (unsigned int i = 0; i < buckets_speed_.size(); ++i)
-          if (!buckets_speed_[i].empty())
-            key_bitset_.set(i);
-      }
+      // If we are already using the fast storage, no need to do anything
+      if (speed_level_ == kArray)
+        return;
 
       // Use an array if it will be more than half full
-      bool is_speed_appropriate = buckets_space_.size() > (unsigned int)((1 << key_size_) / 2);
-
-      if ((buckets_speed_.empty()) && (is_speed_appropriate))
+      if (buckets_space_.size() > (unsigned int)((1 << key_size_) / 2))
       {
-        use_speed_ = true;
+        speed_level_ = kArray;
         // Fill the array version of it
         buckets_speed_.resize(1 << key_size_);
         for (BucketsSpace::const_iterator key_bucket = buckets_space_.begin(); key_bucket != buckets_space_.end(); ++key_bucket)
@@ -256,18 +267,25 @@ template<typename ElementType>
 
         // Empty the hash table
         buckets_space_.clear();
+        return;
       }
-      else if ((buckets_space_.empty()) && (!is_speed_appropriate))
-      {
-        use_speed_ = false;
-        // Fill the hash table version of it
-        buckets_space_.clear();
-        for (size_t i = 0; i < key_bitset_.size(); ++i)
-          if (key_bitset_.test(i))
-            buckets_space_[i] = buckets_speed_[i];
 
-        // Empty the array
-        buckets_speed_.clear();
+      // If the bitset is going to use less than 10% of the RAM of the hash map (at least 1 size_t for the key and two
+      // for the vector) or less than 512MB (key_size_ <= 30)
+      if (((std::max(buckets_space_.size(), buckets_speed_.size()) * CHAR_BIT * 3 * sizeof(BucketKey)) / 10
+          >= size_t(1 << key_size_)) || (key_size_ <= 32))
+      {
+        speed_level_ = kBitsetHash;
+        key_bitset_.resize(1 << key_size_);
+        key_bitset_.reset();
+        // Try with the BucketsSpace
+        for (BucketsSpace::const_iterator key_bucket = buckets_space_.begin(); key_bucket != buckets_space_.end(); ++key_bucket)
+          key_bitset_.set(key_bucket->first);
+      }
+      else
+      {
+        speed_level_ = kHash;
+        key_bitset_.clear();
       }
     }
 
@@ -279,9 +297,8 @@ template<typename ElementType>
      */
     BucketsSpace buckets_space_;
 
-    /** True if it uses buckets_speed_ instead of buckets_space_
-     */
-    bool use_speed_;
+    /** What is used to store the data */
+    SpeedLevel speed_level_;
 
     /** If the subkey is small enough, it will keep track of which subkeys are set through that bitset
      * That is just a speedup so that we don't look in the hash table (which can be mush slower that checking a bitset)

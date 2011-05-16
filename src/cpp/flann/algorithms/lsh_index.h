@@ -373,8 +373,7 @@ template<typename Distance>
 
     LshIndexParams index_params_;
 
-    /** The XOR masks to apply to a key to get the neighboring buckets
-     */
+    /** The XOR masks to apply to a key to get the neighboring buckets */
     std::vector<lsh::BucketKey> xor_masks_;
 
     /** How far should we look for neighbors in multi-probe LSH
