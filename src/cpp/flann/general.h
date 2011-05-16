@@ -33,16 +33,16 @@
 
 #ifdef WIN32
 /* win32 dll export/import directives */
-#ifdef flann_EXPORTS
-/* using flann_EXPORTS here since it's automatically defined by cmake
- * when building a library */
-#define FLANN_EXPORT __declspec(dllexport)
-#else
-#define FLANN_EXPORT __declspec(dllimport)
-#endif
+ #ifdef FLANN_EXPORTS
+  #define FLANN_EXPORT __declspec(dllexport)
+ #elif defined(FLANN_STATIC)
+  #define FLANN_EXPORT
+ #else
+  #define FLANN_EXPORT __declspec(dllimport)
+ #endif
 #else
 /* unix needs nothing */
-#define FLANN_EXPORT
+ #define FLANN_EXPORT
 #endif
 
 
@@ -203,6 +203,8 @@ public:
     {
         return algorithm;
     }
+
+    virtual ~IndexParams() {};
 
     virtual void fromParameters(const FLANNParameters& p) = 0;
     virtual void toParameters(FLANNParameters& p) const = 0;

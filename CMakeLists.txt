@@ -8,7 +8,7 @@ project(flann)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
-set(FLANN_VERSION 1.6.8)
+set(FLANN_VERSION 1.6.9)
 DISSECT_VERSION()
 GET_OS_INFO()
 
@@ -39,9 +39,9 @@ message("Build type: ${CMAKE_BUILD_TYPE}")
 
 
 #set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 # set output path for tests
 set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
@@ -71,10 +71,13 @@ message("Building matlab bindings: ${BUILD_MATLAB_BINDINGS}")
 message("USE_MPI: ${USE_MPI}")
 
 find_hdf5()
+if (NOT HDF5_FOUND)
+	message("hdf5 library not found, some tests will not be run")
+endif()
+
 if (USE_MPI OR HDF5_IS_PARALLEL)
     find_package(MPI)
 endif()
-
 if (HDF5_IS_PARALLEL)
     if (NOT MPI_FOUND)
         message(ERROR "Found the parallel HDF5 library, but could not find the MPI library. Define the MPI_COMPILER variable to the path of your MPI compiler.")
@@ -95,7 +98,13 @@ if (USE_MPI)
 
 endif(USE_MPI)
 
+find_package(GTest)
+if (NOT GTEST_FOUND)
+	message("gtest library not found, some tests will not be run")
+endif()
 
+# find python
+find_package(PythonInterp)
 
 #set the C/C++ include path to the "include" directory
 include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
@@ -117,7 +126,34 @@ add_subdirectory( examples )
 add_subdirectory( test )
 add_subdirectory( doc )
 
-set(CPACK_GENERATOR "DEB;RPM;")
+
+# CPACK options
+
+# RPM
+find_program(RPM_PROGRAM rpm)
+if(EXISTS ${RPM_PROGRAM})
+  list(APPEND CPACK_GENERATOR "RPM")
+endif(EXISTS ${RPM_PROGRAM})
+# DEB
+find_program(DPKG_PROGRAM dpkg)
+if(EXISTS ${DPKG_PROGRAM})
+  list(APPEND CPACK_GENERATOR "DEB")
+endif(EXISTS ${DPKG_PROGRAM})
+# NSIS
+find_program(NSIS_PROGRAM makensis MakeNSIS)
+if(EXISTS ${NSIS_PROGRAM})
+  list(APPEND CPACK_GENERATOR "NSIS")
+endif(EXISTS ${NSIS_PROGRAM})
+# dpkg
+find_program(PACKAGE_MAKER_PROGRAM PackageMaker
+	    HINTS /Developer/Applications/Utilities)
+if(EXISTS ${PACKAGE_MAKER_PROGRAM})
+  list(APPEND CPACK_GENERATOR "PackageMaker")
+endif(EXISTS ${PACKAGE_MAKER_PROGRAM})
+ 
+set(CPACK_GENERATOR "${CPACK_GENERATOR}")
+set(CPACK_MONOLITHIC_INSTALL 1)
+set(CPACK_SET_DESTDIR ON)
 include(InstallRequiredSystemLibraries)
 set(CPACK_PACKAGE_CONTACT "Marius Muja")
 set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
@@ -125,6 +161,8 @@ SET(CPACK_PACKAGE_VERSION ${FLANN_VERSION})
 SET(CPACK_PACKAGE_VERSION_MAJOR ${FLANN_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${FLANN_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${FLANN_VERSION_PATCH})
-
 include(CPack)
+
+
+
 

@@ -15,6 +15,7 @@ add_library(flann_cpp_s STATIC ${CPP_SOURCES})
 if(CMAKE_COMPILER_IS_GNUCC)
     set_target_properties(flann_cpp_s PROPERTIES COMPILE_FLAGS -fPIC)
 endif()
+set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
     add_library(flann_cpp SHARED "")
@@ -27,13 +28,27 @@ endif()
 set_target_properties(flann_cpp PROPERTIES
    VERSION ${FLANN_VERSION}
    SOVERSION ${FLANN_SOVERSION}
+   DEFINE_SYMBOL FLANN_EXPORTS
 ) 
+
+
+#debug libraries
+add_library(flann_cpp-gd SHARED ${CPP_SOURCES})
+set_target_properties(flann_cpp-gd PROPERTIES 
+    COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG}
+    DEFINE_SYMBOL FLANN_EXPORTS
+)
+
+add_library(flann_cpp_s-gd STATIC ${CPP_SOURCES})
+set_target_properties(flann_cpp_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
+set_property(TARGET flann_cpp_s-gd PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
 if (BUILD_C_BINDINGS)
     add_library(flann_s STATIC ${C_SOURCES})
     if(CMAKE_COMPILER_IS_GNUCC)
         set_target_properties(flann_s PROPERTIES COMPILE_FLAGS -fPIC)
     endif()
+    set_property(TARGET flann_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
         add_library(flann SHARED "")
@@ -46,6 +61,7 @@ if (BUILD_C_BINDINGS)
     set_target_properties(flann PROPERTIES
        VERSION ${FLANN_VERSION}
        SOVERSION ${FLANN_SOVERSION}
+       DEFINE_SYMBOL FLANN_EXPORTS
     ) 
 endif()
 
@@ -61,7 +77,7 @@ endif(WIN32)
 
 
 install (
-    TARGETS flann_cpp flann_cpp_s
+    TARGETS flann_cpp flann_cpp_s flann_cpp-gd flann_cpp_s-gd
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
