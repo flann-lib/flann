@@ -135,7 +135,6 @@ def load_flann_library():
     libdir = 'lib'
     if sys.platform == 'win32':
         libname = 'flann.dll'
-        libdir = 'DLLs'
     elif sys.platform == 'darwin':
         libname = 'libflann.dylib'
 
