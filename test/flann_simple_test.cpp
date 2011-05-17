@@ -644,7 +644,7 @@ protected:
 
 TEST_F(Flann_Brief100K_Test, LshTest)
 {
-  flann::Index<flann::Hamming<unsigned char> > index(data, flann::LshIndexParams(12, 20));
+  flann::Index<flann::Hamming<unsigned char> > index(data, flann::LshIndexParams(12, 20, 2));
   start_timer("Building LSH index...");
   index.buildIndex();
   printf("done (%g seconds)\n", stop_timer());
