@@ -131,38 +131,38 @@ def load_flann_library():
 
     root_dir = os.path.abspath(os.path.dirname(__file__))
     
-    libname = 'libflann.so'
+    libnames = ['libflann.so']
     libdir = 'lib'
     if sys.platform == 'win32':
-        libname = 'flann.dll'
+        libnames = ['flann.dll', 'libflann.dll']
     elif sys.platform == 'darwin':
-        libname = 'libflann.dylib'
+        libnames = ['libflann.dylib']
 
-    flannlib = None
-    loaded = False
+    while root_dir!=None:
+        for libname in libnames:
+            try:
+                #print "Trying ",os.path.join(root_dir,'lib',libname)
+                flannlib = cdll[os.path.join(root_dir,libdir,libname)]
+                return flannlib
+            except Exception,e:
+                pass
+        tmp = os.path.dirname(root_dir)
+        if tmp == root_dir:
+            root_dir = None
+        else:
+            root_dir = tmp
 
-    while (not loaded) and root_dir!=None:
-        try:
-            #print "Trying ",os.path.join(root_dir,'lib',libname)
-            flannlib = cdll[os.path.join(root_dir,libdir,libname)]
-            loaded = True
-        except Exception,e:
-           # print e
-            tmp = os.path.dirname(root_dir)
-            if tmp == root_dir:
-                root_dir = None
-            else:
-                root_dir = tmp
-
-    if not loaded:
+    # if we didn't find the library so far, try loading without
+    # a full path as a last resort
+    for libname in libnames:
         try:
             #print "Trying",libname
             flannlib=cdll[libname]
-            loaded = True
+            return flannlib
         except:
             pass
 
-    return flannlib
+    return None
 
 flannlib = load_flann_library()
 if flannlib == None:
