@@ -18,25 +18,17 @@ CONFIGURE_FILE ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
 ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P
     "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 
-if (NOT DEFINED CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX /usr/local)
-endif()
-
 # Set the build type.  Options are:
 #  Debug          : w/ debug symbols, w/o optimization
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 
-if (NOT DEFINED CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     #set(CMAKE_BUILD_TYPE Release)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
     #set(CMAKE_BUILD_TYPE Debug)
 endif()
-
-message("Install prefix: ${CMAKE_INSTALL_PREFIX}")
-message("Build type: ${CMAKE_BUILD_TYPE}")
-
 
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
@@ -45,34 +37,27 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 # set output path for tests
 set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
+option(BUILD_C_BINDINGS "Build C bindings" ON)
+option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
+option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" ON)
+option(USE_MPI "Use MPI" OFF)
 
-if (NOT DEFINED BUILD_C_BINDINGS)
-    set(BUILD_C_BINDINGS true)
-endif()
-
-if (NOT DEFINED BUILD_PYTHON_BINDINGS)
-    set(BUILD_PYTHON_BINDINGS true)
-endif()
-
-if (NOT DEFINED BUILD_MATLAB_BINDINGS)
-    set(BUILD_MATLAB_BINDINGS true)
-endif()
 
 if (NOT BUILD_C_BINDINGS)
-    set(BUILD_PYTHON_BINDINGS false)
-    set(BUILD_MATLAB_BINDINGS false)
+    set(BUILD_PYTHON_BINDINGS OFF)
+    set(BUILD_MATLAB_BINDINGS OFF)
 endif()
 
-message("Building C bindings: ${BUILD_C_BINDINGS}")
-message("Building python bindings: ${BUILD_PYTHON_BINDINGS}")
-message("Building matlab bindings: ${BUILD_MATLAB_BINDINGS}")
 
-
-message("USE_MPI: ${USE_MPI}")
+# find python
+find_package(PythonInterp)
+if (NOT PYTHON_EXECUTABLE)
+    set(BUILD_PYTHON_BINDINGS OFF)
+endif()
 
 find_hdf5()
 if (NOT HDF5_FOUND)
-	message("hdf5 library not found, some tests will not be run")
+	message(WARNING "hdf5 library not found, some tests will not be run")
 endif()
 
 if (USE_MPI OR HDF5_IS_PARALLEL)
@@ -80,7 +65,7 @@ if (USE_MPI OR HDF5_IS_PARALLEL)
 endif()
 if (HDF5_IS_PARALLEL)
     if (NOT MPI_FOUND)
-        message(ERROR "Found the parallel HDF5 library, but could not find the MPI library. Define the MPI_COMPILER variable to the path of your MPI compiler.")
+        message(WARNING "Found the parallel HDF5 library, but could not find the MPI library. Define the MPI_COMPILER variable to the path of your MPI compiler.")
     endif()
     # Parallel HDF5 needs to find the "mpi.h" header file
     include_directories(${MPI_INCLUDE_PATH})
@@ -89,22 +74,20 @@ endif()
 
 if (USE_MPI)
     if (NOT MPI_FOUND)
-        message(ERROR "Could not find an MPI library. Define the MPI_COMPILER variable to the path of your MPI compiler.")
+        message(WARNING "Could not find an MPI library. Define the MPI_COMPILER variable to the path of your MPI compiler.")
     endif()
 
     if (NOT HDF5_IS_PARALLEL)
-        message(ERROR "For MPI support the Parallel HDF5 library is required.")
+        message(WARNING "For MPI support the Parallel HDF5 library is required.")
     endif()
 
 endif(USE_MPI)
 
-find_package(GTest)
+find_package(GTest) 
 if (NOT GTEST_FOUND)
-	message("gtest library not found, some tests will not be run")
+	message(WARNING "gtest library not found, some tests will not be run")
 endif()
 
-# find python
-find_package(PythonInterp)
 
 #set the C/C++ include path to the "include" directory
 include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
@@ -164,5 +147,9 @@ SET(CPACK_PACKAGE_VERSION_PATCH ${FLANN_VERSION_PATCH})
 include(CPack)
 
 
-
-
+message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Building C bindings: ${BUILD_C_BINDINGS}")
+message(STATUS "Building python bindings: ${BUILD_PYTHON_BINDINGS}")
+message(STATUS "Building matlab bindings: ${BUILD_MATLAB_BINDINGS}")
+message(STATUS "Using MPI support: ${USE_MPI}")

@@ -1,6 +1,6 @@
 
 Version 1.6.10
-	* fixed a radiusSearch bug introduced in 1.6.9 affecting some index types
+	* fixed a radiusSearch bug introduced in 1.6.9
 
 Version 1.6.9
 	* bug fixes

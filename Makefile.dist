@@ -2,7 +2,8 @@ VER=1.6.10
 
 
 dist-src:
-	make clean doc
+	rm -rf build
+	(mkdir build; cd build; cmake ..; make doc)
 	-rm -rf dist/flann-${VER}-src*
 	@mkdir -p dist/flann-${VER}-src
 	# src dir
@@ -23,7 +24,6 @@ dist-src:
 	mkdir dist/flann-${VER}-src/test
 	cp -r test/*.py test/*.cpp test/*.txt dist/flann-${VER}-src/test
 	cp README.md dist/flann-${VER}-src
-	cp Makefile dist/flann-${VER}-src
 	cp CMakeLists.txt dist/flann-${VER}-src
 	(cd dist; zip -r -9 flann-${VER}-src.zip flann-${VER}-src)
 
