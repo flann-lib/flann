@@ -578,9 +578,7 @@ private:
             for (int i=node->left; i<node->right; ++i) {
                 int index = reorder_ ? i : vind[i];
                 DistanceType dist = distance(vec, data[index], dim, worst_dist);
-                if (dist<worst_dist) {
-                    result_set.addPoint(dist,vind[i]);
-                }
+                result_set.addPoint(dist,vind[i]);
             }
             return;
         }

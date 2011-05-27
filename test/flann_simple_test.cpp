@@ -31,6 +31,37 @@ float compute_precision(const flann::Matrix<int>& match, const flann::Matrix<int
     return float(count)/(nn*match.rows);
 }
 
+/** @brief Compare the distances for match accuracies
+ * This is more precise: e.g. when you ask for the top 10 neighbors and they all get the same distance,
+ * you might have 100 other neighbors that are at the same distance and simply matching the indices is not the way to go
+ * @param gt_dists the ground truth best distances
+ * @param dists the distances of the computed nearest neighbors
+ * @param tol tolerance at which distanceare considered equal
+ * @return
+ */
+float computePrecisionDiscrete(const flann::Matrix<float>& gt_dists, const flann::Matrix<float>& dists, float tol)
+{
+  int count = 0;
+
+  assert(gt_dists.rows == dists.rows);
+  size_t nn = std::min(gt_dists.cols, dists.cols);
+  std::vector<float> gt_sorted_dists(nn), sorted_dists(nn), intersection(nn);
+
+  for (size_t i = 0; i < gt_dists.rows; ++i)
+  {
+    std::copy(gt_dists[i], gt_dists[i] + nn, gt_sorted_dists.begin());
+    std::sort(gt_sorted_dists.begin(), gt_sorted_dists.end());
+    std::copy(dists[i], dists[i] + nn, sorted_dists.begin());
+    std::sort(sorted_dists.begin(), sorted_dists.end());
+    std::vector<float>::iterator end = std::set_intersection(gt_sorted_dists.begin(), gt_sorted_dists.end(),
+                                                             sorted_dists.begin(), sorted_dists.end(),
+                                                             intersection.begin());
+    count += (end - intersection.begin());
+  }
+
+  return float(count) / (nn * gt_dists.rows);
+}
+
 class FLANNTestFixture : public ::testing::Test {
 protected:
     clock_t start_time_;
@@ -50,7 +81,6 @@ protected:
     }
 
 };
-
 
 class Flann_SIFT10K_Test : public FLANNTestFixture {
 protected:
@@ -562,7 +592,73 @@ TEST_F(Flann_3D, SavedTest2)
     printf("Precision: %g\n", precision);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class Flann_Brief100K_Test : public FLANNTestFixture
+{
+protected:
+  flann::Matrix<unsigned char> data;
+  flann::Matrix<unsigned char> query;
+  flann::Matrix<int> match;
+  flann::Matrix<float> dists;
+  flann::Matrix<float> gt_dists;
+  flann::Matrix<int> indices;
+  unsigned int k_nn_;
+
+  void SetUp()
+  {
+    k_nn_ = 3;
+    printf("Reading test data...");
+    fflush(stdout);
+    flann::load_from_file(data, "brief100K.h5", "dataset");
+    flann::load_from_file(query, "brief100K.h5", "query");
+
+    dists = flann::Matrix<float>(new float[query.rows * k_nn_], query.rows, k_nn_);
+    indices = flann::Matrix<int>(new int[query.rows * k_nn_], query.rows, k_nn_);
+
+    printf("done\n");
+
+    // The matches are bogus so we compute them the hard way
+    //flann::load_from_file(match,"brief100K.h5","indices");
+
+    flann::Index<flann::Hamming<unsigned char> > index(data, flann::LinearIndexParams());
+    index.buildIndex();
+
+    start_timer("Searching KNN for ground truth...");
+    match = flann::Matrix<int>(new int[query.rows * k_nn_], query.rows, k_nn_);
+    gt_dists = flann::Matrix<float>(new float[query.rows * k_nn_], query.rows, k_nn_);
+    index.knnSearch(query, match, gt_dists, k_nn_, flann::SearchParams(-1));
+    printf("done (%g seconds)\n", stop_timer());
+  }
+
+  void TearDown()
+  {
+    data.free();
+    query.free();
+    match.free();
+    gt_dists.free();
+    dists.free();
+    indices.free();
+  }
+};
+
+TEST_F(Flann_Brief100K_Test, LshTest)
+{
+  flann::Index<flann::Hamming<unsigned char> > index(data, flann::LshIndexParams(12, 20, 2));
+  start_timer("Building LSH index...");
+  index.buildIndex();
+  printf("done (%g seconds)\n", stop_timer());
+
+  start_timer("Searching KNN...");
+  index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1));
+  printf("done (%g seconds)\n", stop_timer());
+
+  index.save("lsh_brief.idx");
+
+  float precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+  EXPECT_GE(precision, 0.9);
+  printf("Precision: %g\n", precision);
+}
 
 int main(int argc, char** argv)
 {

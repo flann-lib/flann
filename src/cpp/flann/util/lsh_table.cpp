@@ -28,86 +28,45 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef DATASET_H
-#define DATASET_H
+/***********************************************************************
+ * Author: Vincent Rabaud
+ *************************************************************************/
 
-#include <stdio.h>
+#include <iostream>
+#include <iomanip>
+#include <list>
+#include <map>
+#include <set>
+#include <sstream>
+#include <vector>
 
-#include "flann/general.h"
+#include "flann/util/lsh_table.h"
 
 namespace flann
 {
-
-
-
-/**
- * Class that implements a simple rectangular matrix stored in a memory buffer and
- * provides convenient matrix-like access using the [] operators.
- */
-template <typename T>
-class Matrix
+namespace lsh
 {
-public:
-    typedef T type;
 
-    size_t rows;
-    size_t cols;
-    T* data;
-
-    Matrix() : rows(0), cols(0), data(NULL)
-    {
-    }
-
-    Matrix(T* data_, long rows_, long cols_) :
-        rows(rows_), cols(cols_), data(data_)
-    {
-    }
-
-    /**
-     * Convenience function for deallocating the storage data.
-     */
-    void free()
-    {
-        if (data!=NULL) delete[] data;
-    }
-
-    /**
-     * Operator that return a (pointer to a) row of the data.
-     */
-    T* operator[](size_t index) const
-    {
-        return data+index*cols;
-    }
-};
-
-
-class UntypedMatrix
+std::ostream& operator <<(std::ostream& out, const LshStats & stats)
 {
-public:
-    size_t rows;
-    size_t cols;
-    void* data;
-    flann_datatype_t type;
+  size_t w = 20;
+  out << "Lsh Table Stats:\n" << std::setw(w) << std::setiosflags(std::ios::right) << "N buckets : "
+      << stats.n_buckets_ << "\n" << std::setw(w) << std::setiosflags(std::ios::right) << "mean size : "
+      << std::setiosflags(std::ios::left) << stats.bucket_size_mean_ << "\n" << std::setw(w)
+      << std::setiosflags(std::ios::right) << "median size : " << stats.bucket_size_median_ << "\n" << std::setw(w)
+      << std::setiosflags(std::ios::right) << "min size : " << std::setiosflags(std::ios::left)
+      << stats.bucket_size_min_ << "\n" << std::setw(w) << std::setiosflags(std::ios::right) << "max size : "
+      << std::setiosflags(std::ios::left) << stats.bucket_size_max_;
 
-    UntypedMatrix(void* data_, long rows_, long cols_) :
-        rows(rows_), cols(cols_), data(data_)
-    {
-    }
+  // Display the histogram
+  out << std::endl << std::setw(w) << std::setiosflags(std::ios::right) << "histogram : "
+      << std::setiosflags(std::ios::left);
+  for (std::vector<std::vector<unsigned int> >::const_iterator iterator = stats.size_histogram_.begin(), end =
+      stats.size_histogram_.end(); iterator != end; ++iterator)
+    out << (*iterator)[0] << "-" << (*iterator)[1] << ": " << (*iterator)[2] << ",  ";
 
-    ~UntypedMatrix()
-    {
-    }
-
-
-    template<typename T>
-    Matrix<T> as()
-    {
-        return Matrix<T>((T*)data, rows, cols);
-    }
-};
-
-
-
+  return out;
 }
 
-#endif //DATASET_H
+}
+}

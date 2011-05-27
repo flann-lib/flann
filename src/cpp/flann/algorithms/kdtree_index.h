@@ -38,6 +38,7 @@
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
+#include "flann/util/dynamic_bitset.h"
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
 #include "flann/util/heap.h"
@@ -119,7 +120,7 @@ private:
     /**
      *  Array of indices to vectors in the dataset.
      */
-    int* vind;
+    std::vector<int> vind_;
 
     /**
      * The dataset used by this index
@@ -199,10 +200,9 @@ public:
         trees = new NodePtr[numTrees];
 
         // Create a permutable array of indices to the input vectors.
-        vind = new int[size_];
-        for (size_t i = 0; i < size_; i++) {
-            vind[i] = i;
-        }
+        vind_.resize(size_);
+        for (size_t i = 0; i < size_; ++i)
+            vind_[i] = i;
 
         mean = new DistanceType[veclen_];
         var = new DistanceType[veclen_];
@@ -213,22 +213,11 @@ public:
      */
     ~KDTreeIndex()
     {
-        delete[] vind;
         if (trees!=NULL) {
             delete[] trees;
         }
         delete[] mean;
         delete[] var;
-    }
-
-
-    template <typename Vector>
-    void randomizeVector(Vector& vec, int vec_size)
-    {
-        for (int j = vec_size; j > 0; --j) {
-            int rnd = rand_int(j);
-            std::swap(vec[j-1], vec[rnd]);
-        }
     }
 
     /**
@@ -239,8 +228,8 @@ public:
         /* Construct the randomized trees. */
         for (int i = 0; i < numTrees; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
-            randomizeVector(vind, size_);
-            trees[i] = divideTree(vind, size_ );
+            std::random_shuffle(vind_.begin(), vind_.end());
+            trees[i] = divideTree(vind_.data(), size_ );
         }
     }
 
@@ -523,7 +512,7 @@ private:
 
         int checkCount = 0;
         Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
-        std::vector<bool> checked(size_,false);
+        DynamicBitset checked(size_);
 
         /* Search once through each tree down to root. */
         for (i = 0; i < numTrees; ++i) {
@@ -547,7 +536,7 @@ private:
      *  at least "mindistsq".
      */
     void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, NodePtr node, DistanceType mindist, int& checkCount, int maxCheck,
-                     float epsError, Heap<BranchSt>* heap, std::vector<bool>& checked)
+                     float epsError, Heap<BranchSt>* heap, DynamicBitset& checked)
     {
         if (result_set.worstDist()<mindist) {
             //			printf("Ignoring branch, too far\n");
@@ -560,16 +549,14 @@ private:
                 Once a vector is checked, we set its location in vind to the
                 current checkID.
              */
-            DistanceType worst_dist = result_set.worstDist();
             int index = node->divfeat;
-            if ( checked[index] || ((checkCount>=maxCheck)&& result_set.full()) ) return;
-            checked[index] = true;
+            if ( checked.test(index) || ((checkCount>=maxCheck)&& result_set.full()) ) return;
+            checked.set(index);
             checkCount++;
 
             DistanceType dist = distance(dataset[index], vec, veclen_);
-            if (dist<worst_dist) {
-                result_set.addPoint(dist,index);
-            }
+            result_set.addPoint(dist,index);
+
             return;
         }
 
@@ -604,12 +591,9 @@ private:
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
-            DistanceType worst_dist = result_set.worstDist();
             int index = node->divfeat;
             DistanceType dist = distance(dataset[index], vec, veclen_);
-            if (dist<worst_dist) {
-                result_set.addPoint(dist,index);
-            }
+            result_set.addPoint(dist,index);
             return;
         }
 

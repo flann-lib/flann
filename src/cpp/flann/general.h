@@ -58,6 +58,7 @@ enum flann_algorithm_t
     FLANN_INDEX_COMPOSITE = 3,
     FLANN_INDEX_KDTREE_SINGLE = 4,
     FLANN_INDEX_HIERARCHICAL = 5,
+    FLANN_INDEX_LSH = 6,
     FLANN_INDEX_SAVED = 254,
     FLANN_INDEX_AUTOTUNED = 255,
 
@@ -160,6 +161,11 @@ struct FLANNParameters
     float build_weight;        /* build tree time weighting factor */
     float memory_weight;       /* index memory weigthing factor */
     float sample_fraction;     /* what fraction of the dataset to use for autotuning */
+
+    /* LSH parameters */
+    unsigned int table_number_; /** The number of hash tables to use */
+    unsigned int key_size_;     /** The length of the key in the hash tables */
+    unsigned int multi_probe_level_; /** Number of levels to use in multi-probe LSH, 0 for standard LSH */
 
     /* other parameters */
     enum flann_log_level_t log_level;    /* determines the verbosity of each flann function */

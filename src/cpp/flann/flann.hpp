@@ -192,13 +192,26 @@ void Index<Distance>::knnSearch(const Matrix<ElementType>& queries, Matrix<int>&
     assert(int(indices.cols) >= knn);
     assert(int(dists.cols) >= knn);
 
-
+#if 0
     KNNResultSet<DistanceType> resultSet(knn);
     for (size_t i = 0; i < queries.rows; i++) {
         resultSet.init(indices[i], dists[i]);
         nnIndex->findNeighbors(resultSet, queries[i], searchParams);
     }
-
+#else
+    {
+      KNNResultVector<DistanceType> resultSet(knn);
+      for (size_t i = 0; i < queries.rows; i++)
+      {
+        resultSet.clear();
+        nnIndex->findNeighbors(resultSet, queries[i], searchParams);
+        if (searchParams.sorted)
+          resultSet.sortAndCopy(indices[i], dists[i]);
+        else
+          resultSet.copy(indices[i], dists[i]);
+      }
+    }
+#endif
 }
 
 

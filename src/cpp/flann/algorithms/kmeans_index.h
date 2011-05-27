@@ -950,13 +950,10 @@ private:
                 if (result.full()) return;
             }
             checks += node->size;
-            DistanceType worst_dist = result.worstDist();
             for (int i=0; i<node->size; ++i) {
                 int index = node->indices[i];
                 DistanceType dist = distance(dataset[index], vec, veclen_);
-                if (dist<worst_dist) {
-                    result.addPoint(dist, index);
-                }
+                result.addPoint(dist, index);
             }
         }
         else {
@@ -1026,13 +1023,10 @@ private:
 
 
         if (node->childs==NULL) {
-            DistanceType worst_dist = result.worstDist();
             for (int i=0; i<node->size; ++i) {
                 int index = node->indices[i];
                 DistanceType dist = distance(dataset[index], vec, veclen_);
-                if (dist<worst_dist) {
-                    result.addPoint(dist, index);
-                }
+                result.addPoint(dist, index);
             }
         }
         else {
