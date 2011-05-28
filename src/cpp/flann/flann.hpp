@@ -206,9 +206,9 @@ void Index<Distance>::knnSearch(const Matrix<ElementType>& queries, Matrix<int>&
         resultSet.clear();
         nnIndex->findNeighbors(resultSet, queries[i], searchParams);
         if (searchParams.sorted)
-          resultSet.sortAndCopy(indices[i], dists[i]);
+          resultSet.sortAndCopy(indices[i], dists[i], knn);
         else
-          resultSet.copy(indices[i], dists[i]);
+          resultSet.copy(indices[i], dists[i], knn);
       }
     }
 #endif
