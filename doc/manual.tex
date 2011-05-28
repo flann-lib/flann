@@ -1132,14 +1132,10 @@ testset = single(rand(128,1000));
 
 \subsection{Using FLANN from python}
 
-FLANN can be used from python programs using the python bindings distributed
-with the library. The python bindings can be installed on a system using the
-distutils script provided (setup.py), by running the following command in the
-build/python directory:
-\begin{Verbatim}[fontsize=\footnotesize,frame=single]
-$ python setup.py install
-\end{Verbatim}
-The python bindings also require the numpy package to be installed.
+The python bindings are automatically installed on the system with the FLANN library
+if the option \texttt{BUILD\_PYTHON\_BINDINGS} is enabled. You may need to set the 
+\texttt{PYTHONPATH} to the location of the bindings if you installed FLANN in a
+non-standard location. The python bindings also require the numpy package to be installed.
 
 To use the python FLANN bindings the package \texttt{pyflann} must be imported
 (see the python example in section \ref{sec:quickstart}). This package contains
