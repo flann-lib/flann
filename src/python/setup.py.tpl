@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
+from os.path import exists, abspath, dirname, join
+import os
+import sys
+
+
+def find_path():
+    lib_paths = [ os.path.abspath('@LIBRARY_OUTPUT_PATH@'), abspath(join(dirname(dirname(sys.argv[0])), '../../../lib')) ]
+    possible_libs = ['libflann.so', 'flann.dll', 'libflann.dll', 'libflann.dylib']
+
+    for path in lib_paths:
+        for lib in possible_libs:
+            if exists(join(path,lib)):
+                return path
 
 setup(name='flann',
       version='@FLANN_VERSION@',
@@ -10,6 +23,6 @@ setup(name='flann',
       license='BSD',
       url='http://www.cs.ubc.ca/~mariusm/flann/',
       packages=['pyflann', 'pyflann.io', 'pyflann.bindings', 'pyflann.util', 'pyflann.lib'],
-      package_dir={'pyflann.lib':'@LIBRARY_OUTPUT_PATH@'},
-      package_data={'pyflann.lib': ['libflann.so','flann.dll', 'libflann.dylib']}, 
+      package_dir={'pyflann.lib': find_path() },
+      package_data={'pyflann.lib': ['libflann.so', 'flann.dll', 'libflann.dll', 'libflann.dylib']}, 
 )

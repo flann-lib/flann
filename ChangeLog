@@ -1,4 +1,11 @@
 
+Version 1.6.10
+	* fixed a radiusSearch bug introduced in 1.6.9
+
+Version 1.6.9
+	* bug fixes
+	* fixed radius search bug on MSVC compiler
+	* fixed windows linking problems
 
 Version 1.6.8
 	* bug fixes, low dimensional search speedup

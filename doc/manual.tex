@@ -210,20 +210,43 @@ be present:
 
 
 
-To compile the flann library the \textit{CMake}\footnote{http://www.cmake.org/} build system is required.
-Below is an example of how the FLANN library can be compiled on Linux (replace x.y with the corresponding version number).
+To compile the FLANN library the \textit{CMake}\footnote{http://www.cmake.org/} build system is required.
+Below is an example of how FLANN can be compiled on Linux (replace x.y.z with the corresponding version number).
 \begin{Verbatim}[fontsize=\scriptsize,frame=single]
-$ cd flann-x.y-src
-$ BUILD_TYPE=release INSTALL_PREFIX=<some directory> make install
+$ cd flann-x.y.z-src
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
 \end{Verbatim}
 
-% On windows the steps are similar:
-% 
-% \begin{Verbatim}[fontsize=\scriptsize,frame=single]
-% > cd flann-x.y-src
-% > cmake ..\src -G ``NMake Makefiles'' -DCMAKE_BUILD_TYPE=release
-% > nmake install
-% \end{Verbatim}
+On windows the steps are very similar:
+ 
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+> "C:\Program Files\Microsoft Visual Studio 9.0\VC\vcvarsall.bat"
+> cd flann-x.y.z-src
+> mkdir build
+> cd build
+> cmake ..
+> nmake
+\end{Verbatim}
+
+There are several compile options that can be configured before FLANN is compiled, for example the build type 
+(Release, RelWithDebInfo, Debug) or whether to compile the C, Python or the MATLAB bindings. To change any of this
+options use the \texttt{cmake-gui} application after \texttt{cmake} has finished (see figure \ref{fig:cmake-gui}).
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+> cmake-gui .
+\end{Verbatim}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[width=0.9\textwidth]{images/cmake-gui.png}
+    \caption{Configuring the FLANN compile options}
+    \label{fig:cmake-gui}
+  \end{center}
+\end{figure}
+
+
 
 
 \section{Using FLANN}
