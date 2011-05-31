@@ -200,7 +200,7 @@ void Index<Distance>::knnSearch(const Matrix<ElementType>& queries, Matrix<int>&
     }
 #else
     {
-      KNNResultVector<DistanceType> resultSet(knn);
+      KNNUniqueResultSet<DistanceType> resultSet(knn);
       for (size_t i = 0; i < queries.rows; i++)
       {
         resultSet.clear();
@@ -237,7 +237,7 @@ int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>&
         dists_ptr = dists[0];
     }
 
-    RadiusResultVector<DistanceType> resultSet(radius, (n>0));
+    RadiusUniqueResultSet<DistanceType> resultSet(radius);
     resultSet.clear();
     nnIndex->findNeighbors(resultSet, query[0], searchParams);
     if (n>0) {
