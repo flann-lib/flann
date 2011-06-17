@@ -54,50 +54,20 @@ namespace flann
 
 struct HierarchicalClusteringIndexParams : public IndexParams
 {
-    HierarchicalClusteringIndexParams(int branching_ = 32,
-                                      flann_centers_init_t centers_init_ = FLANN_CENTERS_RANDOM,
-                                      int trees_ = 4, int leaf_size_ = 100) :
-        IndexParams(FLANN_INDEX_HIERARCHICAL),
-        branching(branching_),
-        centers_init(centers_init_),
-        trees(trees_),
-        leaf_size(leaf_size_){}
-
-    /**
-     * The branching factor used in the hierarchical clustering
-     */
-    int branching;             // branching factor
-
-    /**
-     * Algorithm used for picking the initial cluster centers for kmeans tree
-     */
-    flann_centers_init_t centers_init;
-
-    int trees;
-
-    int leaf_size;
-
-    void fromParameters(const FLANNParameters& p)
+    HierarchicalClusteringIndexParams(int branching = 32,
+                                      flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM,
+                                      int trees = 4, int leaf_size = 100)
     {
-        assert(p.algorithm==FLANN_INDEX_HIERARCHICAL);
-        branching = p.branching;
-        centers_init = p.centers_init;
+        (*this)["algorithm"] = FLANN_INDEX_HIERARCHICAL;
+        // The branching factor used in the hierarchical clustering
+        (*this)["branching"] = branching;
+        // Algorithm used for picking the initial cluster centers
+        (*this)["centers_init"] = centers_init;
+        // number of parallel trees to build
+        (*this)["trees"] = trees;
+        // maximum leaf size
+        (*this)["leaf_size"] = leaf_size;
     }
-
-    void toParameters(FLANNParameters& p) const
-    {
-        p.algorithm = FLANN_INDEX_HIERARCHICAL;
-        p.branching = branching;
-        p.centers_init = centers_init;
-    }
-
-    void print() const
-    {
-        logger.info("Index type: %d\n",(int)algorithm);
-        logger.info("Branching: %d\n", branching);
-        logger.info("Centres initialisation: %d\n", centers_init);
-    }
-
 };
 
 
@@ -115,95 +85,6 @@ public:
     typedef typename Distance::ResultType DistanceType;
 
 private:
-
-    /**
-     * Parameters used by this index
-     */
-    HierarchicalClusteringIndexParams params;
-
-    /**
-     * The dataset used by this index
-     */
-    const Matrix<ElementType> dataset;
-
-
-    /**
-     * Number of features in the dataset.
-     */
-    size_t size_;
-
-    /**
-     * Length of each feature.
-     */
-    size_t veclen_;
-
-
-    /**
-     * Struture representing a node in the hierarchical k-means tree.
-     */
-    struct Node
-    {
-        /**
-         * The cluster center index
-         */
-        int pivot;
-        /**
-         * The cluster size (number of points in the cluster)
-         */
-        int size;
-        /**
-         * Child nodes (only for non-terminal nodes)
-         */
-        Node** childs;
-        /**
-         * Node points (only for terminal nodes)
-         */
-        int* indices;
-        /**
-         * Level
-         */
-        int level;
-    };
-    typedef Node* NodePtr;
-
-
-
-    /**
-     * Alias definition for a nicer syntax.
-     */
-    typedef BranchStruct<NodePtr, DistanceType> BranchSt;
-
-
-    /**
-     * The root node in the tree.
-     */
-    NodePtr* root;
-
-    /**
-     *  Array of indices to vectors in the dataset.
-     */
-    int** indices;
-
-
-    /**
-     * The distance
-     */
-    Distance distance;
-
-
-    /**
-     * Pooled memory allocator.
-     *
-     * Using a pooled memory allocator is more efficient
-     * than allocating memory directly when there is a large
-     * number small of memory allocations.
-     */
-    PooledAllocator pool;
-
-    /**
-     * Memory occupied by the index.
-     */
-    int memoryCounter;
 
 
     typedef void (HierarchicalClusteringIndex::* centersAlgFunction)(int, int*, int, int*, int&);
@@ -377,14 +258,8 @@ private:
     }
 
 
-
 public:
 
-
-    flann_algorithm_t getType() const
-    {
-        return FLANN_INDEX_HIERARCHICAL;
-    }
 
     /**
      * Index constructor
@@ -393,7 +268,7 @@ public:
      *          inputData = dataset with the input features
      *          params = parameters passed to the hierarchical k-means algorithm
      */
-    HierarchicalClusteringIndex(const Matrix<ElementType>& inputData, const HierarchicalClusteringIndexParams& index_params = HierarchicalClusteringIndexParams(),
+    HierarchicalClusteringIndex(const Matrix<ElementType>& inputData, const IndexParams& index_params = HierarchicalClusteringIndexParams(),
                                 Distance d = Distance())
         : dataset(inputData), params(index_params), root(NULL), indices(NULL), distance(d)
     {
@@ -401,22 +276,28 @@ public:
 
         size_ = dataset.rows;
         veclen_ = dataset.cols;
+        
+        branching_ = get_param(params,"branching",32);
+        centers_init_ = get_param<flann_centers_init_t>(params,"centers_init");
+        trees_ = get_param(params,"trees",4);
+        leaf_size_ = get_param(params,"leaf_size",100);
 
-        if (params.centers_init==FLANN_CENTERS_RANDOM) {
+        if (centers_init_==FLANN_CENTERS_RANDOM) {
             chooseCenters = &HierarchicalClusteringIndex::chooseCentersRandom;
         }
-        else if (params.centers_init==FLANN_CENTERS_GONZALES) {
+        else if (centers_init_==FLANN_CENTERS_GONZALES) {
             chooseCenters = &HierarchicalClusteringIndex::chooseCentersGonzales;
         }
-        else if (params.centers_init==FLANN_CENTERS_KMEANSPP) {
+        else if (centers_init_==FLANN_CENTERS_KMEANSPP) {
             chooseCenters = &HierarchicalClusteringIndex::chooseCentersKMeanspp;
         }
         else {
             throw FLANNException("Unknown algorithm for choosing initial centers.");
         }
 
-        root = new NodePtr[params.trees];
-        indices = new int*[params.trees];
+        trees_ = get_param(params,"trees",4);
+        root = new NodePtr[trees_];
+        indices = new int*[trees_];
     }
 
 
@@ -463,47 +344,64 @@ public:
      */
     void buildIndex()
     {
-        if (params.branching<2) {
+        if (branching_<2) {
             throw FLANNException("Branching factor must be at least 2");
         }
 
-        printf("Leaf size: %d\n", params.leaf_size);
+        printf("Leaf size: %d\n", leaf_size_);
 
-        for (int i=0; i<params.trees; ++i) {
+        for (int i=0; i<trees_; ++i) {
             indices[i] = new int[size_];
             for (size_t j=0; j<size_; ++j) {
                 indices[i][j] = j;
             }
             root[i] = pool.allocate<Node>();
-            computeClustering(root[i], indices[i], size_, params.branching,0);
+            computeClustering(root[i], indices[i], size_, branching_,0);
         }
+    }
+
+
+    flann_algorithm_t getType() const
+    {
+        return FLANN_INDEX_HIERARCHICAL;
     }
 
 
     void saveIndex(FILE* stream)
     {
-        //      save_value(stream, params);
-        //      save_value(stream, memoryCounter);
-        //      save_value(stream, *indices, size_);
-        //
-        //              save_tree(stream, root);
+    	save_value(stream, branching_);
+    	save_value(stream, trees_);
+    	save_value(stream, centers_init_);
+    	save_value(stream, leaf_size_);
+        save_value(stream, memoryCounter);
+        for (int i=0;i<trees_;++i) {
+        	save_value(stream, *indices[i], size_);
+            save_tree(stream, root[i], i);
+        }
+
     }
 
 
     void loadIndex(FILE* stream)
     {
-        //      load_value(stream, params);
-        //      load_value(stream, memoryCounter);
-        //      if (indices!=NULL) {
-        //              delete[] indices;
-        //      }
-        //		indices = new int[size_];
-        //      load_value(stream, *indices, size_);
-        //
-        //      if (root!=NULL) {
-        //              free_centers(root);
-        //      }
-        //              load_tree(stream, root);
+    	load_value(stream, branching_);
+    	load_value(stream, trees_);
+    	load_value(stream, centers_init_);
+    	load_value(stream, leaf_size_);
+        load_value(stream, memoryCounter);
+        indices = new int*[trees_];
+        root = new NodePtr[trees_];
+        for (int i=0;i<trees_;++i) {
+        	indices[i] = new int[size_];
+        	load_value(stream, *indices[i], size_);
+            load_tree(stream, root[i], i);
+        }
+
+    	params["algorithm"] = getType();
+    	params["branching"] = branching_;
+    	params["trees"] = trees_;
+    	params["centers_init"] = centers_init_;
+    	params["leaf_size"] = leaf_size_;
     }
 
 
@@ -519,14 +417,14 @@ public:
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
 
-        int maxChecks = searchParams.checks;
+    	int maxChecks = get_param(searchParams,"checks",32);
 
         // Priority queue storing intermediate branches in the best-bin-first search
         Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
 
         std::vector<bool> checked(size_,false);
         int checks = 0;
-        for (int i=0; i<params.trees; ++i) {
+        for (int i=0; i<trees_; ++i) {
             findNN(root[i], result, vec, checks, maxChecks, heap, checked);
         }
 
@@ -541,13 +439,84 @@ public:
 
     }
 
-    const IndexParams* getParameters() const
+    IndexParams getParameters() const
     {
-        return &params;
+        return params;
     }
 
 
 private:
+
+     /**
+     * Struture representing a node in the hierarchical k-means tree.
+     */
+    struct Node
+    {
+        /**
+         * The cluster center index
+         */
+        int pivot;
+        /**
+         * The cluster size (number of points in the cluster)
+         */
+        int size;
+        /**
+         * Child nodes (only for non-terminal nodes)
+         */
+        Node** childs;
+        /**
+         * Node points (only for terminal nodes)
+         */
+        int* indices;
+        /**
+         * Level
+         */
+        int level;
+    };
+    typedef Node* NodePtr;
+
+
+
+    /**
+     * Alias definition for a nicer syntax.
+     */
+    typedef BranchStruct<NodePtr, DistanceType> BranchSt;
+
+    
+    
+    void save_tree(FILE* stream, NodePtr node, int num)
+    {
+        save_value(stream, *node);
+        if (node->childs==NULL) {
+            int indices_offset = node->indices - indices[num];
+            save_value(stream, indices_offset);
+        }
+        else {
+            for(int i=0; i<branching_; ++i) {
+                save_tree(stream, node->childs[i], num);
+            }
+        }
+    }
+
+
+    void load_tree(FILE* stream, NodePtr& node, int num)
+    {
+        node = pool.allocate<Node>();
+        load_value(stream, *node);
+        if (node->childs==NULL) {
+            int indices_offset;
+            load_value(stream, indices_offset);
+            node->indices = indices[num] + indices_offset;
+        }
+        else {
+            node->childs = pool.allocate<NodePtr>(branching_);
+            for(int i=0; i<branching_; ++i) {
+                load_tree(stream, node->childs[i], num);
+            }
+        }
+    }
+
+
 
 
     void computeLabels(int* indices, int indices_length,  int* centers, int centers_length, int* labels, DistanceType& cost)
@@ -584,7 +553,7 @@ private:
         node->size = indices_length;
         node->level = level;
 
-        if (indices_length < params.leaf_size) { // leaf node
+        if (indices_length < leaf_size_) { // leaf node
             node->indices = indices;
             std::sort(node->indices,node->indices+indices_length);
             node->childs = NULL;
@@ -662,16 +631,16 @@ private:
             }
         }
         else {
-            DistanceType* domain_distances = new DistanceType[params.branching];
+            DistanceType* domain_distances = new DistanceType[branching_];
             int best_index = 0;
             domain_distances[best_index] = distance(vec, dataset[node->childs[best_index]->pivot], veclen_);
-            for (int i=1; i<params.branching; ++i) {
+            for (int i=1; i<branching_; ++i) {
                 domain_distances[i] = distance(vec, dataset[node->childs[i]->pivot], veclen_);
                 if (domain_distances[i]<domain_distances[best_index]) {
                     best_index = i;
                 }
             }
-            for (int i=0; i<params.branching; ++i) {
+            for (int i=0; i<branching_; ++i) {
                 if (i!=best_index) {
                     heap->insert(BranchSt(node->childs[i],domain_distances[i]));
                 }
@@ -680,6 +649,68 @@ private:
             findNN(node->childs[best_index],result,vec, checks, maxChecks, heap, checked);
         }
     }
+    
+private:
+
+
+    /**
+     * The dataset used by this index
+     */
+    const Matrix<ElementType> dataset;
+
+    /**
+     * Parameters used by this index
+     */
+    IndexParams params;
+
+
+    /**
+     * Number of features in the dataset.
+     */
+    size_t size_;
+
+    /**
+     * Length of each feature.
+     */
+    size_t veclen_;
+
+    /**
+     * The root node in the tree.
+     */
+    NodePtr* root;
+
+    /**
+     *  Array of indices to vectors in the dataset.
+     */
+    int** indices;
+
+
+    /**
+     * The distance
+     */
+    Distance distance;
+
+    /**
+     * Pooled memory allocator.
+     *
+     * Using a pooled memory allocator is more efficient
+     * than allocating memory directly when there is a large
+     * number small of memory allocations.
+     */
+    PooledAllocator pool;
+
+    /**
+     * Memory occupied by the index.
+     */
+    int memoryCounter;
+
+    /** index parameters */
+    int branching_;
+    int trees_;
+    flann_centers_init_t centers_init_;
+    int leaf_size_;
+    
+
 };
 
 }

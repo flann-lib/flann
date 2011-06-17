@@ -38,6 +38,7 @@
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
+#include "flann/algorithms/hierarchical_clustering_index.h"
 #include "flann/algorithms/lsh_index.h"
 #include "flann/algorithms/autotuned_index.h"
 
@@ -45,39 +46,81 @@
 namespace flann
 {
 
+template<typename KDTreeCapability, typename Distance>
+struct index_creator
+{
+	static NNIndex<Distance>* create(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
+	{
+	    flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
+
+	    NNIndex<Distance>* nnIndex;
+	    switch (index_type) {
+	    case FLANN_INDEX_LINEAR:
+	        nnIndex = new LinearIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_KDTREE_SINGLE:
+	        nnIndex = new KDTreeSingleIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_KDTREE:
+	        nnIndex = new KDTreeIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_KMEANS:
+	        nnIndex = new KMeansIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_COMPOSITE:
+	        nnIndex = new CompositeIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_AUTOTUNED:
+	        nnIndex = new AutotunedIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_HIERARCHICAL:
+	        nnIndex = new HierarchicalClusteringIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_LSH:
+	        nnIndex = new LshIndex<Distance>(dataset, params, distance);
+	        break;
+	    default:
+	        throw FLANNException("Unknown index type");
+	    }
+
+	    return nnIndex;
+	}
+};
+
+template<typename Distance>
+struct index_creator<False,Distance>
+{
+	static NNIndex<Distance>* create(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
+	{
+	    flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
+
+	    NNIndex<Distance>* nnIndex;
+	    switch (index_type) {
+	    case FLANN_INDEX_LINEAR:
+	        nnIndex = new LinearIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_KMEANS:
+	        nnIndex = new KMeansIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_HIERARCHICAL:
+	        nnIndex = new HierarchicalClusteringIndex<Distance>(dataset, params, distance);
+	        break;
+	    case FLANN_INDEX_LSH:
+	        nnIndex = new LshIndex<Distance>(dataset, params, distance);
+	        break;
+	    default:
+	        throw FLANNException("Unknown index type");
+	    }
+
+	    return nnIndex;
+	}
+};
+
+
 template<typename Distance>
 NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
 {
-    flann_algorithm_t index_type = params.getIndexType();
-
-    NNIndex<Distance>* nnIndex;
-    switch (index_type) {
-    case FLANN_INDEX_LINEAR:
-        nnIndex = new LinearIndex<Distance>(dataset, (const LinearIndexParams&)params, distance);
-        break;
-    case FLANN_INDEX_KDTREE_SINGLE:
-        nnIndex = new KDTreeSingleIndex<Distance>(dataset, (const KDTreeSingleIndexParams&)params, distance);
-        break;
-    case FLANN_INDEX_KDTREE:
-        nnIndex = new KDTreeIndex<Distance>(dataset, (const KDTreeIndexParams&)params, distance);
-        break;
-    case FLANN_INDEX_KMEANS:
-        nnIndex = new KMeansIndex<Distance>(dataset, (const KMeansIndexParams&)params, distance);
-        break;
-    case FLANN_INDEX_COMPOSITE:
-        nnIndex = new CompositeIndex<Distance>(dataset, (const CompositeIndexParams&)params, distance);
-        break;
-    case FLANN_INDEX_AUTOTUNED:
-        nnIndex = new AutotunedIndex<Distance>(dataset, (const AutotunedIndexParams&)params, distance);
-        break;
-    case FLANN_INDEX_LSH:
-        nnIndex = new LshIndex<Distance>(dataset, (const LshIndexParams&)params, distance);
-        break;
-    default:
-        throw FLANNException("Unknown index type");
-    }
-
-    return nnIndex;
+	return index_creator<typename Distance::is_kdtree_distance,Distance>::create(dataset, params,distance);
 }
 
 }

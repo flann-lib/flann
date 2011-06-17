@@ -35,12 +35,10 @@
 
 #include "flann/general.h"
 #include "flann/util/matrix.h"
+#include "flann/util/result_set.h"
 
 namespace flann
 {
-
-template <typename DistanceType>
-class ResultSet;
 
 /**
  * Nearest-neighbour index base class
@@ -56,52 +54,131 @@ public:
     virtual ~NNIndex() {}
 
     /**
-       Method responsible with building the index.
+     * \brief Builds the index
      */
     virtual void buildIndex() = 0;
 
     /**
-       Saves the index to a stream
+     * \brief Perform k-nearest neighbor search
+     * \param[in] queries The query points for which to find the nearest neighbors
+     * \param[out] indices The indices of the nearest neighbors found
+     * \param[out] dists Distances to the nearest neighbors found
+     * \param[in] knn Number of nearest neighbors to return
+     * \param[in] params Search parameters
+     */
+    virtual void knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, int knn, const SearchParams& params)
+    {
+        assert(queries.cols == veclen());
+        assert(indices.rows >= queries.rows);
+        assert(dists.rows >= queries.rows);
+        assert(int(indices.cols) >= knn);
+        assert(int(dists.cols) >= knn);
+
+    #if 1
+        KNNResultSet<DistanceType> resultSet(knn);
+        for (size_t i = 0; i < queries.rows; i++) {
+            resultSet.init(indices[i], dists[i]);
+            findNeighbors(resultSet, queries[i], params);
+        }
+    #else
+        {
+          KNNUniqueResultSet<DistanceType> resultSet(knn);
+          for (size_t i = 0; i < queries.rows; i++)
+          {
+            resultSet.clear();
+            nnIndex->findNeighbors(resultSet, queries[i], params);
+            if (get_param(searchParams,"sorted",true))
+              resultSet.sortAndCopy(indices[i], dists[i], knn);
+            else
+              resultSet.copy(indices[i], dists[i], knn);
+          }
+        }
+    #endif
+
+    }
+
+    /**
+     * \brief Perform radius search
+     * \param[in] query The query point
+     * \param[out] indices The indinces of the neighbors found within the given radius
+     * \param[out] dists The distances to the nearest neighbors found
+     * \param[in] radius The radius used for search
+     * \param[in] params Search parameters
+     * \returns Number of neighbors found
+     */
+    virtual int radiusSearch(const Matrix<ElementType>& query, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params)
+    {
+        if (query.rows != 1) {
+            fprintf(stderr, "I can only search one feature at a time for range search\n");
+            return -1;
+        }
+        assert(query.cols == veclen());
+        assert(indices.cols == dists.cols);
+
+        int n = 0;
+        int* indices_ptr = NULL;
+        DistanceType* dists_ptr = NULL;
+        if (indices.cols > 0) {
+            n = indices.cols;
+            indices_ptr = indices[0];
+            dists_ptr = dists[0];
+        }
+
+        RadiusUniqueResultSet<DistanceType> resultSet(radius);
+        resultSet.clear();
+        findNeighbors(resultSet, query[0], params);
+        if (n>0) {
+            if (get_param(params,"sorted",true))
+                resultSet.sortAndCopy(indices_ptr, dists_ptr, n);
+            else
+                resultSet.copy(indices_ptr, dists_ptr, n);
+        }
+
+        return resultSet.size();
+    }
+    
+    /**
+     * \brief Saves the index to a stream
+     * \param stream The stream to save the index to
      */
     virtual void saveIndex(FILE* stream) = 0;
 
     /**
-       Loads the index from a stream
+     * \brief Loads the index from a stream
+     * \param stream The stream from which the index is loaded
      */
     virtual void loadIndex(FILE* stream) = 0;
 
     /**
-       Method that searches for nearest-neighbors
-     */
-    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;
-
-    /**
-       Number of features in this index.
+     * \returns number of features in this index.
      */
     virtual size_t size() const = 0;
 
     /**
-       The length of each vector in this index.
+     * \returns The dimensionality of the features in this index.
      */
     virtual size_t veclen() const = 0;
 
     /**
-       The amount of memory (in bytes) this index uses.
+     * \returns The amount of memory (in bytes) used by the index.
      */
     virtual int usedMemory() const = 0;
 
     /**
-     * Algorithm name
+     * \returns The index type (kdtree, kmeans,...)
      */
     virtual flann_algorithm_t getType() const = 0;
 
     /**
-     * Returns the parameters used for the index
+     * \returns The index parameters
      */
-    virtual const IndexParams* getParameters() const = 0;
-
+    virtual IndexParams getParameters() const = 0;
+    
+    /**
+     * \brief Method that searches for nearest-neighbours
+     */
+    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;    
 };
-
 
 }
 

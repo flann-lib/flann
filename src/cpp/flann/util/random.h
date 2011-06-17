@@ -42,26 +42,41 @@ namespace flann
 
 /**
  * Seeds the random number generator
+ *  @param seed Random seed
  */
-FLANN_EXPORT void seed_random(unsigned int seed);
+inline void seed_random(unsigned int seed)
+{
+    srand(seed);
+}
 
 /*
  * Generates a random double value.
  */
-FLANN_EXPORT double rand_double(double high = 1.0, double low = 0);
-
-/*
- * Generates a random integer value.
+/**
+ * Generates a random double value.
+ * @param high Upper limit
+ * @param low Lower limit
+ * @return Random double value
  */
-FLANN_EXPORT int rand_int(int high = RAND_MAX, int low = 0);
+inline double rand_double(double high = 1.0, double low = 0)
+{
+    return low + ((high-low) * (std::rand() / (RAND_MAX + 1.0)));
+}
 
+/**
+ * Generates a random integer value.
+ * @param high Upper limit
+ * @param low Lower limit
+ * @return Random integer value
+ */
+inline int rand_int(int high = RAND_MAX, int low = 0)
+{
+    return low + (int) ( double(high-low) * (std::rand() / (RAND_MAX + 1.0)));
+}
 
 /**
  * Random number generator that returns a distinct number from
  * the [0,n) interval each time.
- *
- * TODO: improve on this to use a generator function instead of an
- * array of randomly permuted numbers
  */
 class UniqueRandom
 {
@@ -72,9 +87,8 @@ class UniqueRandom
 public:
     /**
      * Constructor.
-     * Params:
-     *     n = the size of the interval from which to generate
-     *       random numbers.
+     * @param n Size of the interval from which to generate
+     * @return
      */
     UniqueRandom(int n)
     {
@@ -83,9 +97,7 @@ public:
 
     /**
      * Initializes the number generator.
-     * Params:
-     *   n = the size of the interval from which to generate
-     *       random numbers.
+     * @param n the size of the interval from which to generate random numbers.
      */
     void init(int n)
     {

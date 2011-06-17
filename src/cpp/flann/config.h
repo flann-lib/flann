@@ -1,10 +1,8 @@
 /***********************************************************************
  * Software License Agreement (BSD License)
  *
- * Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
- * Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
- *
- * THE BSD LICENSE
+ * Copyright 2008-2011  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
+ * Copyright 2008-2011  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,36 +26,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#include "saving.h"
 
-#define STRINGIFY(x) # x
-#define TOSTRING(x) STRINGIFY(x)
-#ifndef _FLANN_VERSION
-#error "FLANN version is not defined"
-#endif
+#ifndef CONFIG_H_
+#define CONFIG_H_
 
-namespace flann
-{
+#define FLANN_VERSION "1.6.10"
 
-const char FLANN_SIGNATURE[] = "FLANN_INDEX";
-const char FLANN_VERSION[] = TOSTRING(_FLANN_VERSION);
-
-
-IndexHeader load_header(FILE* stream)
-{
-    IndexHeader header;
-    int read_size = fread(&header,sizeof(header),1,stream);
-
-    if (read_size!=1) {
-        throw FLANNException("Invalid index file, cannot read");
-    }
-
-    if (strcmp(header.signature,FLANN_SIGNATURE)!=0) {
-        throw FLANNException("Invalid index file, wrong signature");
-    }
-
-    return header;
-
-}
-
-}
+#endif /* CONFIG_H_ */

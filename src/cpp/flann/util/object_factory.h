@@ -36,31 +36,28 @@
 namespace flann
 {
 
-template<typename BaseClass, typename DerivedClass>
-BaseClass* createObject()
+class CreatorNotFound
 {
-    return new DerivedClass();
-}
+};
 
-template<typename BaseClass, typename UniqueIdType>
+template<typename BaseClass, 
+    typename UniqueIdType, 
+    typename ObjectCreator = BaseClass* (*)()>
 class ObjectFactory
 {
-    typedef BaseClass* (*CreateObjectFunc)();
-    std::map<UniqueIdType, CreateObjectFunc> object_registry;
+    typedef ObjectFactory<BaseClass,UniqueIdType,ObjectCreator> ThisClass;
+    typedef std::map<UniqueIdType, ObjectCreator> ObjectRegistry;
 
     // singleton class, private constructor
     ObjectFactory() {}
 
 public:
-    typedef typename std::map<UniqueIdType, CreateObjectFunc>::iterator Iterator;
 
-
-    template<typename DerivedClass>
-    bool register_(UniqueIdType id)
+    bool subscribe(UniqueIdType id, ObjectCreator creator)
     {
         if (object_registry.find(id) != object_registry.end()) return false;
 
-        object_registry[id] = &createObject<BaseClass, DerivedClass>;
+        object_registry[id] = creator;
         return true;
     }
 
@@ -69,21 +66,24 @@ public:
         return object_registry.erase(id) == 1;
     }
 
-    BaseClass* create(UniqueIdType id)
+    ObjectCreator create(UniqueIdType id)
     {
-        Iterator iter = object_registry.find(id);
+        typename ObjectRegistry::const_iterator iter = object_registry.find(id);
 
-        if (iter == object_registry.end()) return NULL;
+        if (iter == object_registry.end()) {
+            throw CreatorNotFound();
+        };
 
-        return ((*iter).second)();
+        return iter->second;
     }
 
-    static ObjectFactory<BaseClass,UniqueIdType>& instance()
+    static ThisClass& instance()
     {
-        static ObjectFactory<BaseClass,UniqueIdType> the_factory;
+        static ThisClass the_factory;
         return the_factory;
     }
-
+private:
+    ObjectRegistry object_registry;
 };
 
 }

@@ -393,12 +393,12 @@ TEST_F(Flann_SIFT100K_Test, SavedTest)
     printf("Loading autotuned index\n");
     flann::Index<L2<float> > autotuned_index(data, flann::SavedIndexParams("autotuned.idx"));
 
-    const flann::IndexParams* index_params = autotuned_index.getIndexParameters();
+    const flann::IndexParams index_params = autotuned_index.getParameters();
     printf("The index has the following parameters:\n");
-    index_params->print();
+//    index_params->print();
 
 
-    printf("Index type is: %d\n", autotuned_index.getIndex()->getType());
+    printf("Index type is: %d\n", autotuned_index.getType());
 
     start_timer("Searching KNN...");
     autotuned_index.knnSearch(query, indices, dists, 5, flann::SearchParams(-2) );
@@ -619,7 +619,7 @@ protected:
     printf("done\n");
 
     // The matches are bogus so we compute them the hard way
-    //flann::load_from_file(match,"brief100K.h5","indices");
+    flann::load_from_file(match,"brief100K.h5","indices");
 
     flann::Index<flann::Hamming<unsigned char> > index(data, flann::LinearIndexParams());
     index.buildIndex();

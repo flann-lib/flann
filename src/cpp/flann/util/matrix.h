@@ -38,8 +38,6 @@
 namespace flann
 {
 
-
-
 /**
  * Class that implements a simple rectangular matrix stored in a memory buffer and
  * provides convenient matrix-like access using the [] operators.
@@ -52,15 +50,17 @@ public:
 
     size_t rows;
     size_t cols;
+    size_t stride;
     T* data;
 
-    Matrix() : rows(0), cols(0), data(NULL)
+    Matrix() : rows(0), cols(0), stride(0), data(NULL)
     {
     }
 
-    Matrix(T* data_, long rows_, long cols_) :
-        rows(rows_), cols(cols_), data(data_)
+    Matrix(T* data_, size_t rows_, size_t cols_, size_t stride_ = 0) :
+        rows(rows_), cols(cols_),  stride(stride_), data(data_)
     {
+    	if (stride==0) stride = cols;
     }
 
     /**
@@ -76,7 +76,7 @@ public:
      */
     T* operator[](size_t index) const
     {
-        return data+index*cols;
+        return data+index*stride;
     }
 };
 

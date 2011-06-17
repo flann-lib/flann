@@ -46,7 +46,6 @@
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
 #include "flann/util/heap.h"
-#include "flann/util/logger.h"
 #include "flann/util/lsh_table.h"
 #include "flann/util/allocator.h"
 #include "flann/util/random.h"
@@ -57,41 +56,16 @@ namespace flann
 
 struct LshIndexParams : public IndexParams
 {
-  LshIndexParams(unsigned int table_number, unsigned int key_size, unsigned int multi_probe_level) :
-    IndexParams(FLANN_INDEX_LSH), table_number_(table_number), key_size_(key_size),
-        multi_probe_level_(multi_probe_level)
+  LshIndexParams(unsigned int table_number, unsigned int key_size, unsigned int multi_probe_level)
   {
+      (*this)["algorithm"] = FLANN_INDEX_LSH;
+      // The number of hash tables to use
+      (*this)["table_number"] = table_number;
+      // The length of the key in the hash tables
+      (*this)["key_size"] = key_size;
+      // Number of levels to use in multi-probe (0 for standard LSH)
+      (*this)["multi_probe_level"] = multi_probe_level;
   }
-
-  void fromParameters(const FLANNParameters& p)
-  {
-    assert(p.algorithm==algorithm);
-    table_number_ = p.table_number_;
-    key_size_ = p.key_size_;
-    multi_probe_level_ = p.multi_probe_level_;
-  }
-
-  void toParameters(FLANNParameters& p) const
-  {
-    p.algorithm = algorithm;
-    p.table_number_ = table_number_;
-    p.key_size_ = key_size_;
-    p.multi_probe_level_ = multi_probe_level_;
-  }
-
-  void print() const
-  {
-    logger.info("Index type: %d\n", (int)algorithm);
-    logger.info("Number of hash tables: %d\n", table_number_);
-    logger.info("Key size: %d\n", key_size_);
-  }
-
-  /** The number of hash tables to use */
-  unsigned int table_number_;
-  /** The length of the key in the hash tables */
-  unsigned int key_size_;
-  /** Number of levels to use in multi-probe (0 for standard LSH) */
-  unsigned int multi_probe_level_;
 };
 
 /**
@@ -117,12 +91,13 @@ template<typename Distance>
      * @param params parameters passed to the LSH algorithm
      * @param d the distance used
      */
-    LshIndex(const Matrix<ElementType>& input_data, const LshIndexParams& params = LshIndexParams(),
+    LshIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LshIndexParams(),
              Distance d = Distance()) :
       dataset_(input_data), index_params_(params), distance_(d)
     {
       feature_size_ = dataset_.cols;
-      fill_xor_mask(0, index_params_.key_size_, index_params_.multi_probe_level_, xor_masks_);
+      fill_xor_mask(0, get_param<unsigned int>(index_params_,"key_size"), 
+                    get_param<unsigned int>(index_params_,"multi_probe_level"), xor_masks_);
     }
 
     /**
@@ -130,11 +105,12 @@ template<typename Distance>
      */
     void buildIndex()
     {
-      tables_.resize(index_params_.table_number_);
-      for (unsigned int i = 0; i < index_params_.table_number_; ++i)
+        unsigned int table_number = get_param<unsigned int>(index_params_,"table_number");
+      tables_.resize(table_number);
+      for (unsigned int i = 0; i < table_number; ++i)
       {
         lsh::LshTable<ElementType> & table = tables_[i];
-        table = lsh::LshTable<ElementType>(feature_size_, index_params_.key_size_);
+        table = lsh::LshTable<ElementType>(feature_size_, get_param<unsigned int>(index_params_,"key_size"));
 
         // Add the features to the table
         table.add(dataset_);
@@ -143,18 +119,23 @@ template<typename Distance>
 
     void saveIndex(FILE* stream)
     {
-      save_value(stream, index_params_.table_number_);
-      save_value(stream, index_params_.key_size_);
+      save_value(stream, get_param<unsigned int>(index_params_,"table_number"));
+      save_value(stream, get_param<unsigned int>(index_params_,"key_size"));
       save_value(stream, dataset_);
     }
 
     void loadIndex(FILE* stream)
     {
-      load_value(stream, index_params_.table_number_);
-      load_value(stream, index_params_.key_size_);
+        unsigned int tmp;
+      load_value(stream, tmp);
+      index_params_["table_number"] = tmp;
+      load_value(stream, tmp);
+      index_params_["key_size"] = tmp;
       load_value(stream, dataset_);
       // Building the index is so fast we can afford not storing it
       buildIndex();
+
+      index_params_["algorithm"] = getType();
     }
 
     /**
@@ -196,9 +177,9 @@ template<typename Distance>
       getNeighbors(vec, result);
     }
 
-    const IndexParams* getParameters() const
+    IndexParams getParameters() const
     {
-      return &index_params_;
+      return index_params_;
     }
 
   private:
@@ -371,7 +352,7 @@ template<typename Distance>
     /** The size of the features (as ElementType[]) */
     unsigned int feature_size_;
 
-    LshIndexParams index_params_;
+    IndexParams index_params_;
 
     /** The XOR masks to apply to a key to get the neighboring buckets */
     std::vector<lsh::BucketKey> xor_masks_;

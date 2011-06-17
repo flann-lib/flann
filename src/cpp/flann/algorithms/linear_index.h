@@ -39,40 +39,24 @@ namespace flann
 
 struct LinearIndexParams : public IndexParams
 {
-    LinearIndexParams() : IndexParams(FLANN_INDEX_LINEAR) {}
-
-    void fromParameters(const FLANNParameters& p)
+    LinearIndexParams()
     {
-        assert(p.algorithm==algorithm);
-    }
-
-    void toParameters(FLANNParameters& p) const
-    {
-        p.algorithm = algorithm;
-    }
-
-    void print() const
-    {
-        logger.info("Index type: %d\n",(int)algorithm);
+        (*this)["algorithm"] = FLANN_INDEX_LINEAR;
     }
 };
 
 template <typename Distance>
 class LinearIndex : public NNIndex<Distance>
 {
-    typedef typename Distance::ElementType ElementType;
-    typedef typename Distance::ResultType DistanceType;
-
-    const Matrix<ElementType> dataset;
-    const LinearIndexParams index_params;
-
-    Distance distance;
-
 public:
 
-    LinearIndex(const Matrix<ElementType>& inputData, const LinearIndexParams& params = LinearIndexParams(),
+	typedef typename Distance::ElementType ElementType;
+    typedef typename Distance::ResultType DistanceType;
+
+
+    LinearIndex(const Matrix<ElementType>& inputData, const IndexParams& params = LinearIndexParams(),
                 Distance d = Distance()) :
-        dataset(inputData), index_params(params), distance(d)
+        dataset_(inputData), index_params_(params), distance_(d)
     {
     }
 
@@ -84,12 +68,12 @@ public:
 
     size_t size() const
     {
-        return dataset.rows;
+        return dataset_.rows;
     }
 
     size_t veclen() const
     {
-        return dataset.cols;
+        return dataset_.cols;
     }
 
 
@@ -112,22 +96,32 @@ public:
     void loadIndex(FILE* stream)
     {
         /* nothing to do here for linear search */
+
+    	index_params_["algorithm"] = getType();
     }
 
     void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& searchParams)
     {
-      ElementType * data = dataset.data;
-      for (size_t i = 0; i < dataset.rows; ++i, data += dataset.cols)
+      ElementType * data = dataset_.data;
+      for (size_t i = 0; i < dataset_.rows; ++i, data += dataset_.cols)
       {
-        DistanceType dist = distance(data, vec, dataset.cols);
+        DistanceType dist = distance_(data, vec, dataset_.cols);
         resultSet.addPoint(dist, i);
       }
     }
 
-    const IndexParams* getParameters() const
+    IndexParams getParameters() const
     {
-        return &index_params;
+        return index_params_;
     }
+
+private:
+    /** The dataset */
+    const Matrix<ElementType> dataset_;
+    /** Index parameters */
+    IndexParams index_params_;
+    /** Index distance */
+    Distance distance_;
 
 };
 

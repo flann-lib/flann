@@ -30,7 +30,6 @@
 #ifndef SAMPLING_H_
 #define SAMPLING_H_
 
-
 #include "flann/util/matrix.h"
 #include "flann/util/random.h"
 
@@ -40,20 +39,23 @@ namespace flann
 template<typename T>
 Matrix<T> random_sample(Matrix<T>& srcMatrix, long size, bool remove = false)
 {
-    UniqueRandom rand(srcMatrix.rows);
     Matrix<T> newSet(new T[size * srcMatrix.cols], size,srcMatrix.cols);
 
+    T* src,* dest;
     for (long i=0; i<size; ++i) {
-        long r = rand.next();
-        std::copy(srcMatrix[r], srcMatrix[r] + srcMatrix.cols, newSet[i]);
-        if (remove)
-          std::copy(srcMatrix[r], srcMatrix[r] + srcMatrix.cols, srcMatrix[srcMatrix.rows - i - 1]);
+        long r = rand_int(srcMatrix.rows-i);
+        dest = newSet[i];
+        src = srcMatrix[r];
+        std::copy(src, src+srcMatrix.cols, dest);
+        if (remove) {
+            src = srcMatrix[srcMatrix.rows-i-1];
+            dest = srcMatrix[r];
+            std::copy(src, src+srcMatrix.cols, dest);
+        }
     }
-
     if (remove) {
         srcMatrix.rows -= size;
     }
-
     return newSet;
 }
 
@@ -68,11 +70,8 @@ Matrix<T> random_sample(const Matrix<T>& srcMatrix, size_t size)
         long r = rand.next();
         dest = newSet[i];
         src = srcMatrix[r];
-        for (size_t j=0; j<srcMatrix.cols; ++j) {
-            dest[j] = src[j];
-        }
+        std::copy(src, src+srcMatrix.cols, dest);
     }
-
     return newSet;
 }
 

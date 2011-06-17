@@ -28,8 +28,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef GENERAL_H
-#define GENERAL_H
+#ifndef GENERAL_H_
+#define GENERAL_H_
+
+#include "config.h"
 
 #ifdef WIN32
 /* win32 dll export/import directives */
@@ -45,6 +47,15 @@
  #define FLANN_EXPORT
 #endif
 
+
+#ifdef __GNUC__
+#define DEPRECATED __attribute__ ((deprecated))
+#elif defined(_MSC_VER)
+#define DEPRECATED  __declspec(deprecated)
+#else
+#pragma message("WARNING: You need to implement DEPRECATED for this compiler")
+#define DEPRECATED
+#endif
 
 
 #define ARRAY_LEN(a) (sizeof(a)/sizeof(a[0]))
@@ -178,6 +189,8 @@ struct FLANNParameters
 
 #include <stdexcept>
 #include <cassert>
+#include <map>
+#include <flann/util/any.h>
 
 namespace flann
 {
@@ -190,43 +203,51 @@ public:
     FLANNException(const std::string& message) : std::runtime_error(message) { }
 };
 
+typedef cdiggins::any any;
+typedef std::map<std::string, any> IndexParams;
 
-struct IndexParams
+struct SearchParams : public IndexParams
 {
-protected:
-    IndexParams(flann_algorithm_t algorithm_) : algorithm(algorithm_) {}
-
-public:
-    FLANN_EXPORT static IndexParams* createFromParameters(const FLANNParameters& p);
-
-    virtual flann_algorithm_t getIndexType() const
+    SearchParams(int checks = 32, float eps = 0, bool sorted = true )
     {
-        return algorithm;
+        // how many leafs to visit when searching for neighbours (-1 for unlimited)
+        (*this)["checks"] = checks;
+        // search for eps-approximate neighbours (default: 0)
+        (*this)["eps"] = eps;
+        // only for radius search, require neighbours sorted by distance (default: true)
+        (*this)["sorted"] = sorted;
     }
-
-    virtual ~IndexParams() {};
-
-    virtual void fromParameters(const FLANNParameters& p) = 0;
-    virtual void toParameters(FLANNParameters& p) const = 0;
-
-    virtual void print() const = 0;
-
-    flann_algorithm_t algorithm;
 };
 
 
-struct SearchParams
+template<typename T>
+T get_param(const IndexParams& params, std::string name, const T& default_value)
 {
-    SearchParams(int checks_ = 32, float eps_ = 0, bool sorted_ = true ) :
-        checks(checks_), eps(eps_), sorted(sorted_) {}
+    IndexParams::const_iterator it = params.find(name);
+    if (it != params.end()) {
+        return it->second.cast<T>();
+    }
+    else {
+        return default_value;
+    }
+}
 
-    int checks;  // how many leafs to visit when searching for neighbours (-1 for unlimited)
-    float eps;  // search for eps-approximate neighbours (default: 0)
-    bool sorted; // only for radius search, require neighbours sorted by distance (default: true)
-};
+template<typename T>
+T get_param(const IndexParams& params, std::string name)
+{
+    IndexParams::const_iterator it = params.find(name);
+    if (it != params.end()) {
+        return it->second.cast<T>();
+    }
+    else {
+        throw FLANNException(std::string("Missing parameter '")+name+std::string("' in the parameters given"));
+    }
+}
+
+
 
 }
 
 #endif
 
-#endif  /* GENERAL_H */
+#endif  /* GENERAL_H_ */

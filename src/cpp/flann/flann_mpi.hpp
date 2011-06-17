@@ -161,7 +161,7 @@ public:
         return size_;
     }
 
-    const IndexParams* getIndexParameters()
+    IndexParams getIndexParameters()
     {
         return flann_index->getParameters();
     }

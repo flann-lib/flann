@@ -29,11 +29,13 @@
 #ifndef SAVING_H_
 #define SAVING_H_
 
-#include "flann/general.h"
-#include "flann/algorithms/nn_index.h"
-#include <cstdio>
 #include <cstring>
 #include <vector>
+
+#include "flann/general.h"
+#include "flann/algorithms/nn_index.h"
+
+#define FLANN_SIGNATURE "FLANN_INDEX"
 
 namespace flann
 {
@@ -57,10 +59,6 @@ struct Datatype<float> { static flann_datatype_t type() { return FLANN_FLOAT32; 
 template<>
 struct Datatype<double> { static flann_datatype_t type() { return FLANN_FLOAT64; } };
 
-
-
-FLANN_EXPORT extern const char FLANN_SIGNATURE[];
-FLANN_EXPORT extern const char FLANN_VERSION[];
 
 /**
  * Structure representing the index header.
@@ -103,7 +101,22 @@ void save_header(FILE* stream, const NNIndex<Distance>& index)
  * @param stream - Stream to load from
  * @return Index header
  */
-FLANN_EXPORT IndexHeader load_header(FILE* stream);
+inline IndexHeader load_header(FILE* stream)
+{
+    IndexHeader header;
+    int read_size = fread(&header,sizeof(header),1,stream);
+
+    if (read_size!=1) {
+        throw FLANNException("Invalid index file, cannot read");
+    }
+
+    if (strcmp(header.signature,FLANN_SIGNATURE)!=0) {
+        throw FLANNException("Invalid index file, wrong signature");
+    }
+
+    return header;
+
+}
 
 
 template<typename T>

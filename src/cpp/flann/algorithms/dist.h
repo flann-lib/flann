@@ -75,6 +75,12 @@ struct Accumulator<int> { typedef float Type; };
 template<typename ElementType>
   class ZeroIterator;
 
+
+class True {};
+
+class False {};
+
+
 /**
  * Squared Euclidean distance functor.
  *
@@ -84,6 +90,8 @@ template<typename ElementType>
 template<class T>
 struct L2_Simple
 {
+	typedef True is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -114,6 +122,8 @@ struct L2_Simple
 template<class T>
 struct L2
 {
+	typedef True is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -176,6 +186,8 @@ struct L2
 template<class T>
 struct L1
 {
+	typedef True is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -230,6 +242,8 @@ struct L1
 template<class T>
 struct MinkowskiDistance
 {
+	typedef True is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -291,6 +305,8 @@ struct MinkowskiDistance
 template<class T>
 struct MaxDistance
 {
+	typedef False is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -345,6 +361,8 @@ struct MaxDistance
  */
 struct HammingLUT
 {
+	typedef False is_kdtree_distance;
+
   typedef unsigned char ValueType;
   typedef int ResultType;
 
@@ -413,8 +431,8 @@ struct HammingLUT
                                              ByteBits<90>::COUNT, ByteBits<91>::COUNT, ByteBits<92>::COUNT,
                                              ByteBits<93>::COUNT, ByteBits<94>::COUNT, ByteBits<95>::COUNT,
                                              ByteBits<96>::COUNT, ByteBits<97>::COUNT, ByteBits<98>::COUNT,
-                                             ByteBits<99>::COUNT, ByteBits<100>::COUNT, ByteBits<101>::COUNT, ByteBits<
-                                                 102>::COUNT, ByteBits<103>::COUNT, ByteBits<104>::COUNT,
+                                             ByteBits<99>::COUNT, ByteBits<100>::COUNT, ByteBits<101>::COUNT, 
+                                             ByteBits<102>::COUNT, ByteBits<103>::COUNT, ByteBits<104>::COUNT,
                                              ByteBits<105>::COUNT, ByteBits<106>::COUNT, ByteBits<107>::COUNT,
                                              ByteBits<108>::COUNT, ByteBits<109>::COUNT, ByteBits<110>::COUNT,
                                              ByteBits<111>::COUNT, ByteBits<112>::COUNT, ByteBits<113>::COUNT,
@@ -496,6 +514,8 @@ struct HammingLUT
 template<class T>
   struct Hamming
   {
+	typedef False is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -601,16 +621,6 @@ template<class T>
 #endif
         return result;
       }
-
-    /**
-     * Partial distance, used by the kd-tree.
-     */
-    template<typename U, typename V>
-      inline ResultType accum_dist(const U& a, const V& b, int dim) const
-      {
-        return HammingLUT()(reinterpret_cast<const unsigned char*> (&a), reinterpret_cast<const unsigned char*> (&b),
-                            sizeof(U));
-      }
   };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -618,6 +628,8 @@ template<class T>
 template<class T>
 struct HistIntersectionDistance
 {
+	typedef True is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -668,6 +680,8 @@ struct HistIntersectionDistance
 template<class T>
 struct HellingerDistance
 {
+	typedef True is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -713,6 +727,8 @@ struct HellingerDistance
 template<class T>
 struct ChiSquareDistance
 {
+	typedef True is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 
@@ -764,6 +780,8 @@ struct ChiSquareDistance
 template<class T>
 struct KL_Divergence
 {
+	typedef True is_kdtree_distance;
+
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
 

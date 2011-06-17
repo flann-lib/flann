@@ -42,7 +42,6 @@
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
 #include "flann/util/heap.h"
-#include "flann/util/logger.h"
 #include "flann/util/allocator.h"
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
@@ -53,29 +52,11 @@ namespace flann
 
 struct KDTreeIndexParams : public IndexParams
 {
-    KDTreeIndexParams(int trees_ = 4) :
-        IndexParams(FLANN_INDEX_KDTREE), trees(trees_) {}
-
-    int trees;                 // number of randomized trees to use (for kdtree)
-
-    void fromParameters(const FLANNParameters& p)
+    KDTreeIndexParams(int trees = 4) 
     {
-        assert(p.algorithm==algorithm);
-        trees = p.trees;
+        (*this)["algorithm"] = FLANN_INDEX_KDTREE;
+        (*this)["trees"] = trees;
     }
-
-    void toParameters(FLANNParameters& p) const
-    {
-        p.algorithm = algorithm;
-        p.trees = trees;
-    }
-
-    void print() const
-    {
-        logger.info("Index type: %d\n",(int)algorithm);
-        logger.info("Trees: %d\n", trees);
-    }
-
 };
 
 
@@ -91,96 +72,7 @@ class KDTreeIndex : public NNIndex<Distance>
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
-private:
 
-    enum
-    {
-        /**
-         * To improve efficiency, only SAMPLE_MEAN random values are used to
-         * compute the mean and variance at each level when building a tree.
-         * A value of 100 seems to perform as well as using all values.
-         */
-        SAMPLE_MEAN = 100,
-        /**
-         * Top random dimensions to consider
-         *
-         * When creating random trees, the dimension on which to subdivide is
-         * selected at random from among the top RAND_DIM dimensions with the
-         * highest variance.  A value of 5 works well.
-         */
-        RAND_DIM=5
-    };
-
-
-    /**
-     * Number of randomized trees that are used
-     */
-    int numTrees;
-
-    /**
-     *  Array of indices to vectors in the dataset.
-     */
-    std::vector<int> vind_;
-
-    /**
-     * The dataset used by this index
-     */
-    const Matrix<ElementType> dataset;
-
-    const KDTreeIndexParams index_params;
-
-    size_t size_;
-    size_t veclen_;
-
-
-    DistanceType* mean;
-    DistanceType* var;
-
-
-    /*--------------------- Internal Data Structures --------------------------*/
-    struct Node
-    {
-        /**
-         * Dimension used for subdivision.
-         */
-        int divfeat;
-        /**
-         * The values used for subdivision.
-         */
-        DistanceType divval;
-        /**
-         * The child nodes.
-         */
-        Node* child1, * child2;
-    };
-    typedef Node* NodePtr;
-
-
-
-    /**
-     * Array of k-d trees used to find neighbours.
-     */
-    NodePtr* trees;
-    typedef BranchStruct<NodePtr, DistanceType> BranchSt;
-    typedef BranchSt* Branch;
-
-    /**
-     * Pooled memory allocator.
-     *
-     * Using a pooled memory allocator is more efficient
-     * than allocating memory directly when there is a large
-     * number small of memory allocations.
-     */
-    PooledAllocator pool;
-
-    Distance distance;
-
-public:
-
-    flann_algorithm_t getType() const
-    {
-        return FLANN_INDEX_KDTREE;
-    }
 
     /**
      * KDTree constructor
@@ -189,23 +81,23 @@ public:
      *          inputData = dataset with the input features
      *          params = parameters passed to the kdtree algorithm
      */
-    KDTreeIndex(const Matrix<ElementType>& inputData, const KDTreeIndexParams& params = KDTreeIndexParams(),
+    KDTreeIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KDTreeIndexParams(),
                 Distance d = Distance() ) :
-        dataset(inputData), index_params(params), distance(d)
+        dataset_(inputData), index_params_(params), distance_(d)
     {
-        size_ = dataset.rows;
-        veclen_ = dataset.cols;
+        size_ = dataset_.rows;
+        veclen_ = dataset_.cols;
 
-        numTrees = params.trees;
-        trees = new NodePtr[numTrees];
+        trees_ = get_param(index_params_,"trees",4);
+        tree_roots_ = new NodePtr[trees_];
 
         // Create a permutable array of indices to the input vectors.
         vind_.resize(size_);
         for (size_t i = 0; i < size_; ++i)
             vind_[i] = i;
 
-        mean = new DistanceType[veclen_];
-        var = new DistanceType[veclen_];
+        mean_ = new DistanceType[veclen_];
+        var_ = new DistanceType[veclen_];
     }
 
     /**
@@ -213,11 +105,11 @@ public:
      */
     ~KDTreeIndex()
     {
-        if (trees!=NULL) {
-            delete[] trees;
+        if (tree_roots_!=NULL) {
+            delete[] tree_roots_;
         }
-        delete[] mean;
-        delete[] var;
+        delete[] mean_;
+        delete[] var_;
     }
 
     /**
@@ -226,18 +118,25 @@ public:
     void buildIndex()
     {
         /* Construct the randomized trees. */
-        for (int i = 0; i < numTrees; i++) {
+        for (int i = 0; i < trees_; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
             std::random_shuffle(vind_.begin(), vind_.end());
-            trees[i] = divideTree(vind_.data(), size_ );
+            tree_roots_[i] = divideTree(vind_.data(), size_ );
         }
     }
 
+
+    flann_algorithm_t getType() const
+    {
+        return FLANN_INDEX_KDTREE;
+    }
+
+
     void saveIndex(FILE* stream)
     {
-        save_value(stream, numTrees);
-        for (int i=0; i<numTrees; ++i) {
-            save_tree(stream, trees[i]);
+        save_value(stream, trees_);
+        for (int i=0; i<trees_; ++i) {
+            save_tree(stream, tree_roots_[i]);
         }
     }
 
@@ -245,14 +144,17 @@ public:
 
     void loadIndex(FILE* stream)
     {
-        load_value(stream, numTrees);
-        if (trees!=NULL) {
-            delete[] trees;
+        load_value(stream, trees_);
+        if (tree_roots_!=NULL) {
+            delete[] tree_roots_;
         }
-        trees = new NodePtr[numTrees];
-        for (int i=0; i<numTrees; ++i) {
-            load_tree(stream,trees[i]);
+        tree_roots_ = new NodePtr[trees_];
+        for (int i=0; i<trees_; ++i) {
+            load_tree(stream,tree_roots_[i]);
         }
+
+        index_params_["algorithm"] = getType();
+        index_params_["trees"] = tree_roots_;
     }
 
     /**
@@ -277,7 +179,7 @@ public:
      */
     int usedMemory() const
     {
-        return pool.usedMemory+pool.wastedMemory+dataset.rows*sizeof(int);  // pool memory and vind array memory
+        return pool_.usedMemory+pool_.wastedMemory+dataset_.rows*sizeof(int);  // pool memory and vind array memory
     }
 
     /**
@@ -291,8 +193,8 @@ public:
      */
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-        int maxChecks = searchParams.checks;
-        float epsError = 1+searchParams.eps;
+        int maxChecks = get_param(searchParams,"checks", 32);
+        float epsError = 1+get_param(searchParams,"eps",0.0f);
 
         if (maxChecks==FLANN_CHECKS_UNLIMITED) {
             getExactNeighbors(result, vec, epsError);
@@ -302,12 +204,34 @@ public:
         }
     }
 
-    const IndexParams* getParameters() const
+    IndexParams getParameters() const
     {
-        return &index_params;
+        return index_params_;
     }
 
 private:
+
+
+    /*--------------------- Internal Data Structures --------------------------*/
+    struct Node
+    {
+        /**
+         * Dimension used for subdivision.
+         */
+        int divfeat;
+        /**
+         * The values used for subdivision.
+         */
+        DistanceType divval;
+        /**
+         * The child nodes.
+         */
+        Node* child1, * child2;
+    };
+    typedef Node* NodePtr;
+    typedef BranchStruct<NodePtr, DistanceType> BranchSt;
+    typedef BranchSt* Branch;
+
 
 
     void save_tree(FILE* stream, NodePtr tree)
@@ -324,7 +248,7 @@ private:
 
     void load_tree(FILE* stream, NodePtr& tree)
     {
-        tree = pool.allocate<Node>();
+        tree = pool_.allocate<Node>();
         load_value(stream, *tree);
         if (tree->child1!=NULL) {
             load_tree(stream, tree->child1);
@@ -346,7 +270,7 @@ private:
      */
     NodePtr divideTree(int* ind, int count)
     {
-        NodePtr node = pool.allocate<Node>(); // allocate memory
+        NodePtr node = pool_.allocate<Node>(); // allocate memory
 
         /* If too few exemplars remain, then make this a leaf node. */
         if ( count == 1) {
@@ -376,34 +300,34 @@ private:
      */
     void meanSplit(int* ind, int count, int& index, int& cutfeat, DistanceType& cutval)
     {
-        memset(mean,0,veclen_*sizeof(DistanceType));
-        memset(var,0,veclen_*sizeof(DistanceType));
+        memset(mean_,0,veclen_*sizeof(DistanceType));
+        memset(var_,0,veclen_*sizeof(DistanceType));
 
         /* Compute mean values.  Only the first SAMPLE_MEAN values need to be
             sampled to get a good estimate.
          */
         int cnt = std::min((int)SAMPLE_MEAN+1, count);
         for (int j = 0; j < cnt; ++j) {
-            ElementType* v = dataset[ind[j]];
+            ElementType* v = dataset_[ind[j]];
             for (size_t k=0; k<veclen_; ++k) {
-                mean[k] += v[k];
+                mean_[k] += v[k];
             }
         }
         for (size_t k=0; k<veclen_; ++k) {
-            mean[k] /= cnt;
+            mean_[k] /= cnt;
         }
 
         /* Compute variances (no need to divide by count). */
         for (int j = 0; j < cnt; ++j) {
-            ElementType* v = dataset[ind[j]];
+            ElementType* v = dataset_[ind[j]];
             for (size_t k=0; k<veclen_; ++k) {
-                DistanceType dist = v[k] - mean[k];
-                var[k] += dist * dist;
+                DistanceType dist = v[k] - mean_[k];
+                var_[k] += dist * dist;
             }
         }
         /* Select one of the highest variance indices at random. */
-        cutfeat = selectDivision(var);
-        cutval = mean[cutfeat];
+        cutfeat = selectDivision(var_);
+        cutval = mean_[cutfeat];
 
         int lim1, lim2;
         planeSplit(ind, count, cutfeat, cutval, lim1, lim2);
@@ -467,16 +391,16 @@ private:
         int left = 0;
         int right = count-1;
         for (;; ) {
-            while (left<=right && dataset[ind[left]][cutfeat]<cutval) ++left;
-            while (left<=right && dataset[ind[right]][cutfeat]>=cutval) --right;
+            while (left<=right && dataset_[ind[left]][cutfeat]<cutval) ++left;
+            while (left<=right && dataset_[ind[right]][cutfeat]>=cutval) --right;
             if (left>right) break;
             std::swap(ind[left], ind[right]); ++left; --right;
         }
         lim1 = left;
         right = count-1;
         for (;; ) {
-            while (left<=right && dataset[ind[left]][cutfeat]<=cutval) ++left;
-            while (left<=right && dataset[ind[right]][cutfeat]>cutval) --right;
+            while (left<=right && dataset_[ind[left]][cutfeat]<=cutval) ++left;
+            while (left<=right && dataset_[ind[right]][cutfeat]>cutval) --right;
             if (left>right) break;
             std::swap(ind[left], ind[right]); ++left; --right;
         }
@@ -491,11 +415,11 @@ private:
     {
         //		checkID -= 1;  /* Set a different unique ID for each search. */
 
-        if (numTrees > 1) {
+        if (trees_ > 1) {
             fprintf(stderr,"It doesn't make any sense to use more than one tree for exact search");
         }
-        if (numTrees>0) {
-            searchLevelExact(result, vec, trees[0], 0.0, epsError);
+        if (trees_>0) {
+            searchLevelExact(result, vec, tree_roots_[0], 0.0, epsError);
         }
         assert(result.full());
     }
@@ -515,8 +439,8 @@ private:
         DynamicBitset checked(size_);
 
         /* Search once through each tree down to root. */
-        for (i = 0; i < numTrees; ++i) {
-            searchLevel(result, vec, trees[i], 0, checkCount, maxCheck, epsError, heap, checked);
+        for (i = 0; i < trees_; ++i) {
+            searchLevel(result, vec, tree_roots_[i], 0, checkCount, maxCheck, epsError, heap, checked);
         }
 
         /* Keep searching other branches from heap until finished. */
@@ -554,7 +478,7 @@ private:
             checked.set(index);
             checkCount++;
 
-            DistanceType dist = distance(dataset[index], vec, veclen_);
+            DistanceType dist = distance_(dataset_[index], vec, veclen_);
             result_set.addPoint(dist,index);
 
             return;
@@ -574,7 +498,7 @@ private:
             adding exceeds their value.
          */
 
-        DistanceType new_distsq = mindist + distance.accum_dist(val, node->divval, node->divfeat);
+        DistanceType new_distsq = mindist + distance_.accum_dist(val, node->divval, node->divfeat);
         //		if (2 * checkCount < maxCheck  ||  !result.full()) {
         if ((new_distsq*epsError < result_set.worstDist())||  !result_set.full()) {
             heap->insert( BranchSt(otherChild, new_distsq) );
@@ -592,7 +516,7 @@ private:
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
             int index = node->divfeat;
-            DistanceType dist = distance(dataset[index], vec, veclen_);
+            DistanceType dist = distance_(dataset_[index], vec, veclen_);
             result_set.addPoint(dist,index);
             return;
         }
@@ -611,7 +535,7 @@ private:
             adding exceeds their value.
          */
 
-        DistanceType new_distsq = mindist + distance.accum_dist(val, node->divval, node->divfeat);
+        DistanceType new_distsq = mindist + distance_.accum_dist(val, node->divval, node->divfeat);
 
         /* Call recursively to search next level down. */
         searchLevelExact(result_set, vec, bestChild, mindist, epsError);
@@ -620,6 +544,70 @@ private:
             searchLevelExact(result_set, vec, otherChild, new_distsq, epsError);
         }
     }
+
+
+private:
+
+    enum
+    {
+        /**
+         * To improve efficiency, only SAMPLE_MEAN random values are used to
+         * compute the mean and variance at each level when building a tree.
+         * A value of 100 seems to perform as well as using all values.
+         */
+        SAMPLE_MEAN = 100,
+        /**
+         * Top random dimensions to consider
+         *
+         * When creating random trees, the dimension on which to subdivide is
+         * selected at random from among the top RAND_DIM dimensions with the
+         * highest variance.  A value of 5 works well.
+         */
+        RAND_DIM=5
+    };
+
+
+    /**
+     * Number of randomized trees that are used
+     */
+    int trees_;
+
+    /**
+     *  Array of indices to vectors in the dataset.
+     */
+    std::vector<int> vind_;
+
+    /**
+     * The dataset used by this index
+     */
+    const Matrix<ElementType> dataset_;
+
+    IndexParams index_params_;
+
+    size_t size_;
+    size_t veclen_;
+
+
+    DistanceType* mean_;
+    DistanceType* var_;
+
+
+    /**
+     * Array of k-d trees used to find neighbours.
+     */
+    NodePtr* tree_roots_;
+
+    /**
+     * Pooled memory allocator.
+     *
+     * Using a pooled memory allocator is more efficient
+     * than allocating memory directly when there is a large
+     * number small of memory allocations.
+     */
+    PooledAllocator pool_;
+
+    Distance distance_;
+
 
 };   // class KDTreeForest
 

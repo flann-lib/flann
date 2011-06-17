@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <limits.h>
 // TODO as soon as we use C++0x, use the code in USE_UNORDERED_MAP
 #if USE_UNORDERED_MAP
@@ -92,7 +93,27 @@ struct LshStats
  * @param stats the stats to display
  * @return the streams
  */
-std::ostream& operator <<(std::ostream& out, const LshStats & stats);
+inline std::ostream& operator <<(std::ostream& out, const LshStats & stats)
+{
+  size_t w = 20;
+  out << "Lsh Table Stats:\n" << std::setw(w) << std::setiosflags(std::ios::right) << "N buckets : "
+      << stats.n_buckets_ << "\n" << std::setw(w) << std::setiosflags(std::ios::right) << "mean size : "
+      << std::setiosflags(std::ios::left) << stats.bucket_size_mean_ << "\n" << std::setw(w)
+      << std::setiosflags(std::ios::right) << "median size : " << stats.bucket_size_median_ << "\n" << std::setw(w)
+      << std::setiosflags(std::ios::right) << "min size : " << std::setiosflags(std::ios::left)
+      << stats.bucket_size_min_ << "\n" << std::setw(w) << std::setiosflags(std::ios::right) << "max size : "
+      << std::setiosflags(std::ios::left) << stats.bucket_size_max_;
+
+  // Display the histogram
+  out << std::endl << std::setw(w) << std::setiosflags(std::ios::right) << "histogram : "
+      << std::setiosflags(std::ios::left);
+  for (std::vector<std::vector<unsigned int> >::const_iterator iterator = stats.size_histogram_.begin(), end =
+      stats.size_histogram_.end(); iterator != end; ++iterator)
+    out << (*iterator)[0] << "-" << (*iterator)[1] << ": " << (*iterator)[2] << ",  ";
+
+  return out;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
