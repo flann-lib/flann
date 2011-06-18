@@ -39,13 +39,14 @@ float compute_precision(const flann::Matrix<int>& match, const flann::Matrix<int
  * @param tol tolerance at which distanceare considered equal
  * @return
  */
-float computePrecisionDiscrete(const flann::Matrix<float>& gt_dists, const flann::Matrix<float>& dists, float tol)
+template<typename T>
+float computePrecisionDiscrete(const flann::Matrix<T>& gt_dists, const flann::Matrix<T>& dists, float tol)
 {
   int count = 0;
 
   assert(gt_dists.rows == dists.rows);
   size_t nn = std::min(gt_dists.cols, dists.cols);
-  std::vector<float> gt_sorted_dists(nn), sorted_dists(nn), intersection(nn);
+  std::vector<T> gt_sorted_dists(nn), sorted_dists(nn), intersection(nn);
 
   for (size_t i = 0; i < gt_dists.rows; ++i)
   {
@@ -53,7 +54,7 @@ float computePrecisionDiscrete(const flann::Matrix<float>& gt_dists, const flann
     std::sort(gt_sorted_dists.begin(), gt_sorted_dists.end());
     std::copy(dists[i], dists[i] + nn, sorted_dists.begin());
     std::sort(sorted_dists.begin(), sorted_dists.end());
-    std::vector<float>::iterator end = std::set_intersection(gt_sorted_dists.begin(), gt_sorted_dists.end(),
+    typename std::vector<T>::iterator end = std::set_intersection(gt_sorted_dists.begin(), gt_sorted_dists.end(),
                                                              sorted_dists.begin(), sorted_dists.end(),
                                                              intersection.begin());
     count += (end - intersection.begin());
@@ -597,11 +598,14 @@ TEST_F(Flann_3D, SavedTest2)
 class Flann_Brief100K_Test : public FLANNTestFixture
 {
 protected:
+  typedef flann::Hamming2<unsigned char> Distance;
+  typedef Distance::ElementType ElementType;
+  typedef Distance::ResultType DistanceType;
   flann::Matrix<unsigned char> data;
   flann::Matrix<unsigned char> query;
   flann::Matrix<int> match;
-  flann::Matrix<float> dists;
-  flann::Matrix<float> gt_dists;
+  flann::Matrix<DistanceType> dists;
+  flann::Matrix<DistanceType> gt_dists;
   flann::Matrix<int> indices;
   unsigned int k_nn_;
 
@@ -613,20 +617,20 @@ protected:
     flann::load_from_file(data, "brief100K.h5", "dataset");
     flann::load_from_file(query, "brief100K.h5", "query");
 
-    dists = flann::Matrix<float>(new float[query.rows * k_nn_], query.rows, k_nn_);
+    dists = flann::Matrix<DistanceType>(new DistanceType[query.rows * k_nn_], query.rows, k_nn_);
     indices = flann::Matrix<int>(new int[query.rows * k_nn_], query.rows, k_nn_);
 
     printf("done\n");
 
     // The matches are bogus so we compute them the hard way
-    flann::load_from_file(match,"brief100K.h5","indices");
+//    flann::load_from_file(match,"brief100K.h5","indices");
 
-    flann::Index<flann::Hamming<unsigned char> > index(data, flann::LinearIndexParams());
+    flann::Index<Distance> index(data, flann::LinearIndexParams());
     index.buildIndex();
 
     start_timer("Searching KNN for ground truth...");
     match = flann::Matrix<int>(new int[query.rows * k_nn_], query.rows, k_nn_);
-    gt_dists = flann::Matrix<float>(new float[query.rows * k_nn_], query.rows, k_nn_);
+    gt_dists = flann::Matrix<DistanceType>(new DistanceType[query.rows * k_nn_], query.rows, k_nn_);
     index.knnSearch(query, match, gt_dists, k_nn_, flann::SearchParams(-1));
     printf("done (%g seconds)\n", stop_timer());
   }
@@ -642,23 +646,70 @@ protected:
   }
 };
 
+TEST_F(Flann_Brief100K_Test, HierarchicalClusteringTest)
+{
+    flann::Index<Distance> index(data, flann::HierarchicalClusteringIndexParams());
+    start_timer("Building hierarchical clustering index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    index.save("hierarchical_clustering_brief.idx");
+
+    float precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+    EXPECT_GE(precision, 0.9);
+    printf("Precision: %g\n", precision);
+}
+
 TEST_F(Flann_Brief100K_Test, LshTest)
 {
-  flann::Index<flann::Hamming<unsigned char> > index(data, flann::LshIndexParams(12, 20, 2));
-  start_timer("Building LSH index...");
-  index.buildIndex();
-  printf("done (%g seconds)\n", stop_timer());
+    flann::Index<Distance> index(data, flann::LshIndexParams(12, 20, 2));
+    start_timer("Building LSH index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
 
-  start_timer("Searching KNN...");
-  index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1));
-  printf("done (%g seconds)\n", stop_timer());
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1));
+    printf("done (%g seconds)\n", stop_timer());
 
-  index.save("lsh_brief.idx");
+    index.save("lsh_brief.idx");
 
-  float precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
-  EXPECT_GE(precision, 0.9);
-  printf("Precision: %g\n", precision);
+    float precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+    EXPECT_GE(precision, 0.9);
+    printf("Precision: %g\n", precision);
 }
+
+TEST_F(Flann_Brief100K_Test, SavedTest)
+{
+    printf("Loading hierarchical clustering index\n");
+    flann::Index<Distance> index(data, flann::SavedIndexParams("hierarchical_clustering_brief.idx"));
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+
+    float precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+    EXPECT_GE(precision, 0.9);
+    printf("Precision: %g\n", precision);
+
+    printf("Loading lsh index\n");
+    flann::Index<Distance> index_lsh(data, flann::SavedIndexParams("lsh_brief.idx"));
+
+    start_timer("Searching KNN...");
+    index_lsh.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1));
+    printf("done (%g seconds)\n", stop_timer());
+
+
+    precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+    EXPECT_GE(precision, 0.9);
+    printf("Precision: %g\n", precision);
+
+}
+
 
 int main(int argc, char** argv)
 {

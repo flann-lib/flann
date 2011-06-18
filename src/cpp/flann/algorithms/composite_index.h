@@ -40,7 +40,7 @@ namespace flann
 {
 
 /**
- * (Deprecated) Index parameters for the CompositeIndex.
+ * Index parameters for the CompositeIndex.
  */
 struct CompositeIndexParams : public IndexParams
 {

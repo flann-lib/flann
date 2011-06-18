@@ -69,8 +69,8 @@ struct IndexHeader
     char version[16];
     flann_datatype_t data_type;
     flann_algorithm_t index_type;
-    int rows;
-    int cols;
+    size_t rows;
+    size_t cols;
 };
 
 /**

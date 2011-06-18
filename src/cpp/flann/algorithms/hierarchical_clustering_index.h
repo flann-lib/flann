@@ -278,7 +278,7 @@ public:
         veclen_ = dataset.cols;
         
         branching_ = get_param(params,"branching",32);
-        centers_init_ = get_param<flann_centers_init_t>(params,"centers_init");
+        centers_init_ = get_param(params,"centers_init", FLANN_CENTERS_RANDOM);
         trees_ = get_param(params,"trees",4);
         leaf_size_ = get_param(params,"leaf_size",100);
 
@@ -347,9 +347,6 @@ public:
         if (branching_<2) {
             throw FLANNException("Branching factor must be at least 2");
         }
-
-        printf("Leaf size: %d\n", leaf_size_);
-
         for (int i=0; i<trees_; ++i) {
             indices[i] = new int[size_];
             for (size_t j=0; j<size_; ++j) {
