@@ -74,27 +74,24 @@ public:
         assert(int(indices.cols) >= knn);
         assert(int(dists.cols) >= knn);
 
-    #if 1
+#if 0
         KNNResultSet<DistanceType> resultSet(knn);
         for (size_t i = 0; i < queries.rows; i++) {
-            resultSet.init(indices[i], dists[i]);
-            findNeighbors(resultSet, queries[i], params);
+        	resultSet.init(indices[i], dists[i]);
+        	findNeighbors(resultSet, queries[i], params);
         }
-    #else
+#else
+        KNNUniqueResultSet<DistanceType> resultSet(knn);
+        for (size_t i = 0; i < queries.rows; i++)
         {
-          KNNUniqueResultSet<DistanceType> resultSet(knn);
-          for (size_t i = 0; i < queries.rows; i++)
-          {
-            resultSet.clear();
-            nnIndex->findNeighbors(resultSet, queries[i], params);
-            if (get_param(searchParams,"sorted",true))
-              resultSet.sortAndCopy(indices[i], dists[i], knn);
-            else
-              resultSet.copy(indices[i], dists[i], knn);
-          }
+        	resultSet.clear();
+        	findNeighbors(resultSet, queries[i], params);
+        	if (get_param(params,"sorted",true))
+        		resultSet.sortAndCopy(indices[i], dists[i], knn);
+        	else
+        		resultSet.copy(indices[i], dists[i], knn);
         }
-    #endif
-
+#endif
     }
 
     /**
@@ -174,6 +171,7 @@ public:
      */
     virtual IndexParams getParameters() const = 0;
     
+
     /**
      * \brief Method that searches for nearest-neighbours
      */

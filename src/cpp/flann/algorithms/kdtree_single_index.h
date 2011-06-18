@@ -197,6 +197,35 @@ public:
         return pool_.usedMemory+pool_.wastedMemory+dataset_.rows*sizeof(int);  // pool memory and vind array memory
     }
 
+
+    /**
+     * \brief Perform k-nearest neighbor search
+     * \param[in] queries The query points for which to find the nearest neighbors
+     * \param[out] indices The indices of the nearest neighbors found
+     * \param[out] dists Distances to the nearest neighbors found
+     * \param[in] knn Number of nearest neighbors to return
+     * \param[in] params Search parameters
+     */
+    void knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, int knn, const SearchParams& params)
+    {
+        assert(queries.cols == veclen());
+        assert(indices.rows >= queries.rows);
+        assert(dists.rows >= queries.rows);
+        assert(int(indices.cols) >= knn);
+        assert(int(dists.cols) >= knn);
+
+        KNNSimpleResultSet<DistanceType> resultSet(knn);
+        for (size_t i = 0; i < queries.rows; i++) {
+        	resultSet.init(indices[i], dists[i]);
+        	findNeighbors(resultSet, queries[i], params);
+        }
+    }
+
+    IndexParams getParameters() const
+    {
+        return index_params_;
+    }
+
     /**
      * Find set of nearest neighbors to vec. Their indices are stored inside
      * the result object.
@@ -213,11 +242,6 @@ public:
         std::vector<DistanceType> dists(dim_,0);
         DistanceType distsq = computeInitialDistances(vec, dists);
         searchLevel(result, vec, root_node_, distsq, dists, epsError);
-    }
-
-    IndexParams getParameters() const
-    {
-        return index_params_;
     }
 
 private:

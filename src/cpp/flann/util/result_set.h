@@ -76,6 +76,78 @@ public:
 
 };
 
+/**
+ * KNNSimpleResultSet does not ensure that the element it holds are unique.
+ * Is used in those cases where the nearest neighbour algorithm used does not
+ * attempt to insert the same element multiple times.
+ */
+template <typename DistanceType>
+class KNNSimpleResultSet : public ResultSet<DistanceType>
+{
+    int* indices;
+    DistanceType* dists;
+    int capacity;
+    int count;
+    DistanceType worst_distance_;
+
+public:
+    KNNSimpleResultSet(int capacity_) : capacity(capacity_), count(0)
+    {
+    }
+
+    void init(int* indices_, DistanceType* dists_)
+    {
+        indices = indices_;
+        dists = dists_;
+        count = 0;
+        worst_distance_ = (std::numeric_limits<DistanceType>::max)();
+        dists[capacity-1] = worst_distance_;
+    }
+
+    size_t size() const
+    {
+        return count;
+    }
+
+    bool full() const
+    {
+        return count == capacity;
+    }
+
+
+    void addPoint(DistanceType dist, int index)
+    {
+        if (dist >= worst_distance_) return;
+        int i;
+        for (i=count; i>0; --i) {
+#ifdef FLANN_FIRST_MATCH
+            if ( (dists[i-1]>dist) || ((dist==dists[i-1])&&(indices[i-1]>index)) )
+#else
+            if (dists[i-1]>dist)
+#endif
+            {
+                if (i<capacity) {
+                    dists[i] = dists[i-1];
+                    indices[i] = indices[i-1];
+                }
+            }
+            else break;
+        }
+        if (count < capacity) ++count;
+        dists[i] = dist;
+        indices[i] = index;
+        worst_distance_ = dists[capacity-1];
+    }
+
+    DistanceType worstDist() const
+    {
+        return worst_distance_;
+    }
+};
+
+/**
+ * K-Nearest neighbour result set. Ensures that the elements inserted are unique
+ */
 template <typename DistanceType>
 class KNNResultSet : public ResultSet<DistanceType>
 {
@@ -116,25 +188,29 @@ public:
         int i;
         for (i = count; i > 0; --i) {
 #ifdef FLANN_FIRST_MATCH
-            if ( (dists[i-1]>dist) || ((dist==dists[i-1])&&(indices[i-1]>index)) )
+            if ( (dists[i-1]<=dist) && ((dist!=dists[i-1])||(indices[i-1]<=index)) )
 #else
-            if (dists[i-1]>dist)
+            if (dists[i-1]<=dist)
 #endif
-			{
-				dists[i] = dists[i-1];
-                indices[i] = indices[i-1];
-			}
-            else {
-                // Check for duplicate indices
-                int j = i - 1;
-                while ((j >= 0) && (dists[j] == dist)) {
-                    if (indices[j] == index) return;
-                    --j;
-                }
-                break;
+            {
+            	// Check for duplicate indices
+            	int j = i - 1;
+            	while ((j >= 0) && (dists[j] == dist))
+            	{
+            		if (indices[j] == index) {
+            			return;
+            		}
+            		--j;
+            	}
+            	break;
             }
         }
+
         if (count < capacity) ++count;
+        for (int j = count-1; j > i; --j) {
+        	dists[j] = dists[j-1];
+        	indices[j] = indices[j-1];
+        }
         dists[i] = dist;
         indices[i] = index;
         worst_distance_ = dists[capacity-1];
@@ -145,8 +221,6 @@ public:
         return worst_distance_;
     }
 };
-
-
 
 
 /**
@@ -216,7 +290,6 @@ class UniqueResultSet : public ResultSet<DistanceType>
 public:
     struct DistIndex
     {
-public:
         DistIndex(float dist, unsigned int index) :
             dist_(dist), index_(index)
         {
