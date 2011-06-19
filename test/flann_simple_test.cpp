@@ -547,6 +547,28 @@ TEST_F(Flann_3D, KDTreeSingleTest)
     printf("Precision: %g\n", precision);
 }
 
+TEST_F(Flann_3D, KDTreeSingleTest_Padded)
+{
+    flann::Matrix<float> data_padded;
+    flann::load_from_file(data_padded, "cloud.h5", "dataset_padded");
+    flann::Matrix<float> data2(data_padded.data, data_padded.rows, 3, data_padded.cols);
+
+    flann::Index<L2_Simple<float> > index(data2, flann::KDTreeSingleIndexParams(12, false));
+    start_timer("Building kd-tree index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(-1) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    EXPECT_GE(precision, 0.99);
+    printf("Precision: %g\n", precision);
+
+    data_padded.free();
+}
+
 TEST_F(Flann_3D, SavedTest)
 {
     printf("Loading kdtree index\n");

@@ -39,6 +39,7 @@
 #include "flann/flann.h"
 #include "flann/general.h"
 #include "flann/util/matrix.h"
+#include "flann/util/params.h"
 #include "flann/util/saving.h"
 
 #include "flann/algorithms/all_indices.h"

@@ -98,13 +98,16 @@ public:
         bestParams_ = estimateBuildParams();
         Logger::info("----------------------------------------------------\n");
         Logger::info("Autotuned parameters:\n");
-        Logger::info("FIXME: print parameters\n");
-        //bestParams->print();
+        print_params(bestParams_);
         Logger::info("----------------------------------------------------\n");
 
         bestIndex_ = create_index_by_type(dataset_, bestParams_, distance_);
         bestIndex_->buildIndex();
         speedup_ = estimateSearchParams(bestSearchParams_);
+        Logger::info("----------------------------------------------------\n");
+        Logger::info("Search parameters:\n");
+        print_params(bestSearchParams_);
+        Logger::info("----------------------------------------------------\n");
     }
 
     /**
@@ -316,12 +319,12 @@ private:
         int maxIterations[] = { 1, 5, 10, 15 };
         int branchingFactors[] = { 16, 32, 64, 128, 256 };
 
-        int kmeansParamSpaceSize = ARRAY_LEN(maxIterations) * ARRAY_LEN(branchingFactors);
+        int kmeansParamSpaceSize = FLANN_ARRAY_LEN(maxIterations) * FLANN_ARRAY_LEN(branchingFactors);
         costs.reserve(costs.size() + kmeansParamSpaceSize);
 
         // evaluate kmeans for all parameter combinations
-        for (size_t i = 0; i < ARRAY_LEN(maxIterations); ++i) {
-            for (size_t j = 0; j < ARRAY_LEN(branchingFactors); ++j) {
+        for (size_t i = 0; i < FLANN_ARRAY_LEN(maxIterations); ++i) {
+            for (size_t j = 0; j < FLANN_ARRAY_LEN(branchingFactors); ++j) {
                 CostData cost;
                 cost.params["algorithm"] = FLANN_INDEX_KMEANS;
                 cost.params["centers_init"] = FLANN_CENTERS_RANDOM;
@@ -364,7 +367,7 @@ private:
         int testTrees[] = { 1, 4, 8, 16, 32 };
 
         // evaluate kdtree for all parameter combinations
-        for (size_t i = 0; i < ARRAY_LEN(testTrees); ++i) {
+        for (size_t i = 0; i < FLANN_ARRAY_LEN(testTrees); ++i) {
             CostData cost;
             cost.params["trees"] = testTrees[i];
 

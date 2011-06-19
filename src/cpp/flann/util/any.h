@@ -11,6 +11,7 @@
  */
 
 #include <stdexcept>
+#include <ostream>
 
 namespace cdiggins
 {
@@ -34,12 +35,14 @@ struct base_any_policy
     virtual void move(void* const* src, void** dest) = 0;
     virtual void* get_value(void** src) = 0;
     virtual size_t get_size() = 0;
+    virtual void print(std::ostream& out, void* const* src) = 0;
 };
 
 template<typename T>
 struct typed_base_any_policy : base_any_policy
 {
     virtual size_t get_size() { return sizeof(T); }
+
 };
 
 template<typename T>
@@ -53,6 +56,7 @@ struct small_any_policy : typed_base_any_policy<T>
     virtual void clone(void* const* src, void** dest) { *dest = *src; }
     virtual void move(void* const* src, void** dest) { *dest = *src; }
     virtual void* get_value(void** src) { return reinterpret_cast<void*>(src); }
+    virtual void print(std::ostream& out, void* const* src) { out << *reinterpret_cast<T const*>(src); };
 };
 
 template<typename T>
@@ -76,6 +80,7 @@ struct big_any_policy : typed_base_any_policy<T>
         **reinterpret_cast<T**>(dest) = **reinterpret_cast<T* const*>(src);
     }
     virtual void* get_value(void** src) { return *src; }
+    virtual void print(std::ostream& out, void* const* src) { out << *reinterpret_cast<T const*>(*src); };
 };
 
 template<typename T>
@@ -251,7 +256,16 @@ public:
     {
     	return policy == anyimpl::get_policy<T>();
     }
+
+    friend std::ostream& operator <<(std::ostream& out, const any& any_val);
 };
+
+inline std::ostream& operator <<(std::ostream& out, const any& any_val)
+{
+	any_val.policy->print(out,&any_val.object);
+	return out;
+}
+
 }
 
 #endif // ANY_HPP

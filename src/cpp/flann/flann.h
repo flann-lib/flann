@@ -31,13 +31,48 @@
 #ifndef FLANN_H
 #define FLANN_H
 
-
-#include "flann/general.h"
+#include "defines.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+
+struct FLANNParameters
+{
+    enum flann_algorithm_t algorithm; /* the algorithm to use */
+
+    /* search time parameters */
+    int checks;                /* how many leafs (features) to check in one search */
+    float cb_index;            /* cluster boundary index. Used when searching the kmeans tree */
+    float eps;     /* eps parameter for eps-knn search */
+
+    /*  kdtree index parameters */
+    int trees;                 /* number of randomized trees to use (for kdtree) */
+    int leaf_max_size;
+
+    /* kmeans index parameters */
+    int branching;             /* branching factor (for kmeans tree) */
+    int iterations;            /* max iterations to perform in one kmeans cluetering (kmeans tree) */
+    enum flann_centers_init_t centers_init;  /* algorithm used for picking the initial cluster centers for kmeans tree */
+
+    /* autotuned index parameters */
+    float target_precision;    /* precision desired (used for autotuning, -1 otherwise) */
+    float build_weight;        /* build tree time weighting factor */
+    float memory_weight;       /* index memory weigthing factor */
+    float sample_fraction;     /* what fraction of the dataset to use for autotuning */
+
+    /* LSH parameters */
+    unsigned int table_number_; /** The number of hash tables to use */
+    unsigned int key_size_;     /** The length of the key in the hash tables */
+    unsigned int multi_probe_level_; /** Number of levels to use in multi-probe LSH, 0 for standard LSH */
+
+    /* other parameters */
+    enum flann_log_level_t log_level;    /* determines the verbosity of each flann function */
+    long random_seed;            /* random seed to use */
+};
+
 
 typedef void* FLANN_INDEX; /* deprecated */
 typedef void* flann_index_t;

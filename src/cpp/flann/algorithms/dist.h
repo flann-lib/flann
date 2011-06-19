@@ -71,10 +71,6 @@ struct Accumulator<short>  { typedef float Type; };
 template<>
 struct Accumulator<int> { typedef float Type; };
 
-// Forward declaration
-template<typename ElementType>
-  class ZeroIterator;
-
 
 class True {};
 
@@ -385,7 +381,7 @@ struct HammingLUT
 	}
 
 
-	/** \brief given a byte, count the bits using a compile time generated look up table
+	/** \brief given a byte, count the bits using a look up table
 	 *  \param b the byte to count bits.  The look up table has an entry for all
 	 *  values of b, where that entry is the number of bits.
 	 *  \return the number of bits in byte b
