@@ -36,7 +36,6 @@
 #include <cassert>
 #include <cstdio>
 
-#include "flann/flann.h"
 #include "flann/general.h"
 #include "flann/util/matrix.h"
 #include "flann/util/params.h"

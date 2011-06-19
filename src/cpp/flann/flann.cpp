@@ -26,8 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-// include flann_cpp stuff
-#include "flann_cpp.cpp"
+#include "flann.h"
 
 #define FLANN_FIRST_MATCH
 
