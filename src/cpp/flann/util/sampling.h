@@ -27,8 +27,8 @@
  *************************************************************************/
 
 
-#ifndef SAMPLING_H_
-#define SAMPLING_H_
+#ifndef FLANN_SAMPLING_H_
+#define FLANN_SAMPLING_H_
 
 #include "flann/util/matrix.h"
 #include "flann/util/random.h"
@@ -77,4 +77,5 @@ Matrix<T> random_sample(const Matrix<T>& srcMatrix, size_t size)
 
 } // namespace
 
-#endif /* SAMPLING_H_ */
+
+#endif /* FLANN_SAMPLING_H_ */

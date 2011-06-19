@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef FLANN_TIMER_H
+#define FLANN_TIMER_H
 
 #include <time.h>
 
@@ -90,4 +90,4 @@ public:
 
 }
 
-#endif // TIMER_H
+#endif // FLANN_TIMER_H

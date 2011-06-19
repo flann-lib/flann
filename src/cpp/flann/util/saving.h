@@ -26,8 +26,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef SAVING_H_
-#define SAVING_H_
+#ifndef FLANN_SAVING_H_
+#define FLANN_SAVING_H_
 
 #include <cstring>
 #include <vector>
@@ -120,13 +120,13 @@ inline IndexHeader load_header(FILE* stream)
 
 
 template<typename T>
-void save_value(FILE* stream, const T& value, int count = 1)
+void save_value(FILE* stream, const T& value, size_t count = 1)
 {
     fwrite(&value, sizeof(value),count, stream);
 }
 
 template<typename T>
-void save_value(FILE* stream, const flann::Matrix<T>& value, int count = 1)
+void save_value(FILE* stream, const flann::Matrix<T>& value)
 {
     fwrite(&value, sizeof(value),1, stream);
     fwrite(value.data, sizeof(T),value.rows*value.cols, stream);
@@ -141,9 +141,9 @@ void save_value(FILE* stream, const std::vector<T>& value)
 }
 
 template<typename T>
-void load_value(FILE* stream, T& value, int count = 1)
+void load_value(FILE* stream, T& value, size_t count = 1)
 {
-    int read_cnt = fread(&value, sizeof(value), count, stream);
+    size_t read_cnt = fread(&value, sizeof(value), count, stream);
     if (read_cnt != count) {
         throw FLANNException("Cannot read from file");
     }
@@ -152,7 +152,7 @@ void load_value(FILE* stream, T& value, int count = 1)
 template<typename T>
 void load_value(FILE* stream, flann::Matrix<T>& value)
 {
-    int read_cnt = fread(&value, sizeof(value), 1, stream);
+	size_t read_cnt = fread(&value, sizeof(value), 1, stream);
     if (read_cnt != 1) {
         throw FLANNException("Cannot read from file");
     }
@@ -168,7 +168,7 @@ template<typename T>
 void load_value(FILE* stream, std::vector<T>& value)
 {
     size_t size;
-    int read_cnt = fread(&size, sizeof(size_t), 1, stream);
+    size_t read_cnt = fread(&size, sizeof(size_t), 1, stream);
     if (read_cnt!=1) {
         throw FLANNException("Cannot read from file");
     }
@@ -181,4 +181,4 @@ void load_value(FILE* stream, std::vector<T>& value)
 
 }
 
-#endif /* SAVING_H_ */
+#endif /* FLANN_SAVING_H_ */

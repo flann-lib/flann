@@ -28,13 +28,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef FLANN_LOGGER_H
+#define FLANN_LOGGER_H
 
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "flann/general.h"
+#include "flann/defines.h"
 
 
 namespace flann
@@ -126,4 +126,4 @@ private:
 
 }
 
-#endif //LOGGER_H
+#endif //FLANN_LOGGER_H

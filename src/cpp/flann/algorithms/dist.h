@@ -28,14 +28,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef DIST_H
-#define DIST_H
+#ifndef FLANN_DIST_H_
+#define FLANN_DIST_H_
 
 #include <cmath>
 #include <cstdlib>
 #include <string.h>
 
 #include "flann/general.h"
+
 
 namespace flann
 {
@@ -93,7 +94,7 @@ struct L2_Simple
     typedef typename Accumulator<T>::Type ResultType;
 
     template <typename Iterator1, typename Iterator2>
-    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType worst_dist = -1) const
+    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
     {
         ResultType result = ResultType();
         ResultType diff;
@@ -105,7 +106,7 @@ struct L2_Simple
     }
 
     template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int dim) const
+    inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         return (a-b)*(a-b);
     }
@@ -171,7 +172,7 @@ struct L2
      *	Squared root is omitted for efficiency.
      */
     template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int dim) const
+    inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         return (a-b)*(a-b);
     }
@@ -230,7 +231,7 @@ struct L1
      * Partial distance, used by the kd-tree.
      */
     template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int dim) const
+    inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         return abs(a-b);
     }
@@ -294,7 +295,7 @@ struct MinkowskiDistance
      * Partial distance, used by the kd-tree.
      */
     template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int dim) const
+    inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         return pow(static_cast<ResultType>(abs(a-b)),order);
     }
@@ -473,7 +474,7 @@ template<class T>
     typedef int ResultType;
 
     template<typename Iterator1, typename Iterator2>
-      ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType worst_dist = -1) const
+      ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
       {
         ResultType result = 0;
 #if __GNUC__
@@ -545,7 +546,7 @@ struct Hamming2
     }
 
     template <typename Iterator1, typename Iterator2>
-    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType worst_dist = -1) const
+    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
     {
     	size_t i;
     	const unsigned int* pa = reinterpret_cast<const unsigned int*>(a);
@@ -610,7 +611,7 @@ struct HistIntersectionDistance
      * Partial distance, used by the kd-tree.
      */
     template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int dim) const
+    inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         return a<b ? a : b;
     }
@@ -631,7 +632,7 @@ struct HellingerDistance
      *  Compute the histogram intersection distance
      */
     template <typename Iterator1, typename Iterator2>
-    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType worst_dist = -1) const
+    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
     {
         ResultType result = ResultType();
         ResultType diff0, diff1, diff2, diff3;
@@ -659,7 +660,7 @@ struct HellingerDistance
      * Partial distance, used by the kd-tree.
      */
     template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int dim) const
+    inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         return sqrt(static_cast<ResultType>(a)) - sqrt(static_cast<ResultType>(b));
     }
@@ -705,7 +706,7 @@ struct ChiSquareDistance
      * Partial distance, used by the kd-tree.
      */
     template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int dim) const
+    inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         ResultType result = ResultType();
         ResultType sum, diff;
@@ -759,7 +760,7 @@ struct KL_Divergence
      * Partial distance, used by the kd-tree.
      */
     template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int dim) const
+    inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         ResultType result = ResultType();
         ResultType ratio = a / b;
@@ -788,7 +789,7 @@ struct ZeroIterator
         return 0;
     }
 
-    T operator[](int index)
+    T operator[](int)
     {
         return 0;
     }
@@ -812,4 +813,4 @@ struct ZeroIterator
 
 }
 
-#endif //DIST_H
+#endif //FLANN_DIST_H_

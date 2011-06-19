@@ -27,8 +27,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
-#ifndef AUTOTUNEDINDEX_H_
-#define AUTOTUNEDINDEX_H_
+#ifndef FLANN_AUTOTUNED_INDEX_H_
+#define FLANN_AUTOTUNED_INDEX_H_
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
@@ -40,6 +40,7 @@
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
+#include "flann/util/logger.h"
 
 namespace flann
 {
@@ -225,12 +226,12 @@ private:
         t.start();
         kmeans.buildIndex();
         t.stop();
-        float buildTime = t.value;
+        float buildTime = (float)t.value;
 
         // measure search time
-        float searchTime = test_index_precision(kmeans, sampledDataset_, testDataset_, gt_matches, target_precision_, checks, distance_, nn);
+        float searchTime = test_index_precision(kmeans, sampledDataset_, testDataset_, gt_matches_, target_precision_, checks, distance_, nn);
 
-        float datasetMemory = sampledDataset_.rows * sampledDataset_.cols * sizeof(float);
+        float datasetMemory = float(sampledDataset_.rows * sampledDataset_.cols * sizeof(float));
         cost.memoryCost = (kmeans.usedMemory() + datasetMemory) / datasetMemory;
         cost.searchTimeCost = searchTime;
         cost.buildTimeCost = buildTime;
@@ -250,12 +251,12 @@ private:
         t.start();
         kdtree.buildIndex();
         t.stop();
-        float buildTime = t.value;
+        float buildTime = (float)t.value;
 
         //measure search time
-        float searchTime = test_index_precision(kdtree, sampledDataset_, testDataset_, gt_matches, target_precision_, checks, distance_, nn);
+        float searchTime = test_index_precision(kdtree, sampledDataset_, testDataset_, gt_matches_, target_precision_, checks, distance_, nn);
 
-        float datasetMemory = sampledDataset_.rows * sampledDataset_.cols * sizeof(float);
+        float datasetMemory = float(sampledDataset_.rows * sampledDataset_.cols * sizeof(float));
         cost.memoryCost = (kdtree.usedMemory() + datasetMemory) / datasetMemory;
         cost.searchTimeCost = searchTime;
         cost.buildTimeCost = buildTime;
@@ -423,14 +424,14 @@ private:
 
         // We compute the ground truth using linear search
         Logger::info("Computing ground truth... \n");
-        gt_matches = Matrix<int>(new int[testDataset_.rows], testDataset_.rows, 1);
+        gt_matches_ = Matrix<int>(new int[testDataset_.rows], testDataset_.rows, 1);
         StartStopTimer t;
         t.start();
-        compute_ground_truth<Distance>(sampledDataset_, testDataset_, gt_matches, 0, distance_);
+        compute_ground_truth<Distance>(sampledDataset_, testDataset_, gt_matches_, 0, distance_);
         t.stop();
 
         CostData linear_cost;
-        linear_cost.searchTimeCost = t.value;
+        linear_cost.searchTimeCost = (float)t.value;
         linear_cost.buildTimeCost = 0;
         linear_cost.memoryCost = 0;
         linear_cost.params["algorithm"] = FLANN_INDEX_LINEAR;
@@ -464,9 +465,9 @@ private:
             }
         }
         
-        gt_matches.free();
-        testDataset_.free();
-        sampledDataset_.free();
+        delete[] gt_matches_.data;
+        delete[] testDataset_.data;
+        delete[] sampledDataset_.data;
 
         return bestParams;
     }
@@ -487,7 +488,7 @@ private:
 
         float speedup = 0;
 
-        int samples = std::min(dataset_.rows / 10, SAMPLE_COUNT);
+        int samples = (int)std::min(dataset_.rows / 10, SAMPLE_COUNT);
         if (samples > 0) {
             Matrix<ElementType> testDataset = random_sample(dataset_, samples);
 
@@ -499,7 +500,7 @@ private:
             t.start();
             compute_ground_truth<Distance>(dataset_, testDataset, gt_matches, 1, distance_);
             t.stop();
-            float linear = t.value;
+            float linear = (float)t.value;
 
             int checks;
             Logger::info("Estimating number of checks\n");
@@ -512,7 +513,7 @@ private:
                 float bestSearchTime = -1;
                 float best_cb_index = -1;
                 int best_checks = -1;
-                for (cb_index = 0; cb_index < 1.1; cb_index += 0.2) {
+                for (cb_index = 0; cb_index < 1.1f; cb_index += 0.2f) {
                     kmeans->set_cb_index(cb_index);
                     searchTime = test_index_precision(*kmeans, dataset_, testDataset, gt_matches, target_precision_, checks, distance_, nn, 1);
                     if ((searchTime < bestSearchTime) || (bestSearchTime == -1)) {
@@ -538,8 +539,8 @@ private:
 
             speedup = linear / searchTime;
 
-            gt_matches.free();
-            testDataset.free();
+            delete[] gt_matches.data;
+            delete[] testDataset.data;
         }
 
         return speedup;
@@ -553,7 +554,7 @@ private:
 
     Matrix<ElementType> sampledDataset_;
     Matrix<ElementType> testDataset_;
-    Matrix<int> gt_matches;
+    Matrix<int> gt_matches_;
 
     float speedup_;
 
@@ -576,4 +577,4 @@ private:
 };
 }
 
-#endif /* AUTOTUNEDINDEX_H_ */
+#endif /* FLANN_AUTOTUNED_INDEX_H_ */

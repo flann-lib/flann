@@ -1,5 +1,5 @@
-#ifndef ANY_HPP
-#define ANY_HPP
+#ifndef FLANN_ANY_H_
+#define FLANN_ANY_H_
 /*
  * (C) Copyright Christopher Diggins 2005-2011
  * (C) Copyright Pablo Aguilar 2005
@@ -8,7 +8,11 @@
  * Distributed under the Boost Software License, Version 1.0. (See
  * accompanying file LICENSE_1_0.txt or copy at
  * http://www.boost.org/LICENSE_1_0.txt
+ *
+ * Adapted for FLANN by Marius Muja
  */
+
+
 
 #include <stdexcept>
 #include <ostream>
@@ -48,7 +52,7 @@ struct typed_base_any_policy : base_any_policy
 template<typename T>
 struct small_any_policy : typed_base_any_policy<T>
 {
-    virtual void static_delete(void** x) { }
+    virtual void static_delete(void**) { }
     virtual void copy_from_value(void const* src, void** dest)
     { 
         new (dest) T(* reinterpret_cast<T const*>(src)); 
@@ -268,4 +272,4 @@ inline std::ostream& operator <<(std::ostream& out, const any& any_val)
 
 }
 
-#endif // ANY_HPP
+#endif // FLANN_ANY_H_

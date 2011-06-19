@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef KDTREESINGLE_H
-#define KDTREESINGLE_H
+#ifndef FLANN_KDTREE_SINGLE_INDEX_H_
+#define FLANN_KDTREE_SINGLE_INDEX_H_
 
 #include <algorithm>
 #include <map>
@@ -104,7 +104,7 @@ public:
      */
     ~KDTreeSingleIndex()
     {
-        if (reorder_) data_.free();
+        if (reorder_) delete[] data_.data;
     }
 
     /**
@@ -116,7 +116,7 @@ public:
         root_node_ = divideTree(0, size_, root_bbox_ );   // construct the tree
 
         if (reorder_) {
-            data_.free();
+            delete[] data_.data;
             data_ = flann::Matrix<ElementType>(new ElementType[size_*dim_], size_, dim_);
             for (size_t i=0; i<size_; ++i) {
                 for (size_t j=0; j<dim_; ++j) {
@@ -449,7 +449,7 @@ private:
 
     void middleSplit_(int* ind, int count, int& index, int& cutfeat, DistanceType& cutval, const BoundingBox& bbox)
     {
-        const float EPS=0.00001;
+        const float EPS=0.00001f;
         ElementType max_span = bbox[0].high-bbox[0].low;
         for (size_t i=1;i<dim_;++i) {
             ElementType span = bbox[i].high-bbox[i].low;
@@ -461,7 +461,7 @@ private:
         cutfeat = 0;
         for (size_t i=0;i<dim_;++i) {
             ElementType span = bbox[i].high-bbox[i].low;
-            if (span>(1-EPS)*max_span) {
+            if (span>(ElementType)((1-EPS)*max_span)) {
                 ElementType min_elem, max_elem;
                 computeMinMax(ind, count, cutfeat, min_elem, max_elem);
                 ElementType spread = max_elem-min_elem;;
@@ -636,4 +636,4 @@ private:
 
 }
 
-#endif //KDTREESINGLE_H
+#endif //FLANN_KDTREE_SINGLE_INDEX_H_

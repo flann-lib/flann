@@ -32,8 +32,8 @@
  * Author: Vincent Rabaud
  *************************************************************************/
 
-#ifndef LSH_INDEX_H_
-#define LSH_INDEX_H_
+#ifndef FLANN_LSH_INDEX_H_
+#define FLANN_LSH_INDEX_H_
 
 #include <algorithm>
 #include <cassert>
@@ -213,7 +213,7 @@ public:
 	 *     vec = the vector for which to search the nearest neighbors
 	 *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
 	 */
-	void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+	void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& /*searchParams*/)
 	{
 		getNeighbors(vec, result);
 	}
@@ -404,4 +404,4 @@ private:
 };
 }
 
-#endif //LSH_INDEX_H_
+#endif //FLANN_LSH_INDEX_H_

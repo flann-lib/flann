@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef LINEARSEARCH_H
-#define LINEARSEARCH_H
+#ifndef FLANN_LINEAR_INDEX_H_
+#define FLANN_LINEAR_INDEX_H_
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
@@ -87,20 +87,20 @@ public:
         /* nothing to do here for linear search */
     }
 
-    void saveIndex(FILE* stream)
+    void saveIndex(FILE*)
     {
         /* nothing to do here for linear search */
     }
 
 
-    void loadIndex(FILE* stream)
+    void loadIndex(FILE*)
     {
         /* nothing to do here for linear search */
 
     	index_params_["algorithm"] = getType();
     }
 
-    void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/)
     {
       ElementType * data = dataset_.data;
       for (size_t i = 0; i < dataset_.rows; ++i, data += dataset_.cols)
@@ -127,4 +127,4 @@ private:
 
 }
 
-#endif // LINEARSEARCH_H
+#endif // FLANN_LINEAR_INDEX_H_

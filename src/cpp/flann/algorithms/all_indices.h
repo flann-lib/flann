@@ -27,8 +27,8 @@
  *************************************************************************/
 
 
-#ifndef ALL_INDICES_H_
-#define ALL_INDICES_H_
+#ifndef FLANN_ALL_INDICES_H_
+#define FLANN_ALL_INDICES_H_
 
 #include "flann/general.h"
 
@@ -152,4 +152,4 @@ NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementT
 
 }
 
-#endif /* ALL_INDICES_H_ */
+#endif /* FLANN_ALL_INDICES_H_ */

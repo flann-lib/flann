@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef NNINDEX_H
-#define NNINDEX_H
+#ifndef FLANN_NNINDEX_H
+#define FLANN_NNINDEX_H
 
 #include <string>
 
@@ -180,4 +180,4 @@ public:
 
 }
 
-#endif //NNINDEX_H
+#endif //FLANN_NNINDEX_H

@@ -81,10 +81,10 @@ int main(int argc, char** argv)
     	float precision = compute_precision(match, indices);
     	printf("Precision is: %g\n", precision);
     }
-    query.free();
-    indices.free();
-    dists.free();
-    match.free();
+    delete[] query.data;
+    delete[] indices.data;
+    delete[] dists.data;
+    delete[] match.data;
     
     return 0;
 }

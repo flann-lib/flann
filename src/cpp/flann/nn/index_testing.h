@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef TESTING_H
-#define TESTING_H
+#ifndef FLANN_INDEX_TESTING_H_
+#define FLANN_INDEX_TESTING_H_
 
 #include <cstring>
 #include <cassert>
@@ -102,8 +102,8 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
     DistanceType* dists = new DistanceType[nn+skipMatches];
     int* neighbors = indices + skipMatches;
 
-    int correct;
-    DistanceType distR;
+    int correct = 0;
+    DistanceType distR = 0;
     StartStopTimer t;
     int repeats = 0;
     while (t.value<0.2) {
@@ -120,7 +120,7 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
         }
         t.stop();
     }
-    time = t.value/repeats;
+    time = float(t.value/repeats);
 
     delete[] indices;
     delete[] dists;
@@ -159,7 +159,7 @@ float test_index_precision(NNIndex<Distance>& index, const Matrix<typename Dista
                            float precision, int& checks, const Distance& distance, int nn = 1, int skipMatches = 0)
 {
     typedef typename Distance::ResultType DistanceType;
-    const float SEARCH_EPS = 0.001;
+    const float SEARCH_EPS = 0.001f;
 
     Logger::info("  Nodes  Precision(%)   Time(s)   Time/vec(ms)  Mean dist\n");
     Logger::info("---------------------------------------------------------\n");
@@ -318,4 +318,4 @@ void test_index_precisions(NNIndex<Distance>& index, const Matrix<typename Dista
 
 }
 
-#endif //TESTING_H
+#endif //FLANN_INDEX_TESTING_H_

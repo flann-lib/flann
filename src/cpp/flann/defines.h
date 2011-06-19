@@ -27,8 +27,8 @@
  *************************************************************************/
 
 
-#ifndef DEFINES_H_
-#define DEFINES_H_
+#ifndef FLANN_DEFINES_H_
+#define FLANN_DEFINES_H_
 
 #include "config.h"
 
@@ -48,19 +48,15 @@
 
 
 #ifdef __GNUC__
-#define DEPRECATED __attribute__ ((deprecated))
+#define FLANN_DEPRECATED __attribute__ ((deprecated))
 #elif defined(_MSC_VER)
-#define DEPRECATED  __declspec(deprecated)
+#define FLANN_DEPRECATED
 #else
-#pragma message("WARNING: You need to implement DEPRECATED for this compiler")
-#define DEPRECATED
+#pragma message("WARNING: You need to implement FLANN_DEPRECATED for this compiler")
+#define FLANN_DEPRECATED
 #endif
 
-#ifdef ARRAY_LEN
-#undef ARRAY_LEN
-#endif
 #define FLANN_ARRAY_LEN(a) (sizeof(a)/sizeof(a[0]))
-
 
 /* Nearest neighbour index algorithms */
 enum flann_algorithm_t
@@ -153,4 +149,4 @@ const int FLANN_CHECKS_UNLIMITED = -1;
 const int FLANN_CHECKS_AUTOTUNED = -2;
 
 
-#endif /* DEFINES_H_ */
+#endif /* FLANN_DEFINES_H_ */

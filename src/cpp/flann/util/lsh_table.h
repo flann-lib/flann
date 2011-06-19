@@ -32,8 +32,8 @@
  * Author: Vincent Rabaud
  *************************************************************************/
 
-#ifndef LSH_TABLE_H_
-#define LSH_TABLE_H_
+#ifndef FLANN_LSH_TABLE_H_
+#define FLANN_LSH_TABLE_H_
 
 #include <algorithm>
 #include <iostream>
@@ -149,7 +149,7 @@ template<typename ElementType>
      * @param feature_size is the size of the feature (considered as a ElementType[])
      * @param key_size is the number of bits that are turned on in the feature
      */
-    LshTable(unsigned int feature_size, unsigned int key_size)
+    LshTable(unsigned int /*feature_size*/, unsigned int /*key_size*/)
     {
       std::cerr << "LSH is not implemented for that type" << std::endl;
       throw;
@@ -238,7 +238,7 @@ template<typename ElementType>
 
     /** Compute the sub-signature of a feature
      */
-    size_t getKey(const ElementType* feature) const
+    size_t getKey(const ElementType* /*feature*/) const
     {
       std::cerr << "LSH is not implemented for that type" << std::endl;
       throw;
@@ -345,7 +345,7 @@ template<>
   {
     initialize(subsignature_size);
     // Allocate the mask
-    mask_ = std::vector<size_t>(ceil((float)(feature_size * sizeof(char)) / (float)sizeof(size_t)), 0);
+    mask_ = std::vector<size_t>((size_t)ceil((float)(feature_size * sizeof(char)) / (float)sizeof(size_t)), 0);
 
     // A bit brutal but fast to code
     std::vector<size_t> indices(feature_size * CHAR_BIT);
@@ -502,4 +502,4 @@ template<>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#endif /* LSH_TABLE_H_ */
+#endif /* FLANN_LSH_TABLE_H_ */

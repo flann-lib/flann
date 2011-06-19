@@ -125,6 +125,9 @@ public:
     	delete nnIndex_;
     }
 
+    /**
+     * Builds the index.
+     */
     void buildIndex()
     {
         if (!loaded_) {
@@ -240,31 +243,45 @@ public:
     /**
      * \brief Returns actual index
      */
-    DEPRECATED NNIndex<Distance>* getIndex()
+    FLANN_DEPRECATED NNIndex<Distance>* getIndex()
     {
         return nnIndex_;
     }
 
     /**
      * \brief Returns index parameters.
-     * Deprecated. Use getParameters() instead.
+     * \deprecated use getParameters() instead.
      */
-    DEPRECATED  const IndexParams* getIndexParameters()
+    FLANN_DEPRECATED  const IndexParams* getIndexParameters()
     {
         return &index_params_;
     }
 
 private:
+    /** Pointer to actual index class */
     NNIndex<Distance>* nnIndex_;
+    /** Indices if the index was loaded from a file */
     bool loaded_;
+    /** Parameters passed to the index */
     IndexParams index_params_;
 };
 
+/**
+ * Performs a hierarchical clustering of the points passed as argument and then takes a cut in the
+ * the clustering tree to return a flat clustering.
+ * @param[in] points Points to be clustered
+ * @param centers The computed cluster centres. Matrix should be preallocated and centers.rows is the
+ *  number of clusters requested.
+ * @param params Clustering parameters (The same as for flann::KMeansIndex)
+ * @param d Distance to be used for clustering (eg: flann::L2)
+ * @return number of clusters computed (can be different than clusters.rows and is the highest number
+ * of the form (branching-1)*K+1 smaller than clusters.rows).
+ */
 template <typename Distance>
-int hierarchicalClustering(const Matrix<typename Distance::ElementType>& features, Matrix<typename Distance::ResultType>& centers,
+int hierarchicalClustering(const Matrix<typename Distance::ElementType>& points, Matrix<typename Distance::ResultType>& centers,
                            const KMeansIndexParams& params, Distance d = Distance())
 {
-    KMeansIndex<Distance> kmeans(features, params, d);
+    KMeansIndex<Distance> kmeans(points, params, d);
     kmeans.buildIndex();
 
     int clusterNum = kmeans.getClusterCenters(centers);

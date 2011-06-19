@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef GENERAL_H_
-#define GENERAL_H_
+#ifndef FLANN_GENERAL_H_
+#define FLANN_GENERAL_H_
 
 #include "defines.h"
 #include <stdexcept>
@@ -49,4 +49,4 @@ public:
 }
 
 
-#endif  /* GENERAL_H_ */
+#endif  /* FLANN_GENERAL_H_ */

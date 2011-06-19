@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef HIERARCHICAL_CLUSTERING_INDEX_H_
-#define HIERARCHICAL_CLUSTERING_INDEX_H_
+#ifndef FLANN_HIERARCHICAL_CLUSTERING_INDEX_H_
+#define FLANN_HIERARCHICAL_CLUSTERING_INDEX_H_
 
 #include <algorithm>
 #include <string>
@@ -712,4 +712,4 @@ private:
 
 }
 
-#endif /* HIERARCHICAL_CLUSTERING_INDEX_H_ */
+#endif /* FLANN_HIERARCHICAL_CLUSTERING_INDEX_H_ */

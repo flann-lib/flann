@@ -27,10 +27,10 @@ int main(int argc, char** argv)
 
     flann::save_to_file(indices,"result.hdf5","result");
 
-    dataset.free();
-    query.free();
-    indices.free();
-    dists.free();
+    delete[] dataset.data;
+    delete[] query.data;
+    delete[] indices.data;
+    delete[] dists.data;
     
     return 0;
 }

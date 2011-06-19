@@ -34,10 +34,10 @@
 
 struct FLANNParameters DEFAULT_FLANN_PARAMETERS = {
     FLANN_INDEX_KDTREE,
-    32, 0.2, 0.0,
+    32, 0.2f, 0.0f,
     4, 4,
     32, 11, FLANN_CENTERS_RANDOM,
-    0.9, 0.01, 0, 0.1,
+    0.9f, 0.01f, 0, 0.1f,
     FLANN_LOG_NONE, 0
 };
 
@@ -137,10 +137,10 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
         //index_params->toParameters(*flann_params);
 
         if (index->getType()==FLANN_INDEX_AUTOTUNED) {
-//            AutotunedIndex<Distance>* autotuned_index = (AutotunedIndex<Distance>*)index->getIndex();
+            AutotunedIndex<Distance>* autotuned_index = (AutotunedIndex<Distance>*)index->getIndex();
             // FIXME
-/*            flann_params->checks = autotuned_index->getSearchParameters()->checks;
-            *speedup = autotuned_index->getSpeedup();*/
+            flann_params->checks = get_param<int>(autotuned_index->getSearchParameters(),"checks");
+            *speedup = autotuned_index->getSpeedup();
         }
 
         return index;

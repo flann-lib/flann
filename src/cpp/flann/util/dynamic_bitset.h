@@ -32,8 +32,8 @@
  * Author: Vincent Rabaud
  *************************************************************************/
 
-#ifndef FLANN_DYNAMIC_BITSET_H
-#define FLANN_DYNAMIC_BITSET_H
+#ifndef FLANN_DYNAMIC_BITSET_H_
+#define FLANN_DYNAMIC_BITSET_H_
 
 //#define FLANN_USE_BOOST 1
 #if FLANN_USE_BOOST
@@ -138,7 +138,7 @@ public:
    */
   bool test(size_t index) const
   {
-    return (bitset_[index / cell_bit_size_] & (size_t(1) << (index % cell_bit_size_)));
+    return (bool)(bitset_[index / cell_bit_size_] & (size_t(1) << (index % cell_bit_size_)));
   }
 
 private:
@@ -149,4 +149,4 @@ private:
 
 #endif
 
-#endif // FLANN_DYNAMIC_BITSET_H
+#endif // FLANN_DYNAMIC_BITSET_H_

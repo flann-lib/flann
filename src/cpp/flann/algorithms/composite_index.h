@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef COMPOSITETREE_H
-#define COMPOSITETREE_H
+#ifndef FLANN_COMPOSITE_INDEX_H_
+#define FLANN_COMPOSITE_INDEX_H_
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
@@ -188,4 +188,4 @@ private:
 
 }
 
-#endif //COMPOSITETREE_H
+#endif //FLANN_COMPOSITE_INDEX_H_

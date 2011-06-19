@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef GROUND_TRUTH_H
-#define GROUND_TRUTH_H
+#ifndef FLANN_GROUND_TRUTH_H_
+#define FLANN_GROUND_TRUTH_H_
 
 #include "flann/algorithms/dist.h"
 #include "flann/util/matrix.h"
@@ -88,11 +88,11 @@ void compute_ground_truth(const Matrix<typename Distance::ElementType>& dataset,
                           int skip=0, Distance d = Distance())
 {
     for (size_t i=0; i<testset.rows; ++i) {
-        find_nearest<Distance>(dataset, testset[i], matches[i], matches.cols, skip, d);
+        find_nearest<Distance>(dataset, testset[i], matches[i], (int)matches.cols, skip, d);
     }
 }
 
 
 }
 
-#endif //GROUND_TRUTH_H
+#endif //FLANN_GROUND_TRUTH_H_

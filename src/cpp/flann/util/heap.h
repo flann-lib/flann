@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef HEAP_H
-#define HEAP_H
+#ifndef FLANN_HEAP_H_
+#define FLANN_HEAP_H_
 
 #include <algorithm>
 #include <vector>
@@ -160,4 +160,4 @@ public:
 
 }
 
-#endif //HEAP_H
+#endif //FLANN_HEAP_H_

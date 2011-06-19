@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef ALLOCATOR_H
-#define ALLOCATOR_H
+#ifndef FLANN_ALLOCATOR_H_
+#define FLANN_ALLOCATOR_H_
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -120,7 +120,7 @@ public:
      * Returns a pointer to a piece of new memory of the given size in bytes
      * allocated from the pool.
      */
-    void* malloc(int size)
+    void* allocateMemory(int size)
     {
         int blocksize;
 
@@ -177,7 +177,7 @@ public:
     template <typename T>
     T* allocate(size_t count = 1)
     {
-        T* mem = (T*) this->malloc(sizeof(T)*count);
+        T* mem = (T*) this->allocateMemory((int)(sizeof(T)*count));
         return mem;
     }
 
@@ -185,4 +185,4 @@ public:
 
 }
 
-#endif //ALLOCATOR_H
+#endif //FLANN_ALLOCATOR_H_

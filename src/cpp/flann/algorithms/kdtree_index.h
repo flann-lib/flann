@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef KDTREE_H
-#define KDTREE_H
+#ifndef FLANN_KDTREE_INDEX_H_
+#define FLANN_KDTREE_INDEX_H_
 
 #include <algorithm>
 #include <map>
@@ -93,8 +93,9 @@ public:
 
         // Create a permutable array of indices to the input vectors.
         vind_.resize(size_);
-        for (size_t i = 0; i < size_; ++i)
-            vind_[i] = i;
+        for (size_t i = 0; i < size_; ++i) {
+        	vind_[i] = int(i);
+        }
 
         mean_ = new DistanceType[veclen_];
         var_ = new DistanceType[veclen_];
@@ -121,7 +122,7 @@ public:
         for (int i = 0; i < trees_; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
             std::random_shuffle(vind_.begin(), vind_.end());
-            tree_roots_[i] = divideTree(vind_.data(), size_ );
+            tree_roots_[i] = divideTree(vind_.data(), int(size_) );
         }
     }
 
@@ -179,7 +180,7 @@ public:
      */
     int usedMemory() const
     {
-        return pool_.usedMemory+pool_.wastedMemory+dataset_.rows*sizeof(int);  // pool memory and vind array memory
+        return int(pool_.usedMemory+pool_.wastedMemory+dataset_.rows*sizeof(int));  // pool memory and vind array memory
     }
 
     /**
@@ -350,7 +351,7 @@ private:
     int selectDivision(DistanceType* v)
     {
         int num = 0;
-        int topind[RAND_DIM];
+        size_t topind[RAND_DIM];
 
         /* Create a list of the indices of the top RAND_DIM values. */
         for (size_t i = 0; i < veclen_; ++i) {
@@ -372,7 +373,7 @@ private:
         }
         /* Select a random integer in range [0,num-1], and return that index. */
         int rnd = rand_int(num);
-        return topind[rnd];
+        return (int)topind[rnd];
     }
 
 
@@ -435,7 +436,7 @@ private:
         BranchSt branch;
 
         int checkCount = 0;
-        Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
+        Heap<BranchSt>* heap = new Heap<BranchSt>((int)size_);
         DynamicBitset checked(size_);
 
         /* Search once through each tree down to root. */
@@ -613,4 +614,4 @@ private:
 
 }
 
-#endif //KDTREE_H
+#endif //FLANN_KDTREE_INDEX_H_

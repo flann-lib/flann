@@ -27,8 +27,8 @@
  *************************************************************************/
 
 
-#ifndef IO_H_
-#define IO_H_
+#ifndef FLANN_HDF5_H_
+#define FLANN_HDF5_H_
 
 #include <hdf5.h>
 
@@ -230,4 +230,4 @@ void load_from_file(flann::Matrix<T>& dataset, const std::string& filename, cons
 #endif // HAVE_MPI
 } // namespace flann::mpi
 
-#endif /* IO_H_ */
+#endif /* FLANN_HDF5_H_ */

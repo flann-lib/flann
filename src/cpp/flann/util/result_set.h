@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef RESULTSET_H
-#define RESULTSET_H
+#ifndef FLANN_RESULTSET_H
+#define FLANN_RESULTSET_H
 
 #include <algorithm>
 #include <cstring>
@@ -290,7 +290,7 @@ class UniqueResultSet : public ResultSet<DistanceType>
 public:
     struct DistIndex
     {
-        DistIndex(float dist, unsigned int index) :
+        DistIndex(DistanceType dist, unsigned int index) :
             dist_(dist), index_(index)
         {
         }
@@ -298,7 +298,7 @@ public:
         {
             return (dist_ < dist_index.dist_) || ((dist_ == dist_index.dist_) && index_ < dist_index.index_);
         }
-        float dist_;
+        DistanceType dist_;
         unsigned int index_;
     };
 
@@ -363,7 +363,7 @@ public:
     }
 
     /** The distance of the furthest neighbor
-     * If we don't have enough neighbors, it returns the max float
+     * If we don't have enough neighbors, it returns the max possible value
      * @return
      */
     inline DistanceType worstDist() const
@@ -452,7 +452,7 @@ public:
     /** Constructor
      * @param capacity the number of neighbors to store at max
      */
-    RadiusUniqueResultSet(float radius) :
+    RadiusUniqueResultSet(DistanceType radius) :
         radius_(radius)
     {
         is_full_ = true;
@@ -484,7 +484,7 @@ public:
     }
 
     /** The distance of the furthest neighbor
-     * If we don't have enough neighbors, it returns the max float
+     * If we don't have enough neighbors, it returns the max possible value
      * @return
      */
     inline DistanceType worstDist() const
@@ -497,7 +497,7 @@ private:
     using UniqueResultSet<DistanceType>::is_full_;
 
     /** The furthest distance a neighbor can be */
-    float radius_;
+    DistanceType radius_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -511,7 +511,7 @@ public:
     /** Constructor
      * @param capacity the number of neighbors to store at max
      */
-    KNNRadiusUniqueResultSet(unsigned int capacity, float radius)
+    KNNRadiusUniqueResultSet(unsigned int capacity, DistanceType radius)
     {
         this->capacity_ = capacity;
         this->radius_ = radius;
@@ -536,9 +536,9 @@ private:
     unsigned int capacity_;
 
     /** The maximum distance of a neighbor */
-    float radius_;
+    DistanceType radius_;
 };
 }
 
-#endif //RESULTSET_H
+#endif //FLANN_RESULTSET_H
 

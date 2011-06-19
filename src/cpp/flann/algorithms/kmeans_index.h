@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef KMEANSTREE_H
-#define KMEANSTREE_H
+#ifndef FLANN_KMEANS_INDEX_H_
+#define FLANN_KMEANS_INDEX_H_
 
 #include <algorithm>
 #include <string>
@@ -124,7 +124,7 @@ public:
                 centers[index] = indices[rnd];
 
                 for (int j=0; j<index; ++j) {
-                    float sq = distance_(dataset_[centers[index]], dataset_[centers[j]], dataset_.cols);
+                    DistanceType sq = distance_(dataset_[centers[index]], dataset_[centers[j]], dataset_.cols);
                     if (sq<1e-16) {
                         duplicate = true;
                     }
@@ -159,11 +159,11 @@ public:
         for (index=1; index<k; ++index) {
 
             int best_index = -1;
-            float best_val = 0;
+            DistanceType best_val = 0;
             for (int j=0; j<n; ++j) {
-                float dist = distance_(dataset_[centers[0]],dataset_[indices[j]],dataset_.cols);
+                DistanceType dist = distance_(dataset_[centers[0]],dataset_[indices[j]],dataset_.cols);
                 for (int i=1; i<index; ++i) {
-                    float tmp_dist = distance_(dataset_[centers[i]],dataset_[indices[j]],dataset_.cols);
+                    DistanceType tmp_dist = distance_(dataset_[centers[i]],dataset_[indices[j]],dataset_.cols);
                     if (tmp_dist<dist) {
                         dist = tmp_dist;
                     }
@@ -223,7 +223,7 @@ public:
 
             // Repeat several trials
             double bestNewPot = -1;
-            int bestNewIndex;
+            int bestNewIndex = -1;
             for (int localTrial = 0; localTrial < numLocalTries; localTrial++) {
 
                 // Choose our center - have to be slightly careful to return a valid answer even accounting
@@ -300,7 +300,7 @@ public:
         else {
             throw FLANNException("Unknown algorithm for choosing initial centers.");
         }
-        cb_index_ = 0.4;
+        cb_index_ = 0.4f;
 
     }
 
@@ -362,12 +362,12 @@ public:
 
         indices_ = new int[size_];
         for (size_t i=0; i<size_; ++i) {
-            indices_[i] = i;
+            indices_[i] = int(i);
         }
 
         root_ = pool_.allocate<KMeansNode>();
-        computeNodeStatistics(root_, indices_, size_);
-        computeClustering(root_, indices_, size_, branching_,0);
+        computeNodeStatistics(root_, indices_, (int)size_);
+        computeClustering(root_, indices_, (int)size_, branching_,0);
     }
 
 
@@ -377,7 +377,7 @@ public:
         save_value(stream, iterations_);
         save_value(stream, memoryCounter_);
         save_value(stream, cb_index_);
-        save_value(stream, *indices_, size_);
+        save_value(stream, *indices_, (int)size_);
 
         save_tree(stream, root_);
     }
@@ -428,7 +428,7 @@ public:
         }
         else {
             // Priority queue storing intermediate branches in the best-bin-first search
-            Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
+            Heap<BranchSt>* heap = new Heap<BranchSt>((int)size_);
 
             int checks = 0;
             findNN(root_, result, vec, checks, maxChecks, heap);
@@ -459,7 +459,7 @@ public:
             throw FLANNException("Number of clusters must be at least 1");
         }
 
-        float variance;
+        DistanceType variance;
         KMeansNodePtr* clusters = new KMeansNodePtr[numClusters];
 
         int clusterCount = getMinVarianceClusters(root_, clusters, numClusters, variance);
@@ -535,9 +535,9 @@ private:
     void save_tree(FILE* stream, KMeansNodePtr node)
     {
         save_value(stream, *node);
-        save_value(stream, *(node->pivot), veclen_);
+        save_value(stream, *(node->pivot), (int)veclen_);
         if (node->childs==NULL) {
-            int indices_offset = node->indices - indices_;
+            int indices_offset = (int)(node->indices - indices_);
             save_value(stream, indices_offset);
         }
         else {
@@ -553,7 +553,7 @@ private:
         node = pool_.allocate<KMeansNode>();
         load_value(stream, *node);
         node->pivot = new DistanceType[veclen_];
-        load_value(stream, *(node->pivot), veclen_);
+        load_value(stream, *(node->pivot), (int)veclen_);
         if (node->childs==NULL) {
             int indices_offset;
             load_value(stream, indices_offset);
@@ -594,9 +594,9 @@ private:
         DistanceType radius = 0;
         DistanceType variance = 0;
         DistanceType* mean = new DistanceType[veclen_];
-        memoryCounter_ += veclen_*sizeof(DistanceType);
+        memoryCounter_ += int(veclen_*sizeof(DistanceType));
 
-        memset(mean,0,veclen_*sizeof(float));
+        memset(mean,0,veclen_*sizeof(DistanceType));
 
         for (size_t i=0; i<size_; ++i) {
             ElementType* vec = dataset_[indices[i]];
@@ -670,7 +670,7 @@ private:
         }
         delete[] centers_idx;
 
-        float* radiuses = new float[branching];
+        DistanceType* radiuses = new DistanceType[branching];
         int* count = new int[branching];
         for (int i=0; i<branching; ++i) {
             radiuses[i] = 0;
@@ -681,10 +681,10 @@ private:
         int* belongs_to = new int[indices_length];
         for (int i=0; i<indices_length; ++i) {
 
-            float sq_dist = distance_(dataset_[indices[i]], dcenters[0], veclen_);
+            DistanceType sq_dist = distance_(dataset_[indices[i]], dcenters[0], veclen_);
             belongs_to[i] = 0;
             for (int j=1; j<branching; ++j) {
-                float new_sq_dist = distance_(dataset_[indices[i]], dcenters[j], veclen_);
+            	DistanceType new_sq_dist = distance_(dataset_[indices[i]], dcenters[j], veclen_);
                 if (sq_dist>new_sq_dist) {
                     belongs_to[i] = j;
                     sq_dist = new_sq_dist;
@@ -723,10 +723,10 @@ private:
 
             // reassign points to clusters
             for (int i=0; i<indices_length; ++i) {
-                float sq_dist = distance_(dataset_[indices[i]], dcenters[0], veclen_);
+                DistanceType sq_dist = distance_(dataset_[indices[i]], dcenters[0], veclen_);
                 int new_centroid = 0;
                 for (int j=1; j<branching; ++j) {
-                    float new_sq_dist = distance_(dataset_[indices[i]], dcenters[j], veclen_);
+                    DistanceType new_sq_dist = distance_(dataset_[indices[i]], dcenters[j], veclen_);
                     if (sq_dist>new_sq_dist) {
                         new_centroid = j;
                         sq_dist = new_sq_dist;
@@ -773,7 +773,7 @@ private:
             centers[i] = new DistanceType[veclen_];
             memoryCounter_ += veclen_*sizeof(DistanceType);
             for (size_t k=0; k<veclen_; ++k) {
-                centers[i][k] = dcenters[i][k];
+                centers[i][k] = (DistanceType)dcenters[i][k];
             }
         }
 
@@ -785,11 +785,11 @@ private:
         for (int c=0; c<branching; ++c) {
             int s = count[c];
 
-            float variance = 0;
-            float mean_radius =0;
+            DistanceType variance = 0;
+            DistanceType mean_radius =0;
             for (int i=0; i<indices_length; ++i) {
                 if (belongs_to[i]==c) {
-                    float d = distance_(dataset_[indices[i]], ZeroIterator<ElementType>(), veclen_);
+                	DistanceType d = distance_(dataset_[indices[i]], ZeroIterator<ElementType>(), veclen_);
                     variance += d;
                     mean_radius += sqrt(d);
                     std::swap(indices[i],indices[end]);
@@ -863,7 +863,7 @@ private:
             }
         }
         else {
-            float* domain_distances = new float[branching_];
+            DistanceType* domain_distances = new DistanceType[branching_];
             int closest_center = exploreNodeBranches(node, vec, domain_distances, heap);
             delete[] domain_distances;
             findNN(node->childs[closest_center],result,vec, checks, maxChecks, heap);
@@ -878,7 +878,7 @@ private:
      *     distances = array with the distances to each child node.
      * Returns:
      */
-    int exploreNodeBranches(KMeansNodePtr node, const ElementType* q, float* domain_distances, Heap<BranchSt>* heap)
+    int exploreNodeBranches(KMeansNodePtr node, const ElementType* q, DistanceType* domain_distances, Heap<BranchSt>* heap)
     {
 
         int best_index = 0;
@@ -914,12 +914,12 @@ private:
     {
         // Ignore those clusters that are too far away
         {
-            float bsq = distance_(vec, node->pivot, veclen_);
-            float rsq = node->radius;
-            float wsq = result.worstDist();
+        	DistanceType bsq = distance_(vec, node->pivot, veclen_);
+        	DistanceType rsq = node->radius;
+        	DistanceType wsq = result.worstDist();
 
-            float val = bsq-rsq-wsq;
-            float val2 = val*val-4*rsq*wsq;
+        	DistanceType val = bsq-rsq-wsq;
+        	DistanceType val2 = val*val-4*rsq*wsq;
 
             //                  if (val>0) {
             if ((val>0)&&(val2>0)) {
@@ -956,9 +956,9 @@ private:
      */
     void getCenterOrdering(KMeansNodePtr node, const ElementType* q, int* sort_indices)
     {
-        float* domain_distances = new float[branching_];
+    	DistanceType* domain_distances = new DistanceType[branching_];
         for (int i=0; i<branching_; ++i) {
-            float dist = distance_(q, node->childs[i]->pivot, veclen_);
+        	DistanceType dist = distance_(q, node->childs[i]->pivot, veclen_);
 
             int j=0;
             while (domain_distances[j]<dist && j<i) j++;
@@ -977,13 +977,13 @@ private:
      * from inside region with center c to the border between this
      * region and the region with center p
      */
-    float getDistanceToBorder(float* p, float* c, float* q)
+    DistanceType getDistanceToBorder(DistanceType* p, DistanceType* c, DistanceType* q)
     {
-        float sum = 0;
-        float sum2 = 0;
+    	DistanceType sum = 0;
+    	DistanceType sum2 = 0;
 
         for (int i=0; i<veclen_; ++i) {
-            float t = c[i]-p[i];
+        	DistanceType t = c[i]-p[i];
             sum += t*(q[i]-(c[i]+p[i])/2);
             sum2 += t*t;
         }
@@ -1001,21 +1001,21 @@ private:
      *     varianceValue = variance of the clustering (return value)
      * Returns:
      */
-    int getMinVarianceClusters(KMeansNodePtr root, KMeansNodePtr* clusters, int clusters_length, float& varianceValue)
+    int getMinVarianceClusters(KMeansNodePtr root, KMeansNodePtr* clusters, int clusters_length, DistanceType& varianceValue)
     {
         int clusterCount = 1;
         clusters[0] = root;
 
-        float meanVariance = root->variance*root->size;
+        DistanceType meanVariance = root->variance*root->size;
 
         while (clusterCount<clusters_length) {
-            float minVariance = (std::numeric_limits<float>::max)();
+        	DistanceType minVariance = (std::numeric_limits<DistanceType>::max)();
             int splitIndex = -1;
 
             for (int i=0; i<clusterCount; ++i) {
                 if (clusters[i]->childs != NULL) {
 
-                    float variance = meanVariance - clusters[i]->variance*clusters[i]->size;
+                	DistanceType variance = meanVariance - clusters[i]->variance*clusters[i]->size;
 
                     for (int j=0; j<branching_; ++j) {
                         variance += clusters[i]->childs[j]->variance*clusters[i]->childs[j]->size;
@@ -1108,4 +1108,4 @@ private:
 
 }
 
-#endif //KMEANSTREE_H
+#endif //FLANN_KMEANS_INDEX_H_

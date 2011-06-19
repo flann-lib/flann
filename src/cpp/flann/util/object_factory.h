@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef OBJECT_FACTORY_H_
-#define OBJECT_FACTORY_H_
+#ifndef FLANN_OBJECT_FACTORY_H_
+#define FLANN_OBJECT_FACTORY_H_
 
 #include <map>
 
@@ -88,4 +88,4 @@ private:
 
 }
 
-#endif /* OBJECT_FACTORY_H_ */
+#endif /* FLANN_OBJECT_FACTORY_H_ */

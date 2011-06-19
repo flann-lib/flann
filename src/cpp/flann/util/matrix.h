@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef DATASET_H
-#define DATASET_H
+#ifndef FLANN_DATASET_H_
+#define FLANN_DATASET_H_
 
 #include <stdio.h>
 
@@ -66,9 +66,12 @@ public:
     /**
      * Convenience function for deallocating the storage data.
      */
-    void free()
+    FLANN_DEPRECATED void free()
     {
-        if (data!=NULL) delete[] data;
+        fprintf(stderr, "The flann::Matrix<T>::free() method is deprecated "
+        		"and it does not do any memory deallocation any more.  You are"
+        		"responsible for deallocating the matrix memory (by doing"
+        		"'delete[] matrix.data' for example)");
     }
 
     /**
@@ -110,4 +113,4 @@ public:
 
 }
 
-#endif //DATASET_H
+#endif //FLANN_DATASET_H_

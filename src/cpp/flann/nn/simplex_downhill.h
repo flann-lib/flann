@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef SIMPLEX_DOWNHILL_H
-#define SIMPLEX_DOWNHILL_H
+#ifndef FLANN_SIMPLEX_DOWNHILL_H_
+#define FLANN_SIMPLEX_DOWNHILL_H_
 
 namespace flann
 {
@@ -183,4 +183,4 @@ float optimizeSimplexDownhill(T* points, int n, F func, float* vals = NULL )
 
 }
 
-#endif //SIMPLEX_DOWNHILL_H
+#endif //FLANN_SIMPLEX_DOWNHILL_H_

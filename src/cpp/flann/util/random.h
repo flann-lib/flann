@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef RANDOM_H
-#define RANDOM_H
+#ifndef FLANN_RANDOM_H
+#define FLANN_RANDOM_H
 
 #include <algorithm>
 #include <cstdlib>
@@ -131,6 +131,6 @@ public:
 
 }
 
-#endif //RANDOM_H
+#endif //FLANN_RANDOM_H
 
 

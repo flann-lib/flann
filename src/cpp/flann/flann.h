@@ -28,8 +28,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#ifndef FLANN_H
-#define FLANN_H
+#ifndef FLANN_H_
+#define FLANN_H_
 
 #include "defines.h"
 
@@ -463,5 +463,5 @@ FLANN_EXPORT int flann_compute_cluster_centers_int(int* dataset,
 #endif
 
 
-#endif /*FLANN_H*/
+#endif /*FLANN_H_*/
 

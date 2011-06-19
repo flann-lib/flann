@@ -27,8 +27,8 @@
  *************************************************************************/
 
 
-#ifndef PARAMS_H_
-#define PARAMS_H_
+#ifndef FLANN_PARAMS_H_
+#define FLANN_PARAMS_H_
 
 #include "any.h"
 #include "flann/general.h"
@@ -94,4 +94,4 @@ inline void print_params(const IndexParams& params)
 }
 
 
-#endif /* PARAMS_H_ */
+#endif /* FLANN_PARAMS_H_ */

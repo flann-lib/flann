@@ -40,7 +40,7 @@ float compute_precision(const flann::Matrix<int>& match, const flann::Matrix<int
  * @return
  */
 template<typename T>
-float computePrecisionDiscrete(const flann::Matrix<T>& gt_dists, const flann::Matrix<T>& dists, float tol)
+float computePrecisionDiscrete(const flann::Matrix<T>& gt_dists, const flann::Matrix<T>& dists)
 {
   int count = 0;
 
@@ -108,11 +108,11 @@ protected:
 
     void TearDown()
     {
-        data.free();
-        query.free();
-        match.free();
-        dists.free();
-        indices.free();
+        delete[] data.data;
+        delete[] query.data;
+        delete[] match.data;
+        delete[] dists.data;
+        delete[] indices.data;
     }
 };
 
@@ -192,11 +192,11 @@ protected:
 
     void TearDown()
     {
-        data.free();
-        query.free();
-        match.free();
-        dists.free();
-        indices.free();
+        delete[] data.data;
+        delete[] query.data;
+        delete[] match.data;
+        delete[] dists.data;
+        delete[] indices.data;
     }
 };
 
@@ -275,11 +275,11 @@ protected:
 
     void TearDown()
     {
-        data.free();
-        query.free();
-        match.free();
-        dists.free();
-        indices.free();
+        delete[] data.data;
+        delete[] query.data;
+        delete[] match.data;
+        delete[] dists.data;
+        delete[] indices.data;
     }
 };
 
@@ -437,11 +437,11 @@ protected:
 
     void TearDown()
     {
-        data.free();
-        query.free();
-        match.free();
-        dists.free();
-        indices.free();
+        delete[] data.data;
+        delete[] query.data;
+        delete[] match.data;
+        delete[] dists.data;
+        delete[] indices.data;
     }
 };
 
@@ -520,11 +520,11 @@ protected:
 
     void TearDown()
     {
-        data.free();
-        query.free();
-        match.free();
-        dists.free();
-        indices.free();
+        delete[] data.data;
+        delete[] query.data;
+        delete[] match.data;
+        delete[] dists.data;
+        delete[] indices.data;
     }
 };
 
@@ -566,7 +566,7 @@ TEST_F(Flann_3D, KDTreeSingleTest_Padded)
     EXPECT_GE(precision, 0.99);
     printf("Precision: %g\n", precision);
 
-    data_padded.free();
+    delete[] data_padded.data;
 }
 
 TEST_F(Flann_3D, SavedTest)
@@ -659,12 +659,12 @@ protected:
 
   void TearDown()
   {
-    data.free();
-    query.free();
-    match.free();
-    gt_dists.free();
-    dists.free();
-    indices.free();
+    delete[] data.data;
+    delete[] query.data;
+    delete[] match.data;
+    delete[] gt_dists.data;
+    delete[] dists.data;
+    delete[] indices.data;
   }
 };
 
@@ -681,7 +681,7 @@ TEST_F(Flann_Brief100K_Test, HierarchicalClusteringTest)
 
     index.save("hierarchical_clustering_brief.idx");
 
-    float precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+    float precision = computePrecisionDiscrete(gt_dists, dists);
     EXPECT_GE(precision, 0.9);
     printf("Precision: %g\n", precision);
 }
@@ -699,7 +699,7 @@ TEST_F(Flann_Brief100K_Test, LshTest)
 
     index.save("lsh_brief.idx");
 
-    float precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+    float precision = computePrecisionDiscrete(gt_dists, dists);
     EXPECT_GE(precision, 0.9);
     printf("Precision: %g\n", precision);
 }
@@ -714,7 +714,7 @@ TEST_F(Flann_Brief100K_Test, SavedTest)
     printf("done (%g seconds)\n", stop_timer());
 
 
-    float precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+    float precision = computePrecisionDiscrete(gt_dists, dists);
     EXPECT_GE(precision, 0.9);
     printf("Precision: %g\n", precision);
 
@@ -726,7 +726,7 @@ TEST_F(Flann_Brief100K_Test, SavedTest)
     printf("done (%g seconds)\n", stop_timer());
 
 
-    precision = computePrecisionDiscrete(gt_dists, dists, 0.1);
+    precision = computePrecisionDiscrete(gt_dists, dists);
     EXPECT_GE(precision, 0.9);
     printf("Precision: %g\n", precision);
 

@@ -27,9 +27,9 @@
  *************************************************************************/
 
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#ifndef FLANN_CONFIG_H_
+#define FLANN_CONFIG_H_
 
 #define FLANN_VERSION "1.6.10"
 
-#endif /* CONFIG_H_ */
+#endif /* FLANN_CONFIG_H_ */
