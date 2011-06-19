@@ -54,13 +54,13 @@ struct small_any_policy : typed_base_any_policy<T>
 {
     virtual void static_delete(void**) { }
     virtual void copy_from_value(void const* src, void** dest)
-    { 
-        new (dest) T(* reinterpret_cast<T const*>(src)); 
+    {
+        new (dest) T(* reinterpret_cast<T const*>(src));
     }
     virtual void clone(void* const* src, void** dest) { *dest = *src; }
     virtual void move(void* const* src, void** dest) { *dest = *src; }
     virtual void* get_value(void** src) { return reinterpret_cast<void*>(src); }
-    virtual void print(std::ostream& out, void* const* src) { out << *reinterpret_cast<T const*>(src); };
+    virtual void print(std::ostream& out, void* const* src) { out << *reinterpret_cast<T const*>(src); }
 };
 
 template<typename T>
@@ -84,7 +84,7 @@ struct big_any_policy : typed_base_any_policy<T>
         **reinterpret_cast<T**>(dest) = **reinterpret_cast<T* const*>(src);
     }
     virtual void* get_value(void** src) { return *src; }
-    virtual void print(std::ostream& out, void* const* src) { out << *reinterpret_cast<T const*>(*src); };
+    virtual void print(std::ostream& out, void* const* src) { out << *reinterpret_cast<T const*>(*src); }
 };
 
 template<typename T>
@@ -111,7 +111,9 @@ struct choose_policy<any>
 
 /// Specializations for small types.
 #define SMALL_POLICY(TYPE) \
-    template<> struct choose_policy<TYPE> { typedef small_any_policy<TYPE> type; };
+    template<> \
+    struct choose_policy<TYPE> { typedef small_any_policy<TYPE> type; \
+    };
 
 SMALL_POLICY(signed char);
 SMALL_POLICY(unsigned char);
@@ -258,7 +260,7 @@ public:
     template<typename T>
     bool has_type()
     {
-    	return policy == anyimpl::get_policy<T>();
+        return policy == anyimpl::get_policy<T>();
     }
 
     friend std::ostream& operator <<(std::ostream& out, const any& any_val);
@@ -266,8 +268,8 @@ public:
 
 inline std::ostream& operator <<(std::ostream& out, const any& any_val)
 {
-	any_val.policy->print(out,&any_val.object);
-	return out;
+    any_val.policy->print(out,&any_val.object);
+    return out;
 }
 
 }

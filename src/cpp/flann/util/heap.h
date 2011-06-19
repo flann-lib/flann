@@ -101,14 +101,16 @@ public:
      */
     void clear()
     {
-      heap.clear();
-      count = 0;
+        heap.clear();
+        count = 0;
     }
 
-    struct CompareT {
-      bool operator()(const T & t_1, const T & t_2) const {
-        return (!(t_1 < t_2));
-      }
+    struct CompareT
+    {
+        bool operator()(const T& t_1, const T& t_2) const
+        {
+            return !(t_1 < t_2);
+        }
     };
 
     /**

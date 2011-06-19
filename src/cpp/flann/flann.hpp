@@ -65,7 +65,7 @@ struct SavedIndexParams : public IndexParams
 {
     SavedIndexParams(std::string filename)
     {
-        (*this)["algorithm"] = FLANN_INDEX_SAVED;
+        (* this)["algorithm"] = FLANN_INDEX_SAVED;
         (*this)["filename"] = filename;
     }
 };
@@ -106,7 +106,7 @@ public:
     typedef typename Distance::ResultType DistanceType;
 
     Index(const Matrix<ElementType>& features, const IndexParams& params, Distance distance = Distance() )
-    	: index_params_(params)
+        : index_params_(params)
     {
         flann_algorithm_t index_type = get_param<flann_algorithm_t>(params,"algorithm");
         loaded_ = false;
@@ -122,7 +122,7 @@ public:
 
     ~Index()
     {
-    	delete nnIndex_;
+        delete nnIndex_;
     }
 
     /**
@@ -152,7 +152,7 @@ public:
      */
     virtual void saveIndex(FILE* stream)
     {
-    	nnIndex_->saveIndex(stream);
+        nnIndex_->saveIndex(stream);
     }
 
     /**
@@ -161,7 +161,7 @@ public:
      */
     virtual void loadIndex(FILE* stream)
     {
-    	nnIndex_->loadIndex(stream);
+        nnIndex_->loadIndex(stream);
     }
 
     /**
@@ -169,7 +169,7 @@ public:
      */
     size_t veclen() const
     {
-    	return nnIndex_->veclen();
+        return nnIndex_->veclen();
     }
 
     /**
@@ -177,7 +177,7 @@ public:
      */
     size_t size() const
     {
-    	return nnIndex_->size();
+        return nnIndex_->size();
     }
 
     /**
@@ -185,7 +185,7 @@ public:
      */
     flann_algorithm_t getType() const
     {
-    	return nnIndex_->getType();
+        return nnIndex_->getType();
     }
 
     /**
@@ -193,7 +193,7 @@ public:
      */
     virtual int usedMemory() const
     {
-    	return nnIndex_->usedMemory();
+        return nnIndex_->usedMemory();
     }
 
 
@@ -215,7 +215,7 @@ public:
      */
     void knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, int knn, const SearchParams& params)
     {
-    	 nnIndex_->knnSearch(queries, indices, dists, knn, params);
+        nnIndex_->knnSearch(queries, indices, dists, knn, params);
     }
 
     /**
@@ -229,7 +229,7 @@ public:
      */
     int radiusSearch(const Matrix<ElementType>& query, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params)
     {
-    	return nnIndex_->radiusSearch(query, indices, dists, radius, params);
+        return nnIndex_->radiusSearch(query, indices, dists, radius, params);
     }
 
     /**
@@ -237,7 +237,7 @@ public:
      */
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-    	nnIndex_->findNeighbors(result, vec, searchParams);
+        nnIndex_->findNeighbors(result, vec, searchParams);
     }
 
     /**

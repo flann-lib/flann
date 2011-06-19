@@ -152,7 +152,7 @@ void load_value(FILE* stream, T& value, size_t count = 1)
 template<typename T>
 void load_value(FILE* stream, flann::Matrix<T>& value)
 {
-	size_t read_cnt = fread(&value, sizeof(value), 1, stream);
+    size_t read_cnt = fread(&value, sizeof(value), 1, stream);
     if (read_cnt != 1) {
         throw FLANNException("Cannot read from file");
     }

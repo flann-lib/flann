@@ -48,44 +48,44 @@ using namespace flann;
 flann::IndexParams create_parameters(FLANNParameters* p)
 {
     flann::IndexParams params;
-    
+
     params["algorithm"] = p->algorithm;
 
     params["checks"] = p->checks;
     params["cb_index"] = p->cb_index;
     params["eps"] = p->eps;
-    
+
     if (p->algorithm == FLANN_INDEX_KDTREE) {
         params["trees"] = p->trees;
     }
-    
+
     if (p->algorithm == FLANN_INDEX_KDTREE_SINGLE) {
         params["trees"] = p->trees;
         params["leaf_max_size"] = p->leaf_max_size;
     }
-    
+
     if (p->algorithm == FLANN_INDEX_KMEANS) {
         params["branching"] = p->branching;
         params["iterations"] = p->iterations;
-        params["centers_init"] = p->centers_init;        
+        params["centers_init"] = p->centers_init;
     }
-    
+
     if (p->algorithm == FLANN_INDEX_AUTOTUNED) {
         params["target_precision"] = p->target_precision;
         params["build_weight"] = p->build_weight;
         params["memory_weight"] = p->memory_weight;
         params["sample_fraction"] = p->sample_fraction;
     }
-    
+
     if (p->algorithm == FLANN_INDEX_LSH) {
         params["table_number"] = p->table_number_;
         params["key_size"] = p->key_size_;
         params["multi_probe_level"] = p->multi_probe_level_;
     }
-    
+
     params["log_level"] = p->log_level;
     params["random_seed"] = p->random_seed;
-    
+
     return params;
 }
 
@@ -132,7 +132,7 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
         Index<Distance>* index = new Index<Distance>(Matrix<ElementType>(dataset,rows,cols), params, d);
         index->buildIndex();
         params = index->getParameters();
-        
+
         // FIXME
         //index_params->toParameters(*flann_params);
 

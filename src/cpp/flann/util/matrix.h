@@ -60,7 +60,7 @@ public:
     Matrix(T* data_, size_t rows_, size_t cols_, size_t stride_ = 0) :
         rows(rows_), cols(cols_),  stride(stride_), data(data_)
     {
-    	if (stride==0) stride = cols;
+        if (stride==0) stride = cols;
     }
 
     /**
@@ -69,9 +69,9 @@ public:
     FLANN_DEPRECATED void free()
     {
         fprintf(stderr, "The flann::Matrix<T>::free() method is deprecated "
-        		"and it does not do any memory deallocation any more.  You are"
-        		"responsible for deallocating the matrix memory (by doing"
-        		"'delete[] matrix.data' for example)");
+                "and it does not do any memory deallocation any more.  You are"
+                "responsible for deallocating the matrix memory (by doing"
+                "'delete[] matrix.data' for example)");
     }
 
     /**

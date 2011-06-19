@@ -66,7 +66,7 @@ struct KMeansIndexParams : public IndexParams
         // algorithm used for picking the initial cluster centers for kmeans tree
         (*this)["centers_init"] = centers_init;
         // cluster boundary index. Used when searching the kmeans tree
-        (*this)["cb_index"] = cb_index;        
+        (*this)["cb_index"] = cb_index;
     }
 };
 
@@ -684,7 +684,7 @@ private:
             DistanceType sq_dist = distance_(dataset_[indices[i]], dcenters[0], veclen_);
             belongs_to[i] = 0;
             for (int j=1; j<branching; ++j) {
-            	DistanceType new_sq_dist = distance_(dataset_[indices[i]], dcenters[j], veclen_);
+                DistanceType new_sq_dist = distance_(dataset_[indices[i]], dcenters[j], veclen_);
                 if (sq_dist>new_sq_dist) {
                     belongs_to[i] = j;
                     sq_dist = new_sq_dist;
@@ -789,7 +789,7 @@ private:
             DistanceType mean_radius =0;
             for (int i=0; i<indices_length; ++i) {
                 if (belongs_to[i]==c) {
-                	DistanceType d = distance_(dataset_[indices[i]], ZeroIterator<ElementType>(), veclen_);
+                    DistanceType d = distance_(dataset_[indices[i]], ZeroIterator<ElementType>(), veclen_);
                     variance += d;
                     mean_radius += sqrt(d);
                     std::swap(indices[i],indices[end]);
@@ -914,12 +914,12 @@ private:
     {
         // Ignore those clusters that are too far away
         {
-        	DistanceType bsq = distance_(vec, node->pivot, veclen_);
-        	DistanceType rsq = node->radius;
-        	DistanceType wsq = result.worstDist();
+            DistanceType bsq = distance_(vec, node->pivot, veclen_);
+            DistanceType rsq = node->radius;
+            DistanceType wsq = result.worstDist();
 
-        	DistanceType val = bsq-rsq-wsq;
-        	DistanceType val2 = val*val-4*rsq*wsq;
+            DistanceType val = bsq-rsq-wsq;
+            DistanceType val2 = val*val-4*rsq*wsq;
 
             //                  if (val>0) {
             if ((val>0)&&(val2>0)) {
@@ -956,9 +956,9 @@ private:
      */
     void getCenterOrdering(KMeansNodePtr node, const ElementType* q, int* sort_indices)
     {
-    	DistanceType* domain_distances = new DistanceType[branching_];
+        DistanceType* domain_distances = new DistanceType[branching_];
         for (int i=0; i<branching_; ++i) {
-        	DistanceType dist = distance_(q, node->childs[i]->pivot, veclen_);
+            DistanceType dist = distance_(q, node->childs[i]->pivot, veclen_);
 
             int j=0;
             while (domain_distances[j]<dist && j<i) j++;
@@ -979,11 +979,11 @@ private:
      */
     DistanceType getDistanceToBorder(DistanceType* p, DistanceType* c, DistanceType* q)
     {
-    	DistanceType sum = 0;
-    	DistanceType sum2 = 0;
+        DistanceType sum = 0;
+        DistanceType sum2 = 0;
 
         for (int i=0; i<veclen_; ++i) {
-        	DistanceType t = c[i]-p[i];
+            DistanceType t = c[i]-p[i];
             sum += t*(q[i]-(c[i]+p[i])/2);
             sum2 += t*t;
         }
@@ -1009,13 +1009,13 @@ private:
         DistanceType meanVariance = root->variance*root->size;
 
         while (clusterCount<clusters_length) {
-        	DistanceType minVariance = (std::numeric_limits<DistanceType>::max)();
+            DistanceType minVariance = (std::numeric_limits<DistanceType>::max)();
             int splitIndex = -1;
 
             for (int i=0; i<clusterCount; ++i) {
                 if (clusters[i]->childs != NULL) {
 
-                	DistanceType variance = meanVariance - clusters[i]->variance*clusters[i]->size;
+                    DistanceType variance = meanVariance - clusters[i]->variance*clusters[i]->size;
 
                     for (int j=0; j<branching_; ++j) {
                         variance += clusters[i]->childs[j]->variance*clusters[i]->childs[j]->size;

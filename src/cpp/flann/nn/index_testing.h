@@ -130,7 +130,7 @@ float search_with_ground_truth(NNIndex<Distance>& index, const Matrix<typename D
     dist = distR/(testData.rows*nn);
 
     Logger::info("%8d %10.4g %10.5g %10.5g %10.5g\n",
-                checks, precicion, time, 1000.0 * time / testData.rows, dist);
+                 checks, precicion, time, 1000.0 * time / testData.rows, dist);
 
     return precicion;
 }

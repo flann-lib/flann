@@ -82,11 +82,11 @@ T get_param(const IndexParams& params, std::string name)
 
 inline void print_params(const IndexParams& params)
 {
-	IndexParams::const_iterator it;
+    IndexParams::const_iterator it;
 
-	for(it=params.begin(); it!=params.end(); ++it) {
-		std::cout << it->first << " : " << it->second << std::endl;
-	}
+    for(it=params.begin(); it!=params.end(); ++it) {
+        std::cout << it->first << " : " << it->second << std::endl;
+    }
 }
 
 

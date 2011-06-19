@@ -51,9 +51,10 @@ class Logger
         }
     }
 
-    static Logger& instance() {
-    	static Logger logger;
-    	return logger;
+    static Logger& instance()
+    {
+        static Logger logger;
+        return logger;
     }
 
     void _setDestination(const char* name)
@@ -81,7 +82,7 @@ public:
      * Sets the logging level. All messages with lower priority will be ignored.
      * @param level Logging level
      */
-    static void setLevel(int level) { instance().logLevel = level; };
+    static void setLevel(int level) { instance().logLevel = level; }
 
     /**
      * Sets the logging destination
@@ -105,7 +106,7 @@ public:
     }
 
 #define LOG_METHOD(NAME,LEVEL) \
-	static int NAME(const char* fmt, ...) \
+    static int NAME(const char* fmt, ...) \
     { \
         va_list ap; \
         va_start(ap, fmt); \

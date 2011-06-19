@@ -276,7 +276,7 @@ public:
 
         size_ = dataset.rows;
         veclen_ = dataset.cols;
-        
+
         branching_ = get_param(params,"branching",32);
         centers_init_ = get_param(params,"centers_init", FLANN_CENTERS_RANDOM);
         trees_ = get_param(params,"trees",4);
@@ -366,13 +366,13 @@ public:
 
     void saveIndex(FILE* stream)
     {
-    	save_value(stream, branching_);
-    	save_value(stream, trees_);
-    	save_value(stream, centers_init_);
-    	save_value(stream, leaf_size_);
+        save_value(stream, branching_);
+        save_value(stream, trees_);
+        save_value(stream, centers_init_);
+        save_value(stream, leaf_size_);
         save_value(stream, memoryCounter);
-        for (int i=0;i<trees_;++i) {
-        	save_value(stream, *indices[i], size_);
+        for (int i=0; i<trees_; ++i) {
+            save_value(stream, *indices[i], size_);
             save_tree(stream, root[i], i);
         }
 
@@ -381,24 +381,24 @@ public:
 
     void loadIndex(FILE* stream)
     {
-    	load_value(stream, branching_);
-    	load_value(stream, trees_);
-    	load_value(stream, centers_init_);
-    	load_value(stream, leaf_size_);
+        load_value(stream, branching_);
+        load_value(stream, trees_);
+        load_value(stream, centers_init_);
+        load_value(stream, leaf_size_);
         load_value(stream, memoryCounter);
         indices = new int*[trees_];
         root = new NodePtr[trees_];
-        for (int i=0;i<trees_;++i) {
-        	indices[i] = new int[size_];
-        	load_value(stream, *indices[i], size_);
+        for (int i=0; i<trees_; ++i) {
+            indices[i] = new int[size_];
+            load_value(stream, *indices[i], size_);
             load_tree(stream, root[i], i);
         }
 
-    	params["algorithm"] = getType();
-    	params["branching"] = branching_;
-    	params["trees"] = trees_;
-    	params["centers_init"] = centers_init_;
-    	params["leaf_size"] = leaf_size_;
+        params["algorithm"] = getType();
+        params["branching"] = branching_;
+        params["trees"] = trees_;
+        params["centers_init"] = centers_init_;
+        params["leaf_size"] = leaf_size_;
     }
 
 
@@ -414,7 +414,7 @@ public:
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
 
-    	int maxChecks = get_param(searchParams,"checks",32);
+        int maxChecks = get_param(searchParams,"checks",32);
 
         // Priority queue storing intermediate branches in the best-bin-first search
         Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
@@ -444,7 +444,7 @@ public:
 
 private:
 
-     /**
+    /**
      * Struture representing a node in the hierarchical k-means tree.
      */
     struct Node
@@ -479,8 +479,8 @@ private:
      */
     typedef BranchStruct<NodePtr, DistanceType> BranchSt;
 
-    
-    
+
+
     void save_tree(FILE* stream, NodePtr node, int num)
     {
         save_value(stream, *node);
@@ -646,7 +646,7 @@ private:
             findNN(node->childs[best_index],result,vec, checks, maxChecks, heap, checked);
         }
     }
-    
+
 private:
 
 
@@ -706,7 +706,7 @@ private:
     int trees_;
     flann_centers_init_t centers_init_;
     int leaf_size_;
-    
+
 
 };
 

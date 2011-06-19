@@ -216,8 +216,8 @@ public:
 
         KNNSimpleResultSet<DistanceType> resultSet(knn);
         for (size_t i = 0; i < queries.rows; i++) {
-        	resultSet.init(indices[i], dists[i]);
-        	findNeighbors(resultSet, queries[i], params);
+            resultSet.init(indices[i], dists[i]);
+            findNeighbors(resultSet, queries[i], params);
         }
     }
 
@@ -451,7 +451,7 @@ private:
     {
         const float EPS=0.00001f;
         ElementType max_span = bbox[0].high-bbox[0].low;
-        for (size_t i=1;i<dim_;++i) {
+        for (size_t i=1; i<dim_; ++i) {
             ElementType span = bbox[i].high-bbox[i].low;
             if (span>max_span) {
                 max_span = span;
@@ -459,12 +459,12 @@ private:
         }
         ElementType max_spread = -1;
         cutfeat = 0;
-        for (size_t i=0;i<dim_;++i) {
+        for (size_t i=0; i<dim_; ++i) {
             ElementType span = bbox[i].high-bbox[i].low;
             if (span>(ElementType)((1-EPS)*max_span)) {
                 ElementType min_elem, max_elem;
                 computeMinMax(ind, count, cutfeat, min_elem, max_elem);
-                ElementType spread = max_elem-min_elem;;
+                ElementType spread = max_elem-min_elem;
                 if (spread>max_spread) {
                     cutfeat = i;
                     max_spread = spread;

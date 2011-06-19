@@ -193,23 +193,22 @@ public:
             if (dists[i-1]<=dist)
 #endif
             {
-            	// Check for duplicate indices
-            	int j = i - 1;
-            	while ((j >= 0) && (dists[j] == dist))
-            	{
-            		if (indices[j] == index) {
-            			return;
-            		}
-            		--j;
-            	}
-            	break;
+                // Check for duplicate indices
+                int j = i - 1;
+                while ((j >= 0) && (dists[j] == dist)) {
+                    if (indices[j] == index) {
+                        return;
+                    }
+                    --j;
+                }
+                break;
             }
         }
 
         if (count < capacity) ++count;
         for (int j = count-1; j > i; --j) {
-        	dists[j] = dists[j-1];
-        	indices[j] = indices[j-1];
+            dists[j] = dists[j-1];
+            indices[j] = indices[j-1];
         }
         dists[i] = dist;
         indices[i] = index;

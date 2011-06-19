@@ -104,8 +104,7 @@ public:
         // create and initialize an array of size n
         vals_.resize(n);
         size_ = n;
-        for (int i = 0; i < size_; ++i)
-            vals_[i] = i;
+        for (int i = 0; i < size_; ++i) vals_[i] = i;
 
         // shuffle the elements in the array
         std::random_shuffle(vals_.begin(), vals_.end());

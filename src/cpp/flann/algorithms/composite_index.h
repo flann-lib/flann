@@ -58,7 +58,7 @@ struct CompositeIndexParams : public IndexParams
         (*this)["centers_init"] = centers_init;
         // cluster boundary index. Used when searching the kmeans tree
         (*this)["cb_index"] = cb_index;
-    }    
+    }
 };
 
 
@@ -116,7 +116,7 @@ public:
      */
     size_t veclen() const
     {
-    	return kdtree_index_->veclen();
+        return kdtree_index_->veclen();
     }
 
     /**

@@ -77,19 +77,16 @@ public:
 #if 0
         KNNResultSet<DistanceType> resultSet(knn);
         for (size_t i = 0; i < queries.rows; i++) {
-        	resultSet.init(indices[i], dists[i]);
-        	findNeighbors(resultSet, queries[i], params);
+            resultSet.init(indices[i], dists[i]);
+            findNeighbors(resultSet, queries[i], params);
         }
 #else
         KNNUniqueResultSet<DistanceType> resultSet(knn);
-        for (size_t i = 0; i < queries.rows; i++)
-        {
-        	resultSet.clear();
-        	findNeighbors(resultSet, queries[i], params);
-        	if (get_param(params,"sorted",true))
-        		resultSet.sortAndCopy(indices[i], dists[i], knn);
-        	else
-        		resultSet.copy(indices[i], dists[i], knn);
+        for (size_t i = 0; i < queries.rows; i++) {
+            resultSet.clear();
+            findNeighbors(resultSet, queries[i], params);
+            if (get_param(params,"sorted",true)) resultSet.sortAndCopy(indices[i], dists[i], knn);
+            else resultSet.copy(indices[i], dists[i], knn);
         }
 #endif
     }
@@ -125,15 +122,13 @@ public:
         resultSet.clear();
         findNeighbors(resultSet, query[0], params);
         if (n>0) {
-            if (get_param(params,"sorted",true))
-                resultSet.sortAndCopy(indices_ptr, dists_ptr, n);
-            else
-                resultSet.copy(indices_ptr, dists_ptr, n);
+            if (get_param(params,"sorted",true)) resultSet.sortAndCopy(indices_ptr, dists_ptr, n);
+            else resultSet.copy(indices_ptr, dists_ptr, n);
         }
 
         return resultSet.size();
     }
-    
+
     /**
      * \brief Saves the index to a stream
      * \param stream The stream to save the index to
@@ -170,12 +165,12 @@ public:
      * \returns The index parameters
      */
     virtual IndexParams getParameters() const = 0;
-    
+
 
     /**
      * \brief Method that searches for nearest-neighbours
      */
-    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;    
+    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;
 };
 
 }

@@ -52,7 +52,7 @@ namespace flann
 
 struct KDTreeIndexParams : public IndexParams
 {
-    KDTreeIndexParams(int trees = 4) 
+    KDTreeIndexParams(int trees = 4)
     {
         (*this)["algorithm"] = FLANN_INDEX_KDTREE;
         (*this)["trees"] = trees;
@@ -94,7 +94,7 @@ public:
         // Create a permutable array of indices to the input vectors.
         vind_.resize(size_);
         for (size_t i = 0; i < size_; ++i) {
-        	vind_[i] = int(i);
+            vind_[i] = int(i);
         }
 
         mean_ = new DistanceType[veclen_];

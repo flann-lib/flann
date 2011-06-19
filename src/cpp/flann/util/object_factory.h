@@ -40,9 +40,9 @@ class CreatorNotFound
 {
 };
 
-template<typename BaseClass, 
-    typename UniqueIdType, 
-    typename ObjectCreator = BaseClass* (*)()>
+template<typename BaseClass,
+         typename UniqueIdType,
+         typename ObjectCreator = BaseClass* (*)()>
 class ObjectFactory
 {
     typedef ObjectFactory<BaseClass,UniqueIdType,ObjectCreator> ThisClass;
@@ -72,7 +72,7 @@ public:
 
         if (iter == object_registry.end()) {
             throw CreatorNotFound();
-        };
+        }
 
         return iter->second;
     }

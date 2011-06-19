@@ -41,7 +41,7 @@ struct LinearIndexParams : public IndexParams
 {
     LinearIndexParams()
     {
-        (*this)["algorithm"] = FLANN_INDEX_LINEAR;
+        (* this)["algorithm"] = FLANN_INDEX_LINEAR;
     }
 };
 
@@ -50,7 +50,7 @@ class LinearIndex : public NNIndex<Distance>
 {
 public:
 
-	typedef typename Distance::ElementType ElementType;
+    typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
 
@@ -97,17 +97,16 @@ public:
     {
         /* nothing to do here for linear search */
 
-    	index_params_["algorithm"] = getType();
+        index_params_["algorithm"] = getType();
     }
 
     void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/)
     {
-      ElementType * data = dataset_.data;
-      for (size_t i = 0; i < dataset_.rows; ++i, data += dataset_.cols)
-      {
-        DistanceType dist = distance_(data, vec, dataset_.cols);
-        resultSet.addPoint(dist, i);
-      }
+        ElementType* data = dataset_.data;
+        for (size_t i = 0; i < dataset_.rows; ++i, data += dataset_.cols) {
+            DistanceType dist = distance_(data, vec, dataset_.cols);
+            resultSet.addPoint(dist, i);
+        }
     }
 
     IndexParams getParameters() const

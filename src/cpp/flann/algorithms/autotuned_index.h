@@ -70,14 +70,14 @@ template <typename Distance>
 class AutotunedIndex : public NNIndex<Distance>
 {
 public:
-	typedef typename Distance::ElementType ElementType;
+    typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
     AutotunedIndex(const Matrix<ElementType>& inputData, const IndexParams& params = AutotunedIndexParams(), Distance d = Distance()) :
         dataset_(inputData), distance_(d)
     {
         target_precision_ = get_param(params, "target_precision",0.8f);
-        build_weight_ =  get_param(params ,"build_weight", 0.01f);
+        build_weight_ =  get_param(params,"build_weight", 0.01f);
         memory_weight_ = get_param(params, "memory_weight", 0.0f);
         sample_fraction_ = get_param(params,"sample_fraction", 0.1f);
         bestIndex_ = NULL;
@@ -219,8 +219,8 @@ private:
         const int nn = 1;
 
         Logger::info("KMeansTree using params: max_iterations=%d, branching=%d\n",
-        				get_param<int>(cost.params,"iterations"),
-        				get_param<int>(cost.params,"branching"));
+                     get_param<int>(cost.params,"iterations"),
+                     get_param<int>(cost.params,"branching"));
         KMeansIndex<Distance> kmeans(sampledDataset_, cost.params, distance_);
         // measure index build time
         t.start();
@@ -464,7 +464,7 @@ private:
                 }
             }
         }
-        
+
         delete[] gt_matches_.data;
         delete[] testDataset_.data;
         delete[] sampledDataset_.data;
