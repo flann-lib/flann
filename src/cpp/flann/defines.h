@@ -50,11 +50,19 @@
 #ifdef __GNUC__
 #define FLANN_DEPRECATED __attribute__ ((deprecated))
 #elif defined(_MSC_VER)
-#define FLANN_DEPRECATED
+#define FLANN_DEPRECATED  __declspec(deprecated)
 #else
 #pragma message("WARNING: You need to implement FLANN_DEPRECATED for this compiler")
 #define FLANN_DEPRECATED
 #endif
+
+
+#if __amd64__ || __x86_64__ || _WIN64 || _M_X64
+#define FLANN_PLATFORM_64_BIT
+#else
+#define FLANN_PLATFORM_32_BIT
+#endif
+
 
 #define FLANN_ARRAY_LEN(a) (sizeof(a)/sizeof(a[0]))
 

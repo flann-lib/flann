@@ -34,8 +34,9 @@
 #include <cmath>
 #include <cstdlib>
 #include <string.h>
+#include <stdint.h>
 
-#include "flann/general.h"
+#include "flann/defines.h"
 
 
 namespace flann
@@ -537,26 +538,46 @@ struct Hamming2
     typedef T ElementType;
     typedef int ResultType;
 
-    unsigned int popcnt(unsigned int n) const
+    /** This is popcount_3() from:
+     * http://en.wikipedia.org/wiki/Hamming_weight */
+    unsigned int popcnt32(uint32_t n) const
     {
         n -= ((n >> 1) & 0x55555555);
         n = (n & 0x33333333) + ((n >> 2) & 0x33333333);
         return (((n + (n >> 4))& 0xF0F0F0F)* 0x1010101) >> 24;
     }
 
+    unsigned int popcnt64(uint64_t n) const
+    {
+        n -= ((n >> 1) & 0x5555555555555555);
+        n = (n & 0x3333333333333333) + ((n >> 2) & 0x3333333333333333);
+        return (((n + (n >> 4))& 0x0f0f0f0f0f0f0f0f)* 0x0101010101010101) >> 56;
+    }
+
     template <typename Iterator1, typename Iterator2>
     ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
     {
-        size_t i;
-        const unsigned int* pa = reinterpret_cast<const unsigned int*>(a);
-        const unsigned int* pb = reinterpret_cast<const unsigned int*>(b);
+#ifdef FLANN_PLATFORM_64_BIT
+        const uint64_t* pa = reinterpret_cast<const uint64_t*>(a);
+        const uint64_t* pb = reinterpret_cast<const uint64_t*>(b);
         ResultType result = 0;
-        size /= (sizeof(unsigned int)/sizeof(unsigned char));
-        for(i = 0; i < size; ++i ) {
-            result += popcnt(*pa ^ *pb);
+        size /= (sizeof(uint64_t)/sizeof(unsigned char));
+        for(size_t i = 0; i < size; ++i ) {
+            result += popcnt64(*pa ^ *pb);
             ++pa;
             ++pb;
         }
+#else
+        const uint32_t* pa = reinterpret_cast<const uint32_t*>(a);
+        const uint32_t* pb = reinterpret_cast<const uint32_t*>(b);
+        ResultType result = 0;
+        size /= (sizeof(uint32_t)/sizeof(unsigned char));
+        for(size_t i = 0; i < size; ++i ) {
+        	result += popcnt32(*pa ^ *pb);
+        	++pa;
+        	++pb;
+        }
+#endif
         return result;
     }
 };
