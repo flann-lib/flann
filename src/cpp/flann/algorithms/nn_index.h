@@ -36,6 +36,7 @@
 #include "flann/general.h"
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
+#include "flann/util/params.h"
 
 namespace flann
 {
