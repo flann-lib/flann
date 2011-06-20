@@ -50,7 +50,7 @@
 #ifdef __GNUC__
 #define FLANN_DEPRECATED __attribute__ ((deprecated))
 #elif defined(_MSC_VER)
-#define FLANN_DEPRECATED  __declspec(deprecated)
+#define FLANN_DEPRECATED __declspec(deprecated)
 #else
 #pragma message("WARNING: You need to implement FLANN_DEPRECATED for this compiler")
 #define FLANN_DEPRECATED

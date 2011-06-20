@@ -83,6 +83,9 @@ public:
         bestIndex_ = NULL;
     }
 
+    AutotunedIndex(const AutotunedIndex&);
+    AutotunedIndex& operator=(const AutotunedIndex&);
+
     virtual ~AutotunedIndex()
     {
         if (bestIndex_ != NULL) {

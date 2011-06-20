@@ -305,6 +305,10 @@ public:
     }
 
 
+    KMeansIndex(const KMeansIndex&);
+    KMeansIndex& operator=(const KMeansIndex&);
+
+
     /**
      * Index destructor.
      *

@@ -34,7 +34,12 @@
 #include <cmath>
 #include <cstdlib>
 #include <string.h>
+#ifdef _MSC_VER
+typedef unsigned uint32_t;
+typedef unsigned __int64 uint64_t;
+#else
 #include <stdint.h>
+#endif
 
 #include "flann/defines.h"
 
@@ -150,10 +155,10 @@ struct L2
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-            diff0 = a[0] - b[0];
-            diff1 = a[1] - b[1];
-            diff2 = a[2] - b[2];
-            diff3 = a[3] - b[3];
+            diff0 = (ResultType)(a[0] - b[0]);
+            diff1 = (ResultType)(a[1] - b[1]);
+            diff2 = (ResultType)(a[2] - b[2]);
+            diff3 = (ResultType)(a[3] - b[3]);
             result += diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3;
             a += 4;
             b += 4;
@@ -164,7 +169,7 @@ struct L2
         }
         /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
         while (a < last) {
-            diff0 = *a++ - *b++;
+            diff0 = (ResultType)(*a++ - *b++);
             result += diff0 * diff0;
         }
         return result;
@@ -212,10 +217,10 @@ struct L1
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-            diff0 = abs(a[0] - b[0]);
-            diff1 = abs(a[1] - b[1]);
-            diff2 = abs(a[2] - b[2]);
-            diff3 = abs(a[3] - b[3]);
+            diff0 = (ResultType)abs(a[0] - b[0]);
+            diff1 = (ResultType)abs(a[1] - b[1]);
+            diff2 = (ResultType)abs(a[2] - b[2]);
+            diff3 = (ResultType)abs(a[3] - b[3]);
             result += diff0 + diff1 + diff2 + diff3;
             a += 4;
             b += 4;
@@ -226,7 +231,7 @@ struct L1
         }
         /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
         while (a < last) {
-            diff0 = abs(*a++ - *b++);
+            diff0 = (ResultType)abs(*a++ - *b++);
             result += diff0;
         }
         return result;
@@ -276,10 +281,10 @@ struct MinkowskiDistance
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-            diff0 = abs(a[0] - b[0]);
-            diff1 = abs(a[1] - b[1]);
-            diff2 = abs(a[2] - b[2]);
-            diff3 = abs(a[3] - b[3]);
+            diff0 = (ResultType)abs(a[0] - b[0]);
+            diff1 = (ResultType)abs(a[1] - b[1]);
+            diff2 = (ResultType)abs(a[2] - b[2]);
+            diff3 = (ResultType)abs(a[3] - b[3]);
             result += pow(diff0,order) + pow(diff1,order) + pow(diff2,order) + pow(diff3,order);
             a += 4;
             b += 4;
@@ -290,7 +295,7 @@ struct MinkowskiDistance
         }
         /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
         while (a < last) {
-            diff0 = abs(*a++ - *b++);
+            diff0 = (ResultType)abs(*a++ - *b++);
             result += pow(diff0,order);
         }
         return result;
@@ -608,10 +613,10 @@ struct HistIntersectionDistance
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-            min0 = a[0] < b[0] ? a[0] : b[0];
-            min1 = a[1] < b[1] ? a[1] : b[1];
-            min2 = a[2] < b[2] ? a[2] : b[2];
-            min3 = a[3] < b[3] ? a[3] : b[3];
+            min0 = (ResultType)(a[0] < b[0] ? a[0] : b[0]);
+            min1 = (ResultType)(a[1] < b[1] ? a[1] : b[1]);
+            min2 = (ResultType)(a[2] < b[2] ? a[2] : b[2]);
+            min3 = (ResultType)(a[3] < b[3] ? a[3] : b[3]);
             result += min0 + min1 + min2 + min3;
             a += 4;
             b += 4;
@@ -621,7 +626,7 @@ struct HistIntersectionDistance
         }
         /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
         while (a < last) {
-            min0 = *a < *b ? *a : *b;
+            min0 = (ResultType)(*a < *b ? *a : *b);
             result += min0;
         }
         return result;
@@ -707,9 +712,9 @@ struct ChiSquareDistance
         Iterator1 last = a + size;
 
         while (a < last) {
-            sum = *a + *b;
+            sum = (ResultType)(*a + *b);
             if (sum>0) {
-                diff = *a - *b;
+                diff = (ResultType)(*a - *b);
                 result += diff*diff/sum;
             }
             ++a;
@@ -731,9 +736,9 @@ struct ChiSquareDistance
         ResultType result = ResultType();
         ResultType sum, diff;
 
-        sum = a+b;
+        sum = (ResultType)(a+b);
         if (sum>0) {
-            diff = a-b;
+            diff = (ResultType)(a-b);
             result = diff*diff/sum;
         }
         return result;
@@ -761,7 +766,7 @@ struct KL_Divergence
 
         while (a < last) {
             if (* a != 0) {
-                ResultType ratio = *a / *b;
+                ResultType ratio = (ResultType)(*a / *b);
                 if (ratio>0) {
                     result += *a * log(ratio);
                 }
@@ -783,7 +788,7 @@ struct KL_Divergence
     inline ResultType accum_dist(const U& a, const V& b, int) const
     {
         ResultType result = ResultType();
-        ResultType ratio = a / b;
+        ResultType ratio = (ResultType)(a / b);
         if (ratio>0) {
             result = a * log(ratio);
         }

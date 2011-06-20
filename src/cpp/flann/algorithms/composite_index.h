@@ -89,6 +89,9 @@ public:
 
     }
 
+    CompositeIndex(const CompositeIndex&);
+    CompositeIndex& operator=(const CompositeIndex&);
+
     virtual ~CompositeIndex()
     {
         delete kdtree_index_;

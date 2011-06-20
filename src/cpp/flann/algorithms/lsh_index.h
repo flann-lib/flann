@@ -98,6 +98,10 @@ public:
         fill_xor_mask(0, key_size_, multi_probe_level_, xor_masks_);
     }
 
+
+    LshIndex(const LshIndex&);
+    LshIndex& operator=(const LshIndex&);
+
     /**
      * Builds the index
      */

@@ -233,7 +233,8 @@ public:
     const T& cast() const
     {
         if (policy != anyimpl::get_policy<T>()) throw anyimpl::bad_any_cast();
-        T* r = reinterpret_cast<T*>(policy->get_value((void**)&object));
+        void* obj = const_cast<void*>(object);
+        T* r = reinterpret_cast<T*>(policy->get_value(&obj));
         return *r;
     }
 

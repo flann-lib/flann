@@ -97,7 +97,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 # HDF5 uses long long which is not ansi
 if (WIN32)
     # lots of warnings with cl.exe right now
-    add_definitions( "/W1" )
+    #add_definitions( "/W1" )
+	add_definitions("-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS")
 else(WIN32)
     add_definitions( "-Wall" )
 endif(WIN32)

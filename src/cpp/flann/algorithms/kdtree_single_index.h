@@ -99,6 +99,9 @@ public:
         }
     }
 
+    KDTreeSingleIndex(const KDTreeSingleIndex&);
+    KDTreeSingleIndex& operator=(const KDTreeSingleIndex&);
+
     /**
      * Standard destructor
      */
@@ -280,7 +283,7 @@ private:
 
     struct Interval
     {
-        ElementType low, high;
+        DistanceType low, high;
     };
 
     typedef std::vector<Interval> BoundingBox;
@@ -320,13 +323,13 @@ private:
     {
         bbox.resize(dim_);
         for (size_t i=0; i<dim_; ++i) {
-            bbox[i].low = dataset_[0][i];
-            bbox[i].high = dataset_[0][i];
+            bbox[i].low = (DistanceType)dataset_[0][i];
+            bbox[i].high = (DistanceType)dataset_[0][i];
         }
         for (size_t k=1; k<dataset_.rows; ++k) {
             for (size_t i=0; i<dim_; ++i) {
-                if (dataset_[k][i]<bbox[i].low) bbox[i].low = dataset_[k][i];
-                if (dataset_[k][i]>bbox[i].high) bbox[i].high = dataset_[k][i];
+                if (dataset_[k][i]<bbox[i].low) bbox[i].low = (DistanceType)dataset_[k][i];
+                if (dataset_[k][i]>bbox[i].high) bbox[i].high = (DistanceType)dataset_[k][i];
             }
         }
     }
@@ -353,13 +356,13 @@ private:
 
             // compute bounding-box of leaf points
             for (size_t i=0; i<dim_; ++i) {
-                bbox[i].low = dataset_[vind_[left]][i];
-                bbox[i].high = dataset_[vind_[left]][i];
+                bbox[i].low = (DistanceType)dataset_[vind_[left]][i];
+                bbox[i].high = (DistanceType)dataset_[vind_[left]][i];
             }
             for (int k=left+1; k<right; ++k) {
                 for (size_t i=0; i<dim_; ++i) {
-                    if (bbox[i].low>dataset_[vind_[k]][i]) bbox[i].low=dataset_[vind_[k]][i];
-                    if (bbox[i].high<dataset_[vind_[k]][i]) bbox[i].high=dataset_[vind_[k]][i];
+                    if (bbox[i].low>dataset_[vind_[k]][i]) bbox[i].low=(DistanceType)dataset_[vind_[k]][i];
+                    if (bbox[i].high<dataset_[vind_[k]][i]) bbox[i].high=(DistanceType)dataset_[vind_[k]][i];
                 }
             }
         }
@@ -450,21 +453,21 @@ private:
     void middleSplit_(int* ind, int count, int& index, int& cutfeat, DistanceType& cutval, const BoundingBox& bbox)
     {
         const float EPS=0.00001f;
-        ElementType max_span = bbox[0].high-bbox[0].low;
+        DistanceType max_span = bbox[0].high-bbox[0].low;
         for (size_t i=1; i<dim_; ++i) {
-            ElementType span = bbox[i].high-bbox[i].low;
+            DistanceType span = bbox[i].high-bbox[i].low;
             if (span>max_span) {
                 max_span = span;
             }
         }
-        ElementType max_spread = -1;
+        DistanceType max_spread = -1;
         cutfeat = 0;
         for (size_t i=0; i<dim_; ++i) {
-            ElementType span = bbox[i].high-bbox[i].low;
-            if (span>(ElementType)((1-EPS)*max_span)) {
+            DistanceType span = bbox[i].high-bbox[i].low;
+            if (span>(DistanceType)((1-EPS)*max_span)) {
                 ElementType min_elem, max_elem;
                 computeMinMax(ind, count, cutfeat, min_elem, max_elem);
-                ElementType spread = max_elem-min_elem;
+                DistanceType spread = (DistanceType)(max_elem-min_elem);
                 if (spread>max_spread) {
                     cutfeat = i;
                     max_spread = spread;
@@ -476,8 +479,8 @@ private:
         ElementType min_elem, max_elem;
         computeMinMax(ind, count, cutfeat, min_elem, max_elem);
 
-        if (split_val<min_elem) cutval = min_elem;
-        else if (split_val>max_elem) cutval = max_elem;
+        if (split_val<min_elem) cutval = (DistanceType)min_elem;
+        else if (split_val>max_elem) cutval = (DistanceType)max_elem;
         else cutval = split_val;
 
         int lim1, lim2;

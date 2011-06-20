@@ -60,6 +60,9 @@ public:
     {
     }
 
+    LinearIndex(const LinearIndex&);
+    LinearIndex& operator=(const LinearIndex&);
+
     flann_algorithm_t getType() const
     {
         return FLANN_INDEX_LINEAR;
