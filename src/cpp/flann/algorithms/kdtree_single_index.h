@@ -253,26 +253,18 @@ private:
     /*--------------------- Internal Data Structures --------------------------*/
     struct Node
     {
-        union {
-            struct
-            {
-                /**
-                 * Indices of points in leaf node
-                 */
-                int left, right;
-            };
-            struct
-            {
-                /**
-                 * Dimension used for subdivision.
-                 */
-                int divfeat;
-                /**
-                 * The values used for subdivision.
-                 */
-                DistanceType divlow, divhigh;
-            };
-        };
+    	/**
+    	 * Indices of points in leaf node
+    	 */
+    	int left, right;
+    	/**
+    	 * Dimension used for subdivision.
+    	 */
+    	int divfeat;
+    	/**
+    	 * The values used for subdivision.
+    	 */
+    	DistanceType divlow, divhigh;
         /**
          * The child nodes.
          */
