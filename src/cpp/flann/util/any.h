@@ -12,10 +12,9 @@
  * Adapted for FLANN by Marius Muja
  */
 
-
-
 #include <stdexcept>
 #include <ostream>
+#include <typeinfo>
 
 namespace cdiggins
 {
@@ -39,6 +38,7 @@ struct base_any_policy
     virtual void move(void* const* src, void** dest) = 0;
     virtual void* get_value(void** src) = 0;
     virtual size_t get_size() = 0;
+    virtual const std::type_info& type() = 0;
     virtual void print(std::ostream& out, void* const* src) = 0;
 };
 
@@ -46,6 +46,7 @@ template<typename T>
 struct typed_base_any_policy : base_any_policy
 {
     virtual size_t get_size() { return sizeof(T); }
+    virtual const std::type_info& type() { return typeid(T); }
 
 };
 
@@ -223,7 +224,7 @@ public:
     template<typename T>
     T& cast()
     {
-        if (policy != anyimpl::get_policy<T>()) throw anyimpl::bad_any_cast();
+        if (policy->type() != typeid(T)) throw anyimpl::bad_any_cast();
         T* r = reinterpret_cast<T*>(policy->get_value(&object));
         return *r;
     }
@@ -232,7 +233,7 @@ public:
     template<typename T>
     const T& cast() const
     {
-        if (policy != anyimpl::get_policy<T>()) throw anyimpl::bad_any_cast();
+        if (policy->type() != typeid(T)) throw anyimpl::bad_any_cast();
         void* obj = const_cast<void*>(object);
         T* r = reinterpret_cast<T*>(policy->get_value(&obj));
         return *r;
@@ -241,7 +242,7 @@ public:
     /// Returns true if the any contains no value.
     bool empty() const
     {
-        return policy == anyimpl::get_policy<anyimpl::empty_any>();
+        return policy->type() == typeid(anyimpl::empty_any);
     }
 
     /// Frees any allocated memory, and sets the value to NULL.
@@ -254,14 +255,19 @@ public:
     /// Returns true if the two types are the same.
     bool compatible(const any& x) const
     {
-        return policy == x.policy;
+        return policy->type() == x.policy->type();
     }
 
     /// Returns if the type is compatible with the policy
     template<typename T>
     bool has_type()
     {
-        return policy == anyimpl::get_policy<T>();
+        return policy->type() == typeid(T);
+    }
+
+    const std::type_info& type() const
+    {
+        return policy->type();
     }
 
     friend std::ostream& operator <<(std::ostream& out, const any& any_val);

@@ -109,7 +109,7 @@ public:
     {
         bool operator()(const T& t_1, const T& t_2) const
         {
-            return !(t_1 < t_2);
+            return t_2 < t_1;
         }
     };
 
