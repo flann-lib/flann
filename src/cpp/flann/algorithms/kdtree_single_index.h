@@ -55,7 +55,6 @@ struct KDTreeSingleIndexParams : public IndexParams
         (*this)["algorithm"] = FLANN_INDEX_KDTREE_SINGLE;
         (*this)["leaf_max_size"] = leaf_max_size;
         (*this)["reorder"] = reorder;
-        (*this)["dim"] = dim;
     }
 };
 
@@ -87,8 +86,6 @@ public:
     {
         size_ = dataset_.rows;
         dim_ = dataset_.cols;
-        int dim_param = get_param(params,"dim",-1);
-        if (dim_param>0) dim_ = dim_param;
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
         reorder_ = get_param(params,"reorder",true);
 
