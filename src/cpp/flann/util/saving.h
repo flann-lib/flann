@@ -31,6 +31,7 @@
 
 #include <cstring>
 #include <vector>
+#include <stdio.h>
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
@@ -92,7 +93,7 @@ void save_header(FILE* stream, const NNIndex<Distance>& index)
     header.rows = index.size();
     header.cols = index.veclen();
 
-    std::fwrite(&header, sizeof(header),1,stream);
+    fwrite(&header, sizeof(header),1,stream);
 }
 
 
