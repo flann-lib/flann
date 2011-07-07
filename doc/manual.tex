@@ -504,7 +504,7 @@ int Index::radiusSearch(const Matrix<ElementType>& query,
 
 \begin{description}
 \item[query]{The query point}
-\item[indices]{Vector that will contain the indices of the points found within the search radius in decreasing order of the distance to the query point. If the number of neighbors in the search radius is bigger than the size of this vector, the ones that don't fit in the vector are ignored. }
+\item[indices]{Vector that will contain the indices of the points found within the search radius in increasing order of the distance to the query point. If the number of neighbors in the search radius is bigger than the size of this vector, the ones that don't fit in the vector are ignored. }
 \item[dists]{Vector that will contain the distances to the points found within the search radius}
 \item[radius]{The search radius}
 \item[params]{Search parameters}
