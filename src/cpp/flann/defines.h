@@ -32,6 +32,9 @@
 
 #include "config.h"
 
+#ifdef FLANN_EXPORT
+#undef FLANN_EXPORT
+#endif
 #ifdef WIN32
 /* win32 dll export/import directives */
  #ifdef FLANN_EXPORTS
@@ -46,7 +49,9 @@
  #define FLANN_EXPORT
 #endif
 
-
+#ifdef FLANN_DEPRECATED
+#undef FLANN_DEPRECATED
+#endif
 #ifdef __GNUC__
 #define FLANN_DEPRECATED __attribute__ ((deprecated))
 #elif defined(_MSC_VER)
@@ -56,15 +61,20 @@
 #define FLANN_DEPRECATED
 #endif
 
-
+#undef FLANN_PLATFORM_64_BIT
+#undef FLANN_PLATFORM_32_BIT
 #if __amd64__ || __x86_64__ || _WIN64 || _M_X64
 #define FLANN_PLATFORM_64_BIT
 #else
 #define FLANN_PLATFORM_32_BIT
 #endif
 
-
+#undef FLANN_ARRAY_LEN
 #define FLANN_ARRAY_LEN(a) (sizeof(a)/sizeof(a[0]))
+
+#ifdef __cplusplus
+namespace flann {
+#endif
 
 /* Nearest neighbour index algorithms */
 enum flann_algorithm_t
@@ -155,6 +165,10 @@ enum flann_datatype_t
 
 const int FLANN_CHECKS_UNLIMITED = -1;
 const int FLANN_CHECKS_AUTOTUNED = -2;
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* FLANN_DEFINES_H_ */
