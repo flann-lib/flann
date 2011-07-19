@@ -31,8 +31,6 @@
 #ifndef FLANN_DATASET_H_
 #define FLANN_DATASET_H_
 
-#include <stdio.h>
-
 #include "flann/general.h"
 
 namespace flann
@@ -75,13 +73,15 @@ public:
     }
 
     /**
-     * Operator that return a (pointer to a) row of the data.
+     * Operator that returns a (pointer to a) row of the data.
      */
     T* operator[](size_t index) const
     {
         return data+index*stride;
     }
 };
+
+
 
 
 class UntypedMatrix

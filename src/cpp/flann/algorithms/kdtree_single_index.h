@@ -50,7 +50,7 @@ namespace flann
 
 struct KDTreeSingleIndexParams : public IndexParams
 {
-    KDTreeSingleIndexParams(int leaf_max_size = 10, bool reorder = true, int dim = -1)
+    KDTreeSingleIndexParams(int leaf_max_size = 10, bool reorder = true)
     {
         (*this)["algorithm"] = FLANN_INDEX_KDTREE_SINGLE;
         (*this)["leaf_max_size"] = leaf_max_size;
@@ -197,30 +197,6 @@ public:
         return pool_.usedMemory+pool_.wastedMemory+dataset_.rows*sizeof(int);  // pool memory and vind array memory
     }
 
-
-    /**
-     * \brief Perform k-nearest neighbor search
-     * \param[in] queries The query points for which to find the nearest neighbors
-     * \param[out] indices The indices of the nearest neighbors found
-     * \param[out] dists Distances to the nearest neighbors found
-     * \param[in] knn Number of nearest neighbors to return
-     * \param[in] params Search parameters
-     */
-    void knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, int knn, const SearchParams& params)
-    {
-        assert(queries.cols == veclen());
-        assert(indices.rows >= queries.rows);
-        assert(dists.rows >= queries.rows);
-        assert(int(indices.cols) >= knn);
-        assert(int(dists.cols) >= knn);
-
-        KNNSimpleResultSet<DistanceType> resultSet(knn);
-        for (size_t i = 0; i < queries.rows; i++) {
-            resultSet.init(indices[i], dists[i]);
-            findNeighbors(resultSet, queries[i], params);
-        }
-    }
-
     IndexParams getParameters() const
     {
         return index_params_;
@@ -359,7 +335,7 @@ private:
             int idx;
             int cutfeat;
             DistanceType cutval;
-            middleSplit_(&vind_[0]+left, right-left, idx, cutfeat, cutval, bbox);
+            middleSplit(&vind_[0]+left, right-left, idx, cutfeat, cutval, bbox);
 
             node->divfeat = cutfeat;
 
@@ -375,8 +351,8 @@ private:
             node->divhigh = right_bbox[cutfeat].low;
 
             for (size_t i=0; i<dim_; ++i) {
-                bbox[i].low = std::min(left_bbox[i].low, right_bbox[i].low);
-                bbox[i].high = std::max(left_bbox[i].high, right_bbox[i].high);
+            	bbox[i].low = std::min(left_bbox[i].low, right_bbox[i].low);
+            	bbox[i].high = std::max(left_bbox[i].high, right_bbox[i].high);
             }
         }
 
@@ -541,13 +517,14 @@ private:
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
-            DistanceType worst_dist = result_set.worstDist();
+//            DistanceType worst_dist = result_set.worstDist();
             for (int i=node->left; i<node->right; ++i) {
                 int index = reorder_ ? i : vind_[i];
-                DistanceType dist = distance_(vec, data_[index], dim_, worst_dist);
-                if (dist<worst_dist) {
+                DistanceType dist = distance_(vec, data_[index], dim_);
+//                DistanceType dist = distance_(vec, data_[index], dim_, worst_dist);
+//                if (dist<worst_dist) {
                     result_set.addPoint(dist,vind_[i]);
-                }
+//                }
             }
             return;
         }

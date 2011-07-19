@@ -212,23 +212,69 @@ public:
      * \param[in] knn Number of nearest neighbors to return
      * \param[in] params Search parameters
      */
-    void knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, int knn, const SearchParams& params)
+    int knnSearch(const Matrix<ElementType>& queries,
+    				Matrix<int>& indices,
+    				Matrix<DistanceType>& dists,
+    				size_t knn,
+    				const SearchParams& params)
     {
-        nnIndex_->knnSearch(queries, indices, dists, knn, params);
+        return nnIndex_->knnSearch(queries, indices, dists, knn, params);
     }
+
+
+    /**
+     * \brief Perform k-nearest neighbor search
+     * \param[in] queries The query points for which to find the nearest neighbors
+     * \param[out] indices The indices of the nearest neighbors found
+     * \param[out] dists Distances to the nearest neighbors found
+     * \param[in] knn Number of nearest neighbors to return
+     * \param[in] params Search parameters
+     */
+    int knnSearch(const Matrix<ElementType>& queries,
+					std::vector< std::vector<int> >& indices,
+					std::vector<std::vector<DistanceType> >& dists,
+    				size_t knn,
+    				const SearchParams& params)
+    {
+        return nnIndex_->knnSearch(queries, indices, dists, knn, params);
+    }
+
 
     /**
      * \brief Perform radius search
-     * \param[in] query The query point
+     * \param[in] queries The query points
      * \param[out] indices The indinces of the neighbors found within the given radius
      * \param[out] dists The distances to the nearest neighbors found
      * \param[in] radius The radius used for search
      * \param[in] params Search parameters
      * \returns Number of neighbors found
      */
-    int radiusSearch(const Matrix<ElementType>& query, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params)
+    int radiusSearch(const Matrix<ElementType>& queries,
+    				Matrix<int>& indices,
+    				Matrix<DistanceType>& dists,
+    				float radius,
+    				const SearchParams& params)
     {
-        return nnIndex_->radiusSearch(query, indices, dists, radius, params);
+        return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
+    }
+
+
+    /**
+     * \brief Perform radius search
+     * \param[in] queries The query points
+     * \param[out] indices The indinces of the neighbors found within the given radius
+     * \param[out] dists The distances to the nearest neighbors found
+     * \param[in] radius The radius used for search
+     * \param[in] params Search parameters
+     * \returns Number of neighbors found
+     */
+    int radiusSearch(const Matrix<ElementType>& queries,
+    				std::vector< std::vector<int> >& indices,
+    				std::vector<std::vector<DistanceType> >& dists,
+    				float radius,
+    				const SearchParams& params)
+    {
+    	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
     }
 
     /**

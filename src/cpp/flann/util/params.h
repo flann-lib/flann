@@ -56,6 +56,11 @@ struct SearchParams : public IndexParams
 };
 
 
+inline bool has_param(const IndexParams& params, std::string name)
+{
+	return params.find(name)!=params.end();
+}
+
 template<typename T>
 T get_param(const IndexParams& params, std::string name, const T& default_value)
 {

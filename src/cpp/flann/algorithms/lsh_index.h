@@ -185,24 +185,91 @@ public:
      * \param[in] knn Number of nearest neighbors to return
      * \param[in] params Search parameters
      */
-    virtual void knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, int knn, const SearchParams& params)
+    virtual int knnSearch(const Matrix<ElementType>& queries,
+    					Matrix<int>& indices,
+    					Matrix<DistanceType>& dists,
+    					size_t knn,
+    					const SearchParams& params)
     {
         assert(queries.cols == veclen());
         assert(indices.rows >= queries.rows);
         assert(dists.rows >= queries.rows);
         assert(int(indices.cols) >= knn);
         assert(int(dists.cols) >= knn);
+        bool sorted = get_param(params,"sorted",true);
+        bool use_heap = get_param(params,"use_heap",false);
 
-
-        KNNUniqueResultSet<DistanceType> resultSet(knn);
-        for (size_t i = 0; i < queries.rows; i++) {
-            resultSet.clear();
-            findNeighbors(resultSet, queries[i], params);
-            if (get_param(params,"sorted",true)) resultSet.sortAndCopy(indices[i], dists[i], knn);
-            else resultSet.copy(indices[i], dists[i], knn);
+        int count = 0;
+        if (use_heap) {
+        	KNNUniqueResultSet<DistanceType> resultSet(knn);
+        	for (size_t i = 0; i < queries.rows; i++) {
+        		resultSet.clear();
+        		findNeighbors(resultSet, queries[i], params);
+        		resultSet.copy(indices[i], dists[i], knn, sorted);
+        		count += resultSet.size();
+        	}
         }
+        else {
+        	KNNResultSet<DistanceType> resultSet(knn);
+        	for (size_t i = 0; i < queries.rows; i++) {
+        		resultSet.clear();
+        		findNeighbors(resultSet, queries[i], params);
+        		resultSet.copy(indices[i], dists[i], knn, sorted);
+        		count += resultSet.size();
+        	}
+        }
+
+        return count;
     }
 
+    /**
+     * \brief Perform k-nearest neighbor search
+     * \param[in] queries The query points for which to find the nearest neighbors
+     * \param[out] indices The indices of the nearest neighbors found
+     * \param[out] dists Distances to the nearest neighbors found
+     * \param[in] knn Number of nearest neighbors to return
+     * \param[in] params Search parameters
+     */
+    virtual int knnSearch(const Matrix<ElementType>& queries,
+					std::vector< std::vector<int> >& indices,
+					std::vector<std::vector<DistanceType> >& dists,
+    				size_t knn,
+    				const SearchParams& params)
+    {
+        assert(queries.cols == veclen());
+        bool sorted = get_param(params,"sorted",true);
+        bool use_heap = get_param(params,"use_heap",false);
+		if (indices.size() < queries.rows ) indices.resize(queries.rows);
+		if (dists.size() < queries.rows ) dists.resize(queries.rows);
+
+		int count = 0;
+		if (use_heap) {
+			KNNUniqueResultSet<DistanceType> resultSet(knn);
+			for (size_t i = 0; i < queries.rows; i++) {
+				resultSet.clear();
+				findNeighbors(resultSet, queries[i], params);
+				size_t n = std::min(resultSet.size(), knn);
+				indices[i].resize(n);
+				dists[i].resize(n);
+				resultSet.copy(&indices[i][0], &dists[i][0], n, sorted);
+				count += n;
+			}
+		}
+		else {
+			KNNResultSet<DistanceType> resultSet(knn);
+			for (size_t i = 0; i < queries.rows; i++) {
+				resultSet.clear();
+				findNeighbors(resultSet, queries[i], params);
+				size_t n = std::min(resultSet.size(), knn);
+				indices[i].resize(n);
+				dists[i].resize(n);
+				resultSet.copy(&indices[i][0], &dists[i][0], n, sorted);
+				count += n;
+			}
+		}
+
+		return count;
+    }
 
     /**
      * Find set of nearest neighbors to vec. Their indices are stored inside

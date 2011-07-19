@@ -63,6 +63,22 @@ struct BranchStruct
 
 
 template <typename DistanceType>
+struct DistanceIndex
+{
+    DistanceIndex(DistanceType dist, size_t index) :
+        dist_(dist), index_(index)
+    {
+    }
+    bool operator<(const DistanceIndex& dist_index) const
+    {
+        return (dist_ < dist_index.dist_) || ((dist_ == dist_index.dist_) && index_ < dist_index.index_);
+    }
+    DistanceType dist_;
+    size_t index_;
+};
+
+
+template <typename DistanceType>
 class ResultSet
 {
 public:
@@ -70,11 +86,13 @@ public:
 
     virtual bool full() const = 0;
 
-    virtual void addPoint(DistanceType dist, int index) = 0;
+    virtual void addPoint(DistanceType dist, size_t index) = 0;
 
     virtual DistanceType worstDist() const = 0;
 
 };
+
+
 
 /**
  * KNNSimpleResultSet does not ensure that the element it holds are unique.
@@ -84,66 +102,104 @@ public:
 template <typename DistanceType>
 class KNNSimpleResultSet : public ResultSet<DistanceType>
 {
-    int* indices;
-    DistanceType* dists;
-    int capacity;
-    int count;
-    DistanceType worst_distance_;
-
 public:
-    KNNSimpleResultSet(int capacity_) : capacity(capacity_), count(0)
+	typedef DistanceIndex<DistanceType> DistIndex;
+
+	KNNSimpleResultSet(size_t capacity_) :
+        capacity_(capacity_)
+    {
+		// reserving capacity to prevent memory re-allocations
+		dist_index_.resize(capacity_, DistIndex(std::numeric_limits<DistanceType>::max(),-1));
+    	clear();
+    }
+
+    ~KNNSimpleResultSet()
     {
     }
 
-    void init(int* indices_, DistanceType* dists_)
+    /**
+     * Clears the result set
+     */
+    void clear()
     {
-        indices = indices_;
-        dists = dists_;
-        count = 0;
-        worst_distance_ = (std::numeric_limits<DistanceType>::max)();
-        dists[capacity-1] = worst_distance_;
+        worst_distance_ = std::numeric_limits<DistanceType>::max();
+        dist_index_[capacity_-1].dist_ = worst_distance_;
+        count_ = 0;
     }
 
+    /**
+     *
+     * @return Number of elements in the result set
+     */
     size_t size() const
     {
-        return count;
+        return count_;
     }
 
+    /**
+     * Radius search result set always reports full
+     * @return
+     */
     bool full() const
     {
-        return count == capacity;
+        return count_==capacity_;
     }
 
-
-    void addPoint(DistanceType dist, int index)
+    /**
+     * Add a point to result set
+     * @param dist distance to point
+     * @param index index of point
+     */
+    void addPoint(DistanceType dist, size_t index)
     {
-        if (dist >= worst_distance_) return;
-        int i;
-        for (i=count; i>0; --i) {
+    	if (dist>=worst_distance_) return;
+
+        if (count_ < capacity_) ++count_;
+        size_t i;
+        for (i=count_-1; i>0; --i) {
 #ifdef FLANN_FIRST_MATCH
-            if ( (dists[i-1]>dist) || ((dist==dists[i-1])&&(indices[i-1]>index)) )
+            if ( (dist_index_[i-1].dist_>dist) || ((dist==dist_index_[i-1].dist_)&&(dist_index_[i-1].index_>index)) )
 #else
-            if (dists[i-1]>dist)
+            if (dist_index_[i-1].dist_>dist)
 #endif
             {
-                if (i<capacity) {
-                    dists[i] = dists[i-1];
-                    indices[i] = indices[i-1];
-                }
+            	dist_index_[i] = dist_index_[i-1];
             }
             else break;
         }
-        if (count < capacity) ++count;
-        dists[i] = dist;
-        indices[i] = index;
-        worst_distance_ = dists[capacity-1];
+        dist_index_[i].dist_ = dist;
+        dist_index_[i].index_ = index;
+        worst_distance_ = dist_index_[capacity_-1].dist_;
+    }
+
+    /**
+     * Copy indices and distances to output buffers
+     * @param indices
+     * @param dists
+     * @param num_elements Number of elements to copy
+     * @param sorted Indicates if results should be sorted
+     */
+    void copy(int* indices, DistanceType* dists, size_t num_elements, bool sorted = true)
+    {
+    	size_t n = std::min(count_, num_elements);
+    	for (size_t i=0; i<n; ++i) {
+    		*indices++ = dist_index_[i].index_;
+    		*dists++ = dist_index_[i].dist_;
+    	}
     }
 
     DistanceType worstDist() const
     {
-        return worst_distance_;
+    	return worst_distance_;
     }
+
+private:
+    size_t capacity_;
+    size_t count_;
+    DistanceType worst_distance_;
+    std::vector<DistIndex> dist_index_;
 };
+
 
 /**
  * K-Nearest neighbour result set. Ensures that the elements inserted are unique
@@ -151,52 +207,57 @@ public:
 template <typename DistanceType>
 class KNNResultSet : public ResultSet<DistanceType>
 {
-    int* indices;
-    DistanceType* dists;
-    int capacity;
-    int count;
-    DistanceType worst_distance_;
-
 public:
-    KNNResultSet(int capacity_) : capacity(capacity_), count(0)
+	typedef DistanceIndex<DistanceType> DistIndex;
+
+    KNNResultSet(int capacity) : capacity_(capacity)
     {
+		// reserving capacity to prevent memory re-allocations
+		dist_index_.resize(capacity_, DistIndex(std::numeric_limits<DistanceType>::max(),-1));
+    	clear();
     }
 
-    void init(int* indices_, DistanceType* dists_)
+    ~KNNResultSet()
     {
-        indices = indices_;
-        dists = dists_;
-        count = 0;
-        worst_distance_ = (std::numeric_limits<DistanceType>::max)();
-        dists[capacity-1] = worst_distance_;
+
+    }
+
+    /**
+     * Clears the result set
+     */
+    void clear()
+    {
+        worst_distance_ = std::numeric_limits<DistanceType>::max();
+        dist_index_[capacity_-1].dist_ = worst_distance_;
+        count_ = 0;
     }
 
     size_t size() const
     {
-        return count;
+        return count_;
     }
 
     bool full() const
     {
-        return count == capacity;
+        return count_ == capacity_;
     }
 
 
-    void addPoint(DistanceType dist, int index)
+    void addPoint(DistanceType dist, size_t index)
     {
         if (dist >= worst_distance_) return;
-        int i;
-        for (i = count; i > 0; --i) {
+        size_t i;
+        for (i = count_; i > 0; --i) {
 #ifdef FLANN_FIRST_MATCH
-            if ( (dists[i-1]<=dist) && ((dist!=dists[i-1])||(indices[i-1]<=index)) )
+            if ( (dist_index_[i-1].dist_<=dist) && ((dist!=dist_index_[i-1].dist_)||(dist_index_[i-1].index_<=index)) )
 #else
-            if (dists[i-1]<=dist)
+            if (dist_index_[i-1].dist_<=dist)
 #endif
             {
                 // Check for duplicate indices
-                int j = i - 1;
-                while ((j >= 0) && (dists[j] == dist)) {
-                    if (indices[j] == index) {
+                size_t j = i - 1;
+                while ((j >= 0) && (dist_index_[j].dist_ == dist)) {
+                    if (dist_index_[j].index_ == index) {
                         return;
                     }
                     --j;
@@ -204,48 +265,398 @@ public:
                 break;
             }
         }
-
-        if (count < capacity) ++count;
-        for (int j = count-1; j > i; --j) {
-            dists[j] = dists[j-1];
-            indices[j] = indices[j-1];
+        if (count_ < capacity_) ++count_;
+        for (size_t j = count_-1; j > i; --j) {
+            dist_index_[j] = dist_index_[j-1];
         }
-        dists[i] = dist;
-        indices[i] = index;
-        worst_distance_ = dists[capacity-1];
+        dist_index_[i].dist_ = dist;
+        dist_index_[i].index_ = index;
+        worst_distance_ = dist_index_[capacity_-1].dist_;
+    }
+
+    /**
+     * Copy indices and distances to output buffers
+     * @param indices
+     * @param dists
+     * @param num_elements Number of elements to copy
+     * @param sorted Indicates if results should be sorted
+     */
+    void copy(int* indices, DistanceType* dists, size_t num_elements, bool sorted = true)
+    {
+    	size_t n = std::min(count_, num_elements);
+    	for (size_t i=0; i<n; ++i) {
+    		*indices++ = dist_index_[i].index_;
+    		*dists++ = dist_index_[i].dist_;
+    	}
     }
 
     DistanceType worstDist() const
     {
         return worst_distance_;
     }
+
+private:
+    size_t capacity_;
+    size_t count_;
+    DistanceType worst_distance_;
+    std::vector<DistIndex> dist_index_;
+
+};
+
+
+
+template <typename DistanceType>
+class KNNResultSet2 : public ResultSet<DistanceType>
+{
+public:
+	typedef DistanceIndex<DistanceType> DistIndex;
+
+	KNNResultSet2(size_t capacity_) :
+        capacity_(capacity_)
+    {
+		// reserving capacity to prevent memory re-allocations
+		dist_index_.reserve(capacity_);
+    	clear();
+    }
+
+    ~KNNResultSet2()
+    {
+    }
+
+    /**
+     * Clears the result set
+     */
+    void clear()
+    {
+        dist_index_.clear();
+        worst_dist_ = std::numeric_limits<DistanceType>::max();
+        is_full_ = false;
+    }
+
+    /**
+     *
+     * @return Number of elements in the result set
+     */
+    size_t size() const
+    {
+        return dist_index_.size();
+    }
+
+    /**
+     * Radius search result set always reports full
+     * @return
+     */
+    bool full() const
+    {
+        return is_full_;
+    }
+
+    /**
+     * Add another point to result set
+     * @param dist distance to point
+     * @param index index of point
+     * Pre-conditions: capacity_>0
+     */
+    void addPoint(DistanceType dist, size_t index)
+    {
+    	if (dist>=worst_dist_) return;
+
+    	if (dist_index_.size()==capacity_) {
+    		// if result set if filled to capacity, remove farthest element
+    		std::pop_heap(dist_index_.begin(), dist_index_.end());
+        	dist_index_.pop_back();
+    	}
+
+    	// add new element
+    	dist_index_.push_back(DistIndex(dist,index));
+    	std::push_heap(dist_index_.begin(), dist_index_.end());
+
+    	if (dist_index_.size()==capacity_) {
+    		// we replaced the farthest element, update worst distance
+        	worst_dist_ = dist_index_[0].dist_;
+        	is_full_ = true;
+        }
+    }
+
+    /**
+     * Copy indices and distances to output buffers
+     * @param indices
+     * @param dists
+     * @param num_elements Number of elements to copy
+     * @param sorted Indicates if results should be sorted
+     */
+    void copy(int* indices, DistanceType* dists, size_t num_elements, bool sorted = true)
+    {
+    	if (sorted) {
+    		// std::sort_heap(dist_index_.begin(), dist_index_.end());
+    		// sort seems faster here, even though dist_index_ is a heap
+    		std::sort(dist_index_.begin(), dist_index_.end());
+    	}
+    	else {
+    		if (num_elements<size()) {
+    			std::nth_element(dist_index_.begin(), dist_index_.begin()+num_elements, dist_index_.end());
+    		}
+    	}
+
+    	size_t n = std::min(dist_index_.size(), num_elements);
+    	for (size_t i=0; i<n; ++i) {
+    		*indices++ = dist_index_[i].index_;
+    		*dists++ = dist_index_[i].dist_;
+    	}
+    }
+
+    DistanceType worstDist() const
+    {
+    	return worst_dist_;
+    }
+
+private:
+    size_t capacity_;
+    DistanceType worst_dist_;
+    std::vector<DistIndex> dist_index_;
+    bool is_full_;
 };
 
 
 /**
- * A result-set class used when performing a radius based search.
+ * Unbounded radius result set. It will hold as many elements as
+ * are added to it.
  */
 template <typename DistanceType>
 class RadiusResultSet : public ResultSet<DistanceType>
 {
-    DistanceType radius;
-    int* indices;
-    DistanceType* dists;
-    size_t capacity;
-    size_t count;
-
 public:
-    RadiusResultSet(DistanceType radius_, int* indices_, DistanceType* dists_, int capacity_) :
-        radius(radius_), indices(indices_), dists(dists_), capacity(capacity_)
+	typedef DistanceIndex<DistanceType> DistIndex;
+
+	RadiusResultSet(DistanceType radius_) :
+        radius_(radius_)
     {
-        init();
+		// reserving some memoy to limit number of re-allocations
+		dist_index_.reserve(1024);
+    	clear();
     }
 
     ~RadiusResultSet()
     {
     }
 
-    void init()
+    /**
+     * Clears the result set
+     */
+    void clear()
+    {
+        dist_index_.clear();
+    }
+
+    /**
+     *
+     * @return Number of elements in the result set
+     */
+    size_t size() const
+    {
+        return dist_index_.size();
+    }
+
+    /**
+     * Radius search result set always reports full
+     * @return
+     */
+    bool full() const
+    {
+        return true;
+    }
+
+    /**
+     * Add another point to result set
+     * @param dist distance to point
+     * @param index index of point
+     * Pre-conditions: capacity_>0
+     */
+    void addPoint(DistanceType dist, size_t index)
+    {
+    	if (dist<radius_) {
+    		// add new element
+    		dist_index_.push_back(DistIndex(dist,index));
+    	}
+    }
+
+    /**
+     * Copy indices and distances to output buffers
+     * @param indices
+     * @param dists
+     * @param num_elements Number of elements to copy
+     * @param sorted Indicates if results should be sorted
+     */
+    void copy(int* indices, DistanceType* dists, size_t num_elements, bool sorted = true)
+    {
+    	if (sorted) {
+    		// std::sort_heap(dist_index_.begin(), dist_index_.end());
+    		// sort seems faster here, even though dist_index_ is a heap
+    		std::sort(dist_index_.begin(), dist_index_.end());
+    	}
+    	else {
+    		if (num_elements<size()) {
+    			std::nth_element(dist_index_.begin(), dist_index_.begin()+num_elements, dist_index_.end());
+    		}
+    	}
+
+    	size_t n = std::min(dist_index_.size(), num_elements);
+    	for (size_t i=0; i<n; ++i) {
+    		*indices++ = dist_index_[i].index_;
+    		*dists++ = dist_index_[i].dist_;
+    	}
+    }
+
+    DistanceType worstDist() const
+    {
+    	return radius_;
+    }
+
+private:
+    DistanceType radius_;
+    std::vector<DistIndex> dist_index_;
+};
+
+
+
+/**
+ * Bounded radius result set. It limits the number of elements
+ * it can hold to a preset capacity.
+ */
+template <typename DistanceType>
+class KNNRadiusResultSet : public ResultSet<DistanceType>
+{
+public:
+	typedef DistanceIndex<DistanceType> DistIndex;
+
+	KNNRadiusResultSet(DistanceType radius_, size_t capacity_) :
+        radius_(radius_), capacity_(capacity_)
+    {
+		// reserving capacity to prevent memory re-allocations
+		dist_index_.reserve(capacity_);
+    	clear();
+    }
+
+    ~KNNRadiusResultSet()
+    {
+    }
+
+    /**
+     * Clears the result set
+     */
+    void clear()
+    {
+        dist_index_.clear();
+        worst_dist_ = radius_;
+    }
+
+    /**
+     *
+     * @return Number of elements in the result set
+     */
+    size_t size() const
+    {
+        return dist_index_.size();
+    }
+
+    /**
+     * Radius search result set always reports full
+     * @return
+     */
+    bool full() const
+    {
+        return true;
+    }
+
+    /**
+     * Add another point to result set
+     * @param dist distance to point
+     * @param index index of point
+     * Pre-conditions: capacity_>0
+     */
+    void addPoint(DistanceType dist, size_t index)
+    {
+    	if (dist>=worst_dist_) return;
+
+    	if (dist_index_.size()==capacity_) {
+    		// if result set if filled to capacity, remove farthest element
+    		std::pop_heap(dist_index_.begin(), dist_index_.end());
+        	dist_index_.pop_back();
+    	}
+
+    	// add new element
+    	dist_index_.push_back(DistIndex(dist,index));
+    	std::push_heap(dist_index_.begin(), dist_index_.end());
+
+    	if (dist_index_.size()==capacity_) {
+    		// we replaced the farthest element, update worst distance
+        	worst_dist_ = dist_index_[0].dist_;
+        }
+    }
+
+    /**
+     * Copy indices and distances to output buffers
+     * @param indices
+     * @param dists
+     * @param num_elements Number of elements to copy
+     * @param sorted Indicates if results should be sorted
+     */
+    void copy(int* indices, DistanceType* dists, size_t num_elements, bool sorted = true)
+    {
+    	if (sorted) {
+    		// std::sort_heap(dist_index_.begin(), dist_index_.end());
+    		// sort seems faster here, even though dist_index_ is a heap
+    		std::sort(dist_index_.begin(), dist_index_.end());
+    	}
+    	else {
+    		if (num_elements<size()) {
+    			std::nth_element(dist_index_.begin(), dist_index_.begin()+num_elements, dist_index_.end());
+    		}
+    	}
+
+    	size_t n = std::min(dist_index_.size(), num_elements);
+    	for (size_t i=0; i<n; ++i) {
+    		*indices++ = dist_index_[i].index_;
+    		*dists++ = dist_index_[i].dist_;
+    	}
+    }
+
+    DistanceType worstDist() const
+    {
+    	return worst_dist_;
+    }
+
+private:
+    DistanceType radius_;
+    size_t capacity_;
+    DistanceType worst_dist_;
+    std::vector<DistIndex> dist_index_;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * This is a result set that only counts the neighbors within a radius.
+ */
+
+template <typename DistanceType>
+class CountRadiusResultSet : public ResultSet<DistanceType>
+{
+    DistanceType radius;
+    size_t count;
+
+public:
+    CountRadiusResultSet(DistanceType radius_ ) :
+        radius(radius_)
+    {
+        clear();
+    }
+
+    ~CountRadiusResultSet()
+    {
+    }
+
+    void clear()
     {
         count = 0;
     }
@@ -260,13 +671,9 @@ public:
         return true;
     }
 
-    void addPoint(DistanceType dist, int index)
+    void addPoint(DistanceType dist, size_t index)
     {
         if (dist<radius) {
-            if ((capacity>0)&&(count < capacity)) {
-                dists[count] = dist;
-                indices[count] = index;
-            }
             count++;
         }
     }
@@ -278,10 +685,11 @@ public:
 
 };
 
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Class that holds the k NN neighbors
- * Faster than KNNResultSet as it uses a binary heap and does not maintain two arrays
  */
 template<typename DistanceType>
 class UniqueResultSet : public ResultSet<DistanceType>
@@ -324,33 +732,16 @@ public:
      * @param dist pointer to a C array of distances
      * @param n_neighbors the number of neighbors to copy
      */
-    virtual void copy(int* indices, DistanceType* dist, int n_neighbors = -1) const
+    virtual void copy(int* indices, DistanceType* dist, int n_neighbors, bool sorted = true)
     {
-        if (n_neighbors < 0) {
-            for (typename std::set<DistIndex>::const_iterator dist_index = dist_indices_.begin(), dist_index_end =
-                     dist_indices_.end(); dist_index != dist_index_end; ++dist_index, ++indices, ++dist) {
-                *indices = dist_index->index_;
-                *dist = dist_index->dist_;
-            }
-        }
-        else {
-            int i = 0;
-            for (typename std::set<DistIndex>::const_iterator dist_index = dist_indices_.begin(), dist_index_end =
-                     dist_indices_.end(); (dist_index != dist_index_end) && (i < n_neighbors); ++dist_index, ++indices, ++dist, ++i) {
-                *indices = dist_index->index_;
-                *dist = dist_index->dist_;
-            }
-        }
-    }
-
-    /** Copy the set to two C arrays but sort it according to the distance first
-     * @param indices pointer to a C array of indices
-     * @param dist pointer to a C array of distances
-     * @param n_neighbors the number of neighbors to copy
-     */
-    virtual void sortAndCopy(int* indices, DistanceType* dist, int n_neighbors = -1) const
-    {
-        copy(indices, dist, n_neighbors);
+    	if (n_neighbors<0) n_neighbors = dist_indices_.size();
+    	int i = 0;
+    	typedef typename std::set<DistIndex>::const_iterator Iterator;
+    	for (Iterator dist_index = dist_indices_.begin(), dist_index_end =
+    			dist_indices_.end(); (dist_index != dist_index_end) && (i < n_neighbors); ++dist_index, ++indices, ++dist, ++i) {
+    		*indices = dist_index->index_;
+    		*dist = dist_index->dist_;
+    	}
     }
 
     /** The number of neighbors in the set
@@ -402,7 +793,7 @@ public:
      * @param dist distance for that neighbor
      * @param index index of that neighbor
      */
-    inline void addPoint(DistanceType dist, int index)
+    inline void addPoint(DistanceType dist, size_t index)
     {
         // Don't do anything if we are worse than the worst
         if (dist >= worst_distance_) return;
@@ -461,9 +852,9 @@ public:
      * @param dist distance for that neighbor
      * @param index index of that neighbor
      */
-    void addPoint(DistanceType dist, int index)
+    void addPoint(DistanceType dist, size_t index)
     {
-        if (dist <= radius_) dist_indices_.insert(DistIndex(dist, index));
+        if (dist < radius_) dist_indices_.insert(DistIndex(dist, index));
     }
 
     /** Remove all elements in the set
@@ -510,11 +901,9 @@ public:
     /** Constructor
      * @param capacity the number of neighbors to store at max
      */
-    KNNRadiusUniqueResultSet(unsigned int capacity, DistanceType radius)
+    KNNRadiusUniqueResultSet(DistanceType radius, size_t capacity) : KNNUniqueResultSet<DistanceType>(capacity)
     {
-        this->capacity_ = capacity;
         this->radius_ = radius;
-        this->dist_indices_.reserve(capacity_);
         this->clear();
     }
 
@@ -524,15 +913,12 @@ public:
     {
         dist_indices_.clear();
         worst_distance_ = radius_;
-        is_full_ = false;
+        is_full_ = true;
     }
 private:
     using KNNUniqueResultSet<DistanceType>::dist_indices_;
     using KNNUniqueResultSet<DistanceType>::is_full_;
     using KNNUniqueResultSet<DistanceType>::worst_distance_;
-
-    /** The maximum number of neighbors to consider */
-    unsigned int capacity_;
 
     /** The maximum distance of a neighbor */
     DistanceType radius_;
