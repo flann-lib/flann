@@ -79,6 +79,9 @@ template<>
 struct Accumulator<int> { typedef float Type; };
 
 
+#undef True;
+#undef False;
+
 class True
 {
 };
@@ -541,7 +544,7 @@ struct Hamming2
     typedef False is_vector_space_distance;
 
     typedef T ElementType;
-    typedef int ResultType;
+    typedef unsigned int ResultType;
 
     /** This is popcount_3() from:
      * http://en.wikipedia.org/wiki/Hamming_weight */
