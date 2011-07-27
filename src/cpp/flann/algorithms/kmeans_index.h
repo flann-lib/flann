@@ -442,7 +442,6 @@ public:
                 KMeansNodePtr node = branch.node;
                 findNN(node, result, vec, checks, maxChecks, heap);
             }
-            assert(result.full());
 
             delete heap;
         }

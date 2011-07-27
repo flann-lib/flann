@@ -432,7 +432,6 @@ public:
             NodePtr node = branch.node;
             findNN(node, result, vec, checks, maxChecks, heap, checked);
         }
-        assert(result.full());
 
         delete heap;
 
