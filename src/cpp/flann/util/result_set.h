@@ -431,7 +431,7 @@ public:
 	RadiusResultSet(DistanceType radius_) :
         radius_(radius_)
     {
-		// reserving some memoy to limit number of re-allocations
+		// reserving some memory to limit number of re-allocations
 		dist_index_.reserve(1024);
     	clear();
     }
@@ -548,6 +548,7 @@ public:
     {
         dist_index_.clear();
         worst_dist_ = radius_;
+        is_heap_ = false;
     }
 
     /**
@@ -586,9 +587,16 @@ public:
 
     	// add new element
     	dist_index_.push_back(DistIndex(dist,index));
-    	std::push_heap(dist_index_.begin(), dist_index_.end());
+    	if (is_heap_) {
+    		std::push_heap(dist_index_.begin(), dist_index_.end());
+    	}
 
     	if (dist_index_.size()==capacity_) {
+    		// when got to full capacity, make it a heap
+    		if (!is_heap_) {
+    			std::make_heap(dist_index_.begin(), dist_index_.end());
+    			is_heap_ = true;
+    		}
     		// we replaced the farthest element, update worst distance
         	worst_dist_ = dist_index_[0].dist_;
         }
@@ -627,6 +635,7 @@ public:
     }
 
 private:
+    bool is_heap_;
     DistanceType radius_;
     size_t capacity_;
     DistanceType worst_dist_;
