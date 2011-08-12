@@ -192,6 +192,7 @@ result,dists = flann.nn(dataset,testset,5,algorithm="kmeans",
 
 
 \section{Downloading and compiling FLANN}
+\label{sec:downloading_and_compiling}
 
 FLANN can be downloaded from the following address:
 \begin{center}
@@ -378,6 +379,19 @@ struct KDTreeSingleIndexParams : public IndexParams
  \item[max\_leaf\_size] The maximum number of points to have in a leaf for not branching the tree any more.
 \end{description}
 
+\textbf{KDTreeCuda3dIndexParams} When passing an object of this type the index will be a single kd-tree that 
+is built and performs searches on a CUDA compatible GPU. Search performance is best for large numbers of search and query points.
+For more information, see section \ref{sec:flann::cuda}
+\begin{Verbatim}[fontsize=\footnotesize]
+struct KDTreeCuda3dIndexParams : public IndexParams
+{
+    KDTreeCuda3dIndexParams( int leaf_max_size = 64 );
+};
+\end{Verbatim}
+\begin{description}
+ \item[max\_leaf\_size] The maximum number of points to have in a leaf for not branching the tree any more.
+\end{description}
+
 
 \textbf{CompositeIndexParams} When using a parameters object of this type the index created combines the randomized kd-trees 
 	and the hierarchical k-means tree.
@@ -486,7 +500,7 @@ higher value for this parameter would give better search precision, but
 also take more time. For all leafs to be checked use the value \texttt{CHECKS\_UNLIMITED}.
 If automatic configuration was used when the index was created, the number of checks 
 required to achieve the specified precision was also computed, to use that value specify \texttt{CHECKS\_AUTOTUNED}.
- \item[eps] Search for eps-approximate neighbors (only used by KDTreeSingleIndex).
+ \item[eps] Search for eps-approximate neighbors (only used by KDTreeSingleIndex and KDTreeCuda3dIndex).
  \item[sorted] Used only by radius search, specifies if the neighbors returned should be sorted by distance.
 \end{description}
 \end{description}
@@ -542,8 +556,74 @@ branching factor (see description of the KMeansIndexParams).  }
 \end{description}
 The function returns the number of clusters computed.
 
+\subsubsection{flann::KdTreeCuda3dIndex}
+\label{sec:flann::cuda}
+FLANN provides a CUDA implementation of the kd-tree build and search algorithms to improve the build and query speed for large 3d data sets. This section will provide all the necessary information to use the \texttt{KdTreeCuda3dIndex} index type.
 
+\textbf{Building:}
+If CMake detects a CUDA install during the build (see section \ref{sec:downloading_and_compiling}), a library \texttt{libflann\_cuda.so} will be built. 
 
+\textbf{Basic Usage:}
+To be able to use the new index type, you have to include the FLANN header this way:
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+#define FLANN_USE_CUDA
+#include <flann/flann.hpp>
+\end{Verbatim}
+If you define the symbol \texttt{FLANN\_USE\_CUDA} before including the FLANN header, you will have to link \texttt{libflann\_cuda.so} or \texttt{libflann\_cuda\_s.a} with your project. 
+However, you will not have to compile your source code with \texttt{nvcc}, except if you use other CUDA code, of course.
+
+You can then create your index by using the \texttt{KDTreeCuda3dIndexParams} to create the index. The index will take care of copying all the data from and to the GPU for you, both 
+for index creation and search.
+
+A word of caution: A general guideline for deciding whether to use the CUDA kd tree or a (multi-threaded) CPU implementation is hard to give, since it depends on the combination of CPU and GPU in each system and the data sets.
+For example, on a system with a Phenom II 955 CPU and a Geforce GTX 260 GPU, the maximum search speedup on a synthetic (random) data set is a factor of about 8-9 vs the single-core CPU search, and starts to be reached at about 100k search and query points. (This includes transfer times.)
+Build time does not profit as much from the GPU acceleration; here the benefit is about 2x at 200k points, but this largely depends on the data set. The only way to know which implementation is best suited is to try it.
+
+\textbf{Advanced Usage:}
+In some cases, you might already have your data in a buffer on the GPU. In this case, you can re-use these buffers instead of copying the buffers back to system RAM for index creation and search.
+The way to do this is to pass GPU pointers via the \texttt{flann::Matrix} inputs and tell the index via the index and search params to treat the pointers as GPU pointers.
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+thrust::device_vector<float4>  points_vector( n_points );
+// ... fill vector here...
+
+float* gpu_pointer = (float*)thrust::raw_pointer_cast(&points_vector[0]);
+flann::Matrix<float> matrix_gpu(gpu_pointer,n_points,3, 4);
+
+flann::KDTreeCuda3dIndexParams params;
+params["input_is_gpu_float4"]=true;
+flann::Index<flann::L2<float> > flannindex( matrix_gpu, params  );
+flannindex.buildIndex();
+\end{Verbatim}
+\begin{description}
+ \item First, a GPU buffer of float4 values is created and filled with points. \footnote{For index creation, only \texttt{float4} points are supported, \texttt{float3} or structure-of-array (SOA) representations are currently not supported since
+\texttt{float4} proved to be best in terms of access speed for tree creation and search.}
+ \item Then, a GPU pointer to the buffer is stored in a flann matrix with 3 columns and a stride of 4 (since the last element in the \texttt{float4} is unused).
+ \item Last, the index is created. The \texttt{input\_is\_gpu\_float4} flag tells the index to treat the matrix as a gpu buffer.
+\end{description}
+
+Similarly, you can specify GPU buffers for the search routines that return the result via flann matrices (but not for those that return them via \texttt{std::vector}s).
+To do this, the pointers in the index and dist matrices have to point to GPU buffers and the \texttt{cols} value has to be set to 3 (as we are dealing with 3d points). Here, any value for \texttt{stride} can be used.
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+flann::Matrix<int> indices_gpu(gpu_pointer_indices,n_points, knn, stride);
+flann::Matrix<float> dists_gpu(gpu_pointer_dists,n_points, knn, stride);
+
+flann::SearchParams params;
+params["matrices_in_gpu_ram"]=true;
+
+flannindex.knnSearch( queries_gpu ,indices_gpu,dists_gpu,knn, params);
+\end{Verbatim}
+\begin{description}
+ \item Note that you cannot mix matrices in system and CPU ram here!
+\end{description}
+
+\textbf{Search Parameters:}
+The search routines support three parameters:
+\begin{itemize}
+ \item \texttt{eps} - used for approximate knn search. The maximum possible error is $e= d_{best} * eps$, i.e. the distance of the returned neighbor is at maximum $eps$ times larget than the distance to the real best neighbor.
+ \item \texttt{use\_heap} - used in knn and radius search. If set to true, a heap structure will be used in the search to keep track of the distance to the farthest neighbor. Beneficial with about $k>64$ elements.
+ \item \texttt{sorted} - if set to true, the results of the radius and knn searches will be sorted in ascending order by their distance to the query point.
+ \item \texttt{matrices\_in\_gpu\_ram} - set to true to indicate that all (input and output) matrices are located in GPU RAM.
+\end{itemize}
 
 
 \subsection{Using FLANN from C}

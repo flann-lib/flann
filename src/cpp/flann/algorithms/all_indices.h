@@ -35,6 +35,7 @@
 #include "flann/algorithms/nn_index.h"
 #include "flann/algorithms/kdtree_index.h"
 #include "flann/algorithms/kdtree_single_index.h"
+#include "flann/algorithms/kdtree_cuda_3d_index.h"
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
@@ -64,6 +65,14 @@ struct index_creator
         case FLANN_INDEX_KDTREE:
             nnIndex = new KDTreeIndex<Distance>(dataset, params, distance);
             break;
+			//! #define this symbol before including flann.h to enable GPU search algorithms. But you have
+			//! to link libflann_cuda then!
+		#ifdef FLANN_USE_CUDA
+		case FLANN_INDEX_KDTREE_CUDA:
+            nnIndex = new KDTreeCuda3dIndex<Distance>(dataset, params, distance);
+            break;
+		#endif
+			
         case FLANN_INDEX_KMEANS:
             nnIndex = new KMeansIndex<Distance>(dataset, params, distance);
             break;

@@ -27,6 +27,12 @@ if (GTEST_FOUND AND HDF5_FOUND)
     endif()
 endif()
 
+if (GTEST_FOUND AND HDF5_FOUND AND BUILD_CUDA_LIB)
+	flann_add_cuda_gtest(flann_cuda_test flann_cuda_test.cu)
+	target_link_libraries(flann_cuda_test flann_cpp ${HDF5_LIBRARIES} flann_cuda)
+
+endif()
+
 #---------- pyunit tests --------------
 if (PYTHON_EXECUTABLE) 
     flann_add_pyunit(test_nn.py)

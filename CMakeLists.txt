@@ -40,6 +40,7 @@ set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 option(BUILD_C_BINDINGS "Build C bindings" ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
 option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" ON)
+option(BUILD_CUDA_LIB "Build CUDA library" ON)
 option(USE_MPI "Use MPI" OFF)
 
 
@@ -87,6 +88,16 @@ find_package(GTest)
 if (NOT GTEST_FOUND)
 	message(WARNING "gtest library not found, some tests will not be run")
 endif()
+
+find_package(CUDA)
+if(NOT CUDA_FOUND)
+	message(STATUS "CUDA not found, CUDA library will not be built")
+	set(BUILD_CUDA_LIB OFF)
+else(NOT CUDA_FOUND)
+    message(STATUS "CUDA found (include: ${CUDA_INCLUDE_DIRS}, lib: ${CUDA_LIBRARIES})")
+endif(NOT CUDA_FOUND)
+
+include_directories(${CUDA_INCLUDE_DIRS})
 
 
 #set the C/C++ include path to the "include" directory
@@ -152,4 +163,5 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Building C bindings: ${BUILD_C_BINDINGS}")
 message(STATUS "Building python bindings: ${BUILD_PYTHON_BINDINGS}")
 message(STATUS "Building matlab bindings: ${BUILD_MATLAB_BINDINGS}")
+message(STATUS "Building CUDA library: ${BUILD_CUDA_LIB}")
 message(STATUS "Using MPI support: ${USE_MPI}")

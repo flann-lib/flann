@@ -32,6 +32,7 @@
 #define FLANN_DATASET_H_
 
 #include "flann/general.h"
+#include <stdio.h>
 
 namespace flann
 {

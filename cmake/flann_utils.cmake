@@ -69,6 +69,25 @@ macro(flann_add_gtest exe)
     add_dependencies(test test_${_testname})
 endmacro(flann_add_gtest)
 
+macro(flann_add_cuda_gtest exe)
+    # add build target
+    cuda_add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
+    target_link_libraries(${exe} ${GTEST_LIBRARIES})
+    # add dependency to 'tests' target
+    add_dependencies(tests ${exe})
+
+    # add target for running test
+    string(REPLACE "/" "_" _testname ${exe})
+    add_custom_target(test_${_testname}
+                    COMMAND ${exe}
+                    ARGS --gtest_print_time
+                    DEPENDS ${exe}
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
+                    VERBATIM
+                    COMMENT "Runnint gtest test(s) ${exe}")
+    # add dependency to 'test' target
+    add_dependencies(test test_${_testname})
+endmacro(flann_add_cuda_gtest)
 
 macro(flann_add_pyunit file)
     # find test file

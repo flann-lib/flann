@@ -179,7 +179,7 @@ void load_value(FILE* stream, std::vector<T>& value)
     }
     value.resize(size);
     read_cnt = fread(&value[0], sizeof(T), size, stream);
-    if (read_cnt!=int(size)) {
+    if (int(read_cnt)!=int(size)) {
         throw FLANNException("Cannot read from file");
     }
 }
