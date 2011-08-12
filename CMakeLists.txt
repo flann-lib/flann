@@ -95,9 +95,9 @@ if(NOT CUDA_FOUND)
 	set(BUILD_CUDA_LIB OFF)
 else(NOT CUDA_FOUND)
     message(STATUS "CUDA found (include: ${CUDA_INCLUDE_DIRS}, lib: ${CUDA_LIBRARIES})")
+    include_directories(${CUDA_INCLUDE_DIRS})
 endif(NOT CUDA_FOUND)
 
-include_directories(${CUDA_INCLUDE_DIRS})
 
 
 #set the C/C++ include path to the "include" directory
