@@ -20,27 +20,35 @@ add_library(flann_cpp_s STATIC ${CPP_SOURCES})
 if(CMAKE_COMPILER_IS_GNUCC)
     set_target_properties(flann_cpp_s PROPERTIES COMPILE_FLAGS -fPIC)
 # 		set_target_properties(flann_cuda_s PROPERTIES COMPILE_FLAGS -fPIC)
-		# hack: cuda_add_libraries doesn't seem to add the -fPIC option if defined like above...
-		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC" )
+    if (BUILD_CUDA_LIB)
+    	# hack: cuda_add_libraries doesn't seem to add the -fPIC option if defined like above...
+	    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC" )
+    endif()
 endif()
 
-
-cuda_add_library(flann_cuda_s STATIC ${CU_SOURCES})
-
 set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
-set_property(TARGET flann_cuda_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
+
+if (BUILD_CUDA_LIB)
+    cuda_add_library(flann_cuda_s STATIC ${CU_SOURCES})
+    set_property(TARGET flann_cuda_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
+endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
     add_library(flann_cpp SHARED "")
     set_target_properties(flann_cpp PROPERTIES LINKER_LANGUAGE CXX)
     target_link_libraries(flann_cpp -Wl,-whole-archive flann_cpp_s -Wl,-no-whole-archive)
-		cuda_add_library(flann_cuda SHARED "")
-    set_target_properties(flann_cuda PROPERTIES LINKER_LANGUAGE CXX)
-    target_link_libraries(flann_cuda -Wl,-whole-archive flann_cuda_s -Wl,-no-whole-archive)
-# 	target_link_libraries(flann_cuda cudpp_x86_64)
+
+    if (BUILD_CUDA_LIB)
+	    cuda_add_library(flann_cuda SHARED "")
+        set_target_properties(flann_cuda PROPERTIES LINKER_LANGUAGE CXX)
+        target_link_libraries(flann_cuda -Wl,-whole-archive flann_cuda_s -Wl,-no-whole-archive)
+    # 	target_link_libraries(flann_cuda cudpp_x86_64)
+    endif()
 else()
     add_library(flann_cpp SHARED ${CPP_SOURCES})
+    if (BUILD_CUDA_LIB)
 		cuda_add_library(flann_cpp SHARED ${CPP_SOURCES})
+    endif()
 endif()
 
 set_target_properties(flann_cpp PROPERTIES
@@ -49,11 +57,13 @@ set_target_properties(flann_cpp PROPERTIES
    DEFINE_SYMBOL FLANN_EXPORTS
 ) 
 
-set_target_properties(flann_cuda PROPERTIES
-   VERSION ${FLANN_VERSION}
-   SOVERSION ${FLANN_SOVERSION}
-   DEFINE_SYMBOL FLANN_EXPORTS
-) 
+if (BUILD_CUDA_LIB)
+    set_target_properties(flann_cuda PROPERTIES
+       VERSION ${FLANN_VERSION}
+       SOVERSION ${FLANN_SOVERSION}
+       DEFINE_SYMBOL FLANN_EXPORTS
+    ) 
+endif()
 
 
 #debug libraries
@@ -68,15 +78,17 @@ set_target_properties(flann_cpp_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_
 set_property(TARGET flann_cpp_s-gd PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
 
-add_library(flann_cuda-gd SHARED ${CPP_SOURCES})
-set_target_properties(flann_cuda-gd PROPERTIES 
-    COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG}
-    DEFINE_SYMBOL FLANN_EXPORTS
-)
+if (BUILD_CUDA_LIB)
+    add_library(flann_cuda-gd SHARED ${CPP_SOURCES})
+    set_target_properties(flann_cuda-gd PROPERTIES 
+        COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG}
+        DEFINE_SYMBOL FLANN_EXPORTS
+    )
 
-add_library(flann_cuda_s-gd STATIC ${CPP_SOURCES})
-set_target_properties(flann_cuda_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
-set_property(TARGET flann_cuda_s-gd PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
+    add_library(flann_cuda_s-gd STATIC ${CPP_SOURCES})
+    set_target_properties(flann_cuda_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
+    set_property(TARGET flann_cuda_s-gd PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
+endif()
 
 if (BUILD_C_BINDINGS)
     add_library(flann_s STATIC ${C_SOURCES})
@@ -112,11 +124,20 @@ endif(WIN32)
 
 
 install (
-    TARGETS flann_cpp flann_cpp_s flann_cpp-gd flann_cpp_s-gd flann_cuda flann_cuda_s flann_cuda-gd flann_cuda_s-gd
+    TARGETS flann_cpp flann_cpp_s flann_cpp-gd flann_cpp_s-gd
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
 )
+ 
+if (BUILD_CUDA_LIB)
+    install (
+        TARGETS flann_cuda flann_cuda_s flann_cuda-gd flann_cuda_s-gd
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
+        ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
+    )
+endif()
 
 if (BUILD_C_BINDINGS)
     install (
