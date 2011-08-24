@@ -76,13 +76,16 @@ endif()
 if (USE_MPI)
     if (NOT MPI_FOUND)
         message(WARNING "Could not find an MPI library. Define the MPI_COMPILER variable to the path of your MPI compiler.")
+        set(USE_MPI OFF)
     endif()
 
     if (NOT HDF5_IS_PARALLEL)
         message(WARNING "For MPI support the Parallel HDF5 library is required.")
+        set(USE_MPI OFF)
     endif()
-
 endif(USE_MPI)
+
+
 
 find_package(GTest) 
 if (NOT GTEST_FOUND)

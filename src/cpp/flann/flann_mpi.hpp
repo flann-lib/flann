@@ -56,7 +56,7 @@ struct SearchResults
         }
         ar& boost::serialization::make_array(indices.data, indices.rows*indices.cols);
         if (Archive::is_saving::value) {
-            indices.free();
+            delete[] indices.data;
         }
         ar& dists.rows;
         ar& dists.cols;
@@ -65,7 +65,7 @@ struct SearchResults
         }
         ar& boost::serialization::make_array(dists.data, dists.rows*dists.cols);
         if (Archive::is_saving::value) {
-            dists.free();
+            delete[] dists.data;
         }
     }
 };
@@ -104,10 +104,10 @@ struct ResultsMerger
             }
         }
 
-        a.indices.free();
-        a.dists.free();
-        b.indices.free();
-        b.dists.free();
+        delete[] a.indices.data;
+        delete[] a.dists.data;
+        delete[] b.indices.data;
+        delete[] b.dists.data;
         return results;
     }
 };
@@ -172,7 +172,7 @@ template<typename Distance>
 Index<Distance>::Index(const std::string& file_name, const std::string& dataset_name, const IndexParams& params)
 {
     boost::mpi::communicator world;
-    flann_algorithm_t index_type = params.getIndexType();
+    flann_algorithm_t index_type = get_param<flann_algorithm_t>(params,"algorithm");
     if (index_type == SAVED) {
         throw FLANNException("Saving/loading of MPI indexes is not currently supported.");
     }
@@ -181,11 +181,11 @@ Index<Distance>::Index(const std::string& file_name, const std::string& dataset_
 
     std::vector<int> sizes;
     // get the sizes of all MPI indices
-    all_gather(world, flann_index->size(), sizes);
+    all_gather(world, (int)flann_index->size(), sizes);
     size_ = 0;
     offset_ = 0;
     for (size_t i = 0; i < sizes.size(); ++i) {
-        if (i < world.rank()) offset_ += sizes[i];
+        if ((int)i < world.rank()) offset_ += sizes[i];
         size_ += sizes[i];
     }
 }
@@ -194,7 +194,7 @@ template<typename Distance>
 Index<Distance>::~Index()
 {
     delete flann_index;
-    dataset.free();
+    delete[] dataset.data;
 }
 
 template<typename Distance>
@@ -219,14 +219,14 @@ void Index<Distance>::knnSearch(const flann::Matrix<ElementType>& queries, flann
     reduce(world, local_results, results, ResultsMerger<DistanceType>(), 0);
 
     if (world.rank() == 0) {
-        for (int i = 0; i < results.indices.rows; ++i) {
-            for (int j = 0; j < results.indices.cols; ++j) {
+        for (size_t i = 0; i < results.indices.rows; ++i) {
+            for (size_t j = 0; j < results.indices.cols; ++j) {
                 indices[i][j] = results.indices[i][j];
                 dists[i][j] = results.dists[i][j];
             }
         }
-        results.indices.free();
-        results.dists.free();
+        delete[] results.indices.data;
+        delete[] results.dists.data;
     }
 }
 
@@ -258,8 +258,8 @@ int Index<Distance>::radiusSearch(const flann::Matrix<ElementType>& query, flann
                 dists[i][j] = results.dists[i][j];
             }
         }
-        results.indices.free();
-        results.dists.free();
+        delete[] results.indices.data;
+        delete[] results.dists.data;
     }
     return 0;
 }

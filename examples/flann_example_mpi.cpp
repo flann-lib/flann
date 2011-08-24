@@ -61,7 +61,7 @@ int main(int argc, char** argv)
     flann::Matrix<float> dists(new float[query.rows*nn], query.rows, nn);
 
     // construct an randomized kd-tree index using 4 kd-trees
-    flann::mpi::Index<float> index("sift100K.h5", "dataset", flann::KDTreeIndexParams(4));
+    flann::mpi::Index<flann::L2<float> > index("sift100K.h5", "dataset", flann::KDTreeIndexParams(4));
     IF_RANK0 printf("Loading data done (%g seconds)\n", stop_timer());
 
     IF_RANK0 printf("Index size: (%d,%d)\n", index.size(), index.veclen());
