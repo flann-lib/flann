@@ -44,7 +44,8 @@ typedef std::map<std::string, any> IndexParams;
 
 struct SearchParams : public IndexParams
 {
-    SearchParams(int checks = 32, float eps = 0, bool sorted = true )
+
+    SearchParams(int checks = 32, float eps = 0, bool sorted = true, int cores = 1 )
     {
         // how many leafs to visit when searching for neighbours (-1 for unlimited)
         (*this)["checks"] = checks;
@@ -52,6 +53,9 @@ struct SearchParams : public IndexParams
         (*this)["eps"] = eps;
         // only for radius search, require neighbours sorted by distance (default: true)
         (*this)["sorted"] = sorted;
+        // how many cores to assign to the search
+        // this parameter will be ignored if Intel TBB isn't available on the system or no "TBB" macro is defined
+        (*this)["cores"] = cores;
     }
 };
 

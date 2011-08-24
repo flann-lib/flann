@@ -31,6 +31,40 @@ If you want to try out the latest changes or contribute to FLANN, then it's reco
 
 If you just want to browse the repository, you can do so by going [here](https://github.com/mariusmuja/flann).
 
+
+Compiling FLANN with multithreading support
+------------------------------------------
+
+Make sure you have Intel Threading Building Blocks installed. You can get the latest version from www.threadingbuildingblocks.org. Alternatively you can also get it from package manager (this will probably not be the latest version, e.g. on Ubuntu 10.04 LTS only version 2.2 is found this way).
+
+For CMake to be able to detect the installation of Intel TBB, you need to have a tbb.pc in one of the directories of your PKG_CONFIG_PATH, it should look somewhat like this:
+    _________________________________________________
+
+    tbb.pc
+    _________________________________________________
+
+    prefix=/usr
+    exec_prefix=${prefix}
+    libdir=${exec_prefix}/lib
+    includedir=${prefix}/include
+
+    Name: Threading Building Blocks
+    Description: Intel's parallelism library for C++
+    URL: http://www.threadingbuildingblocks.org/
+    Version: 3.0update7
+    Libs: -L${libdir} -ltbb
+    Cflags: -I${includedir} 
+    _________________________________________________
+
+
+Using multithreaded FLANN in your project
+-----------------------------------------
+
+When multithreaded FLANN is compiled and installed, all you need to do now is compile your project with the -DTBB compiler flag to enable multithreading support. For example; in CMake you can achieve this by stating "ADD_DEFINITIONS(-DTBB)" for your target.
+
+Have a look at the "flann::Index::knnSearch" section in the manual on how to specify the number of cores for knn- and radiussearch.
+
+
 Conditions of use
 -----------------
 

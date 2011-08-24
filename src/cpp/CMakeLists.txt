@@ -23,19 +23,27 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
     add_library(flann_cpp SHARED "")
     set_target_properties(flann_cpp PROPERTIES LINKER_LANGUAGE CXX)
     target_link_libraries(flann_cpp -Wl,-whole-archive flann_cpp_s -Wl,-no-whole-archive)
+    if(TBB_FOUND AND TBB_DEBUG_FOUND)
+        target_link_libraries(flann_cpp ${TBB_LIBRARIES})
+    endif(TBB_FOUND  AND TBB_DEBUG_FOUND)
 else()
     add_library(flann_cpp SHARED ${CPP_SOURCES})
+    if(TBB_FOUND AND TBB_DEBUG_FOUND)
+        target_link_libraries(flann_cpp ${TBB_LIBRARIES})
+    endif(TBB_FOUND AND TBB_DEBUG_FOUND)
 endif()
 
 set_target_properties(flann_cpp PROPERTIES
    VERSION ${FLANN_VERSION}
    SOVERSION ${FLANN_SOVERSION}
    DEFINE_SYMBOL FLANN_EXPORTS
-) 
-
+)
 
 #debug libraries
 add_library(flann_cpp-gd SHARED ${CPP_SOURCES})
+if(TBB_FOUND AND TBB_DEBUG_FOUND)
+    target_link_libraries(flann_cpp-gd ${TBB_DEBUG_LIBRARIES})
+endif(TBB_FOUND AND TBB_DEBUG_FOUND)
 set_target_properties(flann_cpp-gd PROPERTIES 
     COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG}
     DEFINE_SYMBOL FLANN_EXPORTS
@@ -45,6 +53,8 @@ add_library(flann_cpp_s-gd STATIC ${CPP_SOURCES})
 set_target_properties(flann_cpp_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
 set_property(TARGET flann_cpp_s-gd PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
+
+#Intel TBB is a C++ templated lib, so no support for multithreading in C bindings
 if (BUILD_C_BINDINGS)
     add_library(flann_s STATIC ${C_SOURCES})
     if(CMAKE_COMPILER_IS_GNUCC)

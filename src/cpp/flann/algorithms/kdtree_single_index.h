@@ -60,7 +60,7 @@ struct KDTreeSingleIndexParams : public IndexParams
 
 
 /**
- * Randomized kd-tree index
+ * Single kd-tree index
  *
  * Contains the k-d trees and other information for indexing a set of points
  * for nearest-neighbor matching.
