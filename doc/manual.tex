@@ -247,8 +247,15 @@ options use the \texttt{cmake-gui} application after \texttt{cmake} has finished
   \end{center}
 \end{figure}
 
+\subsection{Compiling FLANN with multithreading support}
+To make use of FLANN multithreading support, it is required that Intel Threading Building Blocks is installed correctly
+on your system. You can either get it from your package manager or from:
+\begin{center}
+    \texttt{http://threadingbuildingblocks.org/}
+\end{center}
 
-
+You also need a pkgconfig file for locating the Intel TBB install and need to specify a -DTBB compiler flag on compilation
+of your project. Have a look at the readme file in the root folder of FLANN for more detailed instructions.
 
 \section{Using FLANN}
 
@@ -491,7 +498,8 @@ struct SearchParams
 {
 	SearchParams(int checks = 32,
 		  float eps = 0,
-		  bool sorted = true);
+		  bool sorted = true,
+		  int cores = 1);
 };
 \end{Verbatim}
 \begin{description}
@@ -502,6 +510,7 @@ If automatic configuration was used when the index was created, the number of ch
 required to achieve the specified precision was also computed, to use that value specify \texttt{CHECKS\_AUTOTUNED}.
  \item[eps] Search for eps-approximate neighbors (only used by KDTreeSingleIndex and KDTreeCuda3dIndex).
  \item[sorted] Used only by radius search, specifies if the neighbors returned should be sorted by distance.
+ \item[cores] How many cores to assign to the search (specify -1 for automatic core selection).
 \end{description}
 \end{description}
 

@@ -50,6 +50,9 @@ else()
 		cuda_add_library(flann_cpp SHARED ${CPP_SOURCES})
     endif()
 endif()
+if(TBB_FOUND AND TBB_DEBUG_FOUND)
+    target_link_libraries(flann_cpp ${TBB_LIBRARIES})
+endif(TBB_FOUND  AND TBB_DEBUG_FOUND)
 
 set_target_properties(flann_cpp PROPERTIES
    VERSION ${FLANN_VERSION}
@@ -68,6 +71,9 @@ endif()
 
 #debug libraries
 add_library(flann_cpp-gd SHARED ${CPP_SOURCES})
+if(TBB_FOUND AND TBB_DEBUG_FOUND)
+    target_link_libraries(flann_cpp-gd ${TBB_DEBUG_LIBRARIES})
+endif(TBB_FOUND AND TBB_DEBUG_FOUND)
 set_target_properties(flann_cpp-gd PROPERTIES 
     COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG}
     DEFINE_SYMBOL FLANN_EXPORTS

@@ -211,7 +211,6 @@ FLANN_EXPORT flann_index_t flann_load_index_int(char* filename,
     indices = pointer to matrix for the indices of the nearest neighbors of the testset features in the dataset
             (must have trows number of rows and nn number of columns)
     nn = how many nearest neighbors to return
-    index_params = index related parameters
     flann_params = generic flann parameters
 
    Returns: zero or -1 for error
@@ -276,6 +275,8 @@ FLANN_EXPORT int flann_find_nearest_neighbors_int(int* dataset,
     trows = number of rows (features) in the query dataset (same dimensionality as features in the dataset)
     indices = pointer to matrix for the indices of the nearest neighbors of the testset features in the dataset
             (must have trows number of rows and nn number of columns)
+    dists = pointer to matrix for the distances of the nearest neighbors of the testset features in the dataset
+            (must have trows number of rows and 1 column)
     nn = how many nearest neighbors to return
     flann_params = generic flann parameters
 
@@ -330,11 +331,16 @@ FLANN_EXPORT int flann_find_nearest_neighbors_index_int(flann_index_t index_id,
  * search will return all the neighbours found within a search radius
  * of the query point.
  *
- * The check parameter in the function below sets the level of approximation
+ * The check parameter in the FLANNParameters below sets the level of approximation
  * for the search by only visiting "checks" number of features in the index
  * (the same way as for the KNN search). A lower value for checks will give
  * a higher search speedup at the cost of potentially not returning all the
  * neighbours in the specified radius.
+ *
+ * The cores parameter in the FLANNParameters below sets the number of cores
+ * that will be used for the radius search, in case Intel TBB is present on
+ * the system and FLANN is built with multicore support on. Auto core selection
+ * can be achieved by setting the number of cores to -1.
  */
 FLANN_EXPORT int flann_radius_search(flann_index_t index_ptr, /* the index */
                                      float* query, /* query point */

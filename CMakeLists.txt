@@ -12,6 +12,8 @@ set(FLANN_VERSION 1.7.0)
 DISSECT_VERSION()
 GET_OS_INFO()
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 # Add an "uninstall" target
 CONFIGURE_FILE ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
     "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
@@ -101,6 +103,27 @@ else(NOT CUDA_FOUND)
     include_directories(${CUDA_INCLUDE_DIRS})
 endif(NOT CUDA_FOUND)
 
+# find Intel TBB
+find_package(TBB)
+if(TBB_FOUND AND TBB_DEBUG_FOUND)
+    message(STATUS "Intel TBB include dir: " ${TBB_INCLUDE_DIRS})
+    message(STATUS "Intel TBB libs: " ${TBB_LIBRARIES})
+    message(STATUS "Intel TBB libs (debug): " ${TBB_DEBUG_LIBRARIES})
+	include_directories(${TBB_INCLUDE_DIRS})
+endif(TBB_FOUND AND TBB_DEBUG_FOUND)
+
+# print additional info
+if(TBB_FOUND AND NOT TBB_DEBUG_FOUND)
+    message(WARNING "Only the Intel TBB (release) libraries were found")
+endif()
+
+if(TBB_DEBUG_FOUND AND NOT TBB_FOUND)
+    message(WARNING "Only the Intel TBB (debug) libraries were found")
+endif()
+
+if(NOT TBB_FOUND AND NOT TBB_DEBUG_FOUND)
+    message(WARNING "No intel TBB libraries were found")
+endif()
 
 
 #set the C/C++ include path to the "include" directory
