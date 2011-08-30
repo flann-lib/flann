@@ -163,7 +163,7 @@ void load_value(FILE* stream, flann::Matrix<T>& value)
     }
     value.data = new T[value.rows*value.cols];
     read_cnt = fread(value.data, sizeof(T), value.rows*value.cols, stream);
-    if (read_cnt != int(value.rows*value.cols)) {
+    if (read_cnt != value.rows*value.cols) {
         throw FLANNException("Cannot read from file");
     }
 }

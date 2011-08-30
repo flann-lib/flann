@@ -194,8 +194,8 @@ public:
         assert(queries.cols == veclen());
         assert(indices.rows >= queries.rows);
         assert(dists.rows >= queries.rows);
-        assert(int(indices.cols) >= knn);
-        assert(int(dists.cols) >= knn);
+        assert(indices.cols >= knn);
+        assert(dists.cols >= knn);
         bool sorted = get_param(params,"sorted",true);
         bool use_heap = get_param(params,"use_heap",false);
 
