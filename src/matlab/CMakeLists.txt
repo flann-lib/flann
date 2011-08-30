@@ -47,7 +47,8 @@ if(MEX_CMD AND MEXEXT_CMD)
             DESTINATION share/flann/matlab
         )
     else()
-        message(SEND_ERROR "The 'mex' and 'mexext' programs have been found in different locations. It's likely that one of them is not part of the MATLAB instalation. Make sure that the 'bin' directory from the MATLAB instalation is in PATH")
+        message(WARNING "The 'mex' and 'mexext' programs have been found in different locations. It's likely that one of them is not part of the MATLAB instalation. Make sure that the 'bin' directory from the MATLAB instalation is in PATH")
+        set(BUILD_MATLAB_BINDINGS OFF) 
     endif()
 elseif(OCT_CMD)
   SET(MEX_FILE ${CMAKE_CURRENT_BINARY_DIR}/${MEX_NAME}.mex)
@@ -68,6 +69,7 @@ elseif(OCT_CMD)
     DESTINATION share/flann/octave
     )
 else()
-    message(SEND_ERROR "Cannot find MATLAB or Octave instalation. Make sure that the 'bin' directory from the MATLAB instalation or that mkoctfile is in PATH")
+    message(WARNING "Cannot find MATLAB or Octave instalation. Make sure that the 'bin' directory from the MATLAB instalation or that mkoctfile is in PATH")
+    set(BUILD_MATLAB_BINDINGS OFF) 
 endif()
 
