@@ -22,7 +22,7 @@ if(CMAKE_COMPILER_IS_GNUCC)
 # 		set_target_properties(flann_cuda_s PROPERTIES COMPILE_FLAGS -fPIC)
     if (BUILD_CUDA_LIB)
     	# hack: cuda_add_libraries doesn't seem to add the -fPIC option if defined like above...
-	    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC" )
+		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC;-arch=sm_13;--compiler-bindir=${NVCC_COMPILER_BINDIR}" )
     endif()
 endif()
 
