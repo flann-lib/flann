@@ -554,9 +554,9 @@ struct Hamming2
 
     unsigned int popcnt64(uint64_t n) const
     {
-        n -= ((n >> 1) & 0x5555555555555555);
-        n = (n & 0x3333333333333333) + ((n >> 2) & 0x3333333333333333);
-        return (((n + (n >> 4))& 0x0f0f0f0f0f0f0f0f)* 0x0101010101010101) >> 56;
+        n -= ((n >> 1) & 0x5555555555555555LL);
+        n = (n & 0x3333333333333333LL) + ((n >> 2) & 0x3333333333333333LL);
+        return (((n + (n >> 4))& 0x0f0f0f0f0f0f0f0fLL)* 0x0101010101010101LL) >> 56;
     }
 
     template <typename Iterator1, typename Iterator2>
