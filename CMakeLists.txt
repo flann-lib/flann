@@ -45,6 +45,7 @@ option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" ON)
 option(BUILD_CUDA_LIB "Build CUDA library" ON)
 option(USE_MPI "Use MPI" OFF)
 
+set(NVCC_COMPILER_BINDIR "" CACHE PATH  "Directory where nvcc should look for C++ compiler. This is passed to nvcc through the --compiler-bindir option.")
 
 if (NOT BUILD_C_BINDINGS)
     set(BUILD_PYTHON_BINDINGS OFF)
