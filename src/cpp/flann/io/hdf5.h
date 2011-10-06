@@ -211,13 +211,11 @@ void load_from_file(flann::Matrix<T>& dataset, const std::string& filename, cons
 
     H5Sselect_hyperslab(space_id, H5S_SELECT_SET, offset, NULL, count, NULL);
 
-    dataset.rows = count[0];
-    dataset.cols = count[1];
-    dataset.data = new T[dataset.rows*dataset.cols];
+    dataset = flann::Matrix<T>(new T[count[0]*count[1]], count[0], count[1]);
 
     plist_id = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-    status = H5Dread(dataset_id, get_hdf5_type<T>(), memspace_id, space_id, plist_id, dataset.data);
+    status = H5Dread(dataset_id, get_hdf5_type<T>(), memspace_id, space_id, plist_id, dataset[0]);
     CHECK_ERROR(status, "Error reading dataset");
 
     H5Pclose(plist_id);

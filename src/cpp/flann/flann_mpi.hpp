@@ -52,6 +52,7 @@ struct SearchResults
         ar& indices.rows;
         ar& indices.cols;
         if (Archive::is_loading::value) {
+            indices.stride = indices.cols;
             indices.data = new int[indices.rows*indices.cols];
         }
         ar& boost::serialization::make_array(indices.data, indices.rows*indices.cols);
@@ -61,6 +62,7 @@ struct SearchResults
         ar& dists.rows;
         ar& dists.cols;
         if (Archive::is_loading::value) {
+            dists.stride = dists.cols;
             dists.data = new DistanceType[dists.rows*dists.cols];
         }
         ar& boost::serialization::make_array(dists.data, dists.rows*dists.cols);
@@ -76,12 +78,8 @@ struct ResultsMerger
     SearchResults<DistanceType> operator()(SearchResults<DistanceType> a, SearchResults<DistanceType> b)
     {
         SearchResults<DistanceType> results;
-        results.indices.rows = a.indices.rows;
-        results.indices.cols = a.indices.cols;
-        results.indices.data = new int[results.indices.rows*results.indices.cols];
-        results.dists.rows = a.dists.rows;
-        results.dists.cols = a.dists.cols;
-        results.dists.data = new DistanceType[results.dists.rows*results.dists.cols];
+        results.indices = flann::Matrix<int>(new int[a.indices.rows*a.indices.cols],a.indices.rows,a.indices.cols);
+        results.dists = flann::Matrix<DistanceType>(new DistanceType[a.dists.rows*a.dists.cols],a.dists.rows,a.dists.cols);
 
 
         for (size_t i = 0; i < results.dists.rows; ++i) {
@@ -103,7 +101,6 @@ struct ResultsMerger
                 }
             }
         }
-
         delete[] a.indices.data;
         delete[] a.dists.data;
         delete[] b.indices.data;
