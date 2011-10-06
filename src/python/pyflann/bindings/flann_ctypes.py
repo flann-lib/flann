@@ -146,6 +146,11 @@ def load_flann_library():
                 return flannlib
             except Exception,e:
                 pass
+            try:
+                flannlib = cdll[os.path.join(root_dir,"build",libdir,libname)]
+                return flannlib
+            except Exception,e:
+                pass
         tmp = os.path.dirname(root_dir)
         if tmp == root_dir:
             root_dir = None
