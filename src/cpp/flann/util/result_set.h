@@ -369,12 +369,17 @@ public:
 
     	// add new element
     	dist_index_.push_back(DistIndex(dist,index));
-    	std::push_heap(dist_index_.begin(), dist_index_.end());
+    	if (is_full_) { // when is_full_==true, we have a heap
+    		std::push_heap(dist_index_.begin(), dist_index_.end());
+    	}
 
     	if (dist_index_.size()==capacity_) {
+    		if (!is_full_) {
+    			std::make_heap(dist_index_.begin(), dist_index_.end());
+            	is_full_ = true;
+    		}
     		// we replaced the farthest element, update worst distance
         	worst_dist_ = dist_index_[0].dist_;
-        	is_full_ = true;
         }
     }
 
@@ -580,7 +585,7 @@ public:
     	if (dist>=worst_dist_) return;
 
     	if (dist_index_.size()==capacity_) {
-    		// if result set if filled to capacity, remove farthest element
+    		// if result set is filled to capacity, remove farthest element
     		std::pop_heap(dist_index_.begin(), dist_index_.end());
         	dist_index_.pop_back();
     	}
