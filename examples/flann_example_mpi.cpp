@@ -4,10 +4,12 @@
 #include <flann/io/hdf5.h>
 
 #include <stdio.h>
+#include <sys/time.h>
 
 #define IF_RANK0 if (world.rank()==0)
 
-clock_t start_time_;
+timeval start_time_;
+
 
 void start_timer(const std::string& message = "")
 {
@@ -15,12 +17,15 @@ void start_timer(const std::string& message = "")
 		printf("%s", message.c_str());
 		fflush(stdout);
 	}
-	start_time_ = clock();
+    gettimeofday(&start_time_,NULL);
 }
 
 double stop_timer()
 {
-	return double(clock()-start_time_)/CLOCKS_PER_SEC;
+    timeval end_time;
+    gettimeofday(&end_time,NULL);
+
+	return double(end_time.tv_sec-start_time_.tv_sec)+ double(end_time.tv_usec-start_time_.tv_usec)/1000000;
 }
 
 float compute_precision(const flann::Matrix<int>& match, const flann::Matrix<int>& indices)
