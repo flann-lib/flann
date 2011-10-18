@@ -164,8 +164,10 @@ enum flann_datatype_t
     FLANN_FLOAT64 = 9
 };
 
-const int FLANN_CHECKS_UNLIMITED = -1;
-const int FLANN_CHECKS_AUTOTUNED = -2;
+enum flann_checks_t {
+    FLANN_CHECKS_UNLIMITED = -1,
+    FLANN_CHECKS_AUTOTUNED = -2
+};
 
 #ifdef __cplusplus
 }
