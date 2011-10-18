@@ -49,6 +49,7 @@ struct SearchResults
     template<typename Archive>
     void serialize(Archive& ar, const unsigned int version)
     {
+        boost::mpi::communicator world;
         ar& indices.rows;
         ar& indices.cols;
         if (Archive::is_loading::value) {
@@ -264,10 +265,11 @@ int Index<Distance>::radiusSearch(const flann::Matrix<ElementType>& query, flann
 }
 } //namespace flann::mpi
 
-//namespace boost { namespace mpi {
-//  template<>
-//  struct is_commutative<flann::mpi::ResultsMerger, flann::mpi::SearchResults> : mpl::true_ { };
-//} } // end namespace boost::mpi
+namespace boost { namespace mpi {
+template<>
+template<typename DistanceType>
+struct is_commutative<flann::mpi::ResultsMerger<DistanceType>, flann::mpi::SearchResults<DistanceType> > : mpl::true_ { };
+} } // end namespace boost::mpi
 
 
 #endif /* FLANN_MPI_HPP_ */
