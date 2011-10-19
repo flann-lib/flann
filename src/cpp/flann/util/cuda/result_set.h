@@ -32,8 +32,14 @@
 #include <flann/util/cuda/heap.h>
 #include <limits>
 
+__device__ __forceinline__
+float infinity()
+{
+       return __int_as_float(0x7f800000);
+}
+
 #ifndef INFINITY
-#define INFINITY __int_as_float(0x7f800000)
+#define INFINITY infinity()
 #endif
 
 namespace flann
@@ -48,7 +54,7 @@ struct SingleResultSet
     DistanceType bestDist;
     const DistanceType epsError;
 
-    __host__ __device__
+    __device__
     SingleResultSet( DistanceType eps ) : bestIndex(-1),bestDist(INFINITY), epsError(eps){ }
 
     __host__ __device__
@@ -71,7 +77,7 @@ struct SingleResultSet
     DistanceType* resultDist;
     int* resultIndex;
 
-    __host__ __device__
+    __device__
     inline void
     setResultLocation( DistanceType* dists, int* index, int thread, int stride )
     {
@@ -123,7 +129,7 @@ struct KnnResultSet
     const DistanceType epsError;
 
 
-    __host__ __device__
+    __device__
     KnnResultSet(int knn, bool sortResults, DistanceType eps) : foundNeighbors(0),largestHeapDist(INFINITY),k(knn), sorted(sortResults), epsError(eps){ }
 
     //          __host__ __device__
@@ -187,7 +193,7 @@ struct KnnResultSet
     float* resultDist;
     int* resultIndex;
 
-    __host__ __device__
+    __device__
     inline void
     setResultLocation( DistanceType* dists, int* index, int thread, int stride )
     {
@@ -438,7 +444,7 @@ struct KnnRadiusResultSet
     DistanceType* resultDist;
     int* resultIndex;
 
-    __host__ __device__
+    __device__
     inline void
     setResultLocation( DistanceType* dists, int* index, int thread, int stride )
     {
