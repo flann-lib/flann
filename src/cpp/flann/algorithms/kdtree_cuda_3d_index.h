@@ -320,7 +320,7 @@ private:
 
 private:
 
-    class GpuHelper;
+    struct GpuHelper;
 
     GpuHelper* gpu_helper_;
 

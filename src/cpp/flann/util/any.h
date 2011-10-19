@@ -30,6 +30,12 @@ struct empty_any
 {
 };
 
+inline std::ostream& operator <<(std::ostream& out, const empty_any&)
+{
+    out << "[empty_any]";
+    return out;
+}
+
 struct base_any_policy
 {
     virtual void static_delete(void** x) = 0;
@@ -114,7 +120,7 @@ struct choose_policy<any>
 #define SMALL_POLICY(TYPE) \
     template<> \
     struct choose_policy<TYPE> { typedef small_any_policy<TYPE> type; \
-    };
+    }
 
 SMALL_POLICY(signed char);
 SMALL_POLICY(unsigned char);
@@ -138,8 +144,9 @@ base_any_policy* get_policy()
 }
 } // namespace anyimpl
 
-struct any
+class any
 {
+	typedef any any_t;
 private:
     // fields
     anyimpl::base_any_policy* policy;
@@ -190,7 +197,7 @@ public:
 
     /// Assignment function.
     template <typename T>
-    any& assign(const T& x)
+    any_t& assign(const T& x)
     {
         reset();
         policy = anyimpl::get_policy<T>();
@@ -200,7 +207,7 @@ public:
 
     /// Assignment operator.
     template<typename T>
-    any& operator=(const T& x)
+    any_t& operator=(const T& x)
     {
         return assign(x);
     }
