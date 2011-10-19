@@ -1,5 +1,5 @@
 
-#include <flann/flann_mpi.hpp>
+#include <flann/mpi/index.h>
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -8,8 +8,6 @@
 #define IF_RANK0 if (world.rank()==0)
 
 timeval start_time_;
-
-
 void start_timer(const std::string& message = "")
 {
 	if (!message.empty()) {

@@ -49,7 +49,6 @@ struct SearchResults
     template<typename Archive>
     void serialize(Archive& ar, const unsigned int version)
     {
-        boost::mpi::communicator world;
         ar& indices.rows;
         ar& indices.cols;
         if (Archive::is_loading::value) {

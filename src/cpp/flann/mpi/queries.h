@@ -1,8 +1,8 @@
 /***********************************************************************
  * Software License Agreement (BSD License)
  *
- * Copyright 2008-2010  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
- * Copyright 2008-2010  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
+ * Copyright 2008-2011  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
+ * Copyright 2008-2011  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,8 +27,8 @@
  *************************************************************************/
 
 
-#ifndef QUERIES_H_
-#define QUERIES_H_
+#ifndef MPI_QUERIES_H_
+#define MPI_QUERIES_H_
 
 #include <flann/util/matrix.h>
 #include <boost/archive/binary_iarchive.hpp>
@@ -116,4 +116,4 @@ void write_object(tcp::socket& sock, const T& val)
 
 
 
-#endif /* QUERIES_H_ */
+#endif /* MPI_QUERIES_H_ */
