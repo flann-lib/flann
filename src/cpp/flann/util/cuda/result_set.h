@@ -57,14 +57,14 @@ struct SingleResultSet
     __device__
     SingleResultSet( DistanceType eps ) : bestIndex(-1),bestDist(INFINITY), epsError(eps){ }
 
-    __host__ __device__
+    __device__
     inline float
     worstDist()
     {
         return bestDist;
     }
 
-    __host__ __device__
+    __device__
     inline void
     insert(int index, DistanceType dist)
     {
@@ -91,7 +91,7 @@ struct SingleResultSet
         }
     }
 
-    __host__ __device__
+    __device__
     inline void
     finish()
     {
@@ -103,7 +103,7 @@ struct SingleResultSet
 template< typename DistanceType >
 struct GreaterThan
 {
-    __host__ __device__
+    __device__
     bool operator()(DistanceType a, DistanceType b)
     {
         return a>b;
@@ -135,14 +135,14 @@ struct KnnResultSet
     //          __host__ __device__
     //          KnnResultSet(const KnnResultSet& o):foundNeighbors(o.foundNeighbors),largestHeapDist(o.largestHeapDist),k(o.k){ }
 
-    __host__ __device__
+    __device__
     inline DistanceType
     worstDist()
     {
         return largestHeapDist;
     }
 
-    __host__ __device__
+    __device__
     inline void
     insert(int index, DistanceType dist)
     {
@@ -177,7 +177,7 @@ struct KnnResultSet
         }
     }
 
-    __host__ __device__
+    __device__
     void
     findLargestDistIndex( )
     {
@@ -229,17 +229,17 @@ struct CountingRadiusResultSet
     DistanceType radius_sq_;
     int max_neighbors_;
 
-    __host__ __device__
+    __device__
     CountingRadiusResultSet(DistanceType radius, int max_neighbors) : count_(0),radius_sq_(radius), max_neighbors_(max_neighbors){ }
 
-    __host__ __device__
+    __device__
     inline DistanceType
     worstDist()
     {
         return radius_sq_;
     }
 
-    __host__ __device__
+    __device__
     inline void
     insert(int index, float dist)
     {
@@ -250,14 +250,14 @@ struct CountingRadiusResultSet
 
     int* resultIndex;
 
-    __host__ __device__
+    __device__
     inline void
     setResultLocation( DistanceType* /*dists*/, int* count, int thread, int stride )
     {
         resultIndex=count+thread*stride;
     }
 
-    __host__ __device__
+    __device__
     inline void
     finish()
     {
@@ -279,20 +279,20 @@ struct RadiusKnnResultSet
     //          int count_;
 
 
-    __host__ __device__
+    __device__
     RadiusKnnResultSet(DistanceType radius, int knn, int* segment_starts, bool sortResults) : foundNeighbors(0),largestHeapDist(radius),k(knn), sorted(sortResults), radius_sq_(radius),segment_starts_(segment_starts) { }
 
     //          __host__ __device__
     //          KnnResultSet(const KnnResultSet& o):foundNeighbors(o.foundNeighbors),largestHeapDist(o.largestHeapDist),k(o.k){ }
 
-    __host__ __device__
+    __device__
     inline DistanceType
     worstDist()
     {
         return largestHeapDist;
     }
 
-    __host__ __device__
+    __device__
     inline void
     insert(int index, DistanceType dist)
     {
@@ -328,7 +328,7 @@ struct RadiusKnnResultSet
         }
     }
 
-    __host__ __device__
+    __device__
     void
     findLargestDistIndex( )
     {
@@ -345,7 +345,7 @@ struct RadiusKnnResultSet
     DistanceType* resultDist;
     int* resultIndex;
 
-    __host__ __device__
+    __device__
     inline void
     setResultLocation( DistanceType* dists, int* index, int thread, int /*stride*/ )
     {
@@ -353,7 +353,7 @@ struct RadiusKnnResultSet
         resultIndex=index+segment_starts_[thread];
     }
 
-    __host__ __device__
+    __device__
     inline void
     finish()
     {
@@ -381,20 +381,20 @@ struct KnnRadiusResultSet
     const DistanceType radius_sq;
 
 
-    __host__ __device__
+    __device__
     KnnRadiusResultSet(int knn, bool sortResults, DistanceType eps, DistanceType radius) : foundNeighbors(0),largestHeapDist(radius),k(knn), sorted(sortResults), epsError(eps),radius_sq(radius){ }
 
     //          __host__ __device__
     //          KnnResultSet(const KnnResultSet& o):foundNeighbors(o.foundNeighbors),largestHeapDist(o.largestHeapDist),k(o.k){ }
 
-    __host__ __device__
+    __device__
     inline DistanceType
     worstDist()
     {
         return largestHeapDist;
     }
 
-    __host__ __device__
+    __device__
     inline void
     insert(int index, DistanceType dist)
     {
@@ -428,7 +428,7 @@ struct KnnRadiusResultSet
             }
         }
     }
-    __host__ __device__
+    __device__
     void
     findLargestDistIndex( )
     {
@@ -458,7 +458,7 @@ struct KnnRadiusResultSet
         }
     }
 
-    __host__ __device__
+    __device__
     inline void
     finish()
     {
@@ -484,17 +484,17 @@ struct RadiusResultSet
     int count_;
     bool sorted_;
 
-    __host__ __device__
+    __device__
     RadiusResultSet(DistanceType radius, int* segment_starts, bool sorted) : radius_sq_(radius), segment_starts_(segment_starts), count_(0), sorted_(sorted){ }
 
-    __host__ __device__
+    __device__
     inline DistanceType
     worstDist()
     {
         return radius_sq_;
     }
 
-    __host__ __device__
+    __device__
     inline void
     insert(int index, DistanceType dist)
     {
@@ -508,7 +508,7 @@ struct RadiusResultSet
     int* resultIndex;
     DistanceType* resultDist;
 
-    __host__ __device__
+    __device__
     inline void
     setResultLocation( DistanceType* dists, int* index, int thread, int /*stride*/ )
     {
@@ -516,7 +516,7 @@ struct RadiusResultSet
         resultDist=dists+segment_starts_[thread];
     }
 
-    __host__ __device__
+    __device__
     inline void
     finish()
     {
