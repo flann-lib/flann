@@ -30,7 +30,7 @@ endif()
 set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
 if (BUILD_CUDA_LIB)
-	#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-arch=sm_13" )
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-arch=sm_13" )
     cuda_add_library(flann_cuda_s STATIC ${CU_SOURCES})
     set_property(TARGET flann_cuda_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 endif()
