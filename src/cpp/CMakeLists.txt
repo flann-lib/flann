@@ -15,22 +15,17 @@ list(REMOVE_ITEM CPP_SOURCES ${C_FLANN})
 list(REMOVE_ITEM C_SOURCES ${CPP_FLANN})
 
 add_library(flann_cpp_s STATIC ${CPP_SOURCES})
-
-# message("${CUDA_NVCC_FLAGS}")
 if(CMAKE_COMPILER_IS_GNUCC)
     set_target_properties(flann_cpp_s PROPERTIES COMPILE_FLAGS -fPIC)
-# 		set_target_properties(flann_cuda_s PROPERTIES COMPILE_FLAGS -fPIC)
-    if (BUILD_CUDA_LIB)
-    	# hack: cuda_add_libraries doesn't seem to add the -fPIC option if defined like above...
-		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC;-arch=sm_13;--compiler-bindir=${NVCC_COMPILER_BINDIR}" )
-    endif()
 endif()
-
-
 set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
 if (BUILD_CUDA_LIB)
-	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-arch=sm_13" )
+    if(CMAKE_COMPILER_IS_GNUCC)
+		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC;-arch=sm_13;--compiler-bindir=${NVCC_COMPILER_BINDIR}" )
+    else()
+	    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-arch=sm_13" )
+    endif()
     cuda_add_library(flann_cuda_s STATIC ${CU_SOURCES})
     set_property(TARGET flann_cuda_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 endif()
