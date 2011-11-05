@@ -256,7 +256,7 @@ public:
             {
                 // Check for duplicate indices
                 size_t j = i - 1;
-                while ((j >= 0) && (dist_index_[j].dist_ == dist)) {
+                while (dist_index_[j].dist_ == dist) {
                     if (dist_index_[j].index_ == index) {
                         return;
                     }

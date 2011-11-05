@@ -97,8 +97,7 @@ class FalseType
 template<class T>
 struct L2_Simple
 {
-    typedef TrueType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_kdtree_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
@@ -130,8 +129,7 @@ struct L2_Simple
 template<class T>
 struct L2
 {
-    typedef TrueType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_kdtree_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
@@ -195,8 +193,7 @@ struct L2
 template<class T>
 struct L1
 {
-    typedef TrueType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_kdtree_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
@@ -252,8 +249,7 @@ struct L1
 template<class T>
 struct MinkowskiDistance
 {
-    typedef TrueType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_kdtree_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
@@ -316,8 +312,7 @@ struct MinkowskiDistance
 template<class T>
 struct MaxDistance
 {
-    typedef FalseType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_vector_space_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
@@ -373,9 +368,6 @@ struct MaxDistance
  */
 struct HammingLUT
 {
-    typedef FalseType is_kdtree_distance;
-    typedef FalseType is_vector_space_distance;
-
     typedef unsigned char ElementType;
     typedef int ResultType;
 
@@ -473,12 +465,8 @@ struct HammingLUT
  * That code was taken from brief.cpp in OpenCV
  */
 template<class T>
-struct Hamming
+struct HammingPopcnt
 {
-    typedef FalseType is_kdtree_distance;
-    typedef FalseType is_vector_space_distance;
-
-
     typedef T ElementType;
     typedef int ResultType;
 
@@ -535,11 +523,8 @@ struct Hamming
 };
 
 template<typename T>
-struct Hamming2
+struct Hamming
 {
-    typedef FalseType is_kdtree_distance;
-    typedef FalseType is_vector_space_distance;
-
     typedef T ElementType;
     typedef unsigned int ResultType;
 
@@ -594,8 +579,7 @@ struct Hamming2
 template<class T>
 struct HistIntersectionDistance
 {
-    typedef TrueType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_kdtree_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
@@ -649,8 +633,7 @@ struct HistIntersectionDistance
 template<class T>
 struct HellingerDistance
 {
-    typedef TrueType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_kdtree_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
@@ -697,8 +680,7 @@ struct HellingerDistance
 template<class T>
 struct ChiSquareDistance
 {
-    typedef TrueType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_kdtree_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;
@@ -751,8 +733,7 @@ struct ChiSquareDistance
 template<class T>
 struct KL_Divergence
 {
-    typedef TrueType is_kdtree_distance;
-    typedef TrueType is_vector_space_distance;
+    typedef bool is_kdtree_distance;
 
     typedef T ElementType;
     typedef typename Accumulator<T>::Type ResultType;

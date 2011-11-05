@@ -73,6 +73,8 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef bool needs_kdtree_distance;
+
     AutotunedIndex(const Matrix<ElementType>& inputData, const IndexParams& params = AutotunedIndexParams(), Distance d = Distance()) :
         dataset_(inputData), distance_(d)
     {

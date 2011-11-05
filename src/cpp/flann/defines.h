@@ -86,7 +86,7 @@ enum flann_algorithm_t
     FLANN_INDEX_KDTREE_SINGLE = 4,
     FLANN_INDEX_HIERARCHICAL = 5,
     FLANN_INDEX_LSH = 6,
-		FLANN_INDEX_KDTREE_CUDA = 7,
+    FLANN_INDEX_KDTREE_CUDA = 7,
     FLANN_INDEX_SAVED = 254,
     FLANN_INDEX_AUTOTUNED = 255,
 
@@ -137,6 +137,9 @@ enum flann_distance_t
     FLANN_DIST_CS         = 7,
     FLANN_DIST_KULLBACK_LEIBLER  = 8,
     FLANN_DIST_KL                = 8,
+    FLANN_DIST_HAMMING         	= 9,
+    FLANN_DIST_HAMMING_LUT		= 10,
+    FLANN_DIST_HAMMING_POPCNT   = 11,
 
     // deprecated constants, should use the FLANN_DIST_* ones instead
     EUCLIDEAN = 1,

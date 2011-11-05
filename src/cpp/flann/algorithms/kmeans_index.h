@@ -84,6 +84,7 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef bool needs_vector_space_distance;
 
 
     typedef void (KMeansIndex::* centersAlgFunction)(int, int*, int, int*, int&);

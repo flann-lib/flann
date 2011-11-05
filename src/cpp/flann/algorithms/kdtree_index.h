@@ -73,6 +73,7 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef bool needs_kdtree_distance;
 
     /**
      * KDTree constructor
