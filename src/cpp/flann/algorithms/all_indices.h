@@ -47,111 +47,6 @@
 namespace flann
 {
 
-template<typename KDTreeCapability, typename VectorSpace, typename Distance>
-struct index_creator
-{
-    static NNIndex<Distance>* create(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
-    {
-        flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
-
-        NNIndex<Distance>* nnIndex;
-        switch (index_type) {
-        case FLANN_INDEX_LINEAR:
-            nnIndex = new LinearIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_KDTREE_SINGLE:
-            nnIndex = new KDTreeSingleIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_KDTREE:
-            nnIndex = new KDTreeIndex<Distance>(dataset, params, distance);
-            break;
-			//! #define this symbol before including flann.h to enable GPU search algorithms. But you have
-			//! to link libflann_cuda then!
-		#ifdef FLANN_USE_CUDA
-		case FLANN_INDEX_KDTREE_CUDA:
-            nnIndex = new KDTreeCuda3dIndex<Distance>(dataset, params, distance);
-            break;
-		#endif
-
-        case FLANN_INDEX_KMEANS:
-            nnIndex = new KMeansIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_COMPOSITE:
-            nnIndex = new CompositeIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_AUTOTUNED:
-            nnIndex = new AutotunedIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_HIERARCHICAL:
-            nnIndex = new HierarchicalClusteringIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_LSH:
-            nnIndex = new LshIndex<Distance>(dataset, params, distance);
-            break;
-        default:
-            throw FLANNException("Unknown index type");
-        }
-
-        return nnIndex;
-    }
-};
-
-template<typename VectorSpace, typename Distance>
-struct index_creator<FalseType,VectorSpace,Distance>
-{
-    static NNIndex<Distance>* create(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
-    {
-        flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
-
-        NNIndex<Distance>* nnIndex;
-        switch (index_type) {
-        case FLANN_INDEX_LINEAR:
-            nnIndex = new LinearIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_KMEANS:
-            nnIndex = new KMeansIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_HIERARCHICAL:
-            nnIndex = new HierarchicalClusteringIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_LSH:
-            nnIndex = new LshIndex<Distance>(dataset, params, distance);
-            break;
-        default:
-            throw FLANNException("Unknown index type");
-        }
-
-        return nnIndex;
-    }
-};
-
-template<typename Distance>
-struct index_creator<FalseType,FalseType,Distance>
-{
-    static NNIndex<Distance>* create(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
-    {
-        flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
-
-        NNIndex<Distance>* nnIndex;
-        switch (index_type) {
-        case FLANN_INDEX_LINEAR:
-            nnIndex = new LinearIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_HIERARCHICAL:
-            nnIndex = new HierarchicalClusteringIndex<Distance>(dataset, params, distance);
-            break;
-        case FLANN_INDEX_LSH:
-            nnIndex = new LshIndex<Distance>(dataset, params, distance);
-            break;
-        default:
-            throw FLANNException("Unknown index type");
-        }
-
-        return nnIndex;
-    }
-};
-
-
 
 /**
  * enable_if sfinae helper
@@ -205,7 +100,7 @@ struct valid_combination
 
     static const bool value = same_type<ElementType,typename Distance::ElementType>::value &&
     				(!needs_kdtree_distance<Index<Distance> >::value || is_kdtree_distance<Distance>::value) &&
-    				(!needs_vector_space_distance<Index<Distance> >::value || is_vector_space_distance<Distance>::value);
+    				(!needs_vector_space_distance<Index<Distance> >::value || is_kdtree_distance<Distance>::value || is_vector_space_distance<Distance>::value);
 
 };
 

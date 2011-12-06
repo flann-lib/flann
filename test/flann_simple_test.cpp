@@ -620,7 +620,7 @@ TEST_F(Flann_3D, SavedTest2)
 class Flann_Brief100K_Test : public FLANNTestFixture
 {
 protected:
-  typedef flann::Hamming2<unsigned char> Distance;
+  typedef flann::Hamming<unsigned char> Distance;
   typedef Distance::ElementType ElementType;
   typedef Distance::ResultType DistanceType;
   flann::Matrix<unsigned char> data;

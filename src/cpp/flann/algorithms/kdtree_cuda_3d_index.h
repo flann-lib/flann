@@ -76,6 +76,7 @@ public:
 
     int visited_leafs;
 
+    typedef bool needs_kdtree_distance;
 
     /**
      * KDTree constructor
