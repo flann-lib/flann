@@ -40,6 +40,9 @@
 namespace flann
 {
 
+template <typename Distance> class NNIndex;
+
+
 template<typename Distance>
 class parallel_knnSearch
 {
@@ -129,7 +132,7 @@ private:
 
   //! Atomic count variable to keep track of the number of neighbors found
   //! \note must be mutable because body will be casted as const in parallel_for
-  mutable tbb::atomic<int>& count_;
+  tbb::atomic<int>& count_;
 };
 
 
@@ -226,7 +229,7 @@ private:
 
   //! Atomic count variable to keep track of the number of neighbors found
   //! \note must be mutable because body will be casted as const in parallel_for
-  mutable tbb::atomic<int>& count_;
+  tbb::atomic<int>& count_;
 };
 
 
@@ -348,7 +351,7 @@ private:
 
   //! Atomic count variable to keep track of the number of neighbors found
   //! \note must be mutable because body will be casted as const in parallel_for
-  mutable tbb::atomic<int>& count_;
+  tbb::atomic<int>& count_;
 };
 
 
@@ -463,7 +466,7 @@ private:
 
     //! Atomic count variable to keep track of the number of neighbors found
     //! \note must be mutable because body will be casted as const in parallel_for
-    mutable tbb::atomic<int>& count_;
+    tbb::atomic<int>& count_;
 };
 
 }

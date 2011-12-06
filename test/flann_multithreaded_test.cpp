@@ -67,7 +67,7 @@ protected:
         fflush(stdout);
         flann::load_from_file(data, "cloud.h5","dataset");
         flann::load_from_file(query,"cloud.h5","query");
-        flann::load_from_file(match,"cloud.h5","match");
+        flann::load_from_file(match,"cloud.h5","indices");
 
         dists = flann::Matrix<float>(new float[query.rows*nn], query.rows, nn);
         indices = flann::Matrix<int>(new int[query.rows*nn], query.rows, nn);
@@ -118,7 +118,7 @@ TEST_F(FlannTest, HandlesMultiCoreSearch)
     int checks = -1;
     float eps = 0.0f;
     bool sorted = true;
-    int cores = -1;
+    int cores = 2;
 
     start_timer("Searching KNN...");
     index.knnSearch(query, indices, dists, GetNN(), flann::SearchParams(checks,eps,sorted,cores));
