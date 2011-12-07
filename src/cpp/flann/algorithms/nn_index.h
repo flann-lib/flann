@@ -87,15 +87,12 @@ public:
         assert(dists.cols >= knn);
         bool sorted = get_param(params,"sorted",true);
         bool use_heap = get_param(params,"use_heap",false);
-#ifdef TBB
-        int cores = get_param(params,"cores",1);
-        assert(cores >= 1 || cores == -1);
-#endif
-
         int count = 0;
 
 #ifdef TBB
-        // Check if we need to do multicore search or stick with singlecore FLANN (less overhead)
+        int cores = get_param(params,"cores",1);
+        assert(cores >= 1 || cores == -1);
+        // Check if we need to do multicore search or stick with single core FLANN (less overhead)
         if(cores == 1)
         {
 #endif
@@ -125,15 +122,15 @@ public:
         tbb::task_scheduler_init task_sched(cores);
 
         // Make an atomic integer count, such that we can keep track of amount of neighbors found
-        atomic_count_ = 0;
-
+        tbb::atomic<int> atomic_count;
+        atomic_count = 0;
         // Use auto partitioner to choose the optimal grainsize for dividing the query points
-        flann::parallel_knnSearch<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count_);
+        flann::parallel_knnSearch<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count);
         tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                           parallel_knn,
                           tbb::auto_partitioner());
 
-        count = atomic_count_;
+        count = atomic_count;
     }
 #endif
 
@@ -159,17 +156,15 @@ public:
         assert(queries.cols == veclen());
         bool sorted = get_param(params,"sorted",true);
         bool use_heap = get_param(params,"use_heap",false);
-#ifdef TBB
-        int cores = get_param(params,"cores",1);
-        assert(cores >= 1 || cores == -1);
-#endif
 
         if (indices.size() < queries.rows ) indices.resize(queries.rows);
 		if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
 		int count = 0;
 #ifdef TBB
-        // Check if we need to do multicore search or stick with singlecore FLANN (less overhead)
+        int cores = get_param(params,"cores",1);
+        assert(cores >= 1 || cores == -1);
+        // Check if we need to do multicore search or stick with single core FLANN (less overhead)
         if(cores == 1)
         {
 #endif
@@ -205,15 +200,16 @@ public:
             tbb::task_scheduler_init task_sched(cores);
 
             // Make an atomic integer count, such that we can keep track of amount of neighbors found
-            atomic_count_ = 0;
+            tbb::atomic<int> atomic_count;
+            atomic_count = 0;
 
             // Use auto partitioner to choose the optimal grainsize for dividing the query points
-            flann::parallel_knnSearch2<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count_);
+            flann::parallel_knnSearch2<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count);
             tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                               parallel_knn,
                               tbb::auto_partitioner());
 
-            count = atomic_count_;
+            count = atomic_count;
         }
 #endif
 		return count;
@@ -233,13 +229,11 @@ public:
     		float radius, const SearchParams& params)
     {
         assert(queries.cols == veclen());
+        int count = 0;
 #ifdef TBB
         int cores = get_param(params,"cores",1);
         assert(cores >= 1 || cores == -1);
-#endif
-        int count = 0;
-#ifdef TBB
-        // Check if we need to do multicore search or stick with singlecore FLANN (less overhead)
+        // Check if we need to do multicore search or stick with single core FLANN (less overhead)
         if(cores == 1)
         {
 #endif
@@ -301,15 +295,16 @@ public:
             tbb::task_scheduler_init task_sched(cores);
 
             // Make an atomic integer count, such that we can keep track of amount of neighbors found
-            atomic_count_ = 0;
+            tbb::atomic<int> atomic_count;
+            atomic_count = 0;
 
             // Use auto partitioner to choose the optimal grainsize for dividing the query points
-            flann::parallel_radiusSearch<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count_);
+            flann::parallel_radiusSearch<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count);
             tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                               parallel_radius,
                               tbb::auto_partitioner());
 
-            count = atomic_count_;
+            count = atomic_count;
         }
 #endif
         return count;
@@ -319,14 +314,11 @@ public:
     		std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params)
     {
         assert(queries.cols == veclen());
+    	int count = 0;
 #ifdef TBB
         int cores = get_param(params,"cores",1);
         assert(cores >= 1 || cores == -1);
-#endif
-
-    	int count = 0;
-#ifdef TBB
-        // Check if we need to do multicore search or stick with singlecore FLANN (less overhead)
+        // Check if we need to do multicore search or stick with single core FLANN (less overhead)
         if(cores == 1)
         {
 #endif
@@ -381,15 +373,16 @@ public:
           tbb::task_scheduler_init task_sched(cores);
 
           // Reset atomic count before passing it on to the threads, such that we can keep track of amount of neighbors found
-          atomic_count_ = 0;
+          tbb::atomic<int> atomic_count;
+          atomic_count = 0;
 
           // Use auto partitioner to choose the optimal grainsize for dividing the query points
-          flann::parallel_radiusSearch2<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count_);
+          flann::parallel_radiusSearch2<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count);
           tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                             parallel_radius,
                             tbb::auto_partitioner());
 
-          count = atomic_count_;
+          count = atomic_count;
         }
 #endif
         return count;
@@ -438,13 +431,6 @@ public:
      * \brief Method that searches for nearest-neighbours
      */
     virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;
-
-private:
-#ifdef TBB
-    /** Atomic count variable, passed to the different threads for keeping track of the amount of neighbors found. */
-    tbb::atomic<int> atomic_count_;
-#endif
-
 };
 
 }
