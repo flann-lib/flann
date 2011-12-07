@@ -112,7 +112,7 @@ template <template<typename> class Index, typename Distance, typename T>
 NNIndex<Distance>* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
 		typename enable_if<valid_combination<Index,Distance,T>::value,void>::type* = 0)
 {
-    return new Index<Distance>(data, params);
+    return new Index<Distance>(data, params,distance);
 }
 
 template <template<typename> class Index, typename Distance, typename T>
