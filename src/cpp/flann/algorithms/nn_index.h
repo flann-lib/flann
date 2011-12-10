@@ -52,6 +52,8 @@
 namespace flann
 {
 
+#define KNN_HEAP_THRESHOLD 250
+
 /**
  * Nearest-neighbour index base class
  */
@@ -86,7 +88,13 @@ public:
         assert(indices.cols >= knn);
         assert(dists.cols >= knn);
         bool sorted = get_param(params,"sorted",true);
-        bool use_heap = get_param(params,"use_heap",false);
+        bool use_heap;
+        if (!has_param(params,"use_heap")) {
+        	use_heap = (knn>KNN_HEAP_THRESHOLD)?true:false;
+        }
+        else {
+        	use_heap = get_param(params,"use_heap",false);
+        }
         int count = 0;
 
 #ifdef TBB
@@ -155,7 +163,13 @@ public:
     {
         assert(queries.cols == veclen());
         bool sorted = get_param(params,"sorted",true);
-        bool use_heap = get_param(params,"use_heap",false);
+        bool use_heap;
+        if (!has_param(params,"use_heap")) {
+        	use_heap = (knn>KNN_HEAP_THRESHOLD)?true:false;
+        }
+        else {
+        	use_heap = get_param(params,"use_heap",false);
+        }
 
         if (indices.size() < queries.rows ) indices.resize(queries.rows);
 		if (dists.size() < queries.rows ) dists.resize(queries.rows);
