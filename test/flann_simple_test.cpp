@@ -350,7 +350,7 @@ TEST_F(Flann_SIFT100K_Test, AutotunedTest)
     index.save("autotuned.idx");
 
     start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, 5, flann::SearchParams(-2) );
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(FLANN_CHECKS_AUTOTUNED) );
     printf("done (%g seconds)\n", stop_timer());
 
     float precision = compute_precision(match, indices);
@@ -396,8 +396,7 @@ TEST_F(Flann_SIFT100K_Test, SavedTest)
 
     const flann::IndexParams index_params = autotuned_index.getParameters();
     printf("The index has the following parameters:\n");
-//    index_params->print();
-
+    flann::print_params(index_params);
 
     printf("Index type is: %d\n", autotuned_index.getType());
 

@@ -418,7 +418,7 @@ private:
 
     void middleSplit_(int* ind, int count, int& index, int& cutfeat, DistanceType& cutval, const BoundingBox& bbox)
     {
-        const float EPS=0.00001f;
+        const float eps_val=0.00001f;
         DistanceType max_span = bbox[0].high-bbox[0].low;
         for (size_t i=1; i<dim_; ++i) {
             DistanceType span = bbox[i].high-bbox[i].low;
@@ -430,7 +430,7 @@ private:
         cutfeat = 0;
         for (size_t i=0; i<dim_; ++i) {
             DistanceType span = bbox[i].high-bbox[i].low;
-            if (span>(DistanceType)((1-EPS)*max_span)) {
+            if (span>(DistanceType)((1-eps_val)*max_span)) {
                 ElementType min_elem, max_elem;
                 computeMinMax(ind, count, cutfeat, min_elem, max_elem);
                 DistanceType spread = (DistanceType)(max_elem-min_elem);
