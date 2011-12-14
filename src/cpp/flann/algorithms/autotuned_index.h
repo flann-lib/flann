@@ -148,7 +148,7 @@ public:
      */
     virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-        int checks = get_param(searchParams,"checks",FLANN_CHECKS_AUTOTUNED);
+        int checks = get_param(searchParams,"checks",(int)FLANN_CHECKS_AUTOTUNED);
         if (checks == FLANN_CHECKS_AUTOTUNED) {
             bestIndex_->findNeighbors(result, vec, bestSearchParams_);
         }
