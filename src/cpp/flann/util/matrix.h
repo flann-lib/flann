@@ -107,7 +107,7 @@ public:
         fprintf(stderr, "The flann::Matrix<T>::free() method is deprecated "
                 "and it does not do any memory deallocation any more.  You are"
                 "responsible for deallocating the matrix memory (by doing"
-                "'delete[] matrix.data' for example)");
+                "'delete[] matrix.ptr()' for example)");
     }
 
     /**

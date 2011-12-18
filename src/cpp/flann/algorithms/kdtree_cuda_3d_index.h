@@ -109,7 +109,7 @@ public:
      */
     ~KDTreeCuda3dIndex()
     {
-        delete[] data_.data;
+        delete[] data_.ptr();
         clearGpuBuffers();
     }
 
@@ -124,7 +124,7 @@ public:
         //                              tree_.reserve(log2((double)size_/leaf_max_size_));
         //         divideTree(0, size_, root_bbox_,-1 );   // construct the tree
 
-        delete[] data_.data;
+        delete[] data_.ptr();
 
         uploadTreeToGpu();
     }
@@ -260,8 +260,8 @@ public:
                 dists[i][j]=dist[i][j];
             }
         }
-        delete [] ind.data;
-        delete [] dist.data;
+        delete [] ind.ptr();
+        delete [] dist.ptr();
         return knn*queries.rows; // hack...
     }
 

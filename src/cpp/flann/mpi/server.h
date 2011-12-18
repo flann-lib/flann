@@ -84,10 +84,10 @@ class Server
 				write_object(*sock,resp);
 			}
 
-			delete[] req.queries.data;
+			delete[] req.queries.ptr();
 			if (world.rank()==0) {
-				delete[] resp.indices.data;
-				delete[] resp.dists.data;
+				delete[] resp.indices.ptr();
+				delete[] resp.dists.ptr();
 			}
 
 		}

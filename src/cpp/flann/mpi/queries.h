@@ -43,9 +43,9 @@ void serialize(Archive & ar, flann::Matrix<T> & matrix, const unsigned int versi
 {
 	ar & matrix.rows & matrix.cols & matrix.stride;
     if (Archive::is_loading::value) {
-    	matrix.data = new T[matrix.rows*matrix.cols];
+        matrix = flann::Matrix<T>(new T[matrix.rows*matrix.cols], matrix.rows, matrix.cols, matrix.stride);
     }
-    ar & boost::serialization::make_array(matrix.data, matrix.rows*matrix.cols);
+    ar & boost::serialization::make_array(matrix.ptr(), matrix.rows*matrix.cols);
 }
 
 }

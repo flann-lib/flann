@@ -298,7 +298,7 @@ void KDTreeCuda3dIndex<Distance>::knnSearchGpu(const Matrix<ElementType>& querie
 
     if( !matrices_on_gpu ) {
         thrust::device_vector<float> queriesDev(queries.stride* queries.rows,0);
-        thrust::copy( queries.data, queries.data+queries.stride*queries.rows, queriesDev.begin() );
+        thrust::copy( queries.ptr(), queries.ptr()+queries.stride*queries.rows, queriesDev.begin() );
         thrust::device_vector<float> distsDev(queries.rows* dists.stride);
         thrust::device_vector<int> indicesDev(queries.rows* dists.stride);
 
@@ -359,14 +359,14 @@ void KDTreeCuda3dIndex<Distance>::knnSearchGpu(const Matrix<ElementType>& querie
                                                                                       );
             }
         }
-        thrust::copy( distsDev.begin(), distsDev.end(), dists.data );
+        thrust::copy( distsDev.begin(), distsDev.end(), dists.ptr() );
         thrust::transform(indicesDev.begin(), indicesDev.end(), indicesDev.begin(), map_indices(thrust::raw_pointer_cast( &((*gpu_helper_->gpu_vind_))[0]) ));
-        thrust::copy( indicesDev.begin(), indicesDev.end(), indices.data );
+        thrust::copy( indicesDev.begin(), indicesDev.end(), indices.ptr() );
     }
     else {
-        thrust::device_ptr<float> qd = thrust::device_pointer_cast(queries.data);
-        thrust::device_ptr<float> dd = thrust::device_pointer_cast(dists.data);
-        thrust::device_ptr<int> id = thrust::device_pointer_cast(indices.data);
+        thrust::device_ptr<float> qd = thrust::device_pointer_cast(queries.ptr());
+        thrust::device_ptr<float> dd = thrust::device_pointer_cast(dists.ptr());
+        thrust::device_ptr<int> id = thrust::device_pointer_cast(indices.ptr());
 
 
 
@@ -444,7 +444,7 @@ int KDTreeCuda3dIndex<Distance >::radiusSearchGpu(const Matrix<ElementType>& que
     if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
     thrust::device_vector<float> queriesDev(queries.stride* queries.rows,0);
-    thrust::copy( queries.data, queries.data+queries.stride*queries.rows, queriesDev.begin() );
+    thrust::copy( queries.ptr(), queries.ptr()+queries.stride*queries.rows, queriesDev.begin() );
     thrust::device_vector<int> countsDev(queries.rows);
 
     typename GpuDistance<Distance>::type distance;
@@ -583,7 +583,7 @@ int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& qu
 
     if( !matrices_on_gpu ) {
         thrust::device_vector<float> queriesDev(queries.stride* queries.rows,0);
-        thrust::copy( queries.data, queries.data+queries.stride*queries.rows, queriesDev.begin() );
+        thrust::copy( queries.ptr(), queries.ptr()+queries.stride*queries.rows, queriesDev.begin() );
         typename GpuDistance<Distance>::type distance;
         int threadsPerBlock = 128;
         int blocksPerGrid=(queries.rows+threadsPerBlock-1)/threadsPerBlock;
@@ -603,7 +603,7 @@ int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& qu
                                                                                   queries.rows, flann::cuda::CountingRadiusResultSet<float>(radius,-1),
                                                                                   distance
                                                                                   );
-            thrust::copy( indicesDev.begin(), indicesDev.end(), indices.data );
+            thrust::copy( indicesDev.begin(), indicesDev.end(), indices.ptr() );
             return thrust::reduce(indicesDev.begin(), indicesDev.end() );
         }
 
@@ -641,17 +641,17 @@ int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& qu
                                                                                   queries.rows, flann::cuda::KnnRadiusResultSet<float, false>(max_neighbors,sorted,epsError, radius), distance);
         }
 
-        thrust::copy( distsDev.begin(), distsDev.end(), dists.data );
+        thrust::copy( distsDev.begin(), distsDev.end(), dists.ptr() );
         thrust::transform(indicesDev.begin(), indicesDev.end(), indicesDev.begin(), map_indices(thrust::raw_pointer_cast( &((*gpu_helper_->gpu_vind_))[0]) ));
-        thrust::copy( indicesDev.begin(), indicesDev.end(), indices.data );
+        thrust::copy( indicesDev.begin(), indicesDev.end(), indices.ptr() );
 
         return thrust::count_if(indicesDev.begin(), indicesDev.end(), isNotMinusOne() );
     }
     else {
 
-        thrust::device_ptr<float> qd=thrust::device_pointer_cast(queries.data);
-        thrust::device_ptr<float> dd=thrust::device_pointer_cast(dists.data);
-        thrust::device_ptr<int> id=thrust::device_pointer_cast(indices.data);
+        thrust::device_ptr<float> qd=thrust::device_pointer_cast(queries.ptr());
+        thrust::device_ptr<float> dd=thrust::device_pointer_cast(dists.ptr());
+        thrust::device_ptr<int> id=thrust::device_pointer_cast(indices.ptr());
         typename GpuDistance<Distance>::type distance;
         int threadsPerBlock = 128;
         int blocksPerGrid=(queries.rows+threadsPerBlock-1)/threadsPerBlock;
@@ -672,7 +672,7 @@ int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& qu
                                                                                   queries.rows, flann::cuda::CountingRadiusResultSet<float>(radius,-1),
                                                                                   distance
                                                                                   );
-            thrust::copy( indicesDev.begin(), indicesDev.end(), indices.data );
+            thrust::copy( indicesDev.begin(), indicesDev.end(), indices.ptr() );
             return thrust::reduce(indicesDev.begin(), indicesDev.end() );
         }
         //      bool sorted = get_param(params,"sorted",true);
@@ -725,7 +725,7 @@ void KDTreeCuda3dIndex<Distance>::uploadTreeToGpu()
     thrust::device_vector<float4> tmp(size_);
     if( get_param(index_params_,"input_is_gpu_float4",false) ) {
 		assert( dataset_.cols == 3 && dataset_.stride==4);
-        thrust::copy( thrust::device_pointer_cast((float4*)dataset_.data),thrust::device_pointer_cast((float4*)(dataset_.data))+size_,tmp.begin());
+        thrust::copy( thrust::device_pointer_cast((float4*)dataset_.ptr()),thrust::device_pointer_cast((float4*)(dataset_.ptr()))+size_,tmp.begin());
         
     }
     else {
@@ -743,7 +743,7 @@ void KDTreeCuda3dIndex<Distance>::uploadTreeToGpu()
                 data_[i][j] = 0;
             }
         }
-        thrust::copy((float4*)data_.data,(float4*)(data_.data)+size_,tmp.begin());
+        thrust::copy((float4*)data_.ptr(),(float4*)(data_.ptr())+size_,tmp.begin());
     }
 
     CudaKdTreeBuilder builder( tmp, leaf_max_size_ );
