@@ -115,15 +115,15 @@ endif(TBB_FOUND AND TBB_DEBUG_FOUND)
 
 # print additional info
 if(TBB_FOUND AND NOT TBB_DEBUG_FOUND)
-    message(WARNING "Only the Intel TBB (release) libraries were found")
+    message(STATUS "Only the Intel TBB (release) libraries were found")
 endif()
 
 if(TBB_DEBUG_FOUND AND NOT TBB_FOUND)
-    message(WARNING "Only the Intel TBB (debug) libraries were found")
+    message(STATUS "Only the Intel TBB (debug) libraries were found")
 endif()
 
 if(NOT TBB_FOUND AND NOT TBB_DEBUG_FOUND)
-    message(WARNING "No intel TBB libraries were found")
+    message(STATUS "No intel TBB libraries were found")
 endif()
 
 
