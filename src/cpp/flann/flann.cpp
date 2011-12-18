@@ -80,6 +80,13 @@ flann::IndexParams create_parameters(FLANNParameters* p)
         params["sample_fraction"] = p->sample_fraction;
     }
 
+    if (p->algorithm == FLANN_INDEX_HIERARCHICAL) {
+        params["branching"] = p->branching;
+        params["centers_init"] = p->centers_init;
+        params["trees"] = p->trees;
+        params["leaf_size"] = p->leaf_max_size;
+    }
+
     if (p->algorithm == FLANN_INDEX_LSH) {
         params["table_number"] = p->table_number_;
         params["key_size"] = p->key_size_;

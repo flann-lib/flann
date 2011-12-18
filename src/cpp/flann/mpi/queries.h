@@ -30,26 +30,10 @@
 #ifndef MPI_QUERIES_H_
 #define MPI_QUERIES_H_
 
-#include <flann/util/matrix.h>
+#include <flann/mpi/matrix.h>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-
-
-namespace boost {
-namespace serialization {
-
-template<class Archive, class T>
-void serialize(Archive & ar, flann::Matrix<T> & matrix, const unsigned int version)
-{
-	ar & matrix.rows & matrix.cols & matrix.stride;
-    if (Archive::is_loading::value) {
-        matrix = flann::Matrix<T>(new T[matrix.rows*matrix.cols], matrix.rows, matrix.cols, matrix.stride);
-    }
-    ar & boost::serialization::make_array(matrix.ptr(), matrix.rows*matrix.cols);
-}
-
-}
-}
+#include <boost/asio.hpp>
 
 namespace flann
 {

@@ -1,4 +1,5 @@
 
+#include <flann/mpi/queries.h>
 #include <flann/mpi/index.h>
 
 #include <stdio.h>
@@ -46,23 +47,6 @@ float compute_precision(const flann::Matrix<int>& match, const flann::Matrix<int
 }
 
 
-namespace boost {
-namespace serialization {
-
-template<class Archive, class T>
-void serialize(Archive & ar, flann::Matrix<T> & matrix, const unsigned int version)
-{
-	ar & matrix.rows & matrix.cols & matrix.stride;
-    if (Archive::is_loading::value) {
-    	matrix.data = new T[matrix.rows*matrix.cols];
-    }
-    ar & boost::serialization::make_array(matrix.data, matrix.rows*matrix.cols);
-}
-
-}
-}
-
-
 
 void search(flann::mpi::Index<flann::L2<float> >* index)
 {
@@ -101,12 +85,12 @@ void search(flann::mpi::Index<flann::L2<float> >* index)
 			float precision = compute_precision(match, indices);
 			printf("Precision is: %g\n", precision);
 		}
-		delete[] query.data;
-		delete[] match.data;
+		delete[] query.ptr();
+		delete[] match.ptr();
 
 		IF_RANK0 {
-			delete[] indices.data;
-			delete[] dists.data;
+			delete[] indices.ptr();
+			delete[] dists.ptr();
 		}
 
 }
