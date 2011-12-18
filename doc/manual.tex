@@ -94,10 +94,10 @@ int main(int argc, char** argv)
 
     flann::save_to_file(indices,"result.hdf5","result");
 
-    dataset.free();
-    query.free();
-    indices.free();
-    dists.free();
+    delete[] dataset.ptr();
+    delete[] query.ptr();
+    delete[] indices.ptr();
+    delete[] dists.ptr();
     
     return 0;
 }
@@ -261,13 +261,10 @@ if using cmake by adding \texttt{add\_definitions(-DTBB)} to your \texttt{CMakeL
 
 The core of the FLANN library is written in C++. To make use of the full power 
 and flexibility of the templated code one should use the C++ bindings if possible. 
-To use the C++ bindings, the library header file \texttt{flann.hpp} must be included 
-and the library \texttt{libflann\_cpp.so} (for linking dynamically) or
-the \texttt{libflann\_cpp\_s.a} (for linking statically) must be linked in. An example
+To use the C++ bindings you only need to include the  the library header file \texttt{flann.hpp}. An example
 of the compile command that must be used will look something like this:
 \begin{Verbatim}[fontsize=\footnotesize]
-g++ flann_example.cpp -I $FLANN_ROOT/include -L $FLANN_ROOT/lib -o flann_example_cpp
- -lflann_cpp
+g++ flann_example.cpp -I $FLANN_ROOT/include -o flann_example_cpp
 \end{Verbatim}
 where \texttt{\$FLANN\_ROOT} is the library main directory.
 
@@ -275,8 +272,8 @@ The following sections describe the public C++ API.
 
 \subsubsection{flann::Index}
 \label{sec:flann::Index}
-The FLANN nearest neighbor index class. This class is used to abstract different
-types of nearest neighbor search indexes.
+The FLANN nearest neighbor index class. This class is used to abstract different types of nearest neighbor search
+indexes. The class is templated on the distance functor to be used for computing distances between pairs of features. 
 
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
 namespace flann
@@ -293,17 +290,30 @@ namespace flann
 
 	void buildIndex();
 
-	void knnSearch(const Matrix<ElementType>& queries, 
+	int knnSearch(const Matrix<ElementType>& queries, 
 		       Matrix<int>& indices, 
 		       Matrix<DistanceType>& dists, 
-		       int knn, 
+		       size_t knn, 
 		       const SearchParams& params);
 
-	int radiusSearch(const Matrix<ElementType>& query, 
+        int knnSearch(const Matrix<ElementType>& queries,
+                       std::vector< std::vector<int> >& indices,
+                       std::vector<std::vector<DistanceType> >& dists,
+                       size_t knn,
+                       const SearchParams& params);
+
+
+	int radiusSearch(const Matrix<ElementType>& queries, 
 			 Matrix<int>& indices, 
 			 Matrix<DistanceType>& dists, 
 			 float radius, 
 			 const SearchParams& params);
+
+        int radiusSearch(const Matrix<ElementType>& queries,
+                          std::vector< std::vector<int> >& indices,
+                          std::vector<std::vector<DistanceType> >& dists,
+                          float radius,
+                          const SearchParams& params);
 
 	void save(std::string filename);
 
@@ -311,10 +321,64 @@ namespace flann
 
 	int size() const;
 
-	const IndexParams* getIndexParameters();
+	IndexParams getParameters() const;
+
+        flann_algorithm_t getType() const;
+
     };
 }
 \end{Verbatim}
+
+
+\textbf{The Distance functor}
+
+The distance functor is a class whose \texttt{operator()} computes the distance between two features. If the distance is
+also a kd-tree compatible distance it should also provide an \texttt{accum\_dist()} method that computes the distance
+between individual feature dimensions. A typical distance functor looks like this (see the \texttt{dist.h} file for more
+examples):
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+template<class T>
+struct L2
+{
+    typedef bool is_kdtree_distance;
+
+    typedef T ElementType;
+    typedef typename Accumulator<T>::Type ResultType;
+
+    template <typename Iterator1, typename Iterator2>
+    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, 
+                          ResultType /*worst_dist*/ = -1) const
+    {
+        ResultType result = ResultType();
+        ResultType diff;
+        for(size_t i = 0; i < size; ++i ) {
+            diff = *a++ - *b++;
+            result += diff*diff;
+        }
+        return result;
+    }
+
+    template <typename U, typename V>
+    inline ResultType accum_dist(const U& a, const V& b, int) const
+    {
+        return (a-b)*(a-b);
+    }
+};
+\end{Verbatim}
+
+In addition to \texttt{operator()} and \texttt{accum\_dist()}, a distance functor should also define the
+\texttt{ElementType} and the \texttt{ResultType} as the types of the elements it operates on and the type of the result
+it computes.
+
+If a distance functor can be used as a kd-tree distance (meaning that the full distance between a pair of features can
+be accumulated from the partial distances between the individual dimensions) a typedef \texttt{is\_kdtree\_distance}
+should be present inside the distance functor. If the distance is not a kd-tree distance, but it's a distance in a
+vector space (the individual dimensions of the elements it operates on can be accessed independently) a typedef
+\texttt{is\_vector\_space\_distance} should be defined inside the functor. If neither typedef is defined, the distance
+is assumed to be a metric distance and will only be used with indexes operating on generic metric distances.
+\\
+
 
 \textbf{flann::Index::Index}
 Constructs a nearest neighbor search index for a given dataset.
@@ -323,7 +387,8 @@ Index(const Matrix<ElementType>& features, const IndexParams& params);
 \end{Verbatim}
 \begin{description}
 \item[features] Matrix containing the features(points) that should be indexed, stored in a row-major order (one point 
-of each row of the matrix). The size of the matrix is $num\_features \times dimensionality$.
+on each row of the matrix). The size of the matrix is $num\_features \times dimensionality$.
+
 \item[params] Structure containing the index parameters. The type of index that will be constructed depends on the type 
 of this parameter. The possible parameter types are:
 
@@ -372,6 +437,22 @@ struct KMeansIndexParams : public IndexParams
 		  A value greater then zero also takes into account the size of the domain.}
 \end{description}
 
+
+\textbf{CompositeIndexParams} When using a parameters object of this type the index created combines the randomized
+kd-trees 
+        and the hierarchical k-means tree.
+\begin{Verbatim}[fontsize=\footnotesize]
+struct CompositeIndexParams : public IndexParams
+{
+        CompositeIndexParams( int trees = 4,
+                          int branching = 32,
+                          int iterations = 11,
+                          flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM, 
+                          float cb_index = 0.2 );
+};
+\end{Verbatim}
+
+
 \textbf{KDTreeSingleIndexParams} When passing an object of this type the index will contain a single kd-tree
 optimized for searching lower dimensionality data (for example 3D point clouds)
 \begin{Verbatim}[fontsize=\footnotesize]
@@ -398,18 +479,45 @@ struct KDTreeCuda3dIndexParams : public IndexParams
 \end{description}
 
 
-\textbf{CompositeIndexParams} When using a parameters object of this type the index created combines the randomized kd-trees 
-	and the hierarchical k-means tree.
+\textbf{HierarchicalClusteringIndexParams} When passing an object of this type the index constructed will be a
+hierarchical clustering index. This type of index works with any metric distance and can be used for matching 
+binary features using Hamming distances.
 \begin{Verbatim}[fontsize=\footnotesize]
-struct CompositeIndexParams : public IndexParams
+struct HierarchicalClusteringIndexParams : public IndexParams
 {
-	CompositeIndexParams( int trees = 4,
-			  int branching = 32,
-			  int iterations = 11,
-			  flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM, 
-			  float cb_index = 0.2 );
+    HierarchicalClusteringIndexParams(int branching = 32,
+                              flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM,
+                              int trees = 4, int leaf_size = 100)
 };
 \end{Verbatim}
+\begin{description}
+\item[branching]{ The branching factor to use for the hierarchical clustering tree }
+\item[centers\_init]{ The algorithm to use for selecting the initial
+                  centers when performing a k-means clustering step. The possible values are
+                  CENTERS\_RANDOM (picks the initial cluster centers randomly), CENTERS\_GONZALES (picks the
+                  initial centers using Gonzales' algorithm) and CENTERS\_KMEANSPP (picks the initial
+                centers using the algorithm suggested in \cite{arthur_kmeanspp_2007}) }
+\item[trees] The number of parallel trees to use. Good values are in the range [3..8]
+\item[leaf\_size] The maximum number of points a leaf node should contain.
+\end{description}
+
+
+\textbf{LshIndexParams} When passing an object of this type the index constructed will be a multi-probe LSH
+(Locality-Sensitive Hashing) index. This type of index can only be used for matching binary features using Hamming
+distances.
+\begin{Verbatim}[fontsize=\footnotesize]
+struct LshIndexParams : public IndexParams
+{
+    LshIndexParams(unsigned int table_number = 12, 
+                  unsigned int key_size = 20, 
+                  unsigned int multi_probe_level = 2);
+};
+\end{Verbatim}
+\begin{description}
+\item[table\_number]{ The number of hash tables to use }
+\item[key\_size]{ The length of the key in the hash tables}
+\item[multi\_probe\_level] Number of levels to use in multi-probe (0 for standard LSH)
+\end{description}
 
 
 \textbf{AutotunedIndexParams}
@@ -419,7 +527,7 @@ dataset provided.
 \begin{Verbatim}[fontsize=\footnotesize]
 struct AutotunedIndexParams : public IndexParams
 {
-	autotunedindexparams( float target_precision = 0.9,
+	AutotunedIndexParams( float target_precision = 0.9,
 			  float build_weight = 0.01,
 			  float memory_weight = 0,
 			  float sample_fraction = 0.1 );
@@ -475,18 +583,28 @@ exception of saved index type).
 
 
 \subsubsection{flann::Index::knnSearch}
-Performs a K-nearest neighbor search for a given query point using the index.
+Performs a K-nearest neighbor search for a set of query points. There are two signatures for this
+method, one that takes pre-allocated \texttt{flann::Matrix} objects for returning the indices of and distances to the
+neighbors found, and one that takes \texttt{std::vector<std::vector>} that will re resized automatically as needed.
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-void Index::knnSearch(const Matrix<ElementType>& queries,
+int Index::knnSearch(const Matrix<ElementType>& queries,
 		Matrix<int>& indices, 
 		Matrix<DistanceType>& dists,
-		int knn,
+		size_t knn,
 		const SearchParams& params);
+
+int Index::knnSearch(const Matrix<ElementType>& queries,
+                std::vector< std::vector<int> >& indices,
+                std::vector<std::vector<DistanceType> >& dists,
+                size_t knn,
+                const SearchParams& params);
 \end{Verbatim}
 \begin{description}
-\item[query]{Matrix containing the query points. Size of matrix is ($num\_queries \times dimentionality $)}
-\item[indices]{Matrix that will contain the indices of the K-nearest neighbors found (size should be at least $num\_queries \times knn$)}
-\item[dists]{Matrix that will contain the distances to the K-nearest neighbors found. (size should be at least $num\_queries \times knn$). The distance values are computed by the distance function used (see \texttt{flann::set\_distance\_type} below), for example in the case of euclidean distance function, this will contain the squared euclidean distances.}
+\item[queries]{Matrix containing the query points. Size of matrix is ($num\_queries \times dimentionality $)}
+\item[indices]{Matrix that will contain the indices of the K-nearest neighbors found (size should be at least
+$num\_queries \times knn$ for the pre-allocated version).}
+\item[dists]{Matrix that will contain the distances to the K-nearest neighbors found (size should be at least
+$num\_queries \times knn$ for the pre-allocated version).}
 \item[knn]{Number of nearest neighbors to search for.}
 \item[params]{Search parameters.} Structure containing parameters used during search.
 
@@ -514,19 +632,32 @@ required to achieve the specified precision was also computed, to use that value
 
 
 \subsubsection{flann::Index::radiusSearch}
-Performs a radius nearest neighbor search for a given query point.
+Performs a radius nearest neighbor search for a set of query points. There are two signatures for this method,
+one that takes pre-allocated \texttt{flann::Matrix} objects for returning the indices of and distances to the neighbors
+found, and one that takes \texttt{std::vector<std::vector>} that will resized automatically as needed.
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-int Index::radiusSearch(const Matrix<ElementType>& query,
+int Index::radiusSearch(const Matrix<ElementType>& queries,
 		  Matrix<int>& indices,
 		  Matrix<DistanceType>& dists,
 		  float radius,
 		  const SearchParams& params); 
+
+int Index::radiusSearch(const Matrix<ElementType>& queries,
+                  std::vector< std::vector<int> >& indices,
+                  std::vector<std::vector<DistanceType> >& dists,
+                  float radius,
+                  const SearchParams& params);
 \end{Verbatim}
 
 \begin{description}
-\item[query]{The query point}
-\item[indices]{Vector that will contain the indices of the points found within the search radius in increasing order of the distance to the query point. If the number of neighbors in the search radius is bigger than the size of this vector, the ones that don't fit in the vector are ignored. }
-\item[dists]{Vector that will contain the distances to the points found within the search radius}
+\item[queries]{The query point. Size of matrix is ($num\_queries \times dimentionality $).}
+\item[indices]{Matrix that will contain the indices of the K-nearest neighbors found. For the pre-allocated version,
+only as many neighbors are returned as many columns in this matrix. If fewer neighbors are found than
+columns in this matrix, the element after that last index returned is -1. In case of the std::vector version, the rows
+will be resized as needed to fit all the neighbors to be returned, except if the ``max\_neighbors'' search parameter is
+set.}
+\item[dists]{Matrix that will contain the distances to the K-nearest neighbors found. The same number of values are
+returned here as for the \texttt{indices} matrix.}
 \item[radius]{The search radius}
 \item[params]{Search parameters}
 \end{description}
