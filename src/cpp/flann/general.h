@@ -46,6 +46,98 @@ public:
     FLANNException(const std::string& message) : std::runtime_error(message) { }
 };
 
+inline size_t flann_datatype_size(flann_datatype_t type)
+{
+	switch (type) {
+	case FLANN_INT8:
+		return 1;
+	break;
+	case FLANN_INT16:
+		return 2;
+	break;
+	case FLANN_INT32:
+		return 4;
+	break;
+	case FLANN_INT64:
+		return 8;
+	break;
+	case FLANN_UINT8:
+		return 1;
+	break;
+	case FLANN_UINT16:
+		return 2;
+	break;
+	case FLANN_UINT32:
+		return 4;
+	break;
+	case FLANN_UINT64:
+		return 8;
+	break;
+	case FLANN_FLOAT32:
+		return 4;
+	break;
+	case FLANN_FLOAT64:
+		return 8;
+	break;
+	default:
+		return 1;
+	}
+}
+
+template <typename T>
+struct flann_datatype
+{
+	static const flann_datatype_t value = FLANN_NONE;
+};
+
+template<>
+struct flann_datatype<char>
+{
+	static const flann_datatype_t value = FLANN_INT8;
+};
+
+template<>
+struct flann_datatype<short>
+{
+	static const flann_datatype_t value = FLANN_INT16;
+};
+
+template<>
+struct flann_datatype<int>
+{
+	static const flann_datatype_t value = FLANN_INT32;
+};
+
+template<>
+struct flann_datatype<unsigned char>
+{
+	static const flann_datatype_t value = FLANN_UINT8;
+};
+
+template<>
+struct flann_datatype<unsigned short>
+{
+	static const flann_datatype_t value = FLANN_UINT16;
+};
+
+template<>
+struct flann_datatype<unsigned int>
+{
+	static const flann_datatype_t value = FLANN_UINT32;
+};
+
+template<>
+struct flann_datatype<float>
+{
+	static const flann_datatype_t value = FLANN_FLOAT32;
+};
+
+template<>
+struct flann_datatype<double>
+{
+	static const flann_datatype_t value = FLANN_FLOAT64;
+};
+
 }
 
 

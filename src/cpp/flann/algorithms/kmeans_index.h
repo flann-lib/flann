@@ -815,7 +815,7 @@ private:
             start=end;
         }
 
-        delete[] dcenters.data;
+        delete[] dcenters.ptr();
         delete[] centers;
         delete[] radiuses;
         delete[] count;

@@ -115,7 +115,7 @@ void save_to_file(const flann::Matrix<T>& dataset, const std::string& filename, 
     }
     CHECK_ERROR(dataset_id,"Error creating or opening dataset in file.");
 
-    status = H5Dwrite(dataset_id, get_hdf5_type<T>(), memspace_id, space_id, H5P_DEFAULT, dataset.data );
+    status = H5Dwrite(dataset_id, get_hdf5_type<T>(), memspace_id, space_id, H5P_DEFAULT, dataset.ptr() );
     CHECK_ERROR(status, "Error writing to dataset");
 
     H5Sclose(memspace_id);

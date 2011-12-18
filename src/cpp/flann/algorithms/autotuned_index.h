@@ -470,9 +470,9 @@ private:
             }
         }
 
-        delete[] gt_matches_.data;
-        delete[] testDataset_.data;
-        delete[] sampledDataset_.data;
+        delete[] gt_matches_.ptr();
+        delete[] testDataset_.ptr();
+        delete[] sampledDataset_.ptr();
 
         return bestParams;
     }
@@ -544,8 +544,8 @@ private:
 
             speedup = linear / searchTime;
 
-            delete[] gt_matches.data;
-            delete[] testDataset.data;
+            delete[] gt_matches.ptr();
+            delete[] testDataset.ptr();
         }
 
         return speedup;

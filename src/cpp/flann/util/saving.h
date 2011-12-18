@@ -45,26 +45,6 @@
 namespace flann
 {
 
-template <typename T>
-struct Datatype {};
-template<>
-struct Datatype<char> { static flann_datatype_t type() { return FLANN_INT8; } };
-template<>
-struct Datatype<short> { static flann_datatype_t type() { return FLANN_INT16; } };
-template<>
-struct Datatype<int> { static flann_datatype_t type() { return FLANN_INT32; } };
-template<>
-struct Datatype<unsigned char> { static flann_datatype_t type() { return FLANN_UINT8; } };
-template<>
-struct Datatype<unsigned short> { static flann_datatype_t type() { return FLANN_UINT16; } };
-template<>
-struct Datatype<unsigned int> { static flann_datatype_t type() { return FLANN_UINT32; } };
-template<>
-struct Datatype<float> { static flann_datatype_t type() { return FLANN_FLOAT32; } };
-template<>
-struct Datatype<double> { static flann_datatype_t type() { return FLANN_FLOAT64; } };
-
-
 /**
  * Structure representing the index header.
  */
@@ -92,7 +72,7 @@ void save_header(FILE* stream, const NNIndex<Distance>& index)
     strcpy(header.signature, FLANN_SIGNATURE_);
     memset(header.version, 0, sizeof(header.version));
     strcpy(header.version, FLANN_VERSION_);
-    header.data_type = Datatype<typename Distance::ElementType>::type();
+    header.data_type = flann_datatype<typename Distance::ElementType>::value;
     header.index_type = index.getType();
     header.rows = index.size();
     header.cols = index.veclen();
@@ -120,7 +100,6 @@ inline IndexHeader load_header(FILE* stream)
     }
 
     return header;
-
 }
 
 
@@ -134,7 +113,7 @@ template<typename T>
 void save_value(FILE* stream, const flann::Matrix<T>& value)
 {
     fwrite(&value, sizeof(value),1, stream);
-    fwrite(value.data, sizeof(T),value.rows*value.cols, stream);
+    fwrite(value.ptr(), sizeof(T),value.rows*value.cols, stream);
 }
 
 template<typename T>
@@ -161,8 +140,8 @@ void load_value(FILE* stream, flann::Matrix<T>& value)
     if (read_cnt != 1) {
         throw FLANNException("Cannot read from file");
     }
-    value.data = new T[value.rows*value.cols];
-    read_cnt = fread(value.data, sizeof(T), value.rows*value.cols, stream);
+    value = Matrix<T>(new T[value.rows*value.cols], value.rows, value.cols);
+    read_cnt = fread(value.ptr(), sizeof(T), value.rows*value.cols, stream);
     if (read_cnt != value.rows*value.cols) {
         throw FLANNException("Cannot read from file");
     }

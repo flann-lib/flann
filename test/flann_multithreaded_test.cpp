@@ -77,11 +77,11 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] match.data;
-        delete[] dists.data;
-        delete[] indices.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] match.ptr();
+        delete[] dists.ptr();
+        delete[] indices.ptr();
     }
 
     int GetNN() { return nn; }
@@ -162,12 +162,12 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] dists_single.data;
-        delete[] indices_single.data;
-        delete[] dists_multi.data;
-        delete[] indices_multi.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] dists_single.ptr();
+        delete[] indices_single.ptr();
+        delete[] dists_multi.ptr();
+        delete[] indices_multi.ptr();
     }
 
     int GetNN() { return nn; }
@@ -268,12 +268,12 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] dists_single.data;
-        delete[] indices_single.data;
-        delete[] dists_multi.data;
-        delete[] indices_multi.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] dists_single.ptr();
+        delete[] indices_single.ptr();
+        delete[] dists_multi.ptr();
+        delete[] indices_multi.ptr();
     }
 
     float GetRadius() { return radius; }

@@ -108,11 +108,11 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] match.data;
-        delete[] dists.data;
-        delete[] indices.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] match.ptr();
+        delete[] dists.ptr();
+        delete[] indices.ptr();
     }
 };
 
@@ -192,11 +192,11 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] match.data;
-        delete[] dists.data;
-        delete[] indices.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] match.ptr();
+        delete[] dists.ptr();
+        delete[] indices.ptr();
     }
 };
 
@@ -275,11 +275,11 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] match.data;
-        delete[] dists.data;
-        delete[] indices.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] match.ptr();
+        delete[] dists.ptr();
+        delete[] indices.ptr();
     }
 };
 
@@ -436,11 +436,11 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] match.data;
-        delete[] dists.data;
-        delete[] indices.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] match.ptr();
+        delete[] dists.ptr();
+        delete[] indices.ptr();
     }
 };
 
@@ -519,11 +519,11 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] match.data;
-        delete[] dists.data;
-        delete[] indices.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] match.ptr();
+        delete[] dists.ptr();
+        delete[] indices.ptr();
     }
 };
 
@@ -550,7 +550,7 @@ TEST_F(Flann_3D, KDTreeSingleTest_Padded)
 {
     flann::Matrix<float> data_padded;
     flann::load_from_file(data_padded, "cloud.h5", "dataset_padded");
-    flann::Matrix<float> data2(data_padded.data, data_padded.rows, 3, data_padded.cols);
+    flann::Matrix<float> data2(data_padded.ptr(), data_padded.rows, 3, data_padded.cols*sizeof(float));
 
     flann::Index<L2_Simple<float> > index(data2, flann::KDTreeSingleIndexParams(12, false));
     start_timer("Building kd-tree index...");
@@ -565,7 +565,7 @@ TEST_F(Flann_3D, KDTreeSingleTest_Padded)
     EXPECT_GE(precision, 0.99);
     printf("Precision: %g\n", precision);
 
-    delete[] data_padded.data;
+    delete[] data_padded.ptr();
 }
 
 TEST_F(Flann_3D, SavedTest)
@@ -658,12 +658,12 @@ protected:
 
   void TearDown()
   {
-    delete[] data.data;
-    delete[] query.data;
-    delete[] match.data;
-    delete[] gt_dists.data;
-    delete[] dists.data;
-    delete[] indices.data;
+    delete[] data.ptr();
+    delete[] query.ptr();
+    delete[] match.ptr();
+    delete[] gt_dists.ptr();
+    delete[] dists.ptr();
+    delete[] indices.ptr();
   }
 };
 

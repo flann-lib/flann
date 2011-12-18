@@ -155,6 +155,7 @@ enum flann_distance_t
 
 enum flann_datatype_t
 {
+    FLANN_NONE = -1,
     FLANN_INT8 = 0,
     FLANN_INT16 = 1,
     FLANN_INT32 = 2,

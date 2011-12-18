@@ -52,22 +52,20 @@ struct SearchResults
         ar& indices.rows;
         ar& indices.cols;
         if (Archive::is_loading::value) {
-            indices.stride = indices.cols;
-            indices.data = new int[indices.rows*indices.cols];
+            indices = Matrix<int>(new int[indices.rows*indices.cols], indices.rows, indices.cols);
         }
-        ar& boost::serialization::make_array(indices.data, indices.rows*indices.cols);
+        ar& boost::serialization::make_array(indices.ptr(), indices.rows*indices.cols);
         if (Archive::is_saving::value) {
-            delete[] indices.data;
+            delete[] indices.ptr();
         }
         ar& dists.rows;
         ar& dists.cols;
         if (Archive::is_loading::value) {
-            dists.stride = dists.cols;
-            dists.data = new DistanceType[dists.rows*dists.cols];
+            dists = Matrix<DistanceType>(new DistanceType[dists.rows*dists.cols], dists.rows, dists.cols);
         }
-        ar& boost::serialization::make_array(dists.data, dists.rows*dists.cols);
+        ar& boost::serialization::make_array(dists.ptr(), dists.rows*dists.cols);
         if (Archive::is_saving::value) {
-            delete[] dists.data;
+            delete[] dists.ptr();
         }
     }
 };
@@ -101,10 +99,10 @@ struct ResultsMerger
                 }
             }
         }
-        delete[] a.indices.data;
-        delete[] a.dists.data;
-        delete[] b.indices.data;
-        delete[] b.dists.data;
+        delete[] a.indices.ptr();
+        delete[] a.dists.ptr();
+        delete[] b.indices.ptr();
+        delete[] b.dists.ptr();
         return results;
     }
 };
@@ -191,7 +189,7 @@ template<typename Distance>
 Index<Distance>::~Index()
 {
     delete flann_index;
-    delete[] dataset.data;
+    delete[] dataset.ptr();
 }
 
 template<typename Distance>
@@ -222,8 +220,8 @@ void Index<Distance>::knnSearch(const flann::Matrix<ElementType>& queries, flann
                 dists[i][j] = results.dists[i][j];
             }
         }
-        delete[] results.indices.data;
-        delete[] results.dists.data;
+        delete[] results.indices.ptr();
+        delete[] results.dists.ptr();
     }
 }
 
@@ -255,8 +253,8 @@ int Index<Distance>::radiusSearch(const flann::Matrix<ElementType>& query, flann
                 dists[i][j] = results.dists[i][j];
             }
         }
-        delete[] results.indices.data;
-        delete[] results.dists.data;
+        delete[] results.indices.ptr();
+        delete[] results.dists.ptr();
     }
     return 0;
 }

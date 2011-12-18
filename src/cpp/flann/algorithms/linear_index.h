@@ -105,9 +105,8 @@ public:
 
     void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/)
     {
-        ElementType* data = dataset_.data;
-        for (size_t i = 0; i < dataset_.rows; ++i, data += dataset_.cols) {
-            DistanceType dist = distance_(data, vec, dataset_.cols);
+        for (size_t i = 0; i < dataset_.rows; ++i) {
+            DistanceType dist = distance_(dataset_[i], vec, dataset_.cols);
             resultSet.addPoint(dist, i);
         }
     }
