@@ -4,15 +4,9 @@ add_definitions(-D_FLANN_VERSION=${FLANN_VERSION})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/flann/config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/flann/config.h)
 
-file(GLOB_RECURSE C_SOURCES *.cpp)
-file(GLOB_RECURSE CPP_SOURCES *.cpp)
+file(GLOB_RECURSE C_SOURCES flann.cpp)
+file(GLOB_RECURSE CPP_SOURCES flann_cpp.cpp)
 file(GLOB_RECURSE CU_SOURCES *.cu)
-
-file(GLOB_RECURSE C_FLANN flann.cpp)
-file(GLOB_RECURSE CPP_FLANN flann_cpp.cpp)
-
-list(REMOVE_ITEM CPP_SOURCES ${C_FLANN})
-list(REMOVE_ITEM C_SOURCES ${CPP_FLANN})
 
 add_library(flann_cpp_s STATIC ${CPP_SOURCES})
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -74,6 +68,26 @@ add_library(flann_cpp_s-gd STATIC ${CPP_SOURCES})
 set_target_properties(flann_cpp_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
 set_property(TARGET flann_cpp_s-gd PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
+
+
+if (HDF5_FOUND)
+    include_directories(${HDF5_INCLUDE_DIR})
+
+    if (USE_MPI AND HDF5_IS_PARALLEL)
+        find_package(Boost COMPONENTS mpi serialization system thread REQUIRED)
+        include_directories(${Boost_INCLUDE_DIRS})
+        add_definitions("-DHAVE_MPI")
+
+        add_executable(flann_mpi_server flann/mpi/flann_mpi_server.cpp)
+        target_link_libraries(flann_mpi_server flann_cpp ${HDF5_LIBRARIES} ${MPI_LIBRARIES} ${Boost_LIBRARIES})
+        
+        add_executable(flann_mpi_client flann/mpi/flann_mpi_client.cpp)
+        target_link_libraries(flann_mpi_client flann_cpp ${HDF5_LIBRARIES} ${MPI_LIBRARIES} ${Boost_LIBRARIES})
+   
+        install (TARGETS flann_mpi_client flann_mpi_server
+                DESTINATION bin)
+    endif()
+endif()
 
 if (BUILD_CUDA_LIB)
     add_library(flann_cuda-gd SHARED ${CPP_SOURCES})
