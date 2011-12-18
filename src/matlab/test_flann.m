@@ -67,6 +67,9 @@ ok = 1;
         % use single precision for better memory efficiency
         % store the features one per column because MATLAB
         % uses column major ordering
+        % The dataset.dat and testset.dat files can be downloaded from:
+        % http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/dataset.dat
+        % http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/testset.dat
         dataset = single(load([data_path 'dataset.dat']))';
         testset = single(load([data_path 'testset.dat']))';
 

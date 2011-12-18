@@ -79,6 +79,11 @@ int main(int argc, char** argv)
     int cols = 128;
     int tcount = 1000;
 
+    /*
+     * The files dataset.dat and testset.dat can be downloaded from:
+     * http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/dataset.dat
+     * http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/testset.dat
+     */
     printf("Reading input data file.\n");
     dataset = read_points("dataset.dat", rows, cols);
     printf("Reading test data file.\n");
