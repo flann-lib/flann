@@ -1,0 +1,6 @@
+
+These examples use some datasets that are not included in the source distribution. You can download the datasets from here:
+
+http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/dataset.hdf5
+http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/dataset.dat
+http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/testset.dat
