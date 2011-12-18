@@ -249,13 +249,11 @@ options use the \texttt{cmake-gui} application after \texttt{cmake} has finished
 
 \subsection{Compiling FLANN with multithreading support}
 To make use of FLANN multithreading support, it is required that Intel Threading Building Blocks is installed correctly
-on your system. You can either get it from your package manager or from:
-\begin{center}
-    \texttt{http://threadingbuildingblocks.org/}
-\end{center}
+on your system. You can either get it from your package manager or from: \texttt{http://threadingbuildingblocks.org/}
 
-You also need a pkgconfig file for locating the Intel TBB install and need to specify a -DTBB compiler flag on compilation
-of your project. Have a look at the readme file in the root folder of FLANN for more detailed instructions.
+You also need a pkgconfig file (tbb.pc) in one of the directories in your \texttt{PKG\_CONFIG\_PATH} and need to define
+the \texttt{TBB} macro on compilation of your project (for example by adding \texttt{-DTBB} to the compiler options or
+if using cmake by adding \texttt{add\_definitions(-DTBB)} to your \texttt{CMakeLists.txt}).
 
 \section{Using FLANN}
 
