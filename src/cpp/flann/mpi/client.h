@@ -59,7 +59,7 @@ public:
 	    Request<ElementType> req;
 	    req.nn = knn;
 	    req.queries = queries;
-	    req.checks = get_param<int>(params,"checks");
+	    req.checks = params.checks;
 	    // send request
 	    write_object(sock,req);
 

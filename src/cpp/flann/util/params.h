@@ -41,21 +41,39 @@ namespace flann
 
 typedef std::map<std::string, any> IndexParams;
 
-struct SearchParams : public IndexParams
-{
 
-    SearchParams(int checks = 32, float eps = 0, bool sorted = true, int cores = 1 )
+typedef enum {
+	False = 0,
+	True = 1,
+	Undefined
+} tri_type;
+
+struct SearchParams
+{
+    SearchParams(int checks_ = 32, float eps_ = 0.0, bool sorted_ = true ) :
+    	checks(checks_), eps(eps_), sorted(sorted_)
     {
-        // how many leafs to visit when searching for neighbours (-1 for unlimited)
-        (*this)["checks"] = checks;
-        // search for eps-approximate neighbours (default: 0)
-        (*this)["eps"] = eps;
-        // only for radius search, require neighbours sorted by distance (default: true)
-        (*this)["sorted"] = sorted;
-        // how many cores to assign to the search
-        // this parameter will be ignored if Intel TBB isn't available on the system or no "TBB" macro is defined
-        (*this)["cores"] = cores;
+    	max_neighbors = -1;
+    	use_heap = Undefined;
+    	cores = 1;
+    	matrices_in_gpu_ram = false;
     }
+
+    // how many leafs to visit when searching for neighbours (-1 for unlimited)
+    int checks;
+    // search for eps-approximate neighbours (default: 0)
+    float eps;
+    // only for radius search, require neighbours sorted by distance (default: true)
+    bool sorted;
+    // maximum number of neighbors radius search should return (-1 for unlimited)
+    int max_neighbors;
+    // use a heap to manage the result set (default: Undefined)
+    tri_type use_heap;
+    // how many cores to assign to the search
+    // this parameter will be ignored if Intel TBB isn't available on the system or no "TBB" macro is defined
+    int cores;
+    // for GPU search indicates if matrices are already in GPU ram
+    bool matrices_in_gpu_ram;
 };
 
 
@@ -97,6 +115,13 @@ inline void print_params(const IndexParams& params)
     }
 }
 
+inline void print_params(const SearchParams& params)
+{
+	std::cout << "checks : " << params.checks << std::endl;
+	std::cout << "eps : " << params.eps << std::endl;
+	std::cout << "sorted : " << params.sorted << std::endl;
+	std::cout << "max_neighbors : " << params.max_neighbors << std::endl;
+}
 
 
 }

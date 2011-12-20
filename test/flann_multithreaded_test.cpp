@@ -100,7 +100,9 @@ TEST_F(FlannTest, HandlesSingleCoreSearch)
     int cores = 1;
 
     start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, GetNN(), flann::SearchParams(checks,eps,sorted,cores));
+    SearchParams params(checks,eps,sorted);
+    params.cores = cores;
+    index.knnSearch(query, indices, dists, GetNN(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     float precision = compute_precision(match, indices);
@@ -121,7 +123,9 @@ TEST_F(FlannTest, HandlesMultiCoreSearch)
     int cores = 2;
 
     start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, GetNN(), flann::SearchParams(checks,eps,sorted,cores));
+    SearchParams params(checks,eps,sorted);
+    params.cores = cores;
+    index.knnSearch(query, indices, dists, GetNN(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     float precision = compute_precision(match, indices);
@@ -187,11 +191,14 @@ TEST_F(FlannCompareKnnTest, CompareMultiSingleCoreKnnSearchSorted)
     int multi_core = -1;
 
     start_timer("Searching KNN (single core)...");
-    int single_neighbor_count = index.knnSearch(query, indices_single, dists_single, GetNN(), flann::SearchParams(checks,eps,sorted,single_core));
+    SearchParams params(checks,eps,sorted);
+    params.cores = single_core;
+    int single_neighbor_count = index.knnSearch(query, indices_single, dists_single, GetNN(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     start_timer("Searching KNN (multi core)...");
-    int multi_neighbor_count = index.knnSearch(query, indices_multi, dists_multi, GetNN(), flann::SearchParams(checks,eps,sorted,multi_core));
+    params.cores = multi_core;
+    int multi_neighbor_count = index.knnSearch(query, indices_multi, dists_multi, GetNN(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     EXPECT_EQ(single_neighbor_count, multi_neighbor_count);
@@ -215,11 +222,14 @@ TEST_F(FlannCompareKnnTest, CompareMultiSingleCoreKnnSearchUnsorted)
     int multi_core = -1;
 
     start_timer("Searching KNN (single core)...");
-    int single_neighbor_count = index.knnSearch(query, indices_single, dists_single, GetNN(), flann::SearchParams(checks,eps,sorted,single_core));
+    SearchParams params(checks,eps,sorted);
+    params.cores = single_core;
+    int single_neighbor_count = index.knnSearch(query, indices_single, dists_single, GetNN(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     start_timer("Searching KNN (multi core)...");
-    int multi_neighbor_count = index.knnSearch(query, indices_multi, dists_multi, GetNN(), flann::SearchParams(checks,eps,sorted,multi_core));
+    params.cores = multi_core;
+    int multi_neighbor_count = index.knnSearch(query, indices_multi, dists_multi, GetNN(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     EXPECT_EQ(single_neighbor_count, multi_neighbor_count);
@@ -293,11 +303,14 @@ TEST_F(FlannCompareRadiusTest, CompareMultiSingleCoreRadiusSearchSorted)
     int multi_core = -1;
 
     start_timer("Searching Radius (single core)...");
-    int single_neighbor_count = index.radiusSearch(query, indices_single, dists_single, GetRadius(), flann::SearchParams(checks,eps,sorted,single_core));
+    SearchParams params(checks,eps,sorted);
+    params.cores = single_core;
+    int single_neighbor_count = index.radiusSearch(query, indices_single, dists_single, GetRadius(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     start_timer("Searching Radius (multi core)...");
-    int multi_neighbor_count = index.radiusSearch(query, indices_multi, dists_multi, GetRadius(), flann::SearchParams(checks,eps,sorted,multi_core));
+    params.cores = multi_core;
+    int multi_neighbor_count = index.radiusSearch(query, indices_multi, dists_multi, GetRadius(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     EXPECT_EQ(single_neighbor_count, multi_neighbor_count);
@@ -321,11 +334,14 @@ TEST_F(FlannCompareRadiusTest, CompareMultiSingleCoreRadiusSearchUnsorted)
     int multi_core = -1;
 
     start_timer("Searching Radius (single core)...");
-    int single_neighbor_count = index.radiusSearch(query, indices_single, dists_single, GetRadius(), flann::SearchParams(checks,eps,sorted,single_core));
+    SearchParams params(checks,eps,sorted);
+    params.cores = single_core;
+    int single_neighbor_count = index.radiusSearch(query, indices_single, dists_single, GetRadius(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     start_timer("Searching Radius (multi core)...");
-    int multi_neighbor_count = index.radiusSearch(query, indices_multi, dists_multi, GetRadius(), flann::SearchParams(checks,eps,sorted,multi_core));
+    params.cores = multi_core;
+    int multi_neighbor_count = index.radiusSearch(query, indices_multi, dists_multi, GetRadius(), params);
     printf("done (%g seconds)\n", stop_timer());
 
     EXPECT_EQ(single_neighbor_count, multi_neighbor_count);

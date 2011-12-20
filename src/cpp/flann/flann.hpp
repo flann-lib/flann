@@ -64,7 +64,7 @@ struct SavedIndexParams : public IndexParams
 {
     SavedIndexParams(std::string filename)
     {
-        (* this)["algorithm"] = FLANN_INDEX_SAVED;
+        (*this)["algorithm"] = FLANN_INDEX_SAVED;
         (*this)["filename"] = filename;
     }
 };
@@ -98,7 +98,7 @@ NNIndex<Distance>* load_saved_index(const Matrix<typename Distance::ElementType>
 
 
 template<typename Distance>
-class Index : public NNIndex<Distance>
+class Index
 {
 public:
     typedef typename Distance::ElementType ElementType;
@@ -275,14 +275,6 @@ public:
                               const SearchParams& params)
     {
     	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
-    }
-
-    /**
-     * \brief Method that searches for nearest-neighbours
-     */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
-    {
-        nnIndex_->findNeighbors(result, vec, searchParams);
     }
 
     /**

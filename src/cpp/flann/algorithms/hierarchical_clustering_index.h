@@ -416,7 +416,7 @@ public:
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
 
-        int maxChecks = get_param(searchParams,"checks",32);
+        int maxChecks = searchParams.checks;
 
         // Priority queue storing intermediate branches in the best-bin-first search
         Heap<BranchSt>* heap = new Heap<BranchSt>(size_);

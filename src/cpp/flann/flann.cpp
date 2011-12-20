@@ -149,7 +149,7 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
         if (index->getType()==FLANN_INDEX_AUTOTUNED) {
             AutotunedIndex<Distance>* autotuned_index = (AutotunedIndex<Distance>*)index->getIndex();
             // FIXME
-            flann_params->checks = get_param<int>(autotuned_index->getSearchParameters(),"checks");
+            flann_params->checks = autotuned_index->getSearchParameters().checks;
             *speedup = autotuned_index->getSpeedup();
         }
 

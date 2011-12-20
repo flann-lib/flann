@@ -123,7 +123,7 @@ public:
     {
         save_value(stream, (int)bestIndex_->getType());
         bestIndex_->saveIndex(stream);
-        save_value(stream, get_param<int>(bestSearchParams_, "checks"));
+        save_value(stream, bestSearchParams_.checks);
     }
 
     /**
@@ -138,9 +138,7 @@ public:
         params["algorithm"] = (flann_algorithm_t)index_type;
         bestIndex_ = create_index_by_type<Distance>(dataset_, params, distance_);
         bestIndex_->loadIndex(stream);
-        int checks;
-        load_value(stream, checks);
-        bestSearchParams_["checks"] = checks;
+        load_value(stream, bestSearchParams_.checks);
     }
 
     /**
@@ -148,8 +146,7 @@ public:
      */
     virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-        int checks = get_param(searchParams,"checks",(int)FLANN_CHECKS_AUTOTUNED);
-        if (checks == FLANN_CHECKS_AUTOTUNED) {
+        if (searchParams.checks == FLANN_CHECKS_AUTOTUNED) {
             bestIndex_->findNeighbors(result, vec, bestSearchParams_);
         }
         else {
@@ -540,7 +537,7 @@ private:
             }
 
             Logger::info("Required number of checks: %d \n", checks);
-            searchParams["checks"] = checks;
+            searchParams.checks = checks;
 
             speedup = linear / searchTime;
 

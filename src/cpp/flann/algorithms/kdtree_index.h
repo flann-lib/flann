@@ -199,8 +199,8 @@ public:
      */
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-        int maxChecks = get_param(searchParams,"checks", 32);
-        float epsError = 1+get_param(searchParams,"eps",0.0f);
+        int maxChecks = searchParams.checks;
+        float epsError = 1+searchParams.eps;
 
         if (maxChecks==FLANN_CHECKS_UNLIMITED) {
             getExactNeighbors(result, vec, epsError);

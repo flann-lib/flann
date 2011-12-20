@@ -746,7 +746,7 @@ flann::Matrix<int> indices_gpu(gpu_pointer_indices,n_points, knn, stride);
 flann::Matrix<float> dists_gpu(gpu_pointer_dists,n_points, knn, stride);
 
 flann::SearchParams params;
-params["matrices_in_gpu_ram"]=true;
+params.matrices_in_gpu_ram = true;
 
 flannindex.knnSearch( queries_gpu ,indices_gpu,dists_gpu,knn, params);
 \end{Verbatim}

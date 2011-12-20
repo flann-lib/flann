@@ -79,17 +79,14 @@ public:
    */
   void operator()( const tbb::blocked_range<size_t>& r ) const
   {
-    bool sorted = get_param(params_,"sorted",true);
-    bool use_heap = get_param(params_,"use_heap",false);
-
-    if (use_heap)
+    if (params_.use_heap==True)
     {
       KNNResultSet2<DistanceType> resultSet(knn_);
       for (size_t i=r.begin(); i!=r.end(); ++i)
       {
         resultSet.clear();
         nnIndex_->findNeighbors(resultSet, queries_[i], params_);
-        resultSet.copy(indices_[i], distances_[i], knn_, sorted);
+        resultSet.copy(indices_[i], distances_[i], knn_, params_.sorted);
         count_ += resultSet.size();
       }
     }
@@ -100,7 +97,7 @@ public:
       {
         resultSet.clear();
         nnIndex_->findNeighbors(resultSet, queries_[i], params_);
-        resultSet.copy(indices_[i], distances_[i], knn_, sorted);
+        resultSet.copy(indices_[i], distances_[i], knn_, params_.sorted);
         count_ += resultSet.size();
       }
     }
@@ -172,10 +169,7 @@ public:
    */
   void operator()( const tbb::blocked_range<size_t>& r ) const
   {
-    bool sorted = get_param(params_,"sorted",true);
-    bool use_heap = get_param(params_,"use_heap",false);
-
-    if (use_heap) {
+    if (params_.use_heap==True) {
         KNNResultSet2<DistanceType> resultSet(knn_);
         for (size_t i=r.begin(); i!=r.end(); ++i)
         {
@@ -184,7 +178,7 @@ public:
             size_t n = std::min(resultSet.size(), knn_);
             indices_[i].resize(n);
             distances_[i].resize(n);
-            resultSet.copy(&indices_[i][0], &distances_[i][0], n, sorted);
+            resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
             count_ += n;
         }
     }
@@ -197,7 +191,7 @@ public:
             size_t n = std::min(resultSet.size(), knn_);
             indices_[i].resize(n);
             distances_[i].resize(n);
-            resultSet.copy(&indices_[i][0], &distances_[i][0], n, sorted);
+            resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
             count_ += n;
         }
     }
@@ -269,7 +263,10 @@ public:
 
   void operator()( const tbb::blocked_range<size_t>& r ) const
   {
-      int max_neighbors = get_param(params_, "max_neighbors", -1);
+		size_t num_neighbors = std::min(indices_.cols, distances_.cols);
+		int max_neighbors = params_.max_neighbors;
+		if (max_neighbors<0) max_neighbors = num_neighbors;
+		else max_neighbors = std::min(max_neighbors,(int)num_neighbors);
 
       if (max_neighbors==0) {
           CountRadiusResultSet<DistanceType> resultSet(radius_);
@@ -281,13 +278,10 @@ public:
           }
       }
       else {
-          size_t num_neighbors = std::min(indices_.cols, distances_.cols);
-          bool sorted = get_param(params_, "sorted", true);
-          bool has_max_neighbors = has_param(params_,"max_neighbors");
 
           // explicitly indicated to use unbounded radius result set
           // or we know there'll be enough room for resulting indices and dists
-          if (max_neighbors<0 && (has_max_neighbors || num_neighbors>=nnIndex_->size())) {
+          if (params_.max_neighbors<0 && (num_neighbors>=nnIndex_->size())) {
               RadiusResultSet<DistanceType> resultSet(radius_);
               for (size_t i=r.begin(); i!=r.end(); ++i)
               {
@@ -296,7 +290,7 @@ public:
                   size_t n = resultSet.size();
                   count_ += n;
                   if (n>num_neighbors) n = num_neighbors;
-                  resultSet.copy(indices_[i], distances_[i], n, sorted);
+                  resultSet.copy(indices_[i], distances_[i], n, params_.sorted);
 
                   // mark the next element in the output buffers as unused
                   if (n<indices_.cols) indices_[i][n] = -1;
@@ -304,8 +298,6 @@ public:
               }
           }
           else {
-              if (max_neighbors<0) max_neighbors = num_neighbors;
-              else max_neighbors = std::min(max_neighbors,(int)num_neighbors);
               // number of neighbors limited to max_neighbors
               KNNRadiusResultSet<DistanceType> resultSet(radius_, max_neighbors);
               for (size_t i=r.begin(); i!=r.end(); ++i)
@@ -315,7 +307,7 @@ public:
                   size_t n = resultSet.size();
                   count_ += n ;
                   if ((int)n>max_neighbors) n = max_neighbors;
-                  resultSet.copy(indices_[i], distances_[i], n, sorted);
+                  resultSet.copy(indices_[i], distances_[i], n, params_.sorted);
 
                   // mark the next element in the output buffers as unused
                   if (n<indices_.cols) indices_[i][n] = -1;
@@ -391,8 +383,7 @@ public:
 
   void operator()( const tbb::blocked_range<size_t>& r ) const
   {
-      int max_neighbors = get_param(params_, "max_neighbors", -1);
-
+      int max_neighbors = params_.max_neighbors;
       // just count neighbors
       if (max_neighbors==0) {
           CountRadiusResultSet<DistanceType> resultSet(radius_);
@@ -404,7 +395,6 @@ public:
           }
       }
       else {
-          bool sorted = get_param(params_, "sorted", true);
           if (indices_.size() < queries_.rows ) indices_.resize(queries_.rows);
           if (distances_.size() < queries_.rows ) distances_.resize(queries_.rows);
 
@@ -419,12 +409,12 @@ public:
                   count_ += n;
                   indices_[i].resize(n);
                   distances_[i].resize(n);
-                  resultSet.copy(&indices_[i][0], &distances_[i][0], n, sorted);
+                  resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
               }
           }
           else {
               // number of neighbors limited to max_neighbors
-              KNNRadiusResultSet<DistanceType> resultSet(radius_, max_neighbors);
+              KNNRadiusResultSet<DistanceType> resultSet(radius_, params_.max_neighbors);
               for (size_t i=r.begin(); i!=r.end(); ++i)
               {
                   resultSet.clear();
@@ -434,7 +424,7 @@ public:
                   if ((int)n>max_neighbors) n = max_neighbors;
                   indices_[i].resize(n);
                   distances_[i].resize(n);
-                  resultSet.copy(&indices_[i][0], &distances_[i][0], n, sorted);
+                  resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
               }
           }
       }

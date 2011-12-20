@@ -213,7 +213,7 @@ public:
      */
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-        float epsError = 1+get_param(searchParams,"eps",0.0f);
+        float epsError = 1+searchParams.eps;
 
         std::vector<DistanceType> dists(dim_,0);
         DistanceType distsq = computeInitialDistances(vec, dists);
@@ -517,14 +517,13 @@ private:
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
-//            DistanceType worst_dist = result_set.worstDist();
+            DistanceType worst_dist = result_set.worstDist();
             for (int i=node->left; i<node->right; ++i) {
                 int index = reorder_ ? i : vind_[i];
-                DistanceType dist = distance_(vec, data_[index], dim_);
-//                DistanceType dist = distance_(vec, data_[index], dim_, worst_dist);
-//                if (dist<worst_dist) {
+                DistanceType dist = distance_(vec, data_[index], dim_, worst_dist);
+                if (dist<worst_dist) {
                     result_set.addPoint(dist,vind_[i]);
-//                }
+                }
             }
             return;
         }

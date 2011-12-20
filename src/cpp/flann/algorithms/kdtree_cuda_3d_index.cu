@@ -280,14 +280,14 @@ void KDTreeCuda3dIndex<Distance>::knnSearchGpu(const Matrix<ElementType>& querie
     assert(int(indices.cols) >= knn);
     assert( dists.cols == indices.cols && dists.stride==indices.stride );
 
-    bool matrices_on_gpu = get_param(params, "matrices_in_gpu_ram", false);
+    bool matrices_on_gpu = params.matrices_in_gpu_ram;
 
     int threadsPerBlock = 128;
     int blocksPerGrid=(queries.rows+threadsPerBlock-1)/threadsPerBlock;
 
-    float epsError = 1+get_param(params,"eps",0.0f);
-    bool sorted = get_param(params,"sorted",true);
-    bool use_heap = get_param(params,"use_heap",false);
+    float epsError = 1+params.eps;
+    bool sorted = params.sorted;
+    bool use_heap = params.use_heap;
 
     typename GpuDistance<Distance>::type distance;
     //  std::cout<<" search: "<<std::endl;
@@ -437,9 +437,9 @@ int KDTreeCuda3dIndex<Distance >::radiusSearchGpu(const Matrix<ElementType>& que
     //  assert(indices.roasdfws >= queries.rows);
     //  assert(dists.rows >= queries.rows);
 
-    int max_neighbors = get_param(params, "max_neighbors", -1);
-    bool sorted = get_param(params, "sorted", true);
-    bool use_heap = get_param(params, "use_heap", false);
+    int max_neighbors = params.max_neighbors;
+    bool sorted = params.sorted;
+    bool use_heap = params.use_heap;
     if (indices.size() < queries.rows ) indices.resize(queries.rows);
     if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
@@ -506,7 +506,7 @@ int KDTreeCuda3dIndex<Distance >::radiusSearchGpu(const Matrix<ElementType>& que
                                                                               1,
                                                                               thrust::raw_pointer_cast(&indicesDev[0]),
                                                                               thrust::raw_pointer_cast(&distsDev[0]),
-                                                                              queries.rows, flann::cuda::RadiusResultSet<float>(radius,thrust::raw_pointer_cast(&countsDev[0]),get_param(params, "sorted", true)), distance);
+                                                                              queries.rows, flann::cuda::RadiusResultSet<float>(radius,thrust::raw_pointer_cast(&countsDev[0]),params.sorted), distance);
     }
     else {
         if( use_heap ) {
@@ -521,7 +521,7 @@ int KDTreeCuda3dIndex<Distance >::radiusSearchGpu(const Matrix<ElementType>& que
                                                                                   1,
                                                                                   thrust::raw_pointer_cast(&indicesDev[0]),
                                                                                   thrust::raw_pointer_cast(&distsDev[0]),
-                                                                                  queries.rows, flann::cuda::RadiusKnnResultSet<float, true>(radius,max_neighbors, thrust::raw_pointer_cast(&countsDev[0]),get_param(params, "sorted", true)), distance);
+                                                                                  queries.rows, flann::cuda::RadiusKnnResultSet<float, true>(radius,max_neighbors, thrust::raw_pointer_cast(&countsDev[0]),params.sorted), distance);
         }
         else {
             KdTreeCudaPrivate::nearestKernel<<<blocksPerGrid, threadsPerBlock>>> (thrust::raw_pointer_cast(&((*gpu_helper_->gpu_splits_)[0])),
@@ -535,7 +535,7 @@ int KDTreeCuda3dIndex<Distance >::radiusSearchGpu(const Matrix<ElementType>& que
                                                                                   1,
                                                                                   thrust::raw_pointer_cast(&indicesDev[0]),
                                                                                   thrust::raw_pointer_cast(&distsDev[0]),
-                                                                                  queries.rows, flann::cuda::RadiusKnnResultSet<float, false>(radius,max_neighbors, thrust::raw_pointer_cast(&countsDev[0]),get_param(params, "sorted", true)), distance);
+                                                                                  queries.rows, flann::cuda::RadiusKnnResultSet<float, false>(radius,max_neighbors, thrust::raw_pointer_cast(&countsDev[0]),params.sorted), distance);
         }
     }
     thrust::transform(indicesDev.begin(), indicesDev.end(), indicesDev.begin(), map_indices(thrust::raw_pointer_cast( &((*gpu_helper_->gpu_vind_))[0]) ));
@@ -566,17 +566,17 @@ struct isNotMinusOne
 template< typename Distance>
 int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params)
 {
-	int max_neighbors = get_param(params, "max_neighbors", -1);
+	int max_neighbors = params.max_neighbors;
     assert(indices.rows >= queries.rows);
     assert(dists.rows >= queries.rows || max_neighbors==0 );
     assert(indices.stride==dists.stride  || max_neighbors==0 );
     assert( indices.cols==indices.stride );
     assert(dists.rows >= queries.rows || max_neighbors==0 );
 
-    bool sorted = get_param(params, "sorted", true);
-    bool matrices_on_gpu = get_param(params, "matrices_in_gpu_ram", false);
-    float epsError = 1+get_param(params,"eps",0.0f);
-    bool use_heap = get_param(params,"use_heap",false);
+    bool sorted = params.sorted;
+    bool matrices_on_gpu = params.matrices_in_gpu_ram;
+    float epsError = 1+params.eps;
+    bool use_heap = params.use_heap;
 
 
     if( max_neighbors<0 ) max_neighbors=indices.cols;
@@ -610,7 +610,6 @@ int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& qu
 
         thrust::device_vector<float> distsDev(queries.rows* max_neighbors);
         thrust::device_vector<int> indicesDev(queries.rows* max_neighbors);
-        //      bool sorted = get_param(params,"sorted",true);
 
         if( use_heap ) {
             KdTreeCudaPrivate::nearestKernel<<<blocksPerGrid, threadsPerBlock>>> (thrust::raw_pointer_cast(&((*gpu_helper_->gpu_splits_)[0])),
@@ -675,7 +674,6 @@ int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& qu
             thrust::copy( indicesDev.begin(), indicesDev.end(), indices.ptr() );
             return thrust::reduce(indicesDev.begin(), indicesDev.end() );
         }
-        //      bool sorted = get_param(params,"sorted",true);
 
         if( use_heap ) {
             KdTreeCudaPrivate::nearestKernel<<<blocksPerGrid, threadsPerBlock>>> (thrust::raw_pointer_cast(&((*gpu_helper_->gpu_splits_)[0])),

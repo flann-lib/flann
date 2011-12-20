@@ -426,7 +426,7 @@ public:
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
 
-        int maxChecks = get_param(searchParams,"checks",32);
+        int maxChecks = searchParams.checks;
 
         if (maxChecks==FLANN_CHECKS_UNLIMITED) {
             findExactNN(root_, result, vec);

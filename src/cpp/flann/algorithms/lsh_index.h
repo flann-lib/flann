@@ -196,16 +196,14 @@ public:
         assert(dists.rows >= queries.rows);
         assert(indices.cols >= knn);
         assert(dists.cols >= knn);
-        bool sorted = get_param(params,"sorted",true);
-        bool use_heap = get_param(params,"use_heap",false);
 
         int count = 0;
-        if (use_heap) {
+        if (params.use_heap==True) {
         	KNNUniqueResultSet<DistanceType> resultSet(knn);
         	for (size_t i = 0; i < queries.rows; i++) {
         		resultSet.clear();
         		findNeighbors(resultSet, queries[i], params);
-        		resultSet.copy(indices[i], dists[i], knn, sorted);
+        		resultSet.copy(indices[i], dists[i], knn, params.sorted);
         		count += resultSet.size();
         	}
         }
@@ -214,7 +212,7 @@ public:
         	for (size_t i = 0; i < queries.rows; i++) {
         		resultSet.clear();
         		findNeighbors(resultSet, queries[i], params);
-        		resultSet.copy(indices[i], dists[i], knn, sorted);
+        		resultSet.copy(indices[i], dists[i], knn, params.sorted);
         		count += resultSet.size();
         	}
         }
@@ -237,13 +235,11 @@ public:
     				const SearchParams& params)
     {
         assert(queries.cols == veclen());
-        bool sorted = get_param(params,"sorted",true);
-        bool use_heap = get_param(params,"use_heap",false);
 		if (indices.size() < queries.rows ) indices.resize(queries.rows);
 		if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
 		int count = 0;
-		if (use_heap) {
+		if (params.use_heap==True) {
 			KNNUniqueResultSet<DistanceType> resultSet(knn);
 			for (size_t i = 0; i < queries.rows; i++) {
 				resultSet.clear();
@@ -251,7 +247,7 @@ public:
 				size_t n = std::min(resultSet.size(), knn);
 				indices[i].resize(n);
 				dists[i].resize(n);
-				resultSet.copy(&indices[i][0], &dists[i][0], n, sorted);
+				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
 				count += n;
 			}
 		}
@@ -263,7 +259,7 @@ public:
 				size_t n = std::min(resultSet.size(), knn);
 				indices[i].resize(n);
 				dists[i].resize(n);
-				resultSet.copy(&indices[i][0], &dists[i][0], n, sorted);
+				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
 				count += n;
 			}
 		}

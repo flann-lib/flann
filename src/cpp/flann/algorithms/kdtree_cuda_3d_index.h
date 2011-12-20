@@ -199,13 +199,7 @@ public:
      */
     virtual int knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
     {
-        if( get_param(params,"use_cpu",false) ) {
-            throw FLANNException( "CPU search not supported!" );
-            //                  return NNIndex<Distance>::knnSearch(queries,indices, dists, knn, params);
-        }
-        else {
-            knnSearchGpu(queries,indices, dists, knn, params);
-        }
+    	knnSearchGpu(queries,indices, dists, knn, params);
         return knn*queries.rows; // hack...
     }
 
@@ -223,13 +217,7 @@ public:
                           size_t knn,
                           const SearchParams& params)
     {
-        if( get_param(params,"use_cpu",false) ) {
-            throw FLANNException( "CPU search not supported!" );
-            //                  return NNIndex<Distance>::knnSearch(queries,indices, dists, knn, params);
-        }
-        else {
-            knnSearchGpu(queries,indices, dists, knn, params);
-        }
+    	knnSearchGpu(queries,indices, dists, knn, params);
         return knn*queries.rows; // hack...
     }
 
@@ -268,25 +256,13 @@ public:
     virtual int radiusSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists,
                              float radius, const SearchParams& params)
     {
-        if( get_param(params,"use_cpu",false) ) {
-            throw FLANNException( "CPU search not supported!" );
-            //                  return NNIndex<Distance>::radiusSearch(queries,indices, dists, radius, params);
-        }
-        else {
-            return radiusSearchGpu(queries,indices, dists, radius, params);
-        }
+    	return radiusSearchGpu(queries,indices, dists, radius, params);
     }
 
     virtual int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
                              std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params)
     {
-        if( get_param(params,"use_cpu",false) ) {
-            throw FLANNException( "CPU search not supported!" );
-            return NNIndex<Distance>::radiusSearch(queries,indices, dists, radius, params);
-        }
-        else {
-            return radiusSearchGpu(queries,indices, dists, radius, params);
-        }
+    	return radiusSearchGpu(queries,indices, dists, radius, params);
     }
 
     int radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists,

@@ -200,7 +200,6 @@ private:
     std::vector<DistIndex> dist_index_;
 };
 
-
 /**
  * K-Nearest neighbour result set. Ensures that the elements inserted are unique
  */
