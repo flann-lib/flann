@@ -123,11 +123,11 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] match.data;
-        delete[] dists.data;
-        delete[] indices.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] match.ptr();
+        delete[] dists.ptr();
+        delete[] indices.ptr();
     }
 };
 
@@ -225,12 +225,12 @@ protected:
 
     void TearDown()
     {
-        delete[] data.data;
-        delete[] query.data;
-        delete[] dists.data;
-		delete[] gt_dists.data;
-        delete[] indices.data;
-		delete[] gt_indices.data;
+        delete[] data.ptr();
+        delete[] query.ptr();
+        delete[] dists.ptr();
+		delete[] gt_dists.ptr();
+        delete[] indices.ptr();
+		delete[] gt_indices.ptr();
 		
     }
 };
@@ -310,22 +310,22 @@ TEST_F(Flann_3D_Random_Cloud, Test4NNGpuBuffers)
 	indices.cols=4;
 	dists.cols=4;
 	flann::SearchParams sp;
-	sp["matrices_in_gpu_ram"]=true;
+	sp.matrices_in_gpu_ram=true;
     index.knnSearch(query_device_matrix, indices_device_matrix, dists_device_matrix, 4, sp );
     printf("done (%g seconds)\n", stop_timer());
 	
 	flann::Matrix<int> indices_host( new int[ query.rows*4],query.rows,4 );
 	flann::Matrix<float> dists_host( new float[ query.rows*4],query.rows,4 );
 	
-	thrust::copy( dists_device.begin(), dists_device.end(), dists_host.data );
-	thrust::copy( indices_device.begin(), indices_device.end(), indices_host.data );
+	thrust::copy( dists_device.begin(), dists_device.end(), dists_host.ptr() );
+	thrust::copy( indices_device.begin(), indices_device.end(), indices_host.ptr() );
 
 //     float precision = compute_precision(gt_indices,indices);
 	float precision = computePrecisionDiscrete(gt_dists,dists_host, 1e-08);
     EXPECT_GE(precision, 0.99);
     printf("Precision: %g\n", precision);
-	delete [] indices_host.data;
-	delete [] dists_host.data;
+	delete [] indices_host.ptr();
+	delete [] dists_host.ptr();
 }
 
 TEST_F(Flann_3D_Random_Cloud, TestRadiusSearchVector)
@@ -400,7 +400,7 @@ TEST_F(Flann_3D_Random_Cloud, TestRadiusSearchMatrix)
 	flann::Matrix<int> counts( new int[query.rows], query.rows,1);
 	flann::Matrix<float> dummy( 0,0,0 );
 	flann::SearchParams counting_params;
-	counting_params["max_neighbors"]=0;
+	counting_params.max_neighbors=0;
 	start_timer("counting neighbors...");
 	index.radiusSearch( query, counts,dists, r*r, counting_params );
 	printf("done (%g seconds)", stop_timer());
@@ -440,9 +440,9 @@ TEST_F(Flann_3D_Random_Cloud, TestRadiusSearchMatrix)
 		}
 	}
 	printf("done (%g seconds)\n", stop_timer());
-	delete []counts.data;
-	delete []indices.data;
-	delete []dists.data;
+	delete []counts.ptr();
+	delete []indices.ptr();
+	delete []dists.ptr();
 }
 
 TEST_F(Flann_3D, TestRadiusSearch)
