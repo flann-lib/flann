@@ -43,9 +43,9 @@ typedef std::map<std::string, any> IndexParams;
 
 
 typedef enum {
-	False = 0,
-	True = 1,
-	Undefined
+	FLANN_False = 0,
+	FLANN_True = 1,
+	FLANN_Undefined
 } tri_type;
 
 struct SearchParams
@@ -54,7 +54,7 @@ struct SearchParams
     	checks(checks_), eps(eps_), sorted(sorted_)
     {
     	max_neighbors = -1;
-    	use_heap = Undefined;
+    	use_heap = FLANN_Undefined;
     	cores = 1;
     	matrices_in_gpu_ram = false;
     }
@@ -67,7 +67,7 @@ struct SearchParams
     bool sorted;
     // maximum number of neighbors radius search should return (-1 for unlimited)
     int max_neighbors;
-    // use a heap to manage the result set (default: Undefined)
+    // use a heap to manage the result set (default: FLANN_Undefined)
     tri_type use_heap;
     // how many cores to assign to the search
     // this parameter will be ignored if Intel TBB isn't available on the system or no "TBB" macro is defined

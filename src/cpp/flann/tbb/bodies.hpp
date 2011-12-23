@@ -79,7 +79,7 @@ public:
    */
   void operator()( const tbb::blocked_range<size_t>& r ) const
   {
-    if (params_.use_heap==True)
+    if (params_.use_heap==FLANN_True)
     {
       KNNResultSet2<DistanceType> resultSet(knn_);
       for (size_t i=r.begin(); i!=r.end(); ++i)
@@ -169,7 +169,7 @@ public:
    */
   void operator()( const tbb::blocked_range<size_t>& r ) const
   {
-    if (params_.use_heap==True) {
+    if (params_.use_heap==FLANN_True) {
         KNNResultSet2<DistanceType> resultSet(knn_);
         for (size_t i=r.begin(); i!=r.end(); ++i)
         {

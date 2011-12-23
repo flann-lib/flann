@@ -89,11 +89,11 @@ public:
         assert(dists.cols >= knn);
         bool use_heap;
 
-        if (params.use_heap==Undefined) {
+        if (params.use_heap==FLANN_Undefined) {
         	use_heap = (knn>KNN_HEAP_THRESHOLD)?true:false;
         }
         else {
-        	use_heap = (params.use_heap==True)?true:false;
+        	use_heap = (params.use_heap==FLANN_True)?true:false;
         }
         int count = 0;
 
@@ -161,11 +161,11 @@ public:
     {
         assert(queries.cols == veclen());
         bool use_heap;
-        if (params.use_heap==Undefined) {
+        if (params.use_heap==FLANN_Undefined) {
         	use_heap = (knn>KNN_HEAP_THRESHOLD)?true:false;
         }
         else {
-        	use_heap = (params.use_heap==True)?true:false;
+        	use_heap = (params.use_heap==FLANN_True)?true:false;
         }
 
         if (indices.size() < queries.rows ) indices.resize(queries.rows);

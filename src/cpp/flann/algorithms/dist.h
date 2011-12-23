@@ -79,14 +79,6 @@ template<>
 struct Accumulator<int> { typedef float Type; };
 
 
-class TrueType
-{
-};
-
-class FalseType
-{
-};
-
 
 /**
  * Squared Euclidean distance functor.

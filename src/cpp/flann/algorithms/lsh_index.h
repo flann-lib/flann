@@ -198,7 +198,7 @@ public:
         assert(dists.cols >= knn);
 
         int count = 0;
-        if (params.use_heap==True) {
+        if (params.use_heap==FLANN_True) {
         	KNNUniqueResultSet<DistanceType> resultSet(knn);
         	for (size_t i = 0; i < queries.rows; i++) {
         		resultSet.clear();
@@ -239,7 +239,7 @@ public:
 		if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
 		int count = 0;
-		if (params.use_heap==True) {
+		if (params.use_heap==FLANN_True) {
 			KNNUniqueResultSet<DistanceType> resultSet(knn);
 			for (size_t i = 0; i < queries.rows; i++) {
 				resultSet.clear();
