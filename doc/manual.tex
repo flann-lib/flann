@@ -638,8 +638,15 @@ struct SearchParams
 {
 	SearchParams(int checks = 32,
 		  float eps = 0,
-		  bool sorted = true,
-		  int cores = 1);
+		  bool sorted = true);
+
+    int checks;
+    float eps;
+    bool sorted;
+    int max_neighbors;
+    tri_type use_heap;
+    int cores;
+    bool matrices_in_gpu_ram;
 };
 \end{Verbatim}
 \begin{description}
@@ -650,7 +657,14 @@ If automatic configuration was used when the index was created, the number of ch
 required to achieve the specified precision was also computed, to use that value specify \texttt{CHECKS\_AUTOTUNED}.
  \item[eps] Search for eps-approximate neighbors (only used by KDTreeSingleIndex and KDTreeCuda3dIndex).
  \item[sorted] Used only by radius search, specifies if the neighbors returned should be sorted by distance.
+ \item[max\_neighbours] Specifies the maximum number of neighbors radius search should return (default: -1 =
+unlimited). Only used for radius search.
+ \item[use\_heap] Use a heap data structure to manage the list of neighbors internally (possible values: FLANN\_False,
+FLANN\_True, FLANN\_Undefined). A heap is more efficient for a large number of neighbors and less efficient for a small
+number of neighbors. Default value is FLANN\_Undefined, which lets the code choose the best option depending on the
+number of neighbors requested. Only used for KNN search.
  \item[cores] How many cores to assign to the search (specify -1 for automatic core selection).
+ \item[matrices\_in\_gpu\_ram] for GPU search indicates if matrices are already in GPU ram.
 \end{description}
 \end{description}
 
