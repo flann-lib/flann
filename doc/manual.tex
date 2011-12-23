@@ -247,6 +247,30 @@ options use the \texttt{cmake-gui} application after \texttt{cmake} has finished
   \end{center}
 \end{figure}
 
+\subsection{Upgrading from a previous version}
+
+This section contains changes that you need to be aware of when upgrading from a previous version of FLANN.
+
+\begin{description}
+ \item[Version 1.7.0] A small breaking API change in \texttt{flann::Matrix} requires client code to be updated. In order
+to release the memory used by a matrix, use:
+\begin{Verbatim}[fontsize=\scriptsize]
+ delete[] matrix.ptr();
+\end{Verbatim}
+instead of:
+\begin{Verbatim}[fontsize=\scriptsize]
+ delete[] matrix.data;
+\end{Verbatim}
+or:
+\begin{Verbatim}[fontsize=\scriptsize]
+ matrix.free();
+\end{Verbatim}
+The member \texttt{data} of \texttt{flann::Matrix} is not publicly accessible any more, use the \texttt{ptr()} method
+to obtain the pointer to the memory buffer.
+\end{description}
+
+
+
 \subsection{Compiling FLANN with multithreading support}
 To make use of FLANN multithreading support, it is required that Intel Threading Building Blocks is installed correctly
 on your system. You can either get it from your package manager or from: \texttt{http://threadingbuildingblocks.org/}
