@@ -25,6 +25,7 @@ dist-src:
 	cp -r test/*.py test/*.cpp test/*.txt test/*.cu dist/flann-${VER}-src/test
 	cp README.md dist/flann-${VER}-src
 	cp CMakeLists.txt dist/flann-${VER}-src
+	cp COPYING dist/flann-${VER}-src
 	(cd dist; zip -r -9 flann-${VER}-src.zip flann-${VER}-src)
 
 
