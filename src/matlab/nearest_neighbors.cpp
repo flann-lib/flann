@@ -26,11 +26,15 @@
    THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* Workaround for MSVC 10, Matlab incompatibility */
+#if (_MSC_VER >= 1600)
+#include <yvals.h>
+#define __STDC_UTF_16__
+#endif
 #include <mex.h>
 #include <flann/flann.h>
 #include <stdio.h>
 #include <string.h>
-#include <sstream>
 
 
 
@@ -582,17 +586,21 @@ static mexFunctionEntry __functionTable[] = {
 
 static void print_selector_error()
 {
-    std::ostringstream oss;
-    oss << "Expecting first argument to be one of: ";
+    char buf[512];
+    char* msg = buf;
 
+    sprintf(msg, "%s", "Expecting first argument to be one of: ");
+    msg = buf+strlen(buf);
     for (int i=0; i<sizeof(__functionTable)/sizeof(mexFunctionEntry); ++i) {
         if (i!=0) {
-            oss << ", ";
+            sprintf(msg,", ");
+            msg = buf+strlen(buf);
         }
-        oss << __functionTable[i].name;
+        sprintf(msg, "%s", __functionTable[i].name);
+        msg = buf+strlen(buf);
     }
 
-    mexErrMsgTxt(oss.str().c_str());
+    mexErrMsgTxt(buf);
 }
 
 
