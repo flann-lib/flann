@@ -40,7 +40,10 @@ if (GTEST_FOUND AND HDF5_FOUND)
 endif()
 
 if (GTEST_FOUND AND HDF5_FOUND AND BUILD_CUDA_LIB)
-	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC;-arch=sm_13;--compiler-bindir=${NVCC_COMPILER_BINDIR}" )
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC;-arch=sm_13" )
+    if (NVCC_COMPILER_BINDIR)
+        set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--compiler-bindir=${NVCC_COMPILER_BINDIR}")
+    endif()
 	flann_add_cuda_gtest(flann_cuda_test flann_cuda_test.cu)
 	target_link_libraries(flann_cuda_test flann_cpp ${HDF5_LIBRARIES} flann_cuda)
 
