@@ -85,6 +85,12 @@ public:
     static void setLevel(int level) { instance().logLevel = level; }
 
     /**
+     * Returns the currently set logging level.
+     * @return current logging level
+     */
+    static int getLevel() { return instance().logLevel; }
+
+    /**
      * Sets the logging destination
      * @param name Filename or NULL for console
      */
