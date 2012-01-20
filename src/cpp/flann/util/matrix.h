@@ -99,6 +99,10 @@ public:
     {
     }
 
+    Matrix(const Matrix_ m)
+    {
+    	*this = m;
+    }
     /**
      * Convenience function for deallocating the storage data.
      */

@@ -70,31 +70,10 @@ struct SavedIndexParams : public IndexParams
 };
 
 
-template<typename Distance>
-NNIndex<Distance>* load_saved_index(const Matrix<typename Distance::ElementType>& dataset, const std::string& filename, Distance distance)
-{
-    typedef typename Distance::ElementType ElementType;
 
-    FILE* fin = fopen(filename.c_str(), "rb");
-    if (fin == NULL) {
-        return NULL;
-    }
-    IndexHeader header = load_header(fin);
-    if (header.data_type != flann_datatype<ElementType>::value) {
-        throw FLANNException("Datatype of saved index is different than of the one to be created.");
-    }
-    if ((size_t(header.rows) != dataset.rows)||(size_t(header.cols) != dataset.cols)) {
-        throw FLANNException("The index saved belongs to a different dataset");
-    }
 
-    IndexParams params;
-    params["algorithm"] = header.index_type;
-    NNIndex<Distance>* nnIndex = create_index_by_type<Distance>(dataset, params, distance);
-    nnIndex->loadIndex(fin);
-    fclose(fin);
 
-    return nnIndex;
-}
+
 
 
 template<typename Distance>
@@ -103,6 +82,7 @@ class Index
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
+    typedef IndexTyped<typename Distance::ElementType, typename Distance::ResultType> IndexType;
 
     Index(const Matrix<ElementType>& features, const IndexParams& params, Distance distance = Distance() )
         : index_params_(params)
@@ -111,11 +91,12 @@ public:
         loaded_ = false;
 
         if (index_type == FLANN_INDEX_SAVED) {
-            nnIndex_ = load_saved_index<Distance>(features, get_param<std::string>(params,"filename"), distance);
+            nnIndex_ = load_saved_index(features, get_param<std::string>(params,"filename"), distance);
             loaded_ = true;
         }
         else {
-            nnIndex_ = create_index_by_type<Distance>(features, params, distance);
+        	flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
+            nnIndex_ = create_index_by_type<Distance>(index_type, features, params, distance);
         }
     }
 
@@ -141,26 +122,8 @@ public:
             throw FLANNException("Cannot open file");
         }
         save_header(fout, *nnIndex_);
-        saveIndex(fout);
+//        saveIndex(fout);
         fclose(fout);
-    }
-
-    /**
-     * \brief Saves the index to a stream
-     * \param stream The stream to save the index to
-     */
-    void saveIndex(FILE* stream)
-    {
-        nnIndex_->saveIndex(stream);
-    }
-
-    /**
-     * \brief Loads the index from a stream
-     * \param stream The stream from which the index is loaded
-     */
-    void loadIndex(FILE* stream)
-    {
-        nnIndex_->loadIndex(stream);
     }
 
     /**
@@ -285,23 +248,43 @@ public:
         return nnIndex_;
     }
 
-    /**
-     * \brief Returns index parameters.
-     * \deprecated use getParameters() instead.
-     */
-    FLANN_DEPRECATED  const IndexParams* getIndexParameters()
+
+private:
+    IndexType* load_saved_index(const Matrix<ElementType>& dataset, const std::string& filename, Distance distance)
     {
-        return &index_params_;
+        FILE* fin = fopen(filename.c_str(), "rb");
+        if (fin == NULL) {
+            return NULL;
+        }
+        IndexHeader header = load_header(fin);
+        if (header.data_type != flann_datatype<ElementType>::value) {
+            throw FLANNException("Datatype of saved index is different than of the one to be created.");
+        }
+        if ((size_t(header.rows) != dataset.rows)||(size_t(header.cols) != dataset.cols)) {
+            throw FLANNException("The index saved belongs to a different dataset");
+        }
+
+        IndexParams params;
+        params["algorithm"] = header.index_type;
+        IndexType* nnIndex = create_index_by_type<Distance>(header.index_type, dataset, params, distance);
+//        nnIndex->loadIndex(fin);
+        fclose(fin);
+
+        return nnIndex;
     }
 
 private:
     /** Pointer to actual index class */
-    NNIndex<Distance>* nnIndex_;
+    IndexType* nnIndex_;
     /** Indices if the index was loaded from a file */
     bool loaded_;
     /** Parameters passed to the index */
     IndexParams index_params_;
 };
+
+
+
+
 
 /**
  * Performs a hierarchical clustering of the points passed as argument and then takes a cut in the

@@ -48,6 +48,181 @@ namespace flann
 {
 
 
+
+class IndexBase
+{
+public:
+	virtual ~IndexBase() {};
+
+    virtual void buildIndex() = 0;
+
+    virtual size_t veclen() const = 0;
+
+    virtual size_t size() const = 0;
+
+    virtual flann_algorithm_t getType() const = 0;
+
+    virtual int usedMemory() const = 0;
+
+    virtual IndexParams getParameters() const = 0;
+
+    virtual int knnSearch(const Matrix_& queries,
+    		Matrix_& indices,
+    		Matrix_& dists,
+    		size_t knn,
+    		const SearchParams& params) = 0;
+
+    virtual int radiusSearch(const Matrix_& queries,
+    		Matrix_& indices,
+    		Matrix_& dists,
+    		float radius,
+    		const SearchParams& params) = 0;
+};
+
+
+template<typename ElementType, typename DistanceType = typename Accumulator<ElementType>::Type>
+class IndexTyped : public IndexBase
+{
+public:
+	virtual int knnSearch(const Matrix<ElementType>& queries,
+			Matrix<int>& indices,
+			Matrix<DistanceType>& dists,
+			size_t knn,
+			const SearchParams& params) = 0;
+
+	virtual int knnSearch(const Matrix<ElementType>& queries,
+			std::vector< std::vector<int> >& indices,
+			std::vector<std::vector<DistanceType> >& dists,
+			size_t knn,
+			const SearchParams& params) = 0;
+
+	virtual int radiusSearch(const Matrix<ElementType>& queries,
+			Matrix<int>& indices,
+			Matrix<DistanceType>& dists,
+			float radius,
+			const SearchParams& params) = 0;
+
+	virtual int radiusSearch(const Matrix<ElementType>& queries,
+			std::vector< std::vector<int> >& indices,
+			std::vector<std::vector<DistanceType> >& dists,
+			float radius,
+			const SearchParams& params) = 0;
+};
+
+
+template<typename Algorithm>
+class IndexWrapper : public IndexTyped<typename Algorithm::ElementType, typename Algorithm::DistanceType>
+{
+public:
+	typedef typename Algorithm::ElementType ElementType;
+	typedef typename Algorithm::DistanceType DistanceType;
+
+	IndexWrapper(Algorithm* index) : index_(index)
+	{
+	};
+
+	virtual ~IndexWrapper()
+	{
+		delete index_;
+	}
+
+    void buildIndex()
+    {
+    	index_->buildIndex();
+    }
+
+    size_t veclen() const
+    {
+    	return index_->veclen();
+    }
+
+    size_t size() const
+    {
+    	return index_->size();
+    }
+
+    flann_algorithm_t getType() const
+    {
+    	return index_->getType();
+    }
+
+    int usedMemory() const
+    {
+    	return index_->usedMemory();
+    }
+
+    IndexParams getParameters() const
+    {
+    	return index_->getParameters();
+    }
+
+    int knnSearch(const Matrix_& queries,
+    		Matrix_& indices,
+    		Matrix_& dists,
+    		size_t knn,
+    		const SearchParams& params)
+    {
+    	Matrix<ElementType> _queries(queries);
+    	Matrix<int> _indices(indices);
+    	Matrix<DistanceType> _dists(dists);
+    	return index_->knnSearch(_queries, _indices,_dists, knn, params);
+    }
+
+	int knnSearch(const Matrix<ElementType>& queries,
+			Matrix<int>& indices,
+			Matrix<DistanceType>& dists,
+			size_t knn,
+			const SearchParams& params)
+    {
+    	return index_->knnSearch(queries, indices,dists, knn, params);
+    }
+
+	int knnSearch(const Matrix<ElementType>& queries,
+			std::vector< std::vector<int> >& indices,
+			std::vector<std::vector<DistanceType> >& dists,
+			size_t knn,
+			const SearchParams& params)
+	{
+    	return index_->knnSearch(queries, indices,dists, knn, params);
+	}
+
+    int radiusSearch(const Matrix_& queries,
+    		Matrix_& indices,
+    		Matrix_& dists,
+    		float radius,
+    		const SearchParams& params)
+    {
+    	Matrix<ElementType> _queries(queries);
+    	Matrix<int> _indices(indices);
+    	Matrix<DistanceType> _dists(dists);
+    	return index_->radiusSearch(_queries, _indices, _dists, radius, params);
+    }
+
+	int radiusSearch(const Matrix<ElementType>& queries,
+			Matrix<int>& indices,
+			Matrix<DistanceType>& dists,
+			float radius,
+			const SearchParams& params)
+	{
+    	return index_->radiusSearch(queries, indices, dists, radius, params);
+	}
+
+	int radiusSearch(const Matrix<ElementType>& queries,
+			std::vector< std::vector<int> >& indices,
+			std::vector<std::vector<DistanceType> >& dists,
+			float radius,
+			const SearchParams& params)
+	{
+    	return index_->radiusSearch(queries, indices, dists, radius, params);
+	}
+
+private:
+	Algorithm* index_;
+};
+
+
+
+
 /**
  * enable_if sfinae helper
  */
@@ -109,14 +284,15 @@ struct valid_combination
  * Create index
  **********************************************************/
 template <template<typename> class Index, typename Distance, typename T>
-NNIndex<Distance>* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
+inline IndexWrapper<Index<Distance> >* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
 		typename enable_if<valid_combination<Index,Distance,T>::value,void>::type* = 0)
 {
-    return new Index<Distance>(data, params,distance);
+	typedef Index<Distance> IndexType;
+    return new IndexWrapper<IndexType>(new IndexType(data, params,distance));
 }
 
 template <template<typename> class Index, typename Distance, typename T>
-NNIndex<Distance>* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
+inline IndexWrapper<Index<Distance> >* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
 		typename disable_if<valid_combination<Index,Distance,T>::value,void>::type* = 0)
 {
     return NULL;
@@ -124,12 +300,13 @@ NNIndex<Distance>* create_index_(flann::Matrix<T> data, const flann::IndexParams
 
 
 template<typename Distance>
-NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
+inline IndexTyped<typename Distance::ElementType, typename Distance::ResultType>*
+  create_index_by_type(const flann_algorithm_t index_type,
+		const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance = Distance())
 {
 	typedef typename Distance::ElementType ElementType;
-	flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
 
-    NNIndex<Distance>* nnIndex;
+	IndexTyped<typename Distance::ElementType, typename Distance::ResultType>* nnIndex;
     switch (index_type) {
     case FLANN_INDEX_LINEAR:
         nnIndex = create_index_<LinearIndex,Distance,ElementType>(dataset, params, distance);
@@ -171,9 +348,33 @@ NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementT
     	throw FLANNException("Invalid index/distance combination");
     }
     return nnIndex;
-
-
 }
+
+
+template<typename T>
+inline IndexBase* create_index_by_type_and_distance(const flann_algorithm_t index_type, const flann_distance_t distance_type,
+		flann::Matrix<T> data, const flann::IndexParams& params)
+{
+	switch (distance_type)
+	{
+	case FLANN_DIST_L1:
+		return  create_index_by_type<L1,T>(index_type, data, params);
+	break;
+	case FLANN_DIST_L2:
+		return  create_index_by_type<L2,T>(index_type, data, params);
+	break;
+	case FLANN_DIST_HAMMING:
+		return  create_index_by_type<Hamming,T>(index_type, data, params);
+	break;
+	case FLANN_DIST_HAMMING_LUT:
+		return  create_index_by_type<HammingLUT,T>(index_type, data, params);
+	break;
+	case FLANN_DIST_HAMMING_POPCNT:
+		return  create_index_by_type<HammingPopcnt,T>(index_type, data, params);
+	break;
+	}
+}
+
 
 }
 
