@@ -120,7 +120,8 @@ enum flann_log_level_t
     FLANN_LOG_FATAL = 1,
     FLANN_LOG_ERROR = 2,
     FLANN_LOG_WARN = 3,
-    FLANN_LOG_INFO = 4
+    FLANN_LOG_INFO = 4,
+    FLANN_LOG_DEBUG = 5
 };
 
 enum flann_distance_t
