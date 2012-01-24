@@ -431,12 +431,17 @@ private:
         Logger::info("Computing ground truth... \n");
         gt_matches_ = Matrix<int>(new int[testDataset_.rows], testDataset_.rows, 1);
         StartStopTimer t;
-        t.start();
-        compute_ground_truth<Distance>(sampledDataset_, testDataset_, gt_matches_, 0, distance_);
-        t.stop();
+        int repeats = 0;
+        t.reset();
+        while (t.value<0.2) {
+        	repeats++;
+            t.start();
+        	compute_ground_truth<Distance>(sampledDataset_, testDataset_, gt_matches_, 0, distance_);
+            t.stop();
+        }
 
         CostData linear_cost;
-        linear_cost.searchTimeCost = (float)t.value;
+        linear_cost.searchTimeCost = (float)t.value/repeats;
         linear_cost.buildTimeCost = 0;
         linear_cost.memoryCost = 0;
         linear_cost.params["algorithm"] = FLANN_INDEX_LINEAR;
@@ -449,25 +454,29 @@ private:
         optimizeKMeans(costs);
         optimizeKDTree(costs);
 
-        float bestTimeCost = costs[0].searchTimeCost;
+        float bestTimeCost = costs[0].buildTimeCost * build_weight_ + costs[0].searchTimeCost;
         for (size_t i = 0; i < costs.size(); ++i) {
             float timeCost = costs[i].buildTimeCost * build_weight_ + costs[i].searchTimeCost;
+            Logger::debug("Time cost: %g\n", timeCost);
             if (timeCost < bestTimeCost) {
                 bestTimeCost = timeCost;
             }
         }
+        Logger::debug("Best time cost: %g\n", bestTimeCost);
 
-        float bestCost = costs[0].searchTimeCost / bestTimeCost;
-        IndexParams bestParams = costs[0].params;
+    	IndexParams bestParams = costs[0].params;
         if (bestTimeCost > 0) {
-            for (size_t i = 0; i < costs.size(); ++i) {
-                float crtCost = (costs[i].buildTimeCost * build_weight_ + costs[i].searchTimeCost) / bestTimeCost +
-                                memory_weight_ * costs[i].memoryCost;
-                if (crtCost < bestCost) {
-                    bestCost = crtCost;
-                    bestParams = costs[i].params;
-                }
-            }
+        	float bestCost = (costs[0].buildTimeCost * build_weight_ + costs[0].searchTimeCost) / bestTimeCost;
+        	for (size_t i = 0; i < costs.size(); ++i) {
+        		float crtCost = (costs[i].buildTimeCost * build_weight_ + costs[i].searchTimeCost) / bestTimeCost +
+        				memory_weight_ * costs[i].memoryCost;
+        		Logger::debug("Cost: %g\n", crtCost);
+        		if (crtCost < bestCost) {
+        			bestCost = crtCost;
+        			bestParams = costs[i].params;
+        		}
+        	}
+            Logger::debug("Best cost: %g\n", bestCost);
         }
 
         delete[] gt_matches_.ptr();
@@ -502,10 +511,15 @@ private:
             // we need to compute the ground truth first
             Matrix<int> gt_matches(new int[testDataset.rows], testDataset.rows, 1);
             StartStopTimer t;
-            t.start();
-            compute_ground_truth<Distance>(dataset_, testDataset, gt_matches, 1, distance_);
-            t.stop();
-            float linear = (float)t.value;
+            int repeats = 0;
+            t.reset();
+            while (t.value<0.2) {
+            	repeats++;
+                t.start();
+            	compute_ground_truth<Distance>(dataset_, testDataset, gt_matches, 1, distance_);
+                t.stop();
+            }
+            float linear = (float)t.value/repeats;
 
             int checks;
             Logger::info("Estimating number of checks\n");
