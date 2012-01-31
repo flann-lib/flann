@@ -39,7 +39,7 @@
 namespace flann {
 namespace mpi {
 
-template<typename ElementType, typename DistanceType>
+
 class Client
 {
 public:
@@ -51,6 +51,7 @@ public:
 	}
 
 
+	template<typename ElementType, typename DistanceType>
 	void knnSearch(const flann::Matrix<ElementType>& queries, flann::Matrix<int>& indices, flann::Matrix<DistanceType>& dists, int knn, const SearchParams& params)
 	{
 	    tcp::socket sock(io_service_);
