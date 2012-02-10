@@ -148,11 +148,11 @@ enum flann_log_level_t
 };
 
 
-//FLANN_DISTANCE(MINKOWSKI,MinkowskiDistance,3)
 #ifndef FLANN_DISTANCES
 #define FLANN_DISTANCES \
 	FLANN_DISTANCE(L2,L2,1) \
 	FLANN_DISTANCE(L1,L1,2) \
+    FLANN_DISTANCE(MINKOWSKI,MinkowskiDistance,3) \
 	FLANN_DISTANCE(MAX,MaxDistance,4) \
 	FLANN_DISTANCE(HIST_INTERSECT,HistIntersectionDistance,5) \
 	FLANN_DISTANCE(HELLINGER,HellingerDistance,6) \
