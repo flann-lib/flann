@@ -289,7 +289,7 @@ public:
      * \brief Returns index parameters.
      * \deprecated use getParameters() instead.
      */
-    FLANN_DEPRECATED  const IndexParams* getIndexParameters()
+    FLANN_DEPRECATED const IndexParams* getIndexParameters()
     {
         return &index_params_;
     }

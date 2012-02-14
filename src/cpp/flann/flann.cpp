@@ -143,14 +143,13 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
         index->buildIndex();
         params = index->getParameters();
 
-        // FIXME
-        //index_params->toParameters(*flann_params);
-
         if (index->getType()==FLANN_INDEX_AUTOTUNED) {
-            AutotunedIndex<Distance>* autotuned_index = (AutotunedIndex<Distance>*)index->getIndex();
-            // FIXME
-            flann_params->checks = autotuned_index->getSearchParameters().checks;
-            *speedup = autotuned_index->getSpeedup();
+            IndexParams params = index->getParameters();
+            SearchParams search_params = get_param<SearchParams>(params,"search_params");
+            *speedup = get_param<float>(params,"speedup");
+            flann_params->checks = search_params.checks;
+            flann_params->eps = search_params.eps;
+            flann_params->cb_index = get_param<float>(params,"cb_index",0.0);
         }
 
         return index;
