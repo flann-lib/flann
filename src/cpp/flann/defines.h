@@ -76,21 +76,44 @@
 namespace flann {
 #endif
 
+
+#ifndef FLANN_INDEXES
+#define FLANN_INDEXES \
+	FLANN_INDEX(LINEAR,LinearIndex,0) \
+	FLANN_INDEX(KDTREE,KDTreeIndex,1) \
+	FLANN_INDEX(KMEANS,KMeansIndex,2) \
+	FLANN_INDEX(COMPOSITE,CompositeIndex,3) \
+	FLANN_INDEX(KDTREE_SINGLE,KDTreeSingleIndex,4) \
+	FLANN_INDEX(HIERARCHICAL,HierarchicalClusteringIndex,5) \
+	FLANN_INDEX(LSH,LshIndex,6) \
+	FLANN_INDEX(KDTREE_CUDA,KDTreeCuda3dIndex,7) \
+	FLANN_INDEX(AUTOTUNED,AutotunedIndex,255)
+#endif
+
+
+
+
 /* Nearest neighbour index algorithms */
 enum flann_algorithm_t
 {
-    FLANN_INDEX_LINEAR = 0,
-    FLANN_INDEX_KDTREE = 1,
-    FLANN_INDEX_KMEANS = 2,
-    FLANN_INDEX_COMPOSITE = 3,
-    FLANN_INDEX_KDTREE_SINGLE = 4,
-    FLANN_INDEX_HIERARCHICAL = 5,
-    FLANN_INDEX_LSH = 6,
-    FLANN_INDEX_KDTREE_CUDA = 7,
-    FLANN_INDEX_SAVED = 254,
-    FLANN_INDEX_AUTOTUNED = 255,
+#undef FLANN_INDEX
+#define FLANN_INDEX(name,index,num) FLANN_INDEX_##name = num,
+	FLANN_INDEXES
+#undef FLANN_INDEX
+	FLANN_INDEX_SAVED = 254,
 
-    // deprecated constants, should use the FLANN_INDEX_* ones instead
+	// the above X-Macro trick expands to:
+	//	FLANN_INDEX_LINEAR = 0,
+	//	FLANN_INDEX_KDTREE = 1,
+	//	FLANN_INDEX_KMEANS = 2,
+	//	FLANN_INDEX_COMPOSITE = 3,
+	//	FLANN_INDEX_KDTREE_SINGLE = 4,
+	//	FLANN_INDEX_HIERARCHICAL = 5,
+	//	FLANN_INDEX_LSH = 6,
+	//	FLANN_INDEX_KDTREE_CUDA = 7,
+	//	FLANN_INDEX_AUTOTUNED = 255,
+
+	// deprecated, provided for backwards compatibility
     LINEAR = 0,
     KDTREE = 1,
     KMEANS = 2,
@@ -120,28 +143,40 @@ enum flann_log_level_t
     FLANN_LOG_FATAL = 1,
     FLANN_LOG_ERROR = 2,
     FLANN_LOG_WARN = 3,
-    FLANN_LOG_INFO = 4
+    FLANN_LOG_INFO = 4,
+    FLANN_LOG_DEBUG = 5
 };
+
+
+#ifndef FLANN_DISTANCES
+#define FLANN_DISTANCES \
+	FLANN_DISTANCE(L2,L2,1) \
+	FLANN_DISTANCE(L1,L1,2) \
+    FLANN_DISTANCE(MINKOWSKI,MinkowskiDistance,3) \
+	FLANN_DISTANCE(MAX,MaxDistance,4) \
+	FLANN_DISTANCE(HIST_INTERSECT,HistIntersectionDistance,5) \
+	FLANN_DISTANCE(HELLINGER,HellingerDistance,6) \
+	FLANN_DISTANCE(CHI_SQUARE,ChiSquareDistance,7) \
+	FLANN_DISTANCE(KULLBACK_LEIBLER,KL_Divergence,8) \
+	FLANN_DISTANCE(HAMMING,Hamming,9) \
+	FLANN_DISTANCE(HAMMING_LUT,HammingLUT,10) \
+	FLANN_DISTANCE(HAMMING_POPCNT,HammingPopcnt,11) \
+	FLANN_DISTANCE(L2_SIMPLE,L2_Simple,12)
+#endif
+
 
 enum flann_distance_t
 {
+	// X-Macro trick
+#undef FLANN_DISTANCE
+#define FLANN_DISTANCE(name,distance,num) FLANN_DIST_##name = num,
+	FLANN_DISTANCES
+#undef FLANN_DISTANCE
+	// duplicate distance constants
     FLANN_DIST_EUCLIDEAN = 1,
-    FLANN_DIST_L2 = 1,
     FLANN_DIST_MANHATTAN = 2,
-    FLANN_DIST_L1 = 2,
-    FLANN_DIST_MINKOWSKI = 3,
-    FLANN_DIST_MAX   = 4,
-    FLANN_DIST_HIST_INTERSECT   = 5,
-    FLANN_DIST_HELLINGER = 6,
-    FLANN_DIST_CHI_SQUARE = 7,
-    FLANN_DIST_CS         = 7,
-    FLANN_DIST_KULLBACK_LEIBLER  = 8,
-    FLANN_DIST_KL                = 8,
-    FLANN_DIST_HAMMING         	= 9,
-    FLANN_DIST_HAMMING_LUT		= 10,
-    FLANN_DIST_HAMMING_POPCNT   = 11,
 
-    // deprecated constants, should use the FLANN_DIST_* ones instead
+    // deprecated constants, use the FLANN_DIST_* ones instead
     EUCLIDEAN = 1,
     MANHATTAN = 2,
     MINKOWSKI = 3,
@@ -153,24 +188,33 @@ enum flann_distance_t
     KULLBACK_LEIBLER  = 8
 };
 
+#ifndef FLANN_DATATYPES
+#define FLANN_DATATYPES \
+	FLANN_DATATYPE(NONE, void,-1) \
+	FLANN_DATATYPE(INT8, char,0) \
+	FLANN_DATATYPE(INT16, short int,1) \
+	FLANN_DATATYPE(INT32, int,2) \
+	FLANN_DATATYPE(INT64, long int,3) \
+	FLANN_DATATYPE(UINT8, unsigned char,4) \
+	FLANN_DATATYPE(UINT16, unsigned short int,5) \
+	FLANN_DATATYPE(UINT32, unsigned int,6) \
+	FLANN_DATATYPE(UINT64, unsigned long int,7) \
+	FLANN_DATATYPE(FLOAT32, float,8) \
+	FLANN_DATATYPE(FLOAT64, double,9)
+#endif
+
+
 enum flann_datatype_t
 {
-    FLANN_NONE = -1,
-    FLANN_INT8 = 0,
-    FLANN_INT16 = 1,
-    FLANN_INT32 = 2,
-    FLANN_INT64 = 3,
-    FLANN_UINT8 = 4,
-    FLANN_UINT16 = 5,
-    FLANN_UINT32 = 6,
-    FLANN_UINT64 = 7,
-    FLANN_FLOAT32 = 8,
-    FLANN_FLOAT64 = 9
+#undef FLANN_DATATYPE
+#define FLANN_DATATYPE(name,type,value) FLANN_##name = value,
+	FLANN_DATATYPES
+#undef FLANN_DATATYPE
 };
 
 enum flann_checks_t {
     FLANN_CHECKS_UNLIMITED = -1,
-    FLANN_CHECKS_AUTOTUNED = -2
+    FLANN_CHECKS_AUTOTUNED = -2,
 };
 
 #ifdef __cplusplus
