@@ -95,6 +95,9 @@ class FLANNParameters(CustomStructure):
         ('build_weight', c_float),
         ('memory_weight', c_float),
         ('sample_fraction', c_float),
+        ('table_number_', c_uint),
+        ('key_size_', c_uint),
+        ('multi_probe_level_', c_uint),
         ('log_level', c_int),
         ('random_seed', c_long),
     ]
@@ -112,6 +115,9 @@ class FLANNParameters(CustomStructure):
         'build_weight' : 0.01,
         'memory_weight' : 0.0,
         'sample_fraction' : 0.1,
+        'table_number_': 12,
+        'key_size_': 20,
+        'multi_probe_level_': 2,
         'log_level' : "warning",
         'random_seed' : -1
   }
