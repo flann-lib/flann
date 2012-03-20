@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cstddef>
 #include <vector>
 
 #include "flann/general.h"
