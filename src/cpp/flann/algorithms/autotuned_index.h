@@ -41,12 +41,17 @@
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
 #include "flann/util/logger.h"
+#include "flann/algorithms/index_abstractions.h"
+
+
 
 namespace flann
 {
 
 template<typename Distance>
-NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance);
+inline TypedIndexBase<typename Distance::ElementType, typename Distance::ResultType>*
+  create_index_by_type(const flann_algorithm_t index_type,
+        const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance = Distance());
 
 
 struct AutotunedIndexParams : public IndexParams
@@ -67,11 +72,13 @@ struct AutotunedIndexParams : public IndexParams
 
 
 template <typename Distance>
-class AutotunedIndex : public NNIndex<Distance>
+class AutotunedIndex : public NNIndex<AutotunedIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
 {
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
+    
+    typedef AutotunedIndex<Distance> IndexType;
 
     typedef bool needs_kdtree_distance;
 
@@ -88,7 +95,7 @@ public:
     AutotunedIndex(const AutotunedIndex&);
     AutotunedIndex& operator=(const AutotunedIndex&);
 
-    virtual ~AutotunedIndex()
+    ~AutotunedIndex()
     {
         if (bestIndex_ != NULL) {
             delete bestIndex_;
@@ -99,7 +106,7 @@ public:
     /**
      *          Method responsible with building the index.
      */
-    virtual void buildIndex()
+    void buildIndex()
     {
         bestParams_ = estimateBuildParams();
         Logger::info("----------------------------------------------------\n");
@@ -108,7 +115,8 @@ public:
         	print_params(bestParams_);
         Logger::info("----------------------------------------------------\n");
 
-        bestIndex_ = create_index_by_type(dataset_, bestParams_, distance_);
+        flann_algorithm_t index_type = get_param<flann_algorithm_t>(bestParams_,"algorithm");
+        bestIndex_ = create_index_by_type(index_type, dataset_, bestParams_, distance_);
         bestIndex_->buildIndex();
         speedup_ = estimateSearchParams(bestSearchParams_);
         Logger::info("----------------------------------------------------\n");
@@ -119,11 +127,12 @@ public:
         bestParams_["search_params"] = bestSearchParams_;
         bestParams_["speedup"] = speedup_;
     }
-
+    
+    
     /**
      *  Saves the index to a stream
      */
-    virtual void saveIndex(FILE* stream)
+    void saveIndex(FILE* stream)
     {
         save_value(stream, (int)bestIndex_->getType());
         bestIndex_->saveIndex(stream);
@@ -133,29 +142,85 @@ public:
     /**
      *  Loads the index from a stream
      */
-    virtual void loadIndex(FILE* stream)
+    void loadIndex(FILE* stream)
     {
         int index_type;
 
         load_value(stream, index_type);
         IndexParams params;
-        params["algorithm"] = (flann_algorithm_t)index_type;
-        bestIndex_ = create_index_by_type<Distance>(dataset_, params, distance_);
+        bestIndex_ = create_index_by_type<Distance>((flann_algorithm_t)index_type, dataset_, params, distance_);
         bestIndex_->loadIndex(stream);
         load_value(stream, bestSearchParams_.checks);
     }
 
+    int knnSearch(const Matrix<ElementType>& queries,
+            Matrix<int>& indices,
+            Matrix<DistanceType>& dists,
+            size_t knn,
+            const SearchParams& params)
+    {
+        if (params.checks == FLANN_CHECKS_AUTOTUNED) {
+            return bestIndex_->knnSearch(queries, indices, dists, knn, bestSearchParams_);
+        }
+        else {
+            return bestIndex_->knnSearch(queries, indices, dists, knn, params);
+        }
+
+    }
+
+    int knnSearch(const Matrix<ElementType>& queries,
+            std::vector< std::vector<int> >& indices,
+            std::vector<std::vector<DistanceType> >& dists,
+            size_t knn,
+            const SearchParams& params)
+    {
+        if (params.checks == FLANN_CHECKS_AUTOTUNED) {
+            return bestIndex_->knnSearch(queries, indices, dists, knn, bestSearchParams_);
+        }
+        else {
+            return bestIndex_->knnSearch(queries, indices, dists, knn, params);
+        }
+
+    }
+
+    int radiusSearch(const Matrix<ElementType>& queries,
+            Matrix<int>& indices,
+            Matrix<DistanceType>& dists,
+            DistanceType radius,
+            const SearchParams& params)
+    {
+        if (params.checks == FLANN_CHECKS_AUTOTUNED) {
+            return bestIndex_->radiusSearch(queries, indices, dists, radius, bestSearchParams_);
+        }
+        else {
+            return bestIndex_->radiusSearch(queries, indices, dists, radius, params);
+        }
+    }
+
+    virtual int radiusSearch(const Matrix<ElementType>& queries,
+            std::vector< std::vector<int> >& indices,
+            std::vector<std::vector<DistanceType> >& dists,
+            DistanceType radius,
+            const SearchParams& params)
+    {
+        if (params.checks == FLANN_CHECKS_AUTOTUNED) {
+            return bestIndex_->radiusSearch(queries, indices, dists, radius, bestSearchParams_);
+        }
+        else {
+            return bestIndex_->radiusSearch(queries, indices, dists, radius, params);
+        }        
+    }
+
+    
+    
     /**
      *      Method that searches for nearest-neighbors
      */
-    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    template <typename ResultSet>
+    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
     {
-        if (searchParams.checks == FLANN_CHECKS_AUTOTUNED) {
-            bestIndex_->findNeighbors(result, vec, bestSearchParams_);
-        }
-        else {
-            bestIndex_->findNeighbors(result, vec, searchParams);
-        }
+        // should not get here
+        assert(false);
     }
 
     IndexParams getParameters() const
@@ -177,7 +242,7 @@ public:
     /**
      *      Number of features in this index.
      */
-    virtual size_t size() const
+    size_t size() const
     {
         return bestIndex_->size();
     }
@@ -185,7 +250,7 @@ public:
     /**
      *  The length of each vector in this index.
      */
-    virtual size_t veclen() const
+    size_t veclen() const
     {
         return bestIndex_->veclen();
     }
@@ -193,7 +258,7 @@ public:
     /**
      * The amount of memory (in bytes) this index uses.
      */
-    virtual int usedMemory() const
+    int usedMemory() const
     {
         return bestIndex_->usedMemory();
     }
@@ -201,7 +266,7 @@ public:
     /**
      * Algorithm name
      */
-    virtual flann_algorithm_t getType() const
+    flann_algorithm_t getType() const
     {
         return FLANN_INDEX_AUTOTUNED;
     }
@@ -529,7 +594,7 @@ private:
             float cb_index;
             if (bestIndex_->getType() == FLANN_INDEX_KMEANS) {
                 Logger::info("KMeans algorithm, estimating cluster border factor\n");
-                KMeansIndex<Distance>* kmeans = (KMeansIndex<Distance>*)bestIndex_;
+                KMeansIndex<Distance>* kmeans = static_cast<IndexWrapper<KMeansIndex<Distance> >*>(bestIndex_)->getIndex();
                 float bestSearchTime = -1;
                 float best_cb_index = -1;
                 int best_checks = -1;
@@ -567,7 +632,7 @@ private:
     }
 
 private:
-    NNIndex<Distance>* bestIndex_;
+    TypedIndexBase<ElementType,DistanceType>* bestIndex_;
 
     IndexParams bestParams_;
     SearchParams bestSearchParams_;

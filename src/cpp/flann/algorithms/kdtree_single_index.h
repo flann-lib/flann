@@ -66,7 +66,7 @@ struct KDTreeSingleIndexParams : public IndexParams
  * for nearest-neighbor matching.
  */
 template <typename Distance>
-class KDTreeSingleIndex : public NNIndex<Distance>
+class KDTreeSingleIndex : public NNIndex<KDTreeSingleIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
 {
 public:
     typedef typename Distance::ElementType ElementType;
@@ -211,7 +211,8 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    template <typename ResultSet>
+    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
     {
         float epsError = 1+searchParams.eps;
 
@@ -512,7 +513,8 @@ private:
     /**
      * Performs an exact search in the tree starting from a node.
      */
-    void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindistsq,
+    template<typename ResultSet>
+    void searchLevel(ResultSet& result_set, const ElementType* vec, const NodePtr node, DistanceType mindistsq,
                      std::vector<DistanceType>& dists, const float epsError)
     {
         /* If this is a leaf node, then do check and return. */

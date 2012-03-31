@@ -32,10 +32,11 @@
 
 #include "flann/general.h"
 
+#include "flann/algorithms/index_abstractions.h"
 #include "flann/algorithms/nn_index.h"
 #include "flann/algorithms/kdtree_index.h"
 #include "flann/algorithms/kdtree_single_index.h"
-#include "flann/algorithms/kdtree_cuda_3d_index.h"
+//#include "flann/algorithms/kdtree_cuda_3d_index.h"
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
@@ -46,179 +47,6 @@
 
 namespace flann
 {
-
-
-
-class IndexBase
-{
-public:
-	virtual ~IndexBase() {};
-
-    virtual void buildIndex() = 0;
-
-    virtual size_t veclen() const = 0;
-
-    virtual size_t size() const = 0;
-
-    virtual flann_algorithm_t getType() const = 0;
-
-    virtual int usedMemory() const = 0;
-
-    virtual IndexParams getParameters() const = 0;
-
-    virtual int knnSearch(const Matrix_& queries,
-    		Matrix_& indices,
-    		Matrix_& dists,
-    		size_t knn,
-    		const SearchParams& params) = 0;
-
-    virtual int radiusSearch(const Matrix_& queries,
-    		Matrix_& indices,
-    		Matrix_& dists,
-    		float radius,
-    		const SearchParams& params) = 0;
-};
-
-
-template<typename ElementType, typename DistanceType = typename Accumulator<ElementType>::Type>
-class IndexTyped : public IndexBase
-{
-public:
-	virtual int knnSearch(const Matrix<ElementType>& queries,
-			Matrix<int>& indices,
-			Matrix<DistanceType>& dists,
-			size_t knn,
-			const SearchParams& params) = 0;
-
-	virtual int knnSearch(const Matrix<ElementType>& queries,
-			std::vector< std::vector<int> >& indices,
-			std::vector<std::vector<DistanceType> >& dists,
-			size_t knn,
-			const SearchParams& params) = 0;
-
-	virtual int radiusSearch(const Matrix<ElementType>& queries,
-			Matrix<int>& indices,
-			Matrix<DistanceType>& dists,
-			float radius,
-			const SearchParams& params) = 0;
-
-	virtual int radiusSearch(const Matrix<ElementType>& queries,
-			std::vector< std::vector<int> >& indices,
-			std::vector<std::vector<DistanceType> >& dists,
-			float radius,
-			const SearchParams& params) = 0;
-};
-
-
-template<typename Algorithm>
-class IndexWrapper : public IndexTyped<typename Algorithm::ElementType, typename Algorithm::DistanceType>
-{
-public:
-	typedef typename Algorithm::ElementType ElementType;
-	typedef typename Algorithm::DistanceType DistanceType;
-
-	IndexWrapper(Algorithm* index) : index_(index)
-	{
-	};
-
-	virtual ~IndexWrapper()
-	{
-		delete index_;
-	}
-
-    void buildIndex()
-    {
-    	index_->buildIndex();
-    }
-
-    size_t veclen() const
-    {
-    	return index_->veclen();
-    }
-
-    size_t size() const
-    {
-    	return index_->size();
-    }
-
-    flann_algorithm_t getType() const
-    {
-    	return index_->getType();
-    }
-
-    int usedMemory() const
-    {
-    	return index_->usedMemory();
-    }
-
-    IndexParams getParameters() const
-    {
-    	return index_->getParameters();
-    }
-
-    int knnSearch(const Matrix_& queries,
-    		Matrix_& indices,
-    		Matrix_& dists,
-    		size_t knn,
-    		const SearchParams& params)
-    {
-    	Matrix<ElementType> _queries(queries);
-    	Matrix<int> _indices(indices);
-    	Matrix<DistanceType> _dists(dists);
-    	return index_->knnSearch(_queries, _indices,_dists, knn, params);
-    }
-
-	int knnSearch(const Matrix<ElementType>& queries,
-			Matrix<int>& indices,
-			Matrix<DistanceType>& dists,
-			size_t knn,
-			const SearchParams& params)
-    {
-    	return index_->knnSearch(queries, indices,dists, knn, params);
-    }
-
-	int knnSearch(const Matrix<ElementType>& queries,
-			std::vector< std::vector<int> >& indices,
-			std::vector<std::vector<DistanceType> >& dists,
-			size_t knn,
-			const SearchParams& params)
-	{
-    	return index_->knnSearch(queries, indices,dists, knn, params);
-	}
-
-    int radiusSearch(const Matrix_& queries,
-    		Matrix_& indices,
-    		Matrix_& dists,
-    		float radius,
-    		const SearchParams& params)
-    {
-    	Matrix<ElementType> _queries(queries);
-    	Matrix<int> _indices(indices);
-    	Matrix<DistanceType> _dists(dists);
-    	return index_->radiusSearch(_queries, _indices, _dists, radius, params);
-    }
-
-	int radiusSearch(const Matrix<ElementType>& queries,
-			Matrix<int>& indices,
-			Matrix<DistanceType>& dists,
-			float radius,
-			const SearchParams& params)
-	{
-    	return index_->radiusSearch(queries, indices, dists, radius, params);
-	}
-
-	int radiusSearch(const Matrix<ElementType>& queries,
-			std::vector< std::vector<int> >& indices,
-			std::vector<std::vector<DistanceType> >& dists,
-			float radius,
-			const SearchParams& params)
-	{
-    	return index_->radiusSearch(queries, indices, dists, radius, params);
-	}
-
-private:
-	Algorithm* index_;
-};
 
 
 
@@ -300,77 +128,86 @@ inline IndexWrapper<Index<Distance> >* create_index_(flann::Matrix<T> data, cons
 
 
 template<typename Distance>
-inline IndexTyped<typename Distance::ElementType, typename Distance::ResultType>*
+inline TypedIndexBase<typename Distance::ElementType, typename Distance::ResultType>*
   create_index_by_type(const flann_algorithm_t index_type,
 		const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance = Distance())
 {
 	typedef typename Distance::ElementType ElementType;
 
-	IndexTyped<typename Distance::ElementType, typename Distance::ResultType>* nnIndex;
+	TypedIndexBase<typename Distance::ElementType, typename Distance::ResultType>* nnIndex;
+    
     switch (index_type) {
-    case FLANN_INDEX_LINEAR:
-        nnIndex = create_index_<LinearIndex,Distance,ElementType>(dataset, params, distance);
+#undef FLANN_INDEX
+#define FLANN_INDEX(name,index,num) \
+    case FLANN_INDEX_##name: \
+        nnIndex = create_index_<index,Distance,ElementType>(dataset, params, distance); \
         break;
-    case FLANN_INDEX_KDTREE_SINGLE:
-        nnIndex = create_index_<KDTreeSingleIndex,Distance,ElementType>(dataset, params, distance);
-        break;
-    case FLANN_INDEX_KDTREE:
-        nnIndex = create_index_<KDTreeIndex,Distance,ElementType>(dataset, params, distance);
-        break;
-		//! #define this symbol before including flann.h to enable GPU search algorithms. But you have
-		//! to link libflann_cuda then!
-	#ifdef FLANN_USE_CUDA
-	case FLANN_INDEX_KDTREE_CUDA:
-        nnIndex = create_index_<KDTreeCuda3dIndex,Distance,ElementType>(dataset, params, distance);
-        break;
-	#endif
+    FLANN_INDEXES
+#undef FLANN_INDEX        
 
-    case FLANN_INDEX_KMEANS:
-        nnIndex = create_index_<KMeansIndex,Distance,ElementType>(dataset, params, distance);
-        break;
-    case FLANN_INDEX_COMPOSITE:
-        nnIndex = create_index_<CompositeIndex,Distance,ElementType>(dataset, params, distance);
-        break;
-    case FLANN_INDEX_AUTOTUNED:
-        nnIndex = create_index_<AutotunedIndex,Distance,ElementType>(dataset, params, distance);
-        break;
-    case FLANN_INDEX_HIERARCHICAL:
-        nnIndex = create_index_<HierarchicalClusteringIndex,Distance,ElementType>(dataset, params, distance);
-        break;
-    case FLANN_INDEX_LSH:
-        nnIndex = create_index_<LshIndex,Distance,ElementType>(dataset, params, distance);
-        break;
+//     case FLANN_INDEX_LINEAR:
+//         nnIndex = create_index_<LinearIndex,Distance,ElementType>(dataset, params, distance);
+//         break;
+//     case FLANN_INDEX_KDTREE_SINGLE:
+//         nnIndex = create_index_<KDTreeSingleIndex,Distance,ElementType>(dataset, params, distance);
+//         break;
+//     case FLANN_INDEX_KDTREE:
+//         nnIndex = create_index_<KDTreeIndex,Distance,ElementType>(dataset, params, distance);
+//         break;
+// 		//! #define this symbol before including flann.h to enable GPU search algorithms. But you have
+// 		//! to link libflann_cuda then!
+// 	#ifdef FLANN_USE_CUDA
+// 	case FLANN_INDEX_KDTREE_CUDA:
+//         nnIndex = create_index_<KDTreeCuda3dIndex,Distance,ElementType>(dataset, params, distance);
+//         break;
+// 	#endif
+// 
+//     case FLANN_INDEX_KMEANS:
+//         nnIndex = create_index_<KMeansIndex,Distance,ElementType>(dataset, params, distance);
+//         break;
+//     case FLANN_INDEX_COMPOSITE:
+//         nnIndex = create_index_<CompositeIndex,Distance,ElementType>(dataset, params, distance);
+//         break;
+// //     case FLANN_INDEX_AUTOTUNED:
+// //         nnIndex = create_index_<AutotunedIndex,Distance,ElementType>(dataset, params, distance);
+// //         break;
+//     case FLANN_INDEX_HIERARCHICAL:
+//         nnIndex = create_index_<HierarchicalClusteringIndex,Distance,ElementType>(dataset, params, distance);
+//         break;
+//     case FLANN_INDEX_LSH:
+//         nnIndex = create_index_<LshIndex,Distance,ElementType>(dataset, params, distance);
+//         break;
     default:
         throw FLANNException("Unknown index type");
     }
 
     if (nnIndex==NULL) {
-    	throw FLANNException("Invalid index/distance combination");
+    	throw FLANNException("Unsupported index/distance combination");
     }
     return nnIndex;
 }
 
 
-template<typename T>
+template<typename ElementType>
 inline IndexBase* create_index_by_type_and_distance(const flann_algorithm_t index_type, const flann_distance_t distance_type,
-		flann::Matrix<T> data, const flann::IndexParams& params)
+		flann::Matrix<ElementType> data, const flann::IndexParams& params)
 {
 	switch (distance_type)
 	{
 	case FLANN_DIST_L1:
-		return  create_index_by_type<L1,T>(index_type, data, params);
+		return  create_index_by_type<L1,ElementType>(index_type, data, params);
 	break;
 	case FLANN_DIST_L2:
-		return  create_index_by_type<L2,T>(index_type, data, params);
+		return  create_index_by_type<L2,ElementType>(index_type, data, params);
 	break;
 	case FLANN_DIST_HAMMING:
-		return  create_index_by_type<Hamming,T>(index_type, data, params);
+		return  create_index_by_type<Hamming,ElementType>(index_type, data, params);
 	break;
 	case FLANN_DIST_HAMMING_LUT:
-		return  create_index_by_type<HammingLUT,T>(index_type, data, params);
+		return  create_index_by_type<HammingLUT,ElementType>(index_type, data, params);
 	break;
 	case FLANN_DIST_HAMMING_POPCNT:
-		return  create_index_by_type<HammingPopcnt,T>(index_type, data, params);
+		return  create_index_by_type<HammingPopcnt,ElementType>(index_type, data, params);
 	break;
 	}
 }

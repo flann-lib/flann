@@ -53,6 +53,7 @@ T* allocate(size_t count = 1)
 }
 
 
+
 /**
  * Pooled storage allocator
  *
@@ -107,13 +108,21 @@ public:
      */
     ~PooledAllocator()
     {
+        free();
+    }
+    
+    void free()
+    {
         void* prev;
-
         while (base != NULL) {
             prev = *((void**) base); /* Get pointer to prev block. */
             ::free(base);
             base = prev;
         }
+        base = NULL;
+        remaining = 0;
+        usedMemory = 0;
+        wastedMemory = 0;
     }
 
     /**
@@ -183,6 +192,11 @@ public:
 
 };
 
+}
+
+inline void* operator new (std::size_t size, flann::PooledAllocator& allocator)
+{
+    return allocator.allocateMemory(size) ;
 }
 
 #endif //FLANN_ALLOCATOR_H_

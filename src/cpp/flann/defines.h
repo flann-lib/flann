@@ -86,9 +86,10 @@ namespace flann {
 	FLANN_INDEX(KDTREE_SINGLE,KDTreeSingleIndex,4) \
 	FLANN_INDEX(HIERARCHICAL,HierarchicalClusteringIndex,5) \
 	FLANN_INDEX(LSH,LshIndex,6) \
-	FLANN_INDEX(KDTREE_CUDA,KDTreeCuda3dIndex,7) \
 	FLANN_INDEX(AUTOTUNED,AutotunedIndex,255)
 #endif
+//    FLANN_INDEX(KDTREE_CUDA,KDTreeCuda3dIndex,7)
+     
 
 
 
@@ -100,6 +101,7 @@ enum flann_algorithm_t
 #define FLANN_INDEX(name,index,num) FLANN_INDEX_##name = num,
 	FLANN_INDEXES
 #undef FLANN_INDEX
+
 	FLANN_INDEX_SAVED = 254,
 
 	// the above X-Macro trick expands to:
@@ -110,8 +112,8 @@ enum flann_algorithm_t
 	//	FLANN_INDEX_KDTREE_SINGLE = 4,
 	//	FLANN_INDEX_HIERARCHICAL = 5,
 	//	FLANN_INDEX_LSH = 6,
-	//	FLANN_INDEX_KDTREE_CUDA = 7,
-	//	FLANN_INDEX_AUTOTUNED = 255,
+		FLANN_INDEX_KDTREE_CUDA = 7,
+// 		FLANN_INDEX_AUTOTUNED = 255,
 
 	// deprecated, provided for backwards compatibility
     LINEAR = 0,

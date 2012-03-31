@@ -34,19 +34,19 @@
 #include <string>
 
 #ifdef TBB
-  #include <tbb/parallel_for.h>
-  #include <tbb/blocked_range.h>
-  #include <tbb/atomic.h>
-  #include <tbb/task_scheduler_init.h>
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+#include <tbb/atomic.h>
+#include <tbb/task_scheduler_init.h>
 #endif
 
 
 #include "flann/general.h"
 #include "flann/util/matrix.h"
-#include "flann/util/result_set.h"
 #include "flann/util/params.h"
+#include "flann/util/result_set.h"
 #ifdef TBB
-  #include "flann/tbb/bodies.hpp"
+#include "flann/tbb/bodies.hpp"
 #endif
 
 namespace flann
@@ -54,24 +54,46 @@ namespace flann
 
 #define KNN_HEAP_THRESHOLD 250
 
+
 /**
  * Nearest-neighbour index base class
  */
-template <typename Distance>
+template <typename Index, typename ElementType, typename DistanceType>
 class NNIndex
 {
-    typedef typename Distance::ElementType ElementType;
-    typedef typename Distance::ResultType DistanceType;
-
 public:
+    
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        throw FLANNException("Functionality not supported by this index");
+    }
 
-    virtual ~NNIndex() {}
+    
+    /**
+     * \returns number of features in this index.
+     */
+    inline size_t size() const
+    {
+        return static_cast<const Index*>(this)->size();
+    }
 
     /**
-     * \brief Builds the index
+     * \returns The dimensionality of the features in this index.
      */
-    virtual void buildIndex() = 0;
+    inline size_t veclen() const
+    {
+        return static_cast<const Index*>(this)->veclen();
+    }
 
+    /**
+     * \brief Method that searches for nearest-neighbours
+     */
+    template <typename ResultSet>
+    inline void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+    {
+        static_cast<Index*>(this)->findNeighbors(result, vec, searchParams);
+    }
+    
     /**
      * \brief Perform k-nearest neighbor search
      * \param[in] queries The query points for which to find the nearest neighbors
@@ -80,7 +102,7 @@ public:
      * \param[in] knn Number of nearest neighbors to return
      * \param[in] params Search parameters
      */
-    virtual int knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
+    int knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
     {
         assert(queries.cols == veclen());
         assert(indices.rows >= queries.rows);
@@ -131,7 +153,7 @@ public:
         tbb::atomic<int> atomic_count;
         atomic_count = 0;
         // Use auto partitioner to choose the optimal grainsize for dividing the query points
-        flann::parallel_knnSearch<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count);
+        flann::parallel_knnSearch<Index> parallel_knn(queries, indices, dists, knn, params, static_cast<Index*>(this), atomic_count);
         tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                           parallel_knn,
                           tbb::auto_partitioner());
@@ -153,7 +175,7 @@ public:
      * \param[in] knn Number of nearest neighbors to return
      * \param[in] params Search parameters
      */
-    virtual int knnSearch(const Matrix<ElementType>& queries,
+    int knnSearch(const Matrix<ElementType>& queries,
 					std::vector< std::vector<int> >& indices,
 					std::vector<std::vector<DistanceType> >& dists,
     				size_t knn,
@@ -213,7 +235,7 @@ public:
             atomic_count = 0;
 
             // Use auto partitioner to choose the optimal grainsize for dividing the query points
-            flann::parallel_knnSearch2<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count);
+            flann::parallel_knnSearch2<Index> parallel_knn(queries, indices, dists, knn, params, static_cast<Index*>(this), atomic_count);
             tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                               parallel_knn,
                               tbb::auto_partitioner());
@@ -234,7 +256,7 @@ public:
      * \param[in] params Search parameters
      * \returns Number of neighbors found
      */
-    virtual int radiusSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists,
+    int radiusSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists,
     		float radius, const SearchParams& params)
     {
         assert(queries.cols == veclen());
@@ -258,7 +280,6 @@ public:
     			}
     		}
     		else {
-
     			// explicitly indicated to use unbounded radius result set
     			// or we know there'll be enough room for resulting indices and dists
     			if (params.max_neighbors<0 && (num_neighbors>=size())) {
@@ -305,7 +326,7 @@ public:
             atomic_count = 0;
 
             // Use auto partitioner to choose the optimal grainsize for dividing the query points
-            flann::parallel_radiusSearch<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count);
+            flann::parallel_radiusSearch<Index> parallel_radius(queries, indices, dists, radius, params, static_cast<Index*>(this), atomic_count);
             tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                               parallel_radius,
                               tbb::auto_partitioner());
@@ -316,7 +337,8 @@ public:
         return count;
     }
 
-    virtual int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
+    
+    int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
     		std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params)
     {
         assert(queries.cols == veclen());
@@ -379,7 +401,7 @@ public:
           atomic_count = 0;
 
           // Use auto partitioner to choose the optimal grainsize for dividing the query points
-          flann::parallel_radiusSearch2<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count);
+          flann::parallel_radiusSearch2<Index> parallel_radius(queries, indices, dists, radius, params, static_cast<Index*>(this), atomic_count);
           tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                             parallel_radius,
                             tbb::auto_partitioner());
@@ -389,50 +411,7 @@ public:
 #endif
         return count;
     }
-
-
-    /**
-     * \brief Saves the index to a stream
-     * \param stream The stream to save the index to
-     */
-    virtual void saveIndex(FILE* stream) = 0;
-
-    /**
-     * \brief Loads the index from a stream
-     * \param stream The stream from which the index is loaded
-     */
-    virtual void loadIndex(FILE* stream) = 0;
-
-    /**
-     * \returns number of features in this index.
-     */
-    virtual size_t size() const = 0;
-
-    /**
-     * \returns The dimensionality of the features in this index.
-     */
-    virtual size_t veclen() const = 0;
-
-    /**
-     * \returns The amount of memory (in bytes) used by the index.
-     */
-    virtual int usedMemory() const = 0;
-
-    /**
-     * \returns The index type (kdtree, kmeans,...)
-     */
-    virtual flann_algorithm_t getType() const = 0;
-
-    /**
-     * \returns The index parameters
-     */
-    virtual IndexParams getParameters() const = 0;
-
-
-    /**
-     * \brief Method that searches for nearest-neighbours
-     */
-    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;
+    
 };
 
 }

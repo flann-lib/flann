@@ -68,7 +68,7 @@ struct CompositeIndexParams : public IndexParams
  * as some of the neighbours that are missed by one index are found by the other.
  */
 template <typename Distance>
-class CompositeIndex : public NNIndex<Distance>
+class CompositeIndex : public NNIndex<CompositeIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
 {
 public:
     typedef typename Distance::ElementType ElementType;
@@ -174,7 +174,8 @@ public:
     /**
      * \brief Method that searches for nearest-neighbours
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    template <typename ResultSet>
+    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
     {
         kmeans_index_->findNeighbors(result, vec, searchParams);
         kdtree_index_->findNeighbors(result, vec, searchParams);

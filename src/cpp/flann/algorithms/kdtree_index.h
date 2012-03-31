@@ -67,7 +67,7 @@ struct KDTreeIndexParams : public IndexParams
  * for nearest-neighbor matching.
  */
 template <typename Distance>
-class KDTreeIndex : public NNIndex<Distance>
+class KDTreeIndex : public NNIndex<KDTreeIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
 {
 public:
     typedef typename Distance::ElementType ElementType;
@@ -91,17 +91,15 @@ public:
 
         trees_ = get_param(index_params_,"trees",4);
         tree_roots_ = new NodePtr[trees_];
-
-        // Create a permutable array of indices to the input vectors.
-        vind_.resize(size_);
-        for (size_t i = 0; i < size_; ++i) {
-            vind_[i] = int(i);
+        
+        ownDataset_ = get_param(index_params_, "copy_dataset", false);
+        if (ownDataset_) {
+            dataset_ = Matrix<ElementType>(new ElementType[inputData.rows * inputData.cols], inputData.rows, inputData.cols);
+            for (size_t i=0;i<inputData.rows;++i) {
+                std::copy(inputData[i], inputData[i]+inputData.cols, dataset_[i]);
+            }        
         }
-
-        mean_ = new DistanceType[veclen_];
-        var_ = new DistanceType[veclen_];
     }
-
 
     KDTreeIndex(const KDTreeIndex&);
     KDTreeIndex& operator=(const KDTreeIndex&);
@@ -114,8 +112,9 @@ public:
         if (tree_roots_!=NULL) {
             delete[] tree_roots_;
         }
-        delete[] mean_;
-        delete[] var_;
+        if (ownDataset_) {
+            delete[] dataset_.ptr();            
+        }
     }
 
     /**
@@ -123,12 +122,60 @@ public:
      */
     void buildIndex()
     {
+        // Create a permutable array of indices to the input vectors.
+        vind_.resize(size_);
+        for (size_t i = 0; i < size_; ++i) {
+            vind_[i] = int(i);
+        }
+
+        mean_ = new DistanceType[veclen_];
+        var_ = new DistanceType[veclen_];
+
         /* Construct the randomized trees. */
         for (int i = 0; i < trees_; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
             std::random_shuffle(vind_.begin(), vind_.end());
             tree_roots_[i] = divideTree(&vind_[0], int(size_) );
         }
+        delete[] mean_;
+        delete[] var_;
+        
+        size_at_build_ = size_;
+    }
+    
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        assert(points.cols==veclen());
+        size_t old_size = size_;
+
+        size_t rows = dataset_.rows + points.rows;
+        Matrix<ElementType> new_dataset(new ElementType[rows * veclen()], rows, veclen());
+        for (size_t i=0;i<dataset_.rows;++i) {
+            std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
+        }
+        for (size_t i=0;i<points.rows;++i) {
+            std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
+        }
+        
+        if (ownDataset_) {
+            delete[] dataset_.ptr();
+        }
+        dataset_ = new_dataset;
+        size_ += points.rows;
+        ownDataset_ = true;
+        
+        if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
+            pool_.free();
+            buildIndex();
+        }
+        else {
+            for (size_t i=0;i<points.rows;++i) {
+                for (int j = 0; j < trees_; j++) {
+                    addPointToTree(tree_roots_[j], old_size + i);
+                }
+            }
+        }
+        
     }
 
 
@@ -197,7 +244,8 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    template <typename ResultSet>
+    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
     {
         int maxChecks = searchParams.checks;
         float epsError = 1+searchParams.eps;
@@ -254,7 +302,7 @@ private:
 
     void load_tree(FILE* stream, NodePtr& tree)
     {
-        tree = pool_.allocate<Node>();
+        tree = new(pool_) Node();
         load_value(stream, *tree);
         if (tree->child1!=NULL) {
             load_tree(stream, tree->child1);
@@ -276,7 +324,7 @@ private:
      */
     NodePtr divideTree(int* ind, int count)
     {
-        NodePtr node = pool_.allocate<Node>(); // allocate memory
+        NodePtr node = new(pool_) Node(); // allocate memory
 
         /* If too few exemplars remain, then make this a leaf node. */
         if ( count == 1) {
@@ -417,7 +465,8 @@ private:
      * Performs an exact nearest neighbor search. The exact search performs a full
      * traversal of the tree.
      */
-    void getExactNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, float epsError)
+    template<typename ResultSet>
+    void getExactNeighbors(ResultSet& result, const ElementType* vec, float epsError)
     {
         //		checkID -= 1;  /* Set a different unique ID for each search. */
 
@@ -434,7 +483,8 @@ private:
      * because the tree traversal is abandoned after a given number of descends in
      * the tree.
      */
-    void getNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, int maxCheck, float epsError)
+    template<typename ResultSet>
+    void getNeighbors(ResultSet& result, const ElementType* vec, int maxCheck, float epsError)
     {
         int i;
         BranchSt branch;
@@ -463,7 +513,8 @@ private:
      *  higher levels, all exemplars below this level must have a distance of
      *  at least "mindistsq".
      */
-    void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, NodePtr node, DistanceType mindist, int& checkCount, int maxCheck,
+    template<typename ResultSet>
+    void searchLevel(ResultSet& result_set, const ElementType* vec, NodePtr node, DistanceType mindist, int& checkCount, int maxCheck,
                      float epsError, Heap<BranchSt>* heap, DynamicBitset& checked)
     {
         if (result_set.worstDist()<mindist) {
@@ -515,7 +566,8 @@ private:
     /**
      * Performs an exact search in the tree starting from a node.
      */
-    void searchLevelExact(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindist, const float epsError)
+    template<typename ResultSet>
+    void searchLevelExact(ResultSet& result_set, const ElementType* vec, const NodePtr node, DistanceType mindist, const float epsError)
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
@@ -548,7 +600,50 @@ private:
             searchLevelExact(result_set, vec, otherChild, new_distsq, epsError);
         }
     }
+    
+    void addPointToTree(NodePtr node, int ind)
+    {
+        
+        ElementType* point = dataset_[ind];
+        
+        if (node->child1==NULL && node->child2==NULL) {
+            ElementType* leaf_point = dataset_[node->divfeat];
+            ElementType max_span = 0;
+            size_t div_feat = 0;
+            for (size_t i=0;i<veclen();++i) {
+                ElementType span = abs(point[i]-leaf_point[i]);
+                if (span > max_span) {
+                    max_span = span;
+                    div_feat = i;
+                }
+            }
+            NodePtr left = new(pool_) Node();
+            left->child1 = left->child2 = NULL;
+            NodePtr right = new(pool_) Node();
+            right->child1 = right->child2 = NULL;
 
+            if (point[div_feat]<leaf_point[div_feat]) {
+                left->divfeat = ind;
+                right->divfeat = node->divfeat;
+            }
+            else {
+                left->divfeat = node->divfeat;                
+                right->divfeat = ind;
+            }
+            node->divfeat = div_feat;
+            node->divval = (point[div_feat]+leaf_point[div_feat])/2;
+            node->child1 = left;
+            node->child2 = right;            
+        }
+        else {
+            if (point[node->divfeat]<node->divval) {
+                addPointToTree(node->child1,ind);
+            }
+            else {
+                addPointToTree(node->child2,ind);                
+            }
+        }
+    }
 
 private:
 
@@ -584,17 +679,18 @@ private:
     /**
      * The dataset used by this index
      */
-    const Matrix<ElementType> dataset_;
+    Matrix<ElementType> dataset_;
+    
+    bool ownDataset_;
 
     IndexParams index_params_;
 
     size_t size_;
     size_t veclen_;
-
+    size_t size_at_build_;
 
     DistanceType* mean_;
     DistanceType* var_;
-
 
     /**
      * Array of k-d trees used to find neighbours.
@@ -611,8 +707,7 @@ private:
     PooledAllocator pool_;
 
     Distance distance_;
-
-
+    
 };   // class KDTreeForest
 
 }

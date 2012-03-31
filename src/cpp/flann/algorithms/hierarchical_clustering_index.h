@@ -78,7 +78,7 @@ struct HierarchicalClusteringIndexParams : public IndexParams
  * and other information for indexing a set of points for nearest-neighbour matching.
  */
 template <typename Distance>
-class HierarchicalClusteringIndex : public NNIndex<Distance>
+class HierarchicalClusteringIndex : public NNIndex<HierarchicalClusteringIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
 {
 public:
     typedef typename Distance::ElementType ElementType;
@@ -125,7 +125,7 @@ private:
                 centers[index] = indices[rnd];
 
                 for (int j=0; j<index; ++j) {
-                    DistanceType sq = distance(dataset[centers[index]], dataset[centers[j]], dataset.cols);
+                    DistanceType sq = distance_(dataset_[centers[index]], dataset_[centers[j]], dataset_.cols);
                     if (sq<1e-16) {
                         duplicate = true;
                     }
@@ -162,9 +162,9 @@ private:
             int best_index = -1;
             DistanceType best_val = 0;
             for (int j=0; j<n; ++j) {
-            	DistanceType dist = distance(dataset[centers[0]],dataset[indices[j]],dataset.cols);
+            	DistanceType dist = distance_(dataset_[centers[0]],dataset_[indices[j]],dataset_.cols);
                 for (int i=1; i<index; ++i) {
-                    DistanceType tmp_dist = distance(dataset[centers[i]],dataset[indices[j]],dataset.cols);
+                    DistanceType tmp_dist = distance_(dataset_[centers[i]],dataset_[indices[j]],dataset_.cols);
                     if (tmp_dist<dist) {
                         dist = tmp_dist;
                     }
@@ -211,7 +211,7 @@ private:
         centers[0] = indices[index];
 
         for (int i = 0; i < n; i++) {
-            closestDistSq[i] = distance(dataset[indices[i]], dataset[indices[index]], dataset.cols);
+            closestDistSq[i] = distance_(dataset_[indices[i]], dataset_[indices[index]], dataset_.cols);
             currentPot += closestDistSq[i];
         }
 
@@ -237,7 +237,7 @@ private:
 
                 // Compute the new potential
                 double newPot = 0;
-                for (int i = 0; i < n; i++) newPot += std::min( distance(dataset[indices[i]], dataset[indices[index]], dataset.cols), closestDistSq[i] );
+                for (int i = 0; i < n; i++) newPot += std::min( distance_(dataset_[indices[i]], dataset_[indices[index]], dataset_.cols), closestDistSq[i] );
 
                 // Store the best result
                 if ((bestNewPot < 0)||(newPot < bestNewPot)) {
@@ -249,7 +249,7 @@ private:
             // Add the appropriate center
             centers[centerCount] = indices[bestNewIndex];
             currentPot = bestNewPot;
-            for (int i = 0; i < n; i++) closestDistSq[i] = std::min( distance(dataset[indices[i]], dataset[indices[bestNewIndex]], dataset.cols), closestDistSq[i] );
+            for (int i = 0; i < n; i++) closestDistSq[i] = std::min( distance_(dataset_[indices[i]], dataset_[indices[bestNewIndex]], dataset_.cols), closestDistSq[i] );
         }
 
         centers_length = centerCount;
@@ -270,17 +270,17 @@ public:
      */
     HierarchicalClusteringIndex(const Matrix<ElementType>& inputData, const IndexParams& index_params = HierarchicalClusteringIndexParams(),
                                 Distance d = Distance())
-        : dataset(inputData), params(index_params), root(NULL), indices(NULL), distance(d)
+        : dataset_(inputData), index_params_(index_params), distance_(d)
     {
-        memoryCounter = 0;
+        memoryCounter_ = 0;
 
-        size_ = dataset.rows;
-        veclen_ = dataset.cols;
+        size_ = dataset_.rows;
+        veclen_ = dataset_.cols;
 
-        branching_ = get_param(params,"branching",32);
-        centers_init_ = get_param(params,"centers_init", FLANN_CENTERS_RANDOM);
-        trees_ = get_param(params,"trees",4);
-        leaf_size_ = get_param(params,"leaf_size",100);
+        branching_ = get_param(index_params_,"branching",32);
+        centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
+        trees_ = get_param(index_params_,"trees",4);
+        leaf_size_ = get_param(index_params_,"leaf_size",100);
 
         if (centers_init_==FLANN_CENTERS_RANDOM) {
             chooseCenters = &HierarchicalClusteringIndex::chooseCentersRandom;
@@ -294,10 +294,9 @@ public:
         else {
             throw FLANNException("Unknown algorithm for choosing initial centers.");
         }
-
-        trees_ = get_param(params,"trees",4);
-        root = new NodePtr[trees_];
-        indices = new int*[trees_];
+        ownDataset_ = get_param(index_params_, "copy_dataset", false);
+        
+        trees_ = get_param(index_params_,"trees",4);
     }
 
     HierarchicalClusteringIndex(const HierarchicalClusteringIndex&);
@@ -310,8 +309,8 @@ public:
      */
     virtual ~HierarchicalClusteringIndex()
     {
-        if (indices!=NULL) {
-            delete[] indices;
+        if (ownDataset_) {
+            delete[] dataset_.ptr();
         }
     }
 
@@ -338,7 +337,7 @@ public:
      */
     int usedMemory() const
     {
-        return pool.usedMemory+pool.wastedMemory+memoryCounter;
+        return pool_.usedMemory+pool_.wastedMemory+memoryCounter_;
     }
 
     /**
@@ -349,13 +348,51 @@ public:
         if (branching_<2) {
             throw FLANNException("Branching factor must be at least 2");
         }
+        tree_roots_.resize(trees_);
         for (int i=0; i<trees_; ++i) {
-            indices[i] = new int[size_];
+            indices_.resize(size_);
             for (size_t j=0; j<size_; ++j) {
-                indices[i][j] = j;
+                indices_[j] = j;
             }
-            root[i] = pool.allocate<Node>();
-            computeClustering(root[i], indices[i], size_, branching_,0);
+            tree_roots_[i] = new(pool_) Node();
+            computeClustering(tree_roots_[i], &indices_[0], size_, branching_,0);
+        }
+        
+        size_at_build_ = size_;
+    }
+
+    
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        assert(points.cols==veclen());
+        size_t old_size = size_;
+
+        size_t rows = dataset_.rows + points.rows;
+        Matrix<ElementType> new_dataset(new ElementType[rows * veclen()], rows, veclen());
+        for (size_t i=0;i<dataset_.rows;++i) {
+            std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
+        }
+        for (size_t i=0;i<points.rows;++i) {
+            std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
+        }
+        
+        if (ownDataset_) {
+            delete[] dataset_.ptr();
+        }
+        dataset_ = new_dataset;
+        size_ += points.rows;
+        ownDataset_ = true;
+        
+        if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
+            pool_.free();
+            buildIndex();
+        }
+        else {
+            for (size_t i=0;i<points.rows;++i) {
+                for (int j = 0; j < trees_; j++) {
+                    addPointToTree(tree_roots_[j], old_size + i);
+                }
+            }            
         }
     }
 
@@ -372,10 +409,9 @@ public:
         save_value(stream, trees_);
         save_value(stream, centers_init_);
         save_value(stream, leaf_size_);
-        save_value(stream, memoryCounter);
+        save_value(stream, memoryCounter_);
         for (int i=0; i<trees_; ++i) {
-            save_value(stream, *indices[i], size_);
-            save_tree(stream, root[i], i);
+            save_tree(stream, tree_roots_[i], i);
         }
 
     }
@@ -387,20 +423,17 @@ public:
         load_value(stream, trees_);
         load_value(stream, centers_init_);
         load_value(stream, leaf_size_);
-        load_value(stream, memoryCounter);
-        indices = new int*[trees_];
-        root = new NodePtr[trees_];
+        load_value(stream, memoryCounter_);
+        tree_roots_.resize(trees_);
         for (int i=0; i<trees_; ++i) {
-            indices[i] = new int[size_];
-            load_value(stream, *indices[i], size_);
-            load_tree(stream, root[i], i);
+            load_tree(stream, tree_roots_[i], i);
         }
 
-        params["algorithm"] = getType();
-        params["branching"] = branching_;
-        params["trees"] = trees_;
-        params["centers_init"] = centers_init_;
-        params["leaf_size"] = leaf_size_;
+        index_params_["algorithm"] = getType();
+        index_params_["branching"] = branching_;
+        index_params_["trees"] = trees_;
+        index_params_["centers_init"] = centers_init_;
+        index_params_["leaf_size"] = leaf_size_;
     }
 
 
@@ -413,7 +446,8 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     searchParams = parameters that influence the search algorithm (checks)
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    template <typename ResultSet>
+    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
     {
 
         int maxChecks = searchParams.checks;
@@ -424,7 +458,7 @@ public:
         std::vector<bool> checked(size_,false);
         int checks = 0;
         for (int i=0; i<trees_; ++i) {
-            findNN(root[i], result, vec, checks, maxChecks, heap, checked);
+            findNN(tree_roots_[i], result, vec, checks, maxChecks, heap, checked);
         }
 
         BranchSt branch;
@@ -439,7 +473,7 @@ public:
 
     IndexParams getParameters() const
     {
-        return params;
+        return index_params_;
     }
 
 
@@ -461,11 +495,11 @@ private:
         /**
          * Child nodes (only for non-terminal nodes)
          */
-        Node** childs;
+        std::vector<Node*> childs;
         /**
          * Node points (only for terminal nodes)
          */
-        int* indices;
+        std::vector<int> indices;
         /**
          * Level
          */
@@ -485,9 +519,8 @@ private:
     void save_tree(FILE* stream, NodePtr node, int num)
     {
         save_value(stream, *node);
-        if (node->childs==NULL) {
-            int indices_offset = node->indices - indices[num];
-            save_value(stream, indices_offset);
+        if (node->childs.empty()) {
+            save_value(stream, node->indices);
         }
         else {
             for(int i=0; i<branching_; ++i) {
@@ -499,15 +532,13 @@ private:
 
     void load_tree(FILE* stream, NodePtr& node, int num)
     {
-        node = pool.allocate<Node>();
+        node = new(pool_) Node();
         load_value(stream, *node);
-        if (node->childs==NULL) {
-            int indices_offset;
-            load_value(stream, indices_offset);
-            node->indices = indices[num] + indices_offset;
+        if (node->childs.empty()) {
+            load_value(stream, node->indices);
         }
         else {
-            node->childs = pool.allocate<NodePtr>(branching_);
+            node->childs.resize(branching_);
             for(int i=0; i<branching_; ++i) {
                 load_tree(stream, node->childs[i], num);
             }
@@ -521,11 +552,11 @@ private:
     {
         cost = 0;
         for (int i=0; i<indices_length; ++i) {
-            ElementType* point = dataset[indices[i]];
-            DistanceType dist = distance(point, dataset[centers[0]], veclen_);
+            ElementType* point = dataset_[indices[i]];
+            DistanceType dist = distance_(point, dataset_[centers[0]], veclen_);
             labels[i] = 0;
             for (int j=1; j<centers_length; ++j) {
-                DistanceType new_dist = distance(point, dataset[centers[j]], veclen_);
+                DistanceType new_dist = distance_(point, dataset_[centers[j]], veclen_);
                 if (dist>new_dist) {
                     labels[i] = j;
                     dist = new_dist;
@@ -552,9 +583,10 @@ private:
         node->level = level;
 
         if (indices_length < leaf_size_) { // leaf node
-            node->indices = indices;
-            std::sort(node->indices,node->indices+indices_length);
-            node->childs = NULL;
+            node->indices.resize(indices_length);
+            std::copy(indices, indices+indices_length, node->indices.begin());
+            std::sort(node->indices.begin(),node->indices.end());
+            node->childs.clear();
             return;
         }
 
@@ -565,9 +597,10 @@ private:
         (this->*chooseCenters)(branching, indices, indices_length, &centers[0], centers_length);
 
         if (centers_length<branching) {
-            node->indices = indices;
-            std::sort(node->indices,node->indices+indices_length);
-            node->childs = NULL;
+            node->indices.resize(indices_length);
+            std::copy(indices, indices+indices_length, node->indices.begin());
+            std::sort(node->indices.begin(),node->indices.end());
+            node->childs.clear();
             return;
         }
 
@@ -576,7 +609,7 @@ private:
         DistanceType cost;
         computeLabels(indices, indices_length, &centers[0], centers_length, &labels[0], cost);
 
-        node->childs = pool.allocate<NodePtr>(branching);
+        node->childs.resize(branching);
         int start = 0;
         int end = start;
         for (int i=0; i<branching; ++i) {
@@ -588,9 +621,9 @@ private:
                 }
             }
 
-            node->childs[i] = pool.allocate<Node>();
+            node->childs[i] = new(pool_) Node();
             node->childs[i]->pivot = centers[i];
-            node->childs[i]->indices = NULL;
+            node->childs[i]->indices.clear();
             computeClustering(node->childs[i],indices+start, end-start, branching, level+1);
             start=end;
         }
@@ -611,10 +644,11 @@ private:
      */
 
 
-    void findNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec, int& checks, int maxChecks,
+    template<typename ResultSet>
+    void findNN(NodePtr node, ResultSet& result, const ElementType* vec, int& checks, int maxChecks,
                 Heap<BranchSt>* heap, std::vector<bool>& checked)
     {
-        if (node->childs==NULL) {
+        if (node->childs.empty()) {
             if (checks>=maxChecks) {
                 if (result.full()) return;
             }
@@ -622,7 +656,7 @@ private:
             for (int i=0; i<node->size; ++i) {
                 int index = node->indices[i];
                 if (!checked[index]) {
-                    DistanceType dist = distance(dataset[index], vec, veclen_);
+                    DistanceType dist = distance_(dataset_[index], vec, veclen_);
                     result.addPoint(dist, index);
                     checked[index] = true;
                 }
@@ -631,9 +665,9 @@ private:
         else {
             DistanceType* domain_distances = new DistanceType[branching_];
             int best_index = 0;
-            domain_distances[best_index] = distance(vec, dataset[node->childs[best_index]->pivot], veclen_);
+            domain_distances[best_index] = distance_(vec, dataset_[node->childs[best_index]->pivot], veclen_);
             for (int i=1; i<branching_; ++i) {
-                domain_distances[i] = distance(vec, dataset[node->childs[i]->pivot], veclen_);
+                domain_distances[i] = distance_(vec, dataset_[node->childs[i]->pivot], veclen_);
                 if (domain_distances[i]<domain_distances[best_index]) {
                     best_index = i;
                 }
@@ -647,6 +681,36 @@ private:
             findNN(node->childs[best_index],result,vec, checks, maxChecks, heap, checked);
         }
     }
+    
+    void addPointToTree(NodePtr node, size_t index)
+    {
+        ElementType* point = dataset_[index];
+        node->size++;
+        
+        if (node->childs.empty()) { // leaf node
+            node->indices.push_back(index);
+            if (node->indices.size()>=size_t(branching_)) {
+                std::vector<int> indices;
+                indices.swap(node->indices);
+                computeClustering(node, &indices[0], indices.size(), branching_, node->level);
+            }
+        }
+        else {            
+            // find the closest child
+            int closest = 0;
+            ElementType* center = dataset_[node->childs[closest]->pivot];
+            DistanceType dist = distance_(center, point, veclen_);
+            for (size_t i=1;i<size_t(branching_);++i) {
+                center = dataset_[node->childs[i]->pivot];
+                DistanceType crt_dist = distance_(center, point, veclen_);
+                if (crt_dist<dist) {
+                    dist = crt_dist;
+                    closest = i;
+                }
+            }
+            addPointToTree(node->childs[closest], index);
+        }                
+    }
 
 private:
 
@@ -654,18 +718,23 @@ private:
     /**
      * The dataset used by this index
      */
-    const Matrix<ElementType> dataset;
+    Matrix<ElementType> dataset_;
 
     /**
      * Parameters used by this index
      */
-    IndexParams params;
+    IndexParams index_params_;
 
 
     /**
      * Number of features in the dataset.
      */
     size_t size_;
+    
+    /**
+     * Number of features in the dataset when the index was last built.
+     */
+    size_t size_at_build_;
 
     /**
      * Length of each feature.
@@ -673,20 +742,20 @@ private:
     size_t veclen_;
 
     /**
-     * The root node in the tree.
+     * The root nodes in the tree.
      */
-    NodePtr* root;
+    std::vector<Node*> tree_roots_;
 
     /**
      *  Array of indices to vectors in the dataset.
      */
-    int** indices;
+    std::vector<int> indices_;
 
 
     /**
      * The distance
      */
-    Distance distance;
+    Distance distance_;
 
     /**
      * Pooled memory allocator.
@@ -695,20 +764,38 @@ private:
      * than allocating memory directly when there is a large
      * number small of memory allocations.
      */
-    PooledAllocator pool;
+    PooledAllocator pool_;
 
     /**
      * Memory occupied by the index.
      */
-    int memoryCounter;
+    int memoryCounter_;
 
     /** index parameters */
+    /**
+     * Branching factor to use for clustering
+     */
     int branching_;
+    
+    /**
+     * How many parallel trees to build
+     */
     int trees_;
+    
+    /**
+     * Algorithm to use for choosing cluster centers
+     */
     flann_centers_init_t centers_init_;
+    
+    /**
+     * Max size of leaf nodes
+     */
     int leaf_size_;
-
-
+    
+    /**
+     *  Does the index have a copy of the dataset?
+     */
+    bool ownDataset_;
 };
 
 }

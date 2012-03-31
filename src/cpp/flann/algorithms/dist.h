@@ -771,46 +771,6 @@ struct KL_Divergence
     }
 };
 
-
-
-/*
- * This is a "zero iterator". It basically behaves like a zero filled
- * array to all algorithms that use arrays as iterators (STL style).
- * It's useful when there's a need to compute the distance between feature
- * and origin it and allows for better compiler optimisation than using a
- * zero-filled array.
- */
-template <typename T>
-struct ZeroIterator
-{
-
-    T operator*()
-    {
-        return 0;
-    }
-
-    T operator[](int)
-    {
-        return 0;
-    }
-
-    const ZeroIterator<T>& operator ++()
-    {
-        return *this;
-    }
-
-    ZeroIterator<T> operator ++(int)
-    {
-        return *this;
-    }
-
-    ZeroIterator<T>& operator+=(int)
-    {
-        return *this;
-    }
-
-};
-
 }
 
 #endif //FLANN_DIST_H_

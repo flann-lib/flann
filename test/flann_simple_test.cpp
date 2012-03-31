@@ -149,6 +149,27 @@ TEST_F(Flann_SIFT10K_Test, KDTreeTest)
     printf("Precision: %g\n", precision);
 }
 
+TEST_F(Flann_SIFT10K_Test, KDTreeTestIncremental)
+{
+    size_t size1 = data.rows/2;
+    size_t size2 = data.rows-size1;
+    Matrix<float> data1(data[0], size1, data.cols);
+    Matrix<float> data2(data[size1], size2, data.cols);
+    Index<L2<float> > index(data1, flann::KDTreeIndexParams(4));
+    start_timer("Building randomised kd-tree index...");
+    index.buildIndex();
+    index.addPoints(data2);
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, nn, flann::SearchParams(256));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    EXPECT_GE(precision, 0.75);
+    printf("Precision: %g\n", precision);
+}
+
 
 TEST_F(Flann_SIFT10K_Test, KMeansTree)
 {
@@ -166,6 +187,27 @@ TEST_F(Flann_SIFT10K_Test, KMeansTree)
     printf("Precision: %g\n", precision);
 }
 
+
+TEST_F(Flann_SIFT10K_Test, KMeansTreeIncremental)
+{
+    size_t size1 = data.rows/2;
+    size_t size2 = data.rows-size1;
+    Matrix<float> data1(data[0], size1, data.cols);
+    Matrix<float> data2(data[size1], size2, data.cols);
+    Index<L2<float> > index(data1, flann::KMeansIndexParams(7, 3, FLANN_CENTERS_RANDOM, 0.4));
+    start_timer("Building hierarchical k-means index...");
+    index.buildIndex();
+    index.addPoints(data2);
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, nn, flann::SearchParams(110) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    EXPECT_GE(precision, 0.75);
+    printf("Precision: %g\n", precision);
+}
 
 class Flann_SIFT10K_Test_byte : public FLANNTestFixture {
 protected:
@@ -319,7 +361,31 @@ TEST_F(Flann_SIFT100K_Test, KDTreeTest)
     printf("Precision: %g\n", precision);
 }
 
-TEST_F(Flann_SIFT100K_Test, KMeansTreeTest)
+
+TEST_F(Flann_SIFT100K_Test, KDTreeTestIncremental)
+{
+    size_t size1 = data.rows/2;
+    size_t size2 = data.rows-size1;
+    Matrix<float> data1(data[0], size1, data.cols);
+    Matrix<float> data2(data[size1], size2, data.cols);
+    Index<L2<float> > index(data1, flann::KDTreeIndexParams(4));
+    start_timer("Building randomised kd-tree index...");
+    index.buildIndex();
+    index.addPoints(data2);
+    printf("done (%g seconds)\n", stop_timer());
+
+    index.save("kdtree.idx");
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    EXPECT_GE(precision, 0.75);
+    printf("Precision: %g\n", precision);
+}
+
+TEST_F(Flann_SIFT100K_Test, KMeansTree)
 {
     Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
     start_timer("Building hierarchical k-means index...");
@@ -338,11 +404,36 @@ TEST_F(Flann_SIFT100K_Test, KMeansTreeTest)
 }
 
 
+TEST_F(Flann_SIFT100K_Test, KMeansTreeIncremental)
+{
+    size_t size1 = data.rows/2;
+    size_t size2 = data.rows-size1;
+    Matrix<float> data1(data[0], size1, data.cols);
+    Matrix<float> data2(data[size1], size2, data.cols);
+    Index<L2<float> > index(data1, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
+    start_timer("Building hierarchical k-means index...");
+    index.buildIndex();
+    index.addPoints(data2);
+    printf("done (%g seconds)\n", stop_timer());
+
+    index.save("kmeans_tree.idx");
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    EXPECT_GE(precision, 0.75);
+    printf("Precision: %g\n", precision);
+}
+
+
 TEST_F(Flann_SIFT100K_Test, AutotunedTest)
 {
     flann::log_verbosity(FLANN_LOG_INFO);
 
     Index<L2<float> > index(data, flann::AutotunedIndexParams(0.8,0.01,0,0.1)); // 80% precision
+
     start_timer("Building autotuned index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
@@ -684,6 +775,31 @@ TEST_F(Flann_Brief100K_Test, HierarchicalClusteringTest)
     EXPECT_GE(precision, 0.9);
     printf("Precision: %g\n", precision);
 }
+
+TEST_F(Flann_Brief100K_Test, HierarchicalClusteringTestIncremental)
+{
+    size_t size1 = data.rows/2;
+    size_t size2 = data.rows-size1;
+    Matrix<ElementType> data1(data[0], size1, data.cols);
+    Matrix<ElementType> data2(data[size1], size2, data.cols);
+
+    flann::Index<Distance> index(data1, flann::HierarchicalClusteringIndexParams());
+    start_timer("Building hierarchical clustering index...");
+    index.buildIndex();
+    index.addPoints(data2);
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    index.save("hierarchical_clustering_brief_inc.idx");
+
+    float precision = computePrecisionDiscrete(gt_dists, dists);
+    EXPECT_GE(precision, 0.87);
+    printf("Precision: %g\n", precision);
+}
+
 
 TEST_F(Flann_Brief100K_Test, LshTest)
 {

@@ -64,15 +64,15 @@ struct IndexHeader
  * @param stream - Stream to save to
  * @param index - The index to save
  */
-template<typename Distance>
-void save_header(FILE* stream, const NNIndex<Distance>& index)
+template<typename Index>
+void save_header(FILE* stream, const Index& index)
 {
     IndexHeader header;
     memset(header.signature, 0, sizeof(header.signature));
     strcpy(header.signature, FLANN_SIGNATURE_);
     memset(header.version, 0, sizeof(header.version));
     strcpy(header.version, FLANN_VERSION_);
-    header.data_type = flann_datatype<typename Distance::ElementType>::value;
+    header.data_type = flann_datatype<typename Index::ElementType>::value;
     header.index_type = index.getType();
     header.rows = index.size();
     header.cols = index.veclen();

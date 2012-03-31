@@ -75,7 +75,7 @@ struct LshIndexParams : public IndexParams
  * for nearest-neighbor matching.
  */
 template<typename Distance>
-class LshIndex : public NNIndex<Distance>
+class LshIndex : public NNIndex<LshIndex<Distance>,typename Distance::ElementType, typename Distance::ResultType>
 {
 public:
     typedef typename Distance::ElementType ElementType;
@@ -276,7 +276,8 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& /*searchParams*/)
+    template <typename ResultSet>
+    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& /*searchParams*/)
     {
         getNeighbors(vec, result);
     }
@@ -395,7 +396,8 @@ private:
      * This is a slower version than the above as it uses the ResultSet
      * @param vec the feature to analyze
      */
-    void getNeighbors(const ElementType* vec, ResultSet<DistanceType>& result)
+    template<typename ResultSet>
+    void getNeighbors(const ElementType* vec, ResultSet& result)
     {
         typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin();
         typename std::vector<lsh::LshTable<ElementType> >::const_iterator table_end = tables_.end();

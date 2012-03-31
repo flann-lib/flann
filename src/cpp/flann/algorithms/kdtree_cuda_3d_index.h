@@ -36,7 +36,6 @@
 #include <map>
 #include <cassert>
 #include <cstring>
-// #include "flann/"
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
 #include "flann/util/matrix.h"
@@ -281,7 +280,8 @@ public:
      * Not implemented, since it is only used by single-element searches.
      * (but is needed b/c it is abstract in the base class)
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    template <typename ResultSet>
+    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
     {
     }
 

@@ -82,7 +82,7 @@ class Index
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
-    typedef IndexTyped<typename Distance::ElementType, typename Distance::ResultType> IndexType;
+    typedef TypedIndexBase<ElementType, DistanceType> IndexType;
 
     Index(const Matrix<ElementType>& features, const IndexParams& params, Distance distance = Distance() )
         : index_params_(params)
@@ -114,6 +114,11 @@ public:
             nnIndex_->buildIndex();
         }
     }
+    
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        nnIndex_->addPoints(points, rebuild_threshold);
+    }
 
     void save(std::string filename)
     {
@@ -122,7 +127,7 @@ public:
             throw FLANNException("Cannot open file");
         }
         save_header(fout, *nnIndex_);
-//        saveIndex(fout);
+        nnIndex_->saveIndex(fout);
         fclose(fout);
     }
 
@@ -240,14 +245,6 @@ public:
     	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
     }
 
-    /**
-     * \brief Returns actual index
-     */
-    FLANN_DEPRECATED NNIndex<Distance>* getIndex()
-    {
-        return nnIndex_;
-    }
-
 
 private:
     IndexType* load_saved_index(const Matrix<ElementType>& dataset, const std::string& filename, Distance distance)
@@ -267,7 +264,7 @@ private:
         IndexParams params;
         params["algorithm"] = header.index_type;
         IndexType* nnIndex = create_index_by_type<Distance>(header.index_type, dataset, params, distance);
-//        nnIndex->loadIndex(fin);
+        nnIndex->loadIndex(fin);
         fclose(fin);
 
         return nnIndex;

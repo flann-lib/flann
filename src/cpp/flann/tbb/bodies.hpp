@@ -40,29 +40,26 @@
 namespace flann
 {
 
-template <typename Distance> class NNIndex;
-
-
-template<typename Distance>
+template<typename Index>
 class parallel_knnSearch
 {
 public:
-  typedef typename Distance::ElementType ElementType;
-  typedef typename Distance::ResultType DistanceType;
+  typedef typename Index::ElementType ElementType;
+  typedef typename Index::DistanceType DistanceType;
 
   parallel_knnSearch(const Matrix<ElementType>& queries,
                            Matrix<int>& indices,
                            Matrix<DistanceType>& distances,
                            size_t knn,
                      const SearchParams& params,
-                           NNIndex<Distance>* nnIndex,
+                           Index* index,
                            tbb::atomic<int>& count)
     : queries_(queries),
       indices_(indices),
       distances_(distances),
       knn_(knn),
       params_(params),
-      nnIndex_(nnIndex),
+      index_(index),
       count_(count)
 
   {}
@@ -85,7 +82,7 @@ public:
       for (size_t i=r.begin(); i!=r.end(); ++i)
       {
         resultSet.clear();
-        nnIndex_->findNeighbors(resultSet, queries_[i], params_);
+        index_->findNeighbors(resultSet, queries_[i], params_);
         resultSet.copy(indices_[i], distances_[i], knn_, params_.sorted);
         count_ += resultSet.size();
       }
@@ -96,7 +93,7 @@ public:
       for (size_t i=r.begin(); i!=r.end(); ++i)
       {
         resultSet.clear();
-        nnIndex_->findNeighbors(resultSet, queries_[i], params_);
+        index_->findNeighbors(resultSet, queries_[i], params_);
         resultSet.copy(indices_[i], distances_[i], knn_, params_.sorted);
         count_ += resultSet.size();
       }
@@ -125,7 +122,7 @@ private:
   const SearchParams& params_;
 
   //! The nearest neighbor index to perform the search with
-  NNIndex<Distance>* nnIndex_;
+  Index* index_;
 
   //! Atomic count variable to keep track of the number of neighbors found
   //! \note must be mutable because body will be casted as const in parallel_for
@@ -133,19 +130,19 @@ private:
 };
 
 
-template<typename Distance>
+template<typename Index>
 class parallel_knnSearch2
 {
 public:
-  typedef typename Distance::ElementType ElementType;
-  typedef typename Distance::ResultType DistanceType;
+  typedef typename Index::ElementType ElementType;
+  typedef typename Index::DistanceType DistanceType;
 
   parallel_knnSearch2(const Matrix<ElementType>& queries,
                             std::vector< std::vector<int> >& indices,
                             std::vector<std::vector<DistanceType> >& distances,
                             size_t knn,
                       const SearchParams& params,
-                            NNIndex<Distance>* nnIndex,
+                            Index* nnIndex,
                             tbb::atomic<int>& count)
     : queries_(queries),
       indices_(indices),
@@ -219,7 +216,7 @@ private:
   const SearchParams& params_;
 
   //! The nearest neighbor index to perform the search with
-  NNIndex<Distance>* nnIndex_;
+  Index* nnIndex_;
 
   //! Atomic count variable to keep track of the number of neighbors found
   //! \note must be mutable because body will be casted as const in parallel_for
@@ -227,12 +224,12 @@ private:
 };
 
 
-template<typename Distance>
+template<typename Index>
 class parallel_radiusSearch
 {
 public:
-  typedef typename Distance::ElementType ElementType;
-  typedef typename Distance::ResultType DistanceType;
+  typedef typename Index::ElementType ElementType;
+  typedef typename Index::DistanceType DistanceType;
 
   /* default destructor will do */
 
@@ -249,14 +246,14 @@ public:
                               Matrix<DistanceType>& distances,
                               float radius,
                         const SearchParams& params,
-                              NNIndex<Distance>* nnIndex,
+                              Index* nnIndex,
                               tbb::atomic<int>& count)
     : queries_(queries),
       indices_(indices),
       distances_(distances),
       radius_(radius),
       params_(params),
-      nnIndex_(nnIndex),
+      index_(nnIndex),
       count_(count)
 
   {}
@@ -273,7 +270,7 @@ public:
           for (size_t i=r.begin(); i!=r.end(); ++i)
           {
               resultSet.clear();
-              nnIndex_->findNeighbors(resultSet, queries_[i], params_);
+              index_->findNeighbors(resultSet, queries_[i], params_);
               count_ += resultSet.size();
           }
       }
@@ -281,12 +278,12 @@ public:
 
           // explicitly indicated to use unbounded radius result set
           // or we know there'll be enough room for resulting indices and dists
-          if (params_.max_neighbors<0 && (num_neighbors>=nnIndex_->size())) {
+          if (params_.max_neighbors<0 && (num_neighbors>= index_->size())) {
               RadiusResultSet<DistanceType> resultSet(radius_);
               for (size_t i=r.begin(); i!=r.end(); ++i)
               {
                   resultSet.clear();
-                  nnIndex_->findNeighbors(resultSet, queries_[i], params_);
+                  index_->findNeighbors(resultSet, queries_[i], params_);
                   size_t n = resultSet.size();
                   count_ += n;
                   if (n>num_neighbors) n = num_neighbors;
@@ -303,7 +300,7 @@ public:
               for (size_t i=r.begin(); i!=r.end(); ++i)
               {
                   resultSet.clear();
-                  nnIndex_->findNeighbors(resultSet, queries_[i], params_);
+                  index_->findNeighbors(resultSet, queries_[i], params_);
                   size_t n = resultSet.size();
                   count_ += n ;
                   if ((int)n>max_neighbors) n = max_neighbors;
@@ -339,7 +336,7 @@ private:
   const SearchParams& params_;
 
   //! The nearest neighbor index to perform the search with
-  NNIndex<Distance>* nnIndex_;
+  Index* index_;
 
   //! Atomic count variable to keep track of the number of neighbors found
   //! \note must be mutable because body will be casted as const in parallel_for
@@ -347,12 +344,12 @@ private:
 };
 
 
-template<typename Distance>
+template<typename Index>
 class parallel_radiusSearch2
 {
 public:
-  typedef typename Distance::ElementType ElementType;
-  typedef typename Distance::ResultType DistanceType;
+  typedef typename Index::ElementType ElementType;
+  typedef typename Index::DistanceType DistanceType;
 
   /* default destructor will do */
 
@@ -369,7 +366,7 @@ public:
                                std::vector<std::vector<DistanceType> >& distances,
                                float radius,
                          const SearchParams& params,
-                               NNIndex<Distance>* nnIndex,
+                               Index* nnIndex,
                                tbb::atomic<int>& count)
     : queries_(queries),
       indices_(indices),
@@ -452,7 +449,7 @@ private:
     const SearchParams& params_;
 
     //! The nearest neighbor index to perform the search with
-    NNIndex<Distance>* nnIndex_;
+    Index* nnIndex_;
 
     //! Atomic count variable to keep track of the number of neighbors found
     //! \note must be mutable because body will be casted as const in parallel_for

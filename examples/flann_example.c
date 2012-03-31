@@ -8,7 +8,6 @@
 
 float* read_points(const char* filename, int rows, int cols)
 {
-    int ret;
 	float* data;
 	float *p;
 	FILE* fin;
@@ -29,7 +28,7 @@ float* read_points(const char* filename, int rows, int cols)
     
     for (i=0;i<rows;++i) {
         for (j=0;j<cols;++j) {
-            ret = fscanf(fin,"%g ",p);
+            fscanf(fin,"%g ",p);
             p++;
         }
     }

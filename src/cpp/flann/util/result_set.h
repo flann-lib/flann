@@ -78,29 +78,13 @@ struct DistanceIndex
 };
 
 
-template <typename DistanceType>
-class ResultSet
-{
-public:
-    virtual ~ResultSet() {}
-
-    virtual bool full() const = 0;
-
-    virtual void addPoint(DistanceType dist, size_t index) = 0;
-
-    virtual DistanceType worstDist() const = 0;
-
-};
-
-
-
 /**
  * KNNSimpleResultSet does not ensure that the element it holds are unique.
  * Is used in those cases where the nearest neighbour algorithm used does not
  * attempt to insert the same element multiple times.
  */
 template <typename DistanceType>
-class KNNSimpleResultSet : public ResultSet<DistanceType>
+class KNNSimpleResultSet
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -204,7 +188,7 @@ private:
  * K-Nearest neighbour result set. Ensures that the elements inserted are unique
  */
 template <typename DistanceType>
-class KNNResultSet : public ResultSet<DistanceType>
+class KNNResultSet
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -305,7 +289,7 @@ private:
 
 
 template <typename DistanceType>
-class KNNResultSet2 : public ResultSet<DistanceType>
+class KNNResultSet2
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -427,7 +411,7 @@ private:
  * are added to it.
  */
 template <typename DistanceType>
-class RadiusResultSet : public ResultSet<DistanceType>
+class RadiusResultSet
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -528,7 +512,7 @@ private:
  * it can hold to a preset capacity.
  */
 template <typename DistanceType>
-class KNNRadiusResultSet : public ResultSet<DistanceType>
+class KNNRadiusResultSet
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -653,7 +637,7 @@ private:
  */
 
 template <typename DistanceType>
-class CountRadiusResultSet : public ResultSet<DistanceType>
+class CountRadiusResultSet
 {
     DistanceType radius;
     size_t count;
@@ -705,7 +689,7 @@ public:
 /** Class that holds the k NN neighbors
  */
 template<typename DistanceType>
-class UniqueResultSet : public ResultSet<DistanceType>
+class UniqueResultSet
 {
 public:
     struct DistIndex
@@ -736,16 +720,12 @@ public:
         return is_full_;
     }
 
-    /** Remove all elements in the set
-     */
-    virtual void clear() = 0;
-
     /** Copy the set to two C arrays
      * @param indices pointer to a C array of indices
      * @param dist pointer to a C array of distances
      * @param n_neighbors the number of neighbors to copy
      */
-    virtual void copy(int* indices, DistanceType* dist, int n_neighbors, bool sorted = true)
+    void copy(int* indices, DistanceType* dist, int n_neighbors, bool sorted = true)
     {
     	if (n_neighbors<0) n_neighbors = dist_indices_.size();
     	int i = 0;
