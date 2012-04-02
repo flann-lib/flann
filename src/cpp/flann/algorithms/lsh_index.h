@@ -86,7 +86,7 @@ public:
      * @param params parameters passed to the LSH algorithm
      * @param d the distance used
      */
-    LshIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LshIndexParams(),
+    LshIndex(const Matrix<ElementType>& input_data, const IndexParams& params = IndexParams(),
              Distance d = Distance()) :
         dataset_(input_data), index_params_(params), distance_(d)
     {
