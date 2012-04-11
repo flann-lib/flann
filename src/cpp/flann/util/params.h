@@ -48,6 +48,7 @@ typedef enum {
 	FLANN_Undefined
 } tri_type;
 
+
 struct SearchParams
 {
     SearchParams(int checks_ = 32, float eps_ = 0.0, bool sorted_ = true ) :

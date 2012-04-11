@@ -295,6 +295,12 @@ public:
             throw FLANNException("Unknown algorithm for choosing initial centers.");
         }
         ownDataset_ = get_param(index_params_, "copy_dataset", false);
+        if (ownDataset_) {
+            dataset_ = Matrix<ElementType>(new ElementType[inputData.rows * inputData.cols], inputData.rows, inputData.cols);
+            for (size_t i=0;i<inputData.rows;++i) {
+                std::copy(inputData[i], inputData[i]+inputData.cols, dataset_[i]);
+            }        
+        }
         
         trees_ = get_param(index_params_,"trees",4);
     }

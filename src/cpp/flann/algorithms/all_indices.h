@@ -48,9 +48,6 @@
 namespace flann
 {
 
-
-
-
 /**
  * enable_if sfinae helper
  */
@@ -78,27 +75,6 @@ struct same_type<T,T>
     enum {value = true};
 };
 
-
-
-struct DummyDistance
-{
-    typedef float ElementType;
-    typedef float ResultType;
-
-    template <typename Iterator1, typename Iterator2>
-    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
-    {
-        return ResultType(0);
-    }
-
-    template <typename U, typename V>
-    inline ResultType accum_dist(const U& a, const V& b, int) const
-    {
-        return ResultType(0);
-    }
-};
-
-
 #define HAS_MEMBER(member) \
     template<typename T> \
     struct member { \
@@ -118,10 +94,28 @@ HAS_MEMBER(is_vector_space_distance)
 /**
  * Checks if an index and a distance can be used together
  */
-template<template <typename> class Index, typename Distance, typename ElementType>
+template<template <typename> class Index, typename Distance, typename ElemType>
 struct valid_combination
 {
-    static const bool value = same_type<ElementType,typename Distance::ElementType>::value &&
+    struct DummyDistance
+    {
+        typedef float ElementType;
+        typedef float ResultType;
+
+        template <typename Iterator1, typename Iterator2>
+        ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
+        {
+            return ResultType(0);
+        }
+
+        template <typename U, typename V>
+        inline ResultType accum_dist(const U& a, const V& b, int) const
+        {
+            return ResultType(0);
+        }
+    };
+    
+    static const bool value = same_type<ElemType,typename Distance::ElementType>::value &&
     				(!needs_kdtree_distance<Index<DummyDistance> >::value || is_kdtree_distance<Distance>::value) &&
     				(!needs_vector_space_distance<Index<DummyDistance> >::value || is_kdtree_distance<Distance>::value || is_vector_space_distance<Distance>::value);
 

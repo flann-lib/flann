@@ -174,8 +174,7 @@ public:
                     addPointToTree(tree_roots_[j], old_size + i);
                 }
             }
-        }
-        
+        }        
     }
 
 

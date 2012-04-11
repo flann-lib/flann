@@ -142,6 +142,12 @@ public:
         Logger::info("Building kdtree tree...\n");
         kdtree_index_->buildIndex();
     }
+    
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        kmeans_index_->addPoints(points, rebuild_threshold);
+        kdtree_index_->addPoints(points, rebuild_threshold);
+    }
 
     /**
      * \brief Saves the index to a stream

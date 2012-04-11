@@ -54,12 +54,47 @@ public:
     typedef typename Distance::ResultType DistanceType;
 
 
-    LinearIndex(const Matrix<ElementType>& inputData, const IndexParams& params = LinearIndexParams(),
+    LinearIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LinearIndexParams(),
                 Distance d = Distance()) :
-        dataset_(inputData), index_params_(params), distance_(d)
+        dataset_(input_data), index_params_(params), distance_(d)
     {
+        ownDataset_ = get_param(index_params_, "copy_dataset", false);
+        if (ownDataset_) {
+            dataset_ = Matrix<ElementType>(new ElementType[input_data.rows * input_data.cols], input_data.rows, input_data.cols);
+            for (size_t i=0;i<input_data.rows;++i) {
+                std::copy(input_data[i], input_data[i]+input_data.cols, dataset_[i]);
+            }        
+        }
+    }
+    
+    ~LinearIndex()
+    {
+        if (ownDataset_) {
+            delete[] dataset_.ptr();
+        }
     }
 
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        assert(points.cols==veclen());
+
+        size_t rows = dataset_.rows + points.rows;
+        Matrix<ElementType> new_dataset(new ElementType[rows * veclen()], rows, veclen());
+        for (size_t i=0;i<dataset_.rows;++i) {
+            std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
+        }
+        for (size_t i=0;i<points.rows;++i) {
+            std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
+        }
+        
+        if (ownDataset_) {
+            delete[] dataset_.ptr();
+        }
+        dataset_ = new_dataset;
+        ownDataset_ = true;
+    }
+
+    
     LinearIndex(const LinearIndex&);
     LinearIndex& operator=(const LinearIndex&);
 
@@ -119,12 +154,13 @@ public:
 
 private:
     /** The dataset */
-    const Matrix<ElementType> dataset_;
+    Matrix<ElementType> dataset_;
     /** Index parameters */
     IndexParams index_params_;
+    /**  Does the index have a copy of the dataset? */
+    bool ownDataset_;    
     /** Index distance */
     Distance distance_;
-
 };
 
 }

@@ -88,7 +88,7 @@ public:
         size_ = dataset_.rows;
         dim_ = dataset_.cols;
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
-        reorder_ = get_param(params,"reorder",true);
+        reorder_ = get_param(params,"reorder",true) || get_param(index_params_, "copy_dataset", false);  
 
         // Create a permutable array of indices to the input vectors.
         vind_.resize(size_);
@@ -105,7 +105,9 @@ public:
      */
     ~KDTreeSingleIndex()
     {
-        if (reorder_) delete[] data_.ptr();
+        if (reorder_) {
+            delete[] data_.ptr();
+        }
     }
 
     /**
@@ -119,15 +121,13 @@ public:
         if (reorder_) {
             data_ = flann::Matrix<ElementType>(new ElementType[size_*dim_], size_, dim_);
             for (size_t i=0; i<size_; ++i) {
-                for (size_t j=0; j<dim_; ++j) {
-                    data_[i][j] = dataset_[vind_[i]][j];
-                }
+                std::copy(dataset_[vind_[i]], dataset_[vind_[i]]+dataset_.cols, data_[i]);
             }
         }
         else {
             data_ = dataset_;
         }
-    }
+    }    
 
     flann_algorithm_t getType() const
     {
@@ -573,7 +573,6 @@ private:
 
     int leaf_max_size_;
     bool reorder_;
-
 
     /**
      *  Array of indices to vectors in the dataset.

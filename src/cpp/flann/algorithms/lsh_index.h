@@ -94,10 +94,25 @@ public:
         key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
         multi_probe_level_ = get_param<unsigned int>(index_params_,"multi_probe_level",2);
 
+        ownDataset_ = get_param(index_params_, "copy_dataset", false);
+        if (ownDataset_) {
+            dataset_ = Matrix<ElementType>(new ElementType[input_data.rows * input_data.cols], input_data.rows, input_data.cols);
+            for (size_t i=0;i<input_data.rows;++i) {
+                std::copy(input_data[i], input_data[i]+input_data.cols, dataset_[i]);
+            }        
+        }
+
         feature_size_ = dataset_.cols;
         fill_xor_mask(0, key_size_, multi_probe_level_, xor_masks_);
     }
 
+    
+    ~LshIndex()
+    {
+        if (ownDataset_) {
+            delete[] dataset_.ptr();
+        }
+    }
 
     LshIndex(const LshIndex&);
     LshIndex& operator=(const LshIndex&);
@@ -115,7 +130,43 @@ public:
             // Add the features to the table
             table.add(dataset_);
         }
+        
+        size_at_build_ = dataset_.rows;;
     }
+    
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        assert(points.cols==veclen());
+        size_t old_size = dataset_.rows;
+
+        size_t rows = dataset_.rows + points.rows;
+        Matrix<ElementType> new_dataset(new ElementType[rows * veclen()], rows, veclen());
+        for (size_t i=0;i<dataset_.rows;++i) {
+            std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
+        }
+        for (size_t i=0;i<points.rows;++i) {
+            std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
+        }
+        
+        if (ownDataset_) {
+            delete[] dataset_.ptr();
+        }
+        dataset_ = new_dataset;
+        ownDataset_ = true;
+        
+        if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<dataset_.rows) {
+            buildIndex();
+        }
+        else {
+            for (unsigned int i = 0; i < table_number_; ++i) {
+                lsh::LshTable<ElementType>& table = tables_[i];                
+                for (size_t i=0;i<points.rows;++i) {
+                    table.add(old_size+i, points[i]);
+                }            
+            }
+        }
+    }
+
 
     flann_algorithm_t getType() const
     {
@@ -128,7 +179,7 @@ public:
         save_value(stream,table_number_);
         save_value(stream,key_size_);
         save_value(stream,multi_probe_level_);
-        save_value(stream, dataset_);
+//         save_value(stream, dataset_);
     }
 
     void loadIndex(FILE* stream)
@@ -136,7 +187,7 @@ public:
         load_value(stream, table_number_);
         load_value(stream, key_size_);
         load_value(stream, multi_probe_level_);
-        load_value(stream, dataset_);
+//         load_value(stream, dataset_);
         // Building the index is so fast we can afford not storing it
         buildIndex();
 
@@ -433,6 +484,9 @@ private:
 
     /** The size of the features (as ElementType[]) */
     unsigned int feature_size_;
+    
+    /** Number of features in the dataset when the index was last built. */
+    size_t size_at_build_;
 
     IndexParams index_params_;
 
@@ -442,6 +496,9 @@ private:
     unsigned int key_size_;
     /** How far should we look for neighbors in multi-probe LSH */
     unsigned int multi_probe_level_;
+    /**  Does the index have a copy of the dataset? */
+    bool ownDataset_;
+
 
     /** The XOR masks to apply to a key to get the neighboring buckets */
     std::vector<lsh::BucketKey> xor_masks_;

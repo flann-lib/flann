@@ -128,6 +128,13 @@ public:
         bestParams_["speedup"] = speedup_;
     }
     
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        if (bestIndex_) {
+            bestIndex_->addPoints(points, rebuild_threshold);
+        }
+    }
+    
     
     /**
      *  Saves the index to a stream
