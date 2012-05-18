@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 import sys
 from os.path import *
 from pyflann import *
