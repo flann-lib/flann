@@ -105,7 +105,7 @@ public:
         count = 0;
     }
 
-    struct CompareT
+    struct CompareT : public std::binary_function<T,T,bool>
     {
         bool operator()(const T& t_1, const T& t_2) const
         {

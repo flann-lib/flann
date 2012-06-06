@@ -72,10 +72,12 @@ public:
     /**
      * Stops the timer and updates timer value.
      */
-    void stop()
+    double stop()
     {
         clock_t stopTime = clock();
         value += ( (double)stopTime - startTime) / CLOCKS_PER_SEC;
+        
+        return value;
     }
 
     /**
