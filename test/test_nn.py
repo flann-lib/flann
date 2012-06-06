@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 import sys
 from os.path import *
 import os
@@ -90,28 +90,28 @@ class Test_PyFLANN_nn(unittest.TestCase):
         perm = permutation(N)
         
         idx,dists = self.nn.nn(x, x[perm], **kwargs)
-        self.assert_(all(idx == perm))
+        self.assertTrue(all(idx == perm))
 
         # Make sure it's okay if we do make all the points equal
-        x_mult_nn = concatenate([x for i in xrange(num_neighbors)])
+        x_mult_nn = concatenate([x for i in range(num_neighbors)])
         nidx,ndists = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, **kwargs)
 
         correctness = 0.0
 
-        for i in xrange(N):
-            correctness += float(len(set(nidx[i]).intersection([i + n*N for n in xrange(num_neighbors)])))/num_neighbors
+        for i in range(N):
+            correctness += float(len(set(nidx[i]).intersection([i + n*N for n in range(num_neighbors)])))/num_neighbors
 
-        self.assert_(correctness / N >= 0.99,
+        self.assertTrue(correctness / N >= 0.99,
                      'failed #1: N=%d,correctness=%f' % (N, correctness/N))
 
         # now what happens if they are slightly off
         x_mult_nn += randn(x_mult_nn.shape[0], x_mult_nn.shape[1])*0.0001/dim
         n2idx,n2dists = self.nn.nn(x_mult_nn, x, num_neighbors = num_neighbors, **kwargs)
 
-        for i in xrange(N):
-            correctness += float(len(set(n2idx[i]).intersection([i + n*N for n in xrange(num_neighbors)])))/num_neighbors
+        for i in range(N):
+            correctness += float(len(set(n2idx[i]).intersection([i + n*N for n in range(num_neighbors)])))/num_neighbors
 
-        self.assert_(correctness / N >= 0.99,
+        self.assertTrue(correctness / N >= 0.99,
                      'failed #2: N=%d,correctness=%f' % (N, correctness/N))
         
 if __name__ == '__main__':

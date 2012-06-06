@@ -104,7 +104,7 @@ public:
         bestParams_ = estimateBuildParams();
         Logger::info("----------------------------------------------------\n");
         Logger::info("Autotuned parameters:\n");
-        if (Logger::getLevel()<=FLANN_LOG_INFO)
+        if (Logger::getLevel()>=FLANN_LOG_INFO)
         	print_params(bestParams_);
         Logger::info("----------------------------------------------------\n");
 
@@ -113,7 +113,7 @@ public:
         speedup_ = estimateSearchParams(bestSearchParams_);
         Logger::info("----------------------------------------------------\n");
         Logger::info("Search parameters:\n");
-        if (Logger::getLevel()<=FLANN_LOG_INFO)
+        if (Logger::getLevel()>=FLANN_LOG_INFO)
         	print_params(bestSearchParams_);
         Logger::info("----------------------------------------------------\n");
         bestParams_["search_params"] = bestSearchParams_;

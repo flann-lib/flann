@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 from pyflann import *
 from copy import copy
@@ -28,7 +28,7 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
         correct = all(nnidx == arange(N, dtype = index_type))
                 
         nn.delete_index()
-        self.assert_(correct)
+        self.assertTrue(correct)
 
 
     def testnn_index_random_permute(self):
@@ -38,7 +38,7 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
         N = 100
 
         nns = [None]*numtests
-        x   = [rand(N, dim) for i in xrange(numtests)]
+        x   = [rand(N, dim) for i in range(numtests)]
         correct = ones(numtests, dtype=bool_)
         
         for i in permutation(numtests):
@@ -56,13 +56,13 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
             nnidx,nndist = nns[i].nn_index(x[i])
             correct[i] = all(nnidx == arange(N, dtype = index_type))
 
-        for i in reversed(xrange(numtests)):
+        for i in reversed(range(numtests)):
             if rand() < 0.5:
                 nns[i].delete_index()
             else:
                 del nns[i]
 
-        self.assert_(all(correct))
+        self.assertTrue(all(correct))
 
     def testnn_index_bad_index_call_noindex(self):
         nn = FLANN()

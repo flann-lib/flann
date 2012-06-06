@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 import sys
 from os.path import *
 from pyflann import *
@@ -19,7 +19,7 @@ class Test_PyFLANN_clustering(unittest.TestCase):
         x = rand(100, 10000)
         nK = 10
         centroids = self.nn.kmeans(x, nK)
-        self.assert_(len(centroids) == nK)
+        self.assertTrue(len(centroids) == nK)
         
 
     def test2d_small(self):
@@ -47,7 +47,7 @@ class Test_PyFLANN_clustering(unittest.TestCase):
         """
         seed(0)
         x = rand(N, dim)
-        xc = concatenate(tuple([x for i in xrange(dup)]))
+        xc = concatenate(tuple([x for i in range(dup)]))
 
         if dup > 1: xc += randn(xc.shape[0], xc.shape[1])*0.000001/dim
 
@@ -76,7 +76,7 @@ class Test_PyFLANN_clustering(unittest.TestCase):
         cl1 = self.nn.kmeans(data, 50, random_seed = rnseed)
         cl2 = self.nn.kmeans(data, 50, random_seed = rnseed)
 
-        self.assert_(all(cl1 == cl2))
+        self.assertTrue(all(cl1 == cl2))
 
 
     def testrandnumber_different(self):
@@ -87,7 +87,7 @@ class Test_PyFLANN_clustering(unittest.TestCase):
         cl1 = self.nn.kmeans(data, 50, random_seed = rnseed)
         cl2 = self.nn.kmeans(data, 50)
 
-        self.assert_(any(cl1 != cl2))
+        self.assertTrue(any(cl1 != cl2))
         
 
         
