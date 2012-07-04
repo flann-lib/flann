@@ -266,11 +266,11 @@ private:
         }
 
         if (indices!=NULL) {
-        	for (int i = 0; i < trees_; ++i) {
-        		if (indices[i] != NULL) {
-        			delete[] indices[i];
-        		}
-        	}
+            for (int i = 0; i < trees_; ++i) {
+                if (indices[i] != NULL) {
+                    delete[] indices[i];
+                }
+            }
             delete[] indices;
         }
 
@@ -330,7 +330,7 @@ public:
      */
     virtual ~HierarchicalClusteringIndex()
     {
-    	clearMemories();
+        clearMemories();
     }
 
     /**
@@ -368,9 +368,9 @@ public:
             throw FLANNException("Branching factor must be at least 2");
         }
         for (int i=0; i<trees_; ++i) {
-			if (indices[i] != NULL) {
-				delete [] indices[i];
-			}
+            if (indices[i] != NULL) {
+                delete [] indices[i];
+            }
             indices[i] = new int[size_];
             for (size_t j=0; j<size_; ++j) {
                 indices[i][j] = j;
@@ -594,7 +594,7 @@ private:
         }
 
 
-        //	assign points to clusters
+        //  assign points to clusters
         DistanceType cost;
         computeLabels(indices, indices_length, &centers[0], centers_length, &labels[0], cost);
 
