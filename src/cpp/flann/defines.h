@@ -26,6 +26,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
+#include <boost/preprocessor/expand.hpp>
+#include <boost/preprocessor/stringize.hpp>
 
 #ifndef FLANN_DEFINES_H_
 #define FLANN_DEFINES_H_
@@ -76,31 +78,24 @@
 namespace flann {
 #endif
 
-
 #ifndef FLANN_INDEXES
-#define FLANN_INDEXES \
-	FLANN_INDEX(LINEAR,LinearIndex,0) \
-	FLANN_INDEX(KDTREE,KDTreeIndex,1) \
-	FLANN_INDEX(KMEANS,KMeansIndex,2) \
-	FLANN_INDEX(COMPOSITE,CompositeIndex,3) \
-	FLANN_INDEX(KDTREE_SINGLE,KDTreeSingleIndex,4) \
-	FLANN_INDEX(HIERARCHICAL,HierarchicalClusteringIndex,5) \
-	FLANN_INDEX(LSH,LshIndex,6) \
-	FLANN_INDEX(AUTOTUNED,AutotunedIndex,255)
+#define FLANN_INDEXES(X) \
+	X(LINEAR,LinearIndex,0) \
+	X(KDTREE,KDTreeIndex,1) \
+	X(KMEANS,KMeansIndex,2) \
+	X(COMPOSITE,CompositeIndex,3) \
+	X(KDTREE_SINGLE,KDTreeSingleIndex,4) \
+	X(HIERARCHICAL,HierarchicalClusteringIndex,5) \
+	X(LSH,LshIndex,6) \
+	X(AUTOTUNED,AutotunedIndex,255)
 #endif
-//    FLANN_INDEX(KDTREE_CUDA,KDTreeCuda3dIndex,7)
-     
 
 
-
-
+#define FLANN_INDEX_ENUM(name,_,num) FLANN_INDEX_##name = num,
 /* Nearest neighbour index algorithms */
 enum flann_algorithm_t
 {
-#undef FLANN_INDEX
-#define FLANN_INDEX(name,index,num) FLANN_INDEX_##name = num,
-	FLANN_INDEXES
-#undef FLANN_INDEX
+	FLANN_INDEXES(FLANN_INDEX_ENUM)
 
 	FLANN_INDEX_SAVED = 254,
 
@@ -115,28 +110,13 @@ enum flann_algorithm_t
 		FLANN_INDEX_KDTREE_CUDA = 7,
 // 		FLANN_INDEX_AUTOTUNED = 255,
 
-	// deprecated, provided for backwards compatibility
-    LINEAR = 0,
-    KDTREE = 1,
-    KMEANS = 2,
-    COMPOSITE = 3,
-    KDTREE_SINGLE = 4,
-    SAVED = 254,
-    AUTOTUNED = 255
 };
-
-
 
 enum flann_centers_init_t
 {
     FLANN_CENTERS_RANDOM = 0,
     FLANN_CENTERS_GONZALES = 1,
     FLANN_CENTERS_KMEANSPP = 2,
-
-    // deprecated constants, should use the FLANN_CENTERS_* ones instead
-    CENTERS_RANDOM = 0,
-    CENTERS_GONZALES = 1,
-    CENTERS_KMEANSPP = 2
 };
 
 enum flann_log_level_t
@@ -151,67 +131,51 @@ enum flann_log_level_t
 
 
 #ifndef FLANN_DISTANCES
-#define FLANN_DISTANCES \
-	FLANN_DISTANCE(L2,L2,1) \
-	FLANN_DISTANCE(L1,L1,2) \
-    FLANN_DISTANCE(MINKOWSKI,MinkowskiDistance,3) \
-	FLANN_DISTANCE(MAX,MaxDistance,4) \
-	FLANN_DISTANCE(HIST_INTERSECT,HistIntersectionDistance,5) \
-	FLANN_DISTANCE(HELLINGER,HellingerDistance,6) \
-	FLANN_DISTANCE(CHI_SQUARE,ChiSquareDistance,7) \
-	FLANN_DISTANCE(KULLBACK_LEIBLER,KL_Divergence,8) \
-	FLANN_DISTANCE(HAMMING,Hamming,9) \
-	FLANN_DISTANCE(HAMMING_LUT,HammingLUT,10) \
-	FLANN_DISTANCE(HAMMING_POPCNT,HammingPopcnt,11) \
-	FLANN_DISTANCE(L2_SIMPLE,L2_Simple,12)
+#define FLANN_DISTANCES(X) \
+	X(L2,L2,1) \
+	X(L1,L1,2) \
+    X(MINKOWSKI,MinkowskiDistance,3) \
+	X(MAX,MaxDistance,4) \
+	X(HIST_INTERSECT,HistIntersectionDistance,5) \
+	X(HELLINGER,HellingerDistance,6) \
+	X(CHI_SQUARE,ChiSquareDistance,7) \
+	X(KULLBACK_LEIBLER,KL_Divergence,8) \
+	X(HAMMING,Hamming,9) \
+	X(HAMMING_LUT,HammingLUT,10) \
+	X(HAMMING_POPCNT,HammingPopcnt,11) \
+	X(L2_SIMPLE,L2_Simple,12)
 #endif
 
 
+#define FLANN_DISTANCE_ENUM(name,_,num) FLANN_DIST_##name = num,
 enum flann_distance_t
 {
-	// X-Macro trick
-#undef FLANN_DISTANCE
-#define FLANN_DISTANCE(name,distance,num) FLANN_DIST_##name = num,
-	FLANN_DISTANCES
-#undef FLANN_DISTANCE
+	FLANN_DISTANCES(FLANN_DISTANCE_ENUM)
 	// duplicate distance constants
     FLANN_DIST_EUCLIDEAN = 1,
     FLANN_DIST_MANHATTAN = 2,
-
-    // deprecated constants, use the FLANN_DIST_* ones instead
-    EUCLIDEAN = 1,
-    MANHATTAN = 2,
-    MINKOWSKI = 3,
-    MAX_DIST   = 4,
-    HIST_INTERSECT   = 5,
-    HELLINGER = 6,
-    CS         = 7,
-    KL         = 8,
-    KULLBACK_LEIBLER  = 8
 };
 
 #ifndef FLANN_DATATYPES
-#define FLANN_DATATYPES \
-	FLANN_DATATYPE(NONE, void,-1) \
-	FLANN_DATATYPE(INT8, char,0) \
-	FLANN_DATATYPE(INT16, short int,1) \
-	FLANN_DATATYPE(INT32, int,2) \
-	FLANN_DATATYPE(INT64, long int,3) \
-	FLANN_DATATYPE(UINT8, unsigned char,4) \
-	FLANN_DATATYPE(UINT16, unsigned short int,5) \
-	FLANN_DATATYPE(UINT32, unsigned int,6) \
-	FLANN_DATATYPE(UINT64, unsigned long int,7) \
-	FLANN_DATATYPE(FLOAT32, float,8) \
-	FLANN_DATATYPE(FLOAT64, double,9)
+#define FLANN_DATATYPES(X) \
+	X(NONE, void,-1) \
+	X(INT8, char,0) \
+	X(INT16, short int,1) \
+	X(INT32, int,2) \
+	X(INT64, long int,3) \
+	X(UINT8, unsigned char,4) \
+	X(UINT16, unsigned short int,5) \
+	X(UINT32, unsigned int,6) \
+	X(UINT64, unsigned long int,7) \
+	X(FLOAT32, float,8) \
+	X(FLOAT64, double,9)
 #endif
 
 
+#define FLANN_DATATYPE_ENUM(name,_,value) FLANN_##name = value,
 enum flann_datatype_t
 {
-#undef FLANN_DATATYPE
-#define FLANN_DATATYPE(name,type,value) FLANN_##name = value,
-	FLANN_DATATYPES
-#undef FLANN_DATATYPE
+	FLANN_DATATYPES(FLANN_DATATYPE_ENUM)
 };
 
 enum flann_checks_t {

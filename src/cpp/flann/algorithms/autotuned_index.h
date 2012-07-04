@@ -204,7 +204,7 @@ public:
         }
     }
 
-    virtual int radiusSearch(const Matrix<ElementType>& queries,
+    int radiusSearch(const Matrix<ElementType>& queries,
             std::vector< std::vector<int> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             DistanceType radius,

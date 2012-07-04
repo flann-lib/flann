@@ -236,7 +236,7 @@ public:
      * \param[in] knn Number of nearest neighbors to return
      * \param[in] params Search parameters
      */
-    virtual int knnSearch(const Matrix<ElementType>& queries,
+    int knnSearch(const Matrix<ElementType>& queries,
     					Matrix<int>& indices,
     					Matrix<DistanceType>& dists,
     					size_t knn,
@@ -279,7 +279,7 @@ public:
      * \param[in] knn Number of nearest neighbors to return
      * \param[in] params Search parameters
      */
-    virtual int knnSearch(const Matrix<ElementType>& queries,
+    int knnSearch(const Matrix<ElementType>& queries,
 					std::vector< std::vector<int> >& indices,
 					std::vector<std::vector<DistanceType> >& dists,
     				size_t knn,

@@ -140,24 +140,21 @@ inline IndexWrapper<Index<Distance> >* create_index_(flann::Matrix<T> data, cons
     return NULL;
 }
 
-
 template<typename Distance>
 inline TypedIndexBase<typename Distance::ElementType, typename Distance::ResultType>*
   create_index_by_type(const flann_algorithm_t index_type,
-		const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance = Distance())
+		const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
 {
 	typedef typename Distance::ElementType ElementType;
 
 	TypedIndexBase<typename Distance::ElementType, typename Distance::ResultType>* nnIndex;
     
     switch (index_type) {
-#undef FLANN_INDEX
-#define FLANN_INDEX(name,index,num) \
+#define FLANN_INDEX_CASE(name,index,_) \
     case FLANN_INDEX_##name: \
         nnIndex = create_index_<index,Distance,ElementType>(dataset, params, distance); \
         break;
-    FLANN_INDEXES
-#undef FLANN_INDEX        
+    FLANN_INDEXES(FLANN_INDEX_CASE)
 
 //     case FLANN_INDEX_LINEAR:
 //         nnIndex = create_index_<LinearIndex,Distance,ElementType>(dataset, params, distance);
@@ -213,6 +210,9 @@ inline IndexBase* create_index_by_type_and_distance(const flann_algorithm_t inde
 	break;
 	case FLANN_DIST_L2:
 		return  create_index_by_type<L2,ElementType>(index_type, data, params);
+	break;
+	case FLANN_DIST_MINKOWSKI:
+		return  create_index_by_type<MinkowskiDistance,ElementType>(index_type, data, params);
 	break;
 	case FLANN_DIST_HAMMING:
 		return  create_index_by_type<Hamming,ElementType>(index_type, data, params);
