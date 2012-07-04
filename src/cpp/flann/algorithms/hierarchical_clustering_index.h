@@ -162,7 +162,7 @@ private:
             int best_index = -1;
             DistanceType best_val = 0;
             for (int j=0; j<n; ++j) {
-            	DistanceType dist = distance(dataset[centers[0]],dataset[indices[j]],dataset.cols);
+                DistanceType dist = distance(dataset[centers[0]],dataset[indices[j]],dataset.cols);
                 for (int i=1; i<index; ++i) {
                     DistanceType tmp_dist = distance(dataset[centers[i]],dataset[indices[j]],dataset.cols);
                     if (tmp_dist<dist) {
@@ -257,6 +257,25 @@ private:
         delete[] closestDistSq;
     }
 
+    /**
+     * Release the memory which were allocated by new operator.
+     */
+    void clearMemories() {
+        if (root!=NULL) {
+            delete[] root;
+        }
+
+        if (indices!=NULL) {
+            for (int i = 0; i < trees_; ++i) {
+                if (indices[i] != NULL) {
+                    delete[] indices[i];
+                }
+            }
+            delete[] indices;
+        }
+
+    }
+
 
 public:
 
@@ -298,6 +317,7 @@ public:
         trees_ = get_param(params,"trees",4);
         root = new NodePtr[trees_];
         indices = new int*[trees_];
+        for (int i = 0; i < trees_; ++i) indices[i] = NULL;
     }
 
     HierarchicalClusteringIndex(const HierarchicalClusteringIndex&);
@@ -310,9 +330,7 @@ public:
      */
     virtual ~HierarchicalClusteringIndex()
     {
-        if (indices!=NULL) {
-            delete[] indices;
-        }
+        clearMemories();
     }
 
     /**
@@ -350,6 +368,9 @@ public:
             throw FLANNException("Branching factor must be at least 2");
         }
         for (int i=0; i<trees_; ++i) {
+            if (indices[i] != NULL) {
+                delete [] indices[i];
+            }
             indices[i] = new int[size_];
             for (size_t j=0; j<size_; ++j) {
                 indices[i][j] = j;
@@ -388,6 +409,7 @@ public:
         load_value(stream, centers_init_);
         load_value(stream, leaf_size_);
         load_value(stream, memoryCounter);
+        clearMemories();
         indices = new int*[trees_];
         root = new NodePtr[trees_];
         for (int i=0; i<trees_; ++i) {
@@ -572,7 +594,7 @@ private:
         }
 
 
-        //	assign points to clusters
+        //  assign points to clusters
         DistanceType cost;
         computeLabels(indices, indices_length, &centers[0], centers_length, &labels[0], cost);
 
