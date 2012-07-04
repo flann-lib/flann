@@ -258,9 +258,9 @@ private:
     }
 
     /**
-     * Release the memory which were allocated by new operator.
+     * Release the memory for the index
      */
-    void clearMemories() {
+    void releaseMemory() {
         if (root!=NULL) {
             delete[] root;
         }
@@ -330,7 +330,7 @@ public:
      */
     virtual ~HierarchicalClusteringIndex()
     {
-        clearMemories();
+        releaseMemory();
     }
 
     /**
@@ -409,7 +409,7 @@ public:
         load_value(stream, centers_init_);
         load_value(stream, leaf_size_);
         load_value(stream, memoryCounter);
-        clearMemories();
+        releaseMemory();
         indices = new int*[trees_];
         root = new NodePtr[trees_];
         for (int i=0; i<trees_; ++i) {
