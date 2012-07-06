@@ -58,6 +58,4 @@ if (PYTHON_EXECUTABLE)
     flann_add_pyunit(test_clustering.py)
 endif()
 
-add_executable(test_add_points test_add_points.cpp)
-target_link_libraries(test_add_points hdf5)
 
