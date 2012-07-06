@@ -24,8 +24,8 @@
 #(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 #THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from bindings.flann_ctypes import *
-from io.dataset import *
+from pyflann.flann_ctypes import *
+from pyflann.exceptions import *
 import numpy.random as _rn
 
 
@@ -52,6 +52,13 @@ def set_distance_type(distance_type, order = 0):
         distance_type = distance_translation[distance_type]
 
     flannlib.flann_set_distance_type(distance_type,order)
+
+
+
+def to_bytes(string):
+    if sys.hexversion > 0x03000000:
+        return bytes(string,'utf-8')
+    return string
 
 # This class is derived from an initial implementation by Hoyt Koepke (hoytak@cs.ubc.ca)
 class FLANN:
@@ -169,9 +176,8 @@ class FLANN:
         """
         This saves the index to a disk file.
         """
-        
         if self.__curindex != None:
-            flann.save_index[self.__curindex_type](self.__curindex, c_char_p(filename))
+            flann.save_index[self.__curindex_type](self.__curindex, c_char_p(to_bytes(filename)))
 
     def load_index(self, filename, pts):
         """
@@ -190,7 +196,7 @@ class FLANN:
             self.__curindex_data = None
             self.__curindex_type = None
         
-        self.__curindex = flann.load_index[pts.dtype.type](c_char_p(filename), pts, npts, dim)
+        self.__curindex = flann.load_index[pts.dtype.type](c_char_p(to_bytes(filename)), pts, npts, dim)
         self.__curindex_data = pts
         self.__curindex_type = pts.dtype.type
 

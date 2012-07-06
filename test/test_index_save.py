@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 from pyflann import *
 from copy import copy
@@ -78,7 +78,7 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
         correct = all(nnidx == arange(N, dtype = index_type))
                 
         nn.delete_index()
-        self.assert_(correct)
+        self.assertTrue(correct)
     
     def run_nn_index_save_rand(self, dim, N, Nq, **kwargs):
 
@@ -100,7 +100,7 @@ class Test_PyFLANN_nn_index(unittest.TestCase):
         del nn
 
         correct = all(nnidx == nnidx2)
-        self.assert_(correct)
+        self.assertTrue(correct)
 
 if __name__ == '__main__':
     unittest.main()

@@ -24,9 +24,8 @@
 #(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 #THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from index import *
-from io.dataset import load, save
-try:
-    from io.hdf5_dataset import load_range
-except:
-    pass
+#import sys
+#import os
+#sys.path.insert(0, os.path.split(__file__)[0]) # make python3 happy
+
+from pyflann.index import *

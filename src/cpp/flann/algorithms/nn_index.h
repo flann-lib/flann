@@ -371,7 +371,9 @@ public:
         				count += n;
         				indices[i].resize(n);
         				dists[i].resize(n);
-        				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+        				if (n > 0) {
+	        				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+        				}
         			}
         		}
         		else {
@@ -385,7 +387,9 @@ public:
         				if ((int)n>params.max_neighbors) n = params.max_neighbors;
         				indices[i].resize(n);
         				dists[i].resize(n);
-        				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+        				if (n > 0) {
+	        				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+        				}
         			}
         		}
         	}

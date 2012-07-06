@@ -298,7 +298,9 @@ public:
 				size_t n = std::min(resultSet.size(), knn);
 				indices[i].resize(n);
 				dists[i].resize(n);
-				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+				if (n > 0) {
+					resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+				}
 				count += n;
 			}
 		}
@@ -310,7 +312,9 @@ public:
 				size_t n = std::min(resultSet.size(), knn);
 				indices[i].resize(n);
 				dists[i].resize(n);
-				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+				if (n > 0) {
+					resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+				}
 				count += n;
 			}
 		}

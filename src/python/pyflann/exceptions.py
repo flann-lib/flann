@@ -25,15 +25,10 @@
 #THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-# This module defines a set of exceptions that are used through out
-# the flann application
+# This module defines exceptions that are used by the flann python bindings
 
 class FLANNException(Exception):
     def __init__(self, *args):
         Exception.__init__(self, *args)
 
-
-class CommandException(Exception):
-    def __init__(self, *args):
-        Exception.__init__(self, *args)
 

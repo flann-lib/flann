@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 import sys
 from os.path import *
 import os
@@ -65,12 +65,12 @@ class Test_PyFLANN_nn(unittest.TestCase):
                     target_precision = tp, checks=-2, **kwargs)
 
             correctness = 0.0
-            for i in xrange(N):
+            for i in range(N):
                 l1 = self.__ensure_list(nidx[i])
                 l2 = self.__ensure_list(gt_idx[i])
                 correctness += float(len(set(l1).intersection(l2)))/num_neighbors
             correctness /= N
-            self.assert_(correctness >= tp*0.9,
+            self.assertTrue(correctness >= tp*0.9,
                          'failed #1: targ_prec=%f, N=%d,correctness=%f' % (tp, N, correctness))
         
 if __name__ == '__main__':
