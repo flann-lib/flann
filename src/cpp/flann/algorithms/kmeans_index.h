@@ -324,7 +324,8 @@ public:
     virtual ~KMeansIndex()
     {
         if (root_ != NULL) {
-            free_centers(root_);
+            freeNodes(root_);
+            root_ = NULL;
         }
         if (ownDataset_) {
             delete[] dataset_.ptr();
@@ -405,7 +406,7 @@ public:
         ownDataset_ = true;
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
-            free_centers(root_);
+            freeNodes(root_);
             buildIndex();
         }
         else {
@@ -435,7 +436,8 @@ public:
         load_value(stream, cb_index_);
 
         if (root_!=NULL) {
-            free_centers(root_);
+            freeNodes(root_);
+            root_ = NULL;
         }
         load_tree(stream, root_);
 
@@ -572,11 +574,14 @@ private:
         save_value(stream, node->radius);
         save_value(stream, node->variance);
         save_value(stream, node->size);
-        if (node->childs.empty()) {
+        size_t childs_size = node->childs.size();
+        save_value(stream, childs_size);
+
+        if (childs_size==0) {
             save_value(stream, node->indices);
         }
         else {
-            for(int i=0; i<branching_; ++i) {
+            for(size_t i=0; i<childs_size; ++i) {
                 save_tree(stream, node->childs[i]);
             }
         }
@@ -591,13 +596,15 @@ private:
         load_value(stream, node->radius);
         load_value(stream, node->variance);
         load_value(stream, node->size);
+        size_t childs_size = node->childs.size();
+        load_value(stream, childs_size);
 
-        if (node->childs.empty()) {
+        if (childs_size==0) {
             load_value(stream, node->indices);
         }
         else {
-            node->childs.resize(branching_);
-            for(int i=0; i<branching_; ++i) {
+            node->childs.resize(childs_size);
+            for(size_t i=0; i<childs_size; ++i) {
                 load_tree(stream, node->childs[i]);
             }
         }
@@ -607,14 +614,15 @@ private:
     /**
      * Helper function
      */
-    void free_centers(KMeansNodePtr node)
+    void freeNodes(KMeansNodePtr node)
     {
         delete[] node->pivot;
         if (!node->childs.empty()) {
             for (int k=0; k<branching_; ++k) {
-                free_centers(node->childs[k]);
+                freeNodes(node->childs[k]);
             }
         }
+        delete node;
     }
 
     /**
