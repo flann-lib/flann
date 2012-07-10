@@ -79,6 +79,18 @@ namespace flann {
 #endif
 
 #ifndef FLANN_INDEXES
+#ifdef FLANN_USE_CUDA
+#define FLANN_INDEXES(X) \
+	X(LINEAR,LinearIndex,0) \
+	X(KDTREE,KDTreeIndex,1) \
+	X(KMEANS,KMeansIndex,2) \
+	X(COMPOSITE,CompositeIndex,3) \
+	X(KDTREE_SINGLE,KDTreeSingleIndex,4) \
+	X(HIERARCHICAL,HierarchicalClusteringIndex,5) \
+	X(LSH,LshIndex,6) \
+	X(KDTREE_CUDA,KDTreeCuda3dIndex,7) \
+	X(AUTOTUNED,AutotunedIndex,255)
+#else
 #define FLANN_INDEXES(X) \
 	X(LINEAR,LinearIndex,0) \
 	X(KDTREE,KDTreeIndex,1) \
@@ -88,6 +100,7 @@ namespace flann {
 	X(HIERARCHICAL,HierarchicalClusteringIndex,5) \
 	X(LSH,LshIndex,6) \
 	X(AUTOTUNED,AutotunedIndex,255)
+#endif
 #endif
 
 
@@ -107,7 +120,7 @@ enum flann_algorithm_t
 	//	FLANN_INDEX_KDTREE_SINGLE = 4,
 	//	FLANN_INDEX_HIERARCHICAL = 5,
 	//	FLANN_INDEX_LSH = 6,
-		FLANN_INDEX_KDTREE_CUDA = 7,
+//		FLANN_INDEX_KDTREE_CUDA = 7,
 // 		FLANN_INDEX_AUTOTUNED = 255,
 
 };

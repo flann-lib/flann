@@ -67,7 +67,7 @@ struct KDTreeCuda3dIndexParams : public IndexParams
  * on your CPU and GPU.
  */
 template <typename Distance>
-class KDTreeCuda3dIndex : public NNIndex<Distance>
+class KDTreeCuda3dIndex : public NNIndex<KDTreeIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
 {
 public:
     typedef typename Distance::ElementType ElementType;
@@ -196,7 +196,7 @@ public:
      * \param[in] knn Number of nearest neighbors to return
      * \param[in] params Search parameters
      */
-    virtual int knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
+    int knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
     {
     	knnSearchGpu(queries,indices, dists, knn, params);
         return knn*queries.rows; // hack...
@@ -210,7 +210,7 @@ public:
      * \param[in] knn Number of nearest neighbors to return
      * \param[in] params Search parameters
      */
-    virtual int knnSearch(const Matrix<ElementType>& queries,
+    int knnSearch(const Matrix<ElementType>& queries,
                           std::vector< std::vector<int> >& indices,
                           std::vector<std::vector<DistanceType> >& dists,
                           size_t knn,
@@ -252,13 +252,13 @@ public:
         return knn*queries.rows; // hack...
     }
 
-    virtual int radiusSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists,
+    int radiusSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists,
                              float radius, const SearchParams& params)
     {
     	return radiusSearchGpu(queries,indices, dists, radius, params);
     }
 
-    virtual int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
+    int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
                              std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params)
     {
     	return radiusSearchGpu(queries,indices, dists, radius, params);
@@ -274,15 +274,6 @@ public:
     IndexParams getParameters() const
     {
         return index_params_;
-    }
-
-    /**
-     * Not implemented, since it is only used by single-element searches.
-     * (but is needed b/c it is abstract in the base class)
-     */
-    template <typename ResultSet>
-    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
-    {
     }
 
 
