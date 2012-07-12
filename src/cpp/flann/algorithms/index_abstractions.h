@@ -71,6 +71,8 @@ public:
 
     virtual void addPoints(const Matrix<ElementType>& points, float rebuild_threshold) = 0;
     
+    virtual void removePoint(size_t index) = 0;
+
     virtual int knnSearch(const Matrix<ElementType>& queries,
             Matrix<int>& indices,
             Matrix<DistanceType>& dists,
@@ -119,10 +121,20 @@ public:
     {
         index_->buildIndex();
     }
+
+    void buildIndex(const Matrix<ElementType>& dataset)
+    {
+        index_->buildIndex(dataset);
+    }
     
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         index_->addPoints(points, rebuild_threshold);
+    }
+
+    void removePoint(size_t index)
+    {
+        index_->removePoint(index);
     }
 
     size_t veclen() const

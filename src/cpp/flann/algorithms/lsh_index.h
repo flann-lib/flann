@@ -80,30 +80,39 @@ class LshIndex : public NNIndex<LshIndex<Distance>,typename Distance::ElementTyp
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
+    typedef NNIndex<LshIndex<Distance>, ElementType, DistanceType> BaseClass;
+
+    /** Constructor
+     * @param params parameters passed to the LSH algorithm
+     * @param d the distance used
+     */
+    LshIndex(const IndexParams& params = LshIndexParams(), Distance d = Distance()) :
+        BaseClass(params), distance_(d)
+    {
+        table_number_ = get_param<unsigned int>(index_params_,"table_number",12);
+        key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
+        multi_probe_level_ = get_param<unsigned int>(index_params_,"multi_probe_level",2);
+
+        fill_xor_mask(0, key_size_, multi_probe_level_, xor_masks_);
+    }
+
 
     /** Constructor
      * @param input_data dataset with the input features
      * @param params parameters passed to the LSH algorithm
      * @param d the distance used
      */
-    LshIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LshIndexParams(),
-             Distance d = Distance()) :
-        dataset_(input_data), index_params_(params), distance_(d)
+    LshIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LshIndexParams(), Distance d = Distance()) :
+        BaseClass(params), distance_(d)
     {
         table_number_ = get_param<unsigned int>(index_params_,"table_number",12);
         key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
         multi_probe_level_ = get_param<unsigned int>(index_params_,"multi_probe_level",2);
 
-        ownDataset_ = get_param(index_params_, "copy_dataset", false);
-        if (ownDataset_) {
-            dataset_ = Matrix<ElementType>(new ElementType[input_data.rows * input_data.cols], input_data.rows, input_data.cols);
-            for (size_t i=0;i<input_data.rows;++i) {
-                std::copy(input_data[i], input_data[i]+input_data.cols, dataset_[i]);
-            }        
-        }
-
-        feature_size_ = dataset_.cols;
         fill_xor_mask(0, key_size_, multi_probe_level_, xor_masks_);
+
+        bool copy_dataset = get_param(index_params_, "copy_dataset", false);
+        setDataset(input_data, copy_dataset);
     }
 
     
@@ -125,7 +134,7 @@ public:
         tables_.resize(table_number_);
         for (unsigned int i = 0; i < table_number_; ++i) {
             lsh::LshTable<ElementType>& table = tables_[i];
-            table = lsh::LshTable<ElementType>(feature_size_, key_size_);
+            table = lsh::LshTable<ElementType>(veclen_, key_size_);
 
             // Add the features to the table
             table.add(dataset_);
@@ -136,23 +145,10 @@ public:
     
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
-        assert(points.cols==veclen());
+        assert(points.cols==veclen_);
         size_t old_size = dataset_.rows;
 
-        size_t rows = dataset_.rows + points.rows;
-        Matrix<ElementType> new_dataset(new ElementType[rows * veclen()], rows, veclen());
-        for (size_t i=0;i<dataset_.rows;++i) {
-            std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
-        }
-        for (size_t i=0;i<points.rows;++i) {
-            std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
-        }
-        
-        if (ownDataset_) {
-            delete[] dataset_.ptr();
-        }
-        dataset_ = new_dataset;
-        ownDataset_ = true;
+        extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<dataset_.rows) {
             buildIndex();
@@ -198,34 +194,12 @@ public:
     }
 
     /**
-     *  Returns size of index.
-     */
-    size_t size() const
-    {
-        return dataset_.rows;
-    }
-
-    /**
-     * Returns the length of an index feature.
-     */
-    size_t veclen() const
-    {
-        return feature_size_;
-    }
-
-    /**
      * Computes the index memory usage
      * Returns: memory used by the index
      */
     int usedMemory() const
     {
         return dataset_.rows * sizeof(int);
-    }
-
-
-    IndexParams getParameters() const
-    {
-        return index_params_;
     }
 
     /**
@@ -242,7 +216,7 @@ public:
     					size_t knn,
     					const SearchParams& params)
     {
-        assert(queries.cols == veclen());
+        assert(queries.cols == veclen_);
         assert(indices.rows >= queries.rows);
         assert(dists.rows >= queries.rows);
         assert(indices.cols >= knn);
@@ -285,7 +259,7 @@ public:
     				size_t knn,
     				const SearchParams& params)
     {
-        assert(queries.cols == veclen());
+        assert(queries.cols == veclen_);
 		if (indices.size() < queries.rows ) indices.resize(queries.rows);
 		if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
@@ -400,6 +374,7 @@ private:
 
                     // Process the rest of the candidates
                     for (; training_index < last_training_index; ++training_index) {
+                    	if (removed_points_.test(*training_index)) continue;
                         hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
 
                         if (hamming_distance < worst_score) {
@@ -438,6 +413,7 @@ private:
 
                     // Process the rest of the candidates
                     for (; training_index < last_training_index; ++training_index) {
+                    	if (removed_points_.test(*training_index)) continue;
                         // Compute the Hamming distance
                         hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
                         if (hamming_distance < radius) score_index_heap.push_back(ScoreIndexPair(hamming_distance, training_index));
@@ -472,6 +448,7 @@ private:
 
                 // Process the rest of the candidates
                 for (; training_index < last_training_index; ++training_index) {
+                	if (removed_points_.test(*training_index)) continue;
                     // Compute the Hamming distance
                     hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
                     result.addPoint(hamming_distance, *training_index);
@@ -482,17 +459,9 @@ private:
 
     /** The different hash tables */
     std::vector<lsh::LshTable<ElementType> > tables_;
-
-    /** The data the LSH tables where built from */
-    Matrix<ElementType> dataset_;
-
-    /** The size of the features (as ElementType[]) */
-    unsigned int feature_size_;
     
     /** Number of features in the dataset when the index was last built. */
     size_t size_at_build_;
-
-    IndexParams index_params_;
 
     /** table number */
     unsigned int table_number_;
@@ -500,14 +469,20 @@ private:
     unsigned int key_size_;
     /** How far should we look for neighbors in multi-probe LSH */
     unsigned int multi_probe_level_;
-    /**  Does the index have a copy of the dataset? */
-    bool ownDataset_;
-
 
     /** The XOR masks to apply to a key to get the neighboring buckets */
     std::vector<lsh::BucketKey> xor_masks_;
 
     Distance distance_;
+
+    using BaseClass::removed_points_;
+    using BaseClass::dataset_;
+    using BaseClass::ownDataset_;
+    using BaseClass::size_;
+    using BaseClass::veclen_;
+    using BaseClass::index_params_;
+    using BaseClass::extendDataset;
+    using BaseClass::setDataset;
 };
 }
 

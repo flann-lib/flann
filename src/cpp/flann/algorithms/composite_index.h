@@ -73,6 +73,7 @@ class CompositeIndex : public NNIndex<CompositeIndex<Distance>, typename Distanc
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
+    typedef NNIndex<CompositeIndex<Distance>, ElementType, DistanceType> BaseClass;
 
     typedef bool needs_kdtree_distance;
 
@@ -83,8 +84,16 @@ public:
      * @param d Distance functor
      * @return
      */
+    CompositeIndex(const IndexParams& params = CompositeIndexParams(), Distance d = Distance()) :
+    	BaseClass(params)
+    {
+        kdtree_index_ = new KDTreeIndex<Distance>(params, d);
+        kmeans_index_ = new KMeansIndex<Distance>(params, d);
+
+    }
+
     CompositeIndex(const Matrix<ElementType>& inputData, const IndexParams& params = CompositeIndexParams(),
-                   Distance d = Distance()) : index_params_(params)
+                   Distance d = Distance()) : BaseClass(params)
     {
         kdtree_index_ = new KDTreeIndex<Distance>(inputData, params, d);
         kmeans_index_ = new KMeansIndex<Distance>(inputData, params, d);
@@ -149,6 +158,13 @@ public:
         kdtree_index_->addPoints(points, rebuild_threshold);
     }
 
+    void removePoint(size_t index)
+    {
+        kmeans_index_->removePoint(index);
+        kdtree_index_->removePoint(index);
+    }
+
+
     /**
      * \brief Saves the index to a stream
      * \param stream The stream to save the index to
@@ -170,14 +186,6 @@ public:
     }
 
     /**
-     * \returns The index parameters
-     */
-    IndexParams getParameters() const
-    {
-        return index_params_;
-    }
-
-    /**
      * \brief Method that searches for nearest-neighbours
      */
     template <typename ResultSet>
@@ -193,9 +201,6 @@ private:
 
     /** The kd-tree index */
     KDTreeIndex<Distance>* kdtree_index_;
-
-    /** The index parameters */
-    const IndexParams index_params_;
 };
 
 }

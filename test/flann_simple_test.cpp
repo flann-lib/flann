@@ -1,6 +1,3 @@
-
-
-
 #include <gtest/gtest.h>
 #include <time.h>
 
@@ -131,6 +128,49 @@ TEST_F(Flann_SIFT10K_Test, Linear)
     float precision = compute_precision(match, indices);
     EXPECT_EQ(precision, 1.0); // linear search, must be exact
     printf("Precision: %g\n", precision);
+}
+
+
+TEST_F(Flann_SIFT10K_Test, LinearRemove)
+{
+	Index<L2<float> > index(data, flann::LinearIndexParams());
+	start_timer("Building linear index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN before removing points...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    // remove about 50% of neighbors found
+    std::set<int> neighbors;
+    for (size_t i=0;i<indices.rows;++i) {
+        for (size_t j=0;j<indices.cols;++j) {
+        	if (rand_double()<0.5) {
+        		neighbors.insert(indices[i][j]);
+        	}
+        }
+    }
+    for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
+    	index.removePoint(*it);
+    }
+
+    // also remove 10% of the initial points
+    size_t offset = data.rows/10;
+    for (size_t i=0;i<offset;++i) {
+    	index.removePoint(i);
+    }
+
+    start_timer("Searching KNN after remove points...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    for (size_t i=0;i<indices.rows;++i) {
+        for (size_t j=0;j<indices.cols;++j) {
+        	EXPECT_GE(indices[i][j], offset);
+        	EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+        }
+    }
 }
 
 TEST_F(Flann_SIFT10K_Test, KDTreeTest)
@@ -428,6 +468,8 @@ TEST_F(Flann_SIFT100K_Test, KDTreeTestIncremental)
     printf("Precision: %g\n", precision);
 }
 
+
+
 TEST_F(Flann_SIFT100K_Test, KDTreeTestIncremental2)
 {
     size_t size1 = data.rows/2+1;
@@ -449,6 +491,49 @@ TEST_F(Flann_SIFT100K_Test, KDTreeTestIncremental2)
     float precision = compute_precision(match, indices);
     EXPECT_GE(precision, 0.75);
     printf("Precision: %g\n", precision);
+}
+
+
+TEST_F(Flann_SIFT100K_Test, KDTreeTestRemove)
+{
+    Index<L2<float> > index(data, flann::KDTreeIndexParams(4));
+    start_timer("Building randomised kd-tree index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN before removing points...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    // remove about 50% of neighbors found
+    std::set<int> neighbors;
+    for (size_t i=0;i<indices.rows;++i) {
+        for (size_t j=0;j<indices.cols;++j) {
+        	if (rand_double()<0.5) {
+        		neighbors.insert(indices[i][j]);
+        	}
+        }
+    }
+    for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
+    	index.removePoint(*it);
+    }
+
+    // also remove 10% of the initial points
+    size_t offset = data.rows/10;
+    for (size_t i=0;i<offset;++i) {
+    	index.removePoint(i);
+    }
+
+    start_timer("Searching KNN after remove points...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    for (size_t i=0;i<indices.rows;++i) {
+        for (size_t j=0;j<indices.cols;++j) {
+        	EXPECT_GE(indices[i][j], offset);
+        	EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+        }
+    }
 }
 
 TEST_F(Flann_SIFT100K_Test, KMeansTree)
@@ -514,6 +599,49 @@ TEST_F(Flann_SIFT100K_Test, KMeansTreeIncremental2)
     float precision = compute_precision(match, indices);
     EXPECT_GE(precision, 0.75);
     printf("Precision: %g\n", precision);
+}
+
+
+TEST_F(Flann_SIFT100K_Test, KMeansTreeRemove)
+{
+    Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
+    start_timer("Building hierarchical k-means index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN before removing points...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    // remove about 50% of neighbors found
+    std::set<int> neighbors;
+    for (size_t i=0;i<indices.rows;++i) {
+        for (size_t j=0;j<indices.cols;++j) {
+        	if (rand_double()<0.5) {
+        		neighbors.insert(indices[i][j]);
+        	}
+        }
+    }
+    for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
+    	index.removePoint(*it);
+    }
+
+    // also remove 10% of the initial points
+    size_t offset = data.rows/10;
+    for (size_t i=0;i<offset;++i) {
+    	index.removePoint(i);
+    }
+
+    start_timer("Searching KNN after remove points...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    for (size_t i=0;i<indices.rows;++i) {
+        for (size_t j=0;j<indices.cols;++j) {
+        	EXPECT_GE(indices[i][j], offset);
+        	EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+        }
+    }
 }
 
 
@@ -748,6 +876,65 @@ TEST_F(Flann_3D, KDTreeSingleTest_Padded)
     delete[] data_padded.ptr();
 }
 
+TEST_F(Flann_3D, KDTreeSingleIncremental)
+{
+    size_t size1 = data.rows/2-1;
+    size_t size2 = data.rows-size1;
+    Matrix<float> data1(data[0], size1, data.cols);
+    Matrix<float> data2(data[size1], size2, data.cols);
+
+    flann::Index<L2_Simple<float> > index(data1, flann::KDTreeSingleIndexParams(12, false));
+    start_timer("Building hierarchical clustering index...");
+    index.buildIndex();
+    index.addPoints(data2);
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, 5, flann::SearchParams(-1) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    EXPECT_GE(precision, 0.99);
+    printf("Precision: %g\n", precision);
+}
+
+
+
+TEST_F(Flann_3D, KDTreeSingleRemove)
+{
+    flann::Index<L2_Simple<float> > index(data, flann::KDTreeSingleIndexParams(12, false));
+    start_timer("Building kd-tree index...");
+	index.buildIndex();
+	printf("done (%g seconds)\n", stop_timer());
+
+	start_timer("Searching KNN before removing points...");
+	index.knnSearch(query, indices, dists, 5, flann::SearchParams(-1) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	// remove about 10% of neighbors found
+	std::set<int> neighbors;
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			if (rand_double()<0.5) {
+				neighbors.insert(indices[i][j]);
+			}
+		}
+	}
+	for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
+		index.removePoint(*it);
+	}
+
+	start_timer("Searching KNN after remove points...");
+	index.knnSearch(query, indices, dists, 5, flann::SearchParams(-1) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+		}
+	}}
+
+
 TEST_F(Flann_3D, SavedTest)
 {
     printf("Loading kdtree index\n");
@@ -756,7 +943,7 @@ TEST_F(Flann_3D, SavedTest)
     start_timer("Searching KNN...");
     index.knnSearch(query, indices, dists, 5, flann::SearchParams(-1) );
     printf("done (%g seconds)\n", stop_timer());
-    
+
     float precision = compute_precision(match, indices);
     EXPECT_GE(precision, 0.99);
     printf("Precision: %g\n", precision);
@@ -788,7 +975,7 @@ TEST_F(Flann_3D, SavedTest2)
     start_timer("Searching KNN...");
     index.knnSearch(query, indices, dists, 5, flann::SearchParams(-1) );
     printf("done (%g seconds)\n", stop_timer());
-    
+
     float precision = compute_precision(match, indices);
     EXPECT_GE(precision, 0.99);
     printf("Precision: %g\n", precision);
@@ -913,6 +1100,48 @@ TEST_F(Flann_Brief100K_Test, HierarchicalClusteringTestIncremental2)
     printf("Precision: %g\n", precision);
 }
 
+TEST_F(Flann_Brief100K_Test, HierarchicalClusteringTestRemove)
+{
+    flann::Index<Distance> index(data, flann::HierarchicalClusteringIndexParams());
+    start_timer("Building hierarchical clustering index...");
+	index.buildIndex();
+	printf("done (%g seconds)\n", stop_timer());
+
+	start_timer("Searching KNN before removing points...");
+	index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	// remove about 50% of neighbors found
+	std::set<int> neighbors;
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			if (rand_double()<0.5) {
+				neighbors.insert(indices[i][j]);
+			}
+		}
+	}
+	for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
+		index.removePoint(*it);
+	}
+
+	// also remove 10% of the initial points
+	size_t offset = data.rows/10;
+	for (size_t i=0;i<offset;++i) {
+		index.removePoint(i);
+	}
+
+	start_timer("Searching KNN after remove points...");
+	index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			EXPECT_GE(indices[i][j], offset);
+			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+		}
+	}
+}
+
 
 TEST_F(Flann_Brief100K_Test, LshTest)
 {
@@ -975,6 +1204,49 @@ TEST_F(Flann_Brief100K_Test, LshTestIncremental2)
     float precision = computePrecisionDiscrete(gt_dists, dists);
     EXPECT_GE(precision, 0.9);
     printf("Precision: %g\n", precision);
+}
+
+
+TEST_F(Flann_Brief100K_Test, LshTestRemove)
+{
+    flann::Index<Distance> index(data, flann::LshIndexParams(12, 20, 2));
+    start_timer("Building LSH index...");
+	index.buildIndex();
+	printf("done (%g seconds)\n", stop_timer());
+
+	start_timer("Searching KNN before removing points...");
+	index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	// remove about 50% of neighbors found
+	std::set<int> neighbors;
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			if (rand_double()<0.5) {
+				neighbors.insert(indices[i][j]);
+			}
+		}
+	}
+	for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
+		index.removePoint(*it);
+	}
+
+	// also remove 10% of the initial points
+	size_t offset = data.rows/10;
+	for (size_t i=0;i<offset;++i) {
+		index.removePoint(i);
+	}
+
+	start_timer("Searching KNN after remove points...");
+	index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			EXPECT_GE(indices[i][j], offset);
+			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+		}
+	}
 }
 
 

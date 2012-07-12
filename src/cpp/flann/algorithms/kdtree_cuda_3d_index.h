@@ -67,15 +67,32 @@ struct KDTreeCuda3dIndexParams : public IndexParams
  * on your CPU and GPU.
  */
 template <typename Distance>
-class KDTreeCuda3dIndex : public NNIndex<KDTreeIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
+class KDTreeCuda3dIndex : public NNIndex<KDTreeCuda3dIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
 {
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
+    typedef NNIndex<KDTreeCuda3dIndex<Distance>, ElementType, DistanceType> BaseClass;
 
     int visited_leafs;
 
     typedef bool needs_kdtree_distance;
+
+    /**
+     * KDTree constructor
+     *
+     * Params:
+     *          params = parameters passed to the kdtree algorithm
+     */
+    KDTreeCuda3dIndex(const IndexParams& params = KDTreeCuda3dIndexParams(), Distance d = Distance() ) :
+    	BaseClass(params), distance_(d)
+    {
+        int dim_param = get_param(params,"dim",-1);
+        if (dim_param>0) dim_ = dim_param;
+        leaf_max_size_ = get_param(params,"leaf_max_size",10);
+        assert( dim_ == 3 );
+        gpu_helper_=0;
+    }
 
     /**
      * KDTree constructor
@@ -86,21 +103,15 @@ public:
      */
     KDTreeCuda3dIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KDTreeCuda3dIndexParams(),
                       Distance d = Distance() ) :
-        dataset_(inputData), index_params_(params), distance_(d)
+        BaseClass(params), distance_(d)
     {
-        size_ = dataset_.rows;
-        dim_ = dataset_.cols;
         int dim_param = get_param(params,"dim",-1);
         if (dim_param>0) dim_ = dim_param;
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
         assert( dim_ == 3 );
         gpu_helper_=0;
 
-        // Create a permutable array of indices to the input vectors.
-        vind_.resize(size_);
-        for (size_t i = 0; i < size_; i++) {
-            vind_[i] = i;
-        }
+        setDataset(inputData);
     }
 
     /**
@@ -117,6 +128,12 @@ public:
      */
     void buildIndex()
     {
+        // Create a permutable array of indices to the input vectors.
+        vind_.resize(size_);
+        for (size_t i = 0; i < size_; i++) {
+            vind_[i] = i;
+        }
+
         leaf_count_=0;
         node_count_=0;
         //         computeBoundingBox(root_bbox_);
@@ -133,6 +150,11 @@ public:
         return FLANN_INDEX_KDTREE_SINGLE;
     }
 
+
+    void removePoint(size_t index)
+    {
+    	throw FLANNException( "removePoint not implemented for this index type!" );
+    }
 
     void saveIndex(FILE* stream)
     {
@@ -158,22 +180,6 @@ public:
 
         //         index_params_["algorithm"] = getType();
         //         index_params_["leaf_max_size"] = leaf_max_size_;
-    }
-
-    /**
-     *  Returns size of index.
-     */
-    size_t size() const
-    {
-        return size_;
-    }
-
-    /**
-     * Returns the length of an index feature.
-     */
-    size_t veclen() const
-    {
-        return dim_;
     }
 
     /**
@@ -271,12 +277,6 @@ public:
                         std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params);
 
 
-    IndexParams getParameters() const
-    {
-        return index_params_;
-    }
-
-
 private:
 
     void uploadTreeToGpu( );
@@ -291,11 +291,6 @@ private:
     struct GpuHelper;
 
     GpuHelper* gpu_helper_;
-
-    /**
-     * The dataset used by this index
-     */
-    const Matrix<ElementType> dataset_;
 
     IndexParams index_params_;
 
@@ -314,10 +309,12 @@ private:
 
     Matrix<ElementType> data_;
 
-    size_t size_;
     size_t dim_;
 
     Distance distance_;
+
+    using BaseClass::size_;
+    using BaseClass::veclen_;
 };   // class KDTree
 
 

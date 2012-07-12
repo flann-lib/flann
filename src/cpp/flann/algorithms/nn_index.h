@@ -31,7 +31,7 @@
 #ifndef FLANN_NNINDEX_H
 #define FLANN_NNINDEX_H
 
-#include <string>
+#include <vector>
 
 #ifdef TBB
 #include <tbb/parallel_for.h>
@@ -45,6 +45,7 @@
 #include "flann/util/matrix.h"
 #include "flann/util/params.h"
 #include "flann/util/result_set.h"
+#include "flann/util/dynamic_bitset.h"
 #ifdef TBB
 #include "flann/tbb/bodies.hpp"
 #endif
@@ -62,45 +63,81 @@ template <typename Index, typename ElementType, typename DistanceType>
 class NNIndex
 {
 public:
+
+	NNIndex()
+	{
+		ownDataset_ = false;
+		removed_points_.clear();
+	}
+
+	NNIndex(const IndexParams& params) : index_params_(params)
+	{
+		ownDataset_ = false;
+		removed_points_.clear();
+	}
+
+
+    void buildIndex(const Matrix<ElementType>& dataset)
+    {
+        bool copy_dataset = get_param(index_params_, "copy_dataset", false);
+        setDataset(dataset, copy_dataset);
+        removed_points_.clear();
+
+        static_cast<Index*>(this)->buildIndex();
+    }
     
+	/**
+	 * @brief Incrementally add points to the index.
+	 * @param points Matrix with points to be added
+	 * @param rebuild_threshold
+	 */
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         throw FLANNException("Functionality not supported by this index");
     }
 
-    
     /**
-     * \returns number of features in this index.
+     * Remove point from the index
+     * @param index Index of point to be removed
+     */
+    void removePoint(size_t index)
+    {
+    	removed_points_.set(index);
+    }
+
+    /**
+     * @return number of features in this index.
      */
     inline size_t size() const
     {
-        return static_cast<const Index*>(this)->size();
+        return size_;
     }
 
     /**
-     * \returns The dimensionality of the features in this index.
+     * @return The dimensionality of the features in this index.
      */
     inline size_t veclen() const
     {
-        return static_cast<const Index*>(this)->veclen();
+        return veclen_;
     }
 
     /**
-     * \brief Method that searches for nearest-neighbours
+     * Returns the parameters used by the index.
+     *
+     * @return The index parameters
      */
-    template <typename ResultSet>
-    inline void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+    IndexParams getParameters() const
     {
-        static_cast<Index*>(this)->findNeighbors(result, vec, searchParams);
+        return index_params_;
     }
     
     /**
-     * \brief Perform k-nearest neighbor search
-     * \param[in] queries The query points for which to find the nearest neighbors
-     * \param[out] indices The indices of the nearest neighbors found
-     * \param[out] dists Distances to the nearest neighbors found
-     * \param[in] knn Number of nearest neighbors to return
-     * \param[in] params Search parameters
+     * @brief Perform k-nearest neighbor search
+     * @param[in] queries The query points for which to find the nearest neighbors
+     * @param[out] indices The indices of the nearest neighbors found
+     * @param[out] dists Distances to the nearest neighbors found
+     * @param[in] knn Number of nearest neighbors to return
+     * @param[in] params Search parameters
      */
     int knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
     {
@@ -128,7 +165,7 @@ public:
         		KNNResultSet2<DistanceType> resultSet(knn);
         		for (size_t i = 0; i < queries.rows; i++) {
         			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
+        			static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
         			resultSet.copy(indices[i], dists[i], knn, params.sorted);
         			count += resultSet.size();
         		}
@@ -137,7 +174,7 @@ public:
         		KNNSimpleResultSet<DistanceType> resultSet(knn);
         		for (size_t i = 0; i < queries.rows; i++) {
         			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
+        			static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
         			resultSet.copy(indices[i], dists[i], knn, params.sorted);
         			count += resultSet.size();
         		}
@@ -168,12 +205,12 @@ public:
 
 
     /**
-     * \brief Perform k-nearest neighbor search
-     * \param[in] queries The query points for which to find the nearest neighbors
-     * \param[out] indices The indices of the nearest neighbors found
-     * \param[out] dists Distances to the nearest neighbors found
-     * \param[in] knn Number of nearest neighbors to return
-     * \param[in] params Search parameters
+     * @brief Perform k-nearest neighbor search
+     * @param[in] queries The query points for which to find the nearest neighbors
+     * @param[out] indices The indices of the nearest neighbors found
+     * @param[out] dists Distances to the nearest neighbors found
+     * @param[in] knn Number of nearest neighbors to return
+     * @param[in] params Search parameters
      */
     int knnSearch(const Matrix<ElementType>& queries,
 					std::vector< std::vector<int> >& indices,
@@ -203,7 +240,7 @@ public:
         		KNNResultSet2<DistanceType> resultSet(knn);
         		for (size_t i = 0; i < queries.rows; i++) {
         			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
+        			static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
         			size_t n = std::min(resultSet.size(), knn);
         			indices[i].resize(n);
         			dists[i].resize(n);
@@ -215,7 +252,7 @@ public:
         		KNNSimpleResultSet<DistanceType> resultSet(knn);
         		for (size_t i = 0; i < queries.rows; i++) {
         			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
+        			static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
         			size_t n = std::min(resultSet.size(), knn);
         			indices[i].resize(n);
         			dists[i].resize(n);
@@ -248,13 +285,13 @@ public:
 
 
     /**
-     * \brief Perform radius search
-     * \param[in] query The query point
-     * \param[out] indices The indinces of the neighbors found within the given radius
-     * \param[out] dists The distances to the nearest neighbors found
-     * \param[in] radius The radius used for search
-     * \param[in] params Search parameters
-     * \returns Number of neighbors found
+     * @brief Perform radius search
+     * @param[in] query The query point
+     * @param[out] indices The indinces of the neighbors found within the given radius
+     * @param[out] dists The distances to the nearest neighbors found
+     * @param[in] radius The radius used for search
+     * @param[in] params Search parameters
+     * @return Number of neighbors found
      */
     int radiusSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists,
     		float radius, const SearchParams& params)
@@ -275,7 +312,7 @@ public:
     			CountRadiusResultSet<DistanceType> resultSet(radius);
     			for (size_t i = 0; i < queries.rows; i++) {
     				resultSet.clear();
-    				findNeighbors(resultSet, queries[i], params);
+    				static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
     				count += resultSet.size();
     			}
     		}
@@ -286,7 +323,7 @@ public:
     				RadiusResultSet<DistanceType> resultSet(radius);
     				for (size_t i = 0; i < queries.rows; i++) {
     					resultSet.clear();
-    					findNeighbors(resultSet, queries[i], params);
+    					static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
     					size_t n = resultSet.size();
     					count += n;
     					if (n>num_neighbors) n = num_neighbors;
@@ -302,7 +339,7 @@ public:
     				KNNRadiusResultSet<DistanceType> resultSet(radius, max_neighbors);
     				for (size_t i = 0; i < queries.rows; i++) {
     					resultSet.clear();
-    					findNeighbors(resultSet, queries[i], params);
+    					static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
     					size_t n = resultSet.size();
     					count += n;
     					if ((int)n>max_neighbors) n = max_neighbors;
@@ -337,7 +374,15 @@ public:
         return count;
     }
 
-    
+    /**
+     * @brief Perform radius search
+     * @param[in] query The query point
+     * @param[out] indices The indinces of the neighbors found within the given radius
+     * @param[out] dists The distances to the nearest neighbors found
+     * @param[in] radius The radius used for search
+     * @param[in] params Search parameters
+     * @return Number of neighbors found
+     */
     int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
     		std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params)
     {
@@ -353,7 +398,7 @@ public:
         		CountRadiusResultSet<DistanceType> resultSet(radius);
         		for (size_t i = 0; i < queries.rows; i++) {
         			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
+        			static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
         			count += resultSet.size();
         		}
         	}
@@ -366,7 +411,7 @@ public:
         			RadiusResultSet<DistanceType> resultSet(radius);
         			for (size_t i = 0; i < queries.rows; i++) {
         				resultSet.clear();
-        				findNeighbors(resultSet, queries[i], params);
+        				static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
         				size_t n = resultSet.size();
         				count += n;
         				indices[i].resize(n);
@@ -381,7 +426,7 @@ public:
         			KNNRadiusResultSet<DistanceType> resultSet(radius, params.max_neighbors);
         			for (size_t i = 0; i < queries.rows; i++) {
         				resultSet.clear();
-        				findNeighbors(resultSet, queries[i], params);
+        				static_cast<Index*>(this)->findNeighbors(resultSet, queries[i], params);
         				size_t n = resultSet.size();
         				count += n;
         				if ((int)n>params.max_neighbors) n = params.max_neighbors;
@@ -416,6 +461,76 @@ public:
         return count;
     }
     
+
+protected:
+
+    void setDataset(const Matrix<ElementType>& dataset, bool copyDataset = false)
+    {
+    	if (copyDataset) {
+    		dataset_ = Matrix<ElementType>(new ElementType[dataset.rows * dataset.cols], dataset.rows, dataset.cols);
+    		for (size_t i=0;i<dataset.rows;++i) {
+    			std::copy(dataset[i], dataset[i]+dataset.cols, dataset_[i]);
+    		}
+    		ownDataset_ = true;
+    	}
+    	else {
+    		dataset_ = dataset;
+    	}
+    	size_ = dataset.rows;
+    	veclen_ = dataset.cols;
+    	removed_points_.resize(dataset_.rows);
+    }
+
+    void extendDataset(const Matrix<ElementType>& points)
+    {
+    	size_t rows = dataset_.rows + points.rows;
+    	Matrix<ElementType> new_dataset(new ElementType[rows * dataset_.cols], rows, dataset_.cols);
+    	for (size_t i=0;i<dataset_.rows;++i) {
+    		std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
+    	}
+    	for (size_t i=0;i<points.rows;++i) {
+    		std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
+    	}
+
+    	if (ownDataset_) {
+    		delete[] dataset_.ptr();
+    	}
+
+    	setDataset(new_dataset, false);
+    	ownDataset_ = true;
+    }
+
+protected:
+    /**
+     * The dataset used by this index
+     */
+    Matrix<ElementType> dataset_;
+
+    /**
+     * Number of points in the index (and database)
+     */
+    size_t size_;
+
+    /**
+     * Size of one point in the index (and database)
+     */
+    size_t veclen_;
+
+    /**
+     * Parameters of the index.
+     */
+    IndexParams index_params_;
+
+    /**
+     * Was the dataset allocated by the index
+     */
+    bool ownDataset_;
+
+    /**
+     *  Bitset used for marking the points removed from the index.
+     */
+    DynamicBitset removed_points_;
+
 };
 
 }

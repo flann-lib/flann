@@ -52,21 +52,21 @@ public:
 
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
+    typedef NNIndex<LinearIndex<Distance>, ElementType, DistanceType> BaseClass;
 
 
-    LinearIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LinearIndexParams(),
-                Distance d = Distance()) :
-        dataset_(input_data), index_params_(params), distance_(d)
+    LinearIndex(const IndexParams& params = LinearIndexParams(), Distance d = Distance()) :
+                	BaseClass(params), distance_(d)
     {
-        ownDataset_ = get_param(index_params_, "copy_dataset", false);
-        if (ownDataset_) {
-            dataset_ = Matrix<ElementType>(new ElementType[input_data.rows * input_data.cols], input_data.rows, input_data.cols);
-            for (size_t i=0;i<input_data.rows;++i) {
-                std::copy(input_data[i], input_data[i]+input_data.cols, dataset_[i]);
-            }        
-        }
     }
-    
+
+    LinearIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LinearIndexParams(), Distance d = Distance()) :
+                	BaseClass(params), distance_(d)
+    {
+        bool copy_dataset = get_param(index_params_, "copy_dataset", false);
+        setDataset(input_data, copy_dataset);
+    }
+
     ~LinearIndex()
     {
         if (ownDataset_) {
@@ -76,22 +76,8 @@ public:
 
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
-        assert(points.cols==veclen());
-
-        size_t rows = dataset_.rows + points.rows;
-        Matrix<ElementType> new_dataset(new ElementType[rows * veclen()], rows, veclen());
-        for (size_t i=0;i<dataset_.rows;++i) {
-            std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
-        }
-        for (size_t i=0;i<points.rows;++i) {
-            std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
-        }
-        
-        if (ownDataset_) {
-            delete[] dataset_.ptr();
-        }
-        dataset_ = new_dataset;
-        ownDataset_ = true;
+        assert(points.cols==veclen_);
+        extendDataset(points);
     }
 
     
@@ -101,17 +87,6 @@ public:
     flann_algorithm_t getType() const
     {
         return FLANN_INDEX_LINEAR;
-    }
-
-
-    size_t size() const
-    {
-        return dataset_.rows;
-    }
-
-    size_t veclen() const
-    {
-        return dataset_.cols;
     }
 
 
@@ -142,25 +117,25 @@ public:
     void findNeighbors(ResultSet& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/)
     {
         for (size_t i = 0; i < dataset_.rows; ++i) {
+        	if (removed_points_.test(i)) continue;
             DistanceType dist = distance_(dataset_[i], vec, dataset_.cols);
             resultSet.addPoint(dist, i);
         }
     }
 
-    IndexParams getParameters() const
-    {
-        return index_params_;
-    }
 
 private:
-    /** The dataset */
-    Matrix<ElementType> dataset_;
-    /** Index parameters */
-    IndexParams index_params_;
-    /**  Does the index have a copy of the dataset? */
-    bool ownDataset_;    
     /** Index distance */
     Distance distance_;
+
+    using BaseClass::removed_points_;
+    using BaseClass::dataset_;
+    using BaseClass::ownDataset_;
+    using BaseClass::index_params_;
+    using BaseClass::size_;
+    using BaseClass::veclen_;
+    using BaseClass::extendDataset;
+    using BaseClass::setDataset;
 };
 
 }

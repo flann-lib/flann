@@ -43,8 +43,6 @@ typedef boost::dynamic_bitset<> DynamicBitset;
 
 #include <limits.h>
 
-#include "flann/algorithms/dist.h"
-
 namespace flann {
 
 /** Class re-implementing the boost version of it

@@ -31,6 +31,7 @@
 #ifndef FLANN_HPP_
 #define FLANN_HPP_
 
+
 #include <vector>
 #include <string>
 #include <cassert>
@@ -119,6 +120,16 @@ public:
     {
         nnIndex_->addPoints(points, rebuild_threshold);
     }
+
+    /**
+     * Remove point from the index
+     * @param index Index of point to be removed
+     */
+    void removePoint(size_t index)
+    {
+    	nnIndex_->removePoint(index);
+    }
+
 
     void save(std::string filename)
     {

@@ -72,8 +72,10 @@ class KDTreeIndex : public NNIndex<KDTreeIndex<Distance>, typename Distance::Ele
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
+    typedef NNIndex<KDTreeIndex<Distance>, ElementType, DistanceType> BaseClass;
 
     typedef bool needs_kdtree_distance;
+
 
     /**
      * KDTree constructor
@@ -82,23 +84,29 @@ public:
      *          inputData = dataset with the input features
      *          params = parameters passed to the kdtree algorithm
      */
-    KDTreeIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KDTreeIndexParams(),
-                Distance d = Distance() ) :
-        dataset_(inputData), index_params_(params), distance_(d)
+    KDTreeIndex(const IndexParams& params = KDTreeIndexParams(), Distance d = Distance() ) :
+        BaseClass(params), distance_(d)
     {
-        size_ = dataset_.rows;
-        veclen_ = dataset_.cols;
-
         trees_ = get_param(index_params_,"trees",4);
         tree_roots_ = new NodePtr[trees_];
-        
-        ownDataset_ = get_param(index_params_, "copy_dataset", false);
-        if (ownDataset_) {
-            dataset_ = Matrix<ElementType>(new ElementType[inputData.rows * inputData.cols], inputData.rows, inputData.cols);
-            for (size_t i=0;i<inputData.rows;++i) {
-                std::copy(inputData[i], inputData[i]+inputData.cols, dataset_[i]);
-            }        
-        }
+    }
+
+
+    /**
+     * KDTree constructor
+     *
+     * Params:
+     *          inputData = dataset with the input features
+     *          params = parameters passed to the kdtree algorithm
+     */
+    KDTreeIndex(const Matrix<ElementType>& dataset, const IndexParams& params = KDTreeIndexParams(),
+                Distance d = Distance() ) : BaseClass(params), distance_(d)
+    {
+        trees_ = get_param(index_params_,"trees",4);
+        tree_roots_ = new NodePtr[trees_];
+
+        bool copy_dataset = get_param(index_params_, "copy_dataset", false);
+        setDataset(dataset, copy_dataset);
     }
 
     KDTreeIndex(const KDTreeIndex&);
@@ -145,24 +153,10 @@ public:
     
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
-        assert(points.cols==veclen());
+        assert(points.cols==veclen_);
         size_t old_size = size_;
 
-        size_t rows = dataset_.rows + points.rows;
-        Matrix<ElementType> new_dataset(new ElementType[rows * veclen()], rows, veclen());
-        for (size_t i=0;i<dataset_.rows;++i) {
-            std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
-        }
-        for (size_t i=0;i<points.rows;++i) {
-            std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
-        }
-        
-        if (ownDataset_) {
-            delete[] dataset_.ptr();
-        }
-        dataset_ = new_dataset;
-        size_ += points.rows;
-        ownDataset_ = true;
+        extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
             pool_.free();
@@ -176,7 +170,6 @@ public:
             }
         }        
     }
-
 
     flann_algorithm_t getType() const
     {
@@ -192,8 +185,6 @@ public:
         }
     }
 
-
-
     void loadIndex(FILE* stream)
     {
         load_value(stream, trees_);
@@ -207,22 +198,6 @@ public:
 
         index_params_["algorithm"] = getType();
         index_params_["trees"] = tree_roots_;
-    }
-
-    /**
-     *  Returns size of index.
-     */
-    size_t size() const
-    {
-        return size_;
-    }
-
-    /**
-     * Returns the length of an index feature.
-     */
-    size_t veclen() const
-    {
-        return veclen_;
     }
 
     /**
@@ -255,11 +230,6 @@ public:
         else {
             getNeighbors(result, vec, maxChecks, epsError);
         }
-    }
-
-    IndexParams getParameters() const
-    {
-        return index_params_;
     }
 
 private:
@@ -528,7 +498,9 @@ private:
                 current checkID.
              */
             int index = node->divfeat;
-            if ( checked.test(index) || ((checkCount>=maxCheck)&& result_set.full()) ) return;
+            // ignore already checked points, removed points
+            if ( checked.test(index) || removed_points_.test(index) ||
+            		((checkCount>=maxCheck) && result_set.full()) ) return;
             checked.set(index);
             checkCount++;
 
@@ -571,6 +543,7 @@ private:
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
             int index = node->divfeat;
+            if (removed_points_.test(index)) return; // ignore removed points
             DistanceType dist = distance_(dataset_[index], vec, veclen_);
             result_set.addPoint(dist,index);
             return;
@@ -609,7 +582,7 @@ private:
             ElementType* leaf_point = dataset_[node->divfeat];
             ElementType max_span = 0;
             size_t div_feat = 0;
-            for (size_t i=0;i<veclen();++i) {
+            for (size_t i=0;i<veclen_;++i) {
                 ElementType span = abs(point[i]-leaf_point[i]);
                 if (span > max_span) {
                     max_span = span;
@@ -671,21 +644,10 @@ private:
     int trees_;
 
     /**
-     *  Array of indices to vectors in the dataset.
+     *  Array of indices to points in the dataset.
      */
     std::vector<int> vind_;
 
-    /**
-     * The dataset used by this index
-     */
-    Matrix<ElementType> dataset_;
-    
-    bool ownDataset_;
-
-    IndexParams index_params_;
-
-    size_t size_;
-    size_t veclen_;
     size_t size_at_build_;
 
     DistanceType* mean_;
@@ -706,7 +668,15 @@ private:
     PooledAllocator pool_;
 
     Distance distance_;
-    
+
+    using BaseClass::removed_points_;
+    using BaseClass::dataset_;
+    using BaseClass::ownDataset_;
+    using BaseClass::size_;
+    using BaseClass::veclen_;
+    using BaseClass::index_params_;
+    using BaseClass::extendDataset;
+    using BaseClass::setDataset;
 };   // class KDTreeForest
 
 }

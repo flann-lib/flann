@@ -83,6 +83,7 @@ class HierarchicalClusteringIndex : public NNIndex<HierarchicalClusteringIndex<D
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
+    typedef NNIndex<HierarchicalClusteringIndex<Distance>, ElementType, DistanceType> BaseClass;
 
 private:
 
@@ -262,20 +263,15 @@ public:
 
 
     /**
-     * Index constructor
+     * Constructor.
      *
-     * Params:
-     *          inputData = dataset with the input features
-     *          params = parameters passed to the hierarchical k-means algorithm
+     * @param index_params
+     * @param d
      */
-    HierarchicalClusteringIndex(const Matrix<ElementType>& inputData, const IndexParams& index_params = HierarchicalClusteringIndexParams(),
-                                Distance d = Distance())
-        : dataset_(inputData), index_params_(index_params), distance_(d)
+    HierarchicalClusteringIndex(const IndexParams& index_params = HierarchicalClusteringIndexParams(), Distance d = Distance())
+        : BaseClass(index_params), distance_(d)
     {
         memoryCounter_ = 0;
-
-        size_ = dataset_.rows;
-        veclen_ = dataset_.cols;
 
         branching_ = get_param(index_params_,"branching",32);
         centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
@@ -294,15 +290,46 @@ public:
         else {
             throw FLANNException("Unknown algorithm for choosing initial centers.");
         }
-        ownDataset_ = get_param(index_params_, "copy_dataset", false);
-        if (ownDataset_) {
-            dataset_ = Matrix<ElementType>(new ElementType[inputData.rows * inputData.cols], inputData.rows, inputData.cols);
-            for (size_t i=0;i<inputData.rows;++i) {
-                std::copy(inputData[i], inputData[i]+inputData.cols, dataset_[i]);
-            }        
+
+        trees_ = get_param(index_params_,"trees",4);
+    }
+
+
+    /**
+     * Index constructor
+     *
+     * Params:
+     *          inputData = dataset with the input features
+     *          params = parameters passed to the hierarchical k-means algorithm
+     */
+    HierarchicalClusteringIndex(const Matrix<ElementType>& inputData, const IndexParams& index_params = HierarchicalClusteringIndexParams(),
+                                Distance d = Distance())
+        : BaseClass(index_params), distance_(d)
+    {
+        memoryCounter_ = 0;
+
+        branching_ = get_param(index_params_,"branching",32);
+        centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
+        trees_ = get_param(index_params_,"trees",4);
+        leaf_size_ = get_param(index_params_,"leaf_size",100);
+
+        if (centers_init_==FLANN_CENTERS_RANDOM) {
+            chooseCenters = &HierarchicalClusteringIndex::chooseCentersRandom;
+        }
+        else if (centers_init_==FLANN_CENTERS_GONZALES) {
+            chooseCenters = &HierarchicalClusteringIndex::chooseCentersGonzales;
+        }
+        else if (centers_init_==FLANN_CENTERS_KMEANSPP) {
+            chooseCenters = &HierarchicalClusteringIndex::chooseCentersKMeanspp;
+        }
+        else {
+            throw FLANNException("Unknown algorithm for choosing initial centers.");
         }
         
         trees_ = get_param(index_params_,"trees",4);
+
+        bool copy_dataset = get_param(index_params_, "copy_dataset", false);
+        setDataset(inputData, copy_dataset);
     }
 
     HierarchicalClusteringIndex(const HierarchicalClusteringIndex&);
@@ -319,23 +346,6 @@ public:
             delete[] dataset_.ptr();
         }
     }
-
-    /**
-     *  Returns size of index.
-     */
-    size_t size() const
-    {
-        return size_;
-    }
-
-    /**
-     * Returns the length of an index feature.
-     */
-    size_t veclen() const
-    {
-        return veclen_;
-    }
-
 
     /**
      * Computes the inde memory usage
@@ -370,24 +380,10 @@ public:
     
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
-        assert(points.cols==veclen());
+        assert(points.cols==veclen_);
         size_t old_size = size_;
 
-        size_t rows = dataset_.rows + points.rows;
-        Matrix<ElementType> new_dataset(new ElementType[rows * veclen()], rows, veclen());
-        for (size_t i=0;i<dataset_.rows;++i) {
-            std::copy(dataset_[i], dataset_[i]+dataset_.cols, new_dataset[i]);
-        }
-        for (size_t i=0;i<points.rows;++i) {
-            std::copy(points[i], points[i]+points.cols, new_dataset[dataset_.rows+i]);
-        }
-        
-        if (ownDataset_) {
-            delete[] dataset_.ptr();
-        }
-        dataset_ = new_dataset;
-        size_ += points.rows;
-        ownDataset_ = true;
+        extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
             pool_.free();
@@ -461,7 +457,7 @@ public:
         // Priority queue storing intermediate branches in the best-bin-first search
         Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
 
-        std::vector<bool> checked(size_,false);
+        DynamicBitset checked(size_);
         int checks = 0;
         for (int i=0; i<trees_; ++i) {
             findNN(tree_roots_[i], result, vec, checks, maxChecks, heap, checked);
@@ -475,11 +471,6 @@ public:
 
         delete heap;
 
-    }
-
-    IndexParams getParameters() const
-    {
-        return index_params_;
     }
 
 
@@ -652,20 +643,20 @@ private:
 
     template<typename ResultSet>
     void findNN(NodePtr node, ResultSet& result, const ElementType* vec, int& checks, int maxChecks,
-                Heap<BranchSt>* heap, std::vector<bool>& checked)
+                Heap<BranchSt>* heap, DynamicBitset& checked)
     {
         if (node->childs.empty()) {
             if (checks>=maxChecks) {
                 if (result.full()) return;
             }
-            checks += node->size;
             for (int i=0; i<node->size; ++i) {
                 int index = node->indices[i];
-                if (!checked[index]) {
-                    DistanceType dist = distance_(dataset_[index], vec, veclen_);
-                    result.addPoint(dist, index);
-                    checked[index] = true;
-                }
+                if (checked.test(index) || removed_points_.test(index)) continue;
+
+                DistanceType dist = distance_(dataset_[index], vec, veclen_);
+                result.addPoint(dist, index);
+                checked.set(index);
+                ++checks;
             }
         }
         else {
@@ -720,32 +711,10 @@ private:
 
 private:
 
-
-    /**
-     * The dataset used by this index
-     */
-    Matrix<ElementType> dataset_;
-
-    /**
-     * Parameters used by this index
-     */
-    IndexParams index_params_;
-
-
-    /**
-     * Number of features in the dataset.
-     */
-    size_t size_;
-    
     /**
      * Number of features in the dataset when the index was last built.
      */
     size_t size_at_build_;
-
-    /**
-     * Length of each feature.
-     */
-    size_t veclen_;
 
     /**
      * The root nodes in the tree.
@@ -797,11 +766,17 @@ private:
      * Max size of leaf nodes
      */
     int leaf_size_;
+
     
-    /**
-     *  Does the index have a copy of the dataset?
-     */
-    bool ownDataset_;
+
+    using BaseClass::removed_points_;
+    using BaseClass::dataset_;
+    using BaseClass::ownDataset_;
+    using BaseClass::size_;
+    using BaseClass::veclen_;
+    using BaseClass::index_params_;
+    using BaseClass::extendDataset;
+    using BaseClass::setDataset;
 };
 
 }
