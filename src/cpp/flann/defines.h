@@ -26,9 +26,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#include <boost/preprocessor/expand.hpp>
-#include <boost/preprocessor/stringize.hpp>
-
 #ifndef FLANN_DEFINES_H_
 #define FLANN_DEFINES_H_
 
