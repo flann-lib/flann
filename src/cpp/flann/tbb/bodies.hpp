@@ -175,7 +175,9 @@ public:
             size_t n = std::min(resultSet.size(), knn_);
             indices_[i].resize(n);
             distances_[i].resize(n);
-            resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
+            if (n>0) {
+            	resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
+            }
             count_ += n;
         }
     }
@@ -188,7 +190,9 @@ public:
             size_t n = std::min(resultSet.size(), knn_);
             indices_[i].resize(n);
             distances_[i].resize(n);
-            resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
+            if (n>0) {
+            	resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
+            }
             count_ += n;
         }
     }
@@ -406,7 +410,9 @@ public:
                   count_ += n;
                   indices_[i].resize(n);
                   distances_[i].resize(n);
-                  resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
+                  if (n>0) {
+                	  resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
+                  }
               }
           }
           else {
@@ -421,7 +427,9 @@ public:
                   if ((int)n>max_neighbors) n = max_neighbors;
                   indices_[i].resize(n);
                   distances_[i].resize(n);
-                  resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
+                  if (n>0) {
+                	  resultSet.copy(&indices_[i][0], &distances_[i][0], n, params_.sorted);
+                  }
               }
           }
       }
