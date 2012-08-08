@@ -292,8 +292,6 @@ private:
 
     GpuHelper* gpu_helper_;
 
-    IndexParams index_params_;
-
     int leaf_max_size_;
 
     int leaf_count_;
@@ -313,8 +311,14 @@ private:
 
     Distance distance_;
 
+    using BaseClass::removed_points_;
+    using BaseClass::dataset_;
+    using BaseClass::ownDataset_;
     using BaseClass::size_;
     using BaseClass::veclen_;
+    using BaseClass::index_params_;
+    using BaseClass::extendDataset;
+    using BaseClass::setDataset;
 };   // class KDTree
 
 

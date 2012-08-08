@@ -43,6 +43,7 @@ option(BUILD_C_BINDINGS "Build C bindings" ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
 option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" ON)
 option(BUILD_CUDA_LIB "Build CUDA library" ON)
+option(USE_TBB "Use TBB" OFF)
 option(USE_MPI "Use MPI" OFF)
 
 set(NVCC_COMPILER_BINDIR "" CACHE PATH  "Directory where nvcc should look for C++ compiler. This is passed to nvcc through the --compiler-bindir option.")
@@ -101,34 +102,35 @@ if (BUILD_CUDA_LIB)
     if (CUDA_FOUND)
         message(STATUS "CUDA found (include: ${CUDA_INCLUDE_DIRS}, lib: ${CUDA_LIBRARIES})")
         include_directories(${CUDA_INCLUDE_DIRS})
-        add_definitions(-DFLANN_USE_CUDA)
     else(CUDA_FOUND)
         message(STATUS "CUDA not found, CUDA library will not be built")
         set(BUILD_CUDA_LIB OFF)
     endif(CUDA_FOUND)
 endif(BUILD_CUDA_LIB)
 
-# find Intel TBB
-find_package(TBB)
-if(TBB_FOUND AND TBB_DEBUG_FOUND)
-    message(STATUS "Intel TBB include dir: " ${TBB_INCLUDE_DIRS})
-    message(STATUS "Intel TBB libs: " ${TBB_LIBRARIES})
-    message(STATUS "Intel TBB libs (debug): " ${TBB_DEBUG_LIBRARIES})
-	include_directories(${TBB_INCLUDE_DIRS})
-endif(TBB_FOUND AND TBB_DEBUG_FOUND)
+if (USE_TBB)
+    # find Intel TBB
+    find_package(TBB)
+    if(TBB_FOUND AND TBB_DEBUG_FOUND)
+        message(STATUS "Intel TBB include dir: " ${TBB_INCLUDE_DIRS})
+        message(STATUS "Intel TBB libs: " ${TBB_LIBRARIES})
+        message(STATUS "Intel TBB libs (debug): " ${TBB_DEBUG_LIBRARIES})
+        include_directories(${TBB_INCLUDE_DIRS})
+    endif(TBB_FOUND AND TBB_DEBUG_FOUND)
 
-# print additional info
-if(TBB_FOUND AND NOT TBB_DEBUG_FOUND)
-    message(STATUS "Only the Intel TBB (release) libraries were found")
-endif()
+    # print additional info
+    if(TBB_FOUND AND NOT TBB_DEBUG_FOUND)
+        message(STATUS "Only the Intel TBB (release) libraries were found")
+    endif()
 
-if(TBB_DEBUG_FOUND AND NOT TBB_FOUND)
-    message(STATUS "Only the Intel TBB (debug) libraries were found")
-endif()
+    if(TBB_DEBUG_FOUND AND NOT TBB_FOUND)
+        message(STATUS "Only the Intel TBB (debug) libraries were found")
+    endif()
 
-if(NOT TBB_FOUND AND NOT TBB_DEBUG_FOUND)
-    message(STATUS "No intel TBB libraries were found")
-endif()
+    if(NOT TBB_FOUND AND NOT TBB_DEBUG_FOUND)
+        message(STATUS "No intel TBB libraries were found")
+    endif()
+endif(USE_TBB)
 
 
 #set the C/C++ include path to the "include" directory
