@@ -515,12 +515,17 @@ private:
 
     void save_tree(FILE* stream, NodePtr node, int num)
     {
-        save_value(stream, *node);
-        if (node->childs.empty()) {
+        save_value(stream, node->pivot);
+        save_value(stream, node->size);
+        save_value(stream, node->level);
+        size_t childs_size = node->childs.size();
+        save_value(stream, childs_size);
+
+        if (childs_size==0) {
             save_value(stream, node->indices);
         }
         else {
-            for(int i=0; i<branching_; ++i) {
+            for(size_t i=0; i<childs_size; ++i) {
                 save_tree(stream, node->childs[i], num);
             }
         }
@@ -530,13 +535,18 @@ private:
     void load_tree(FILE* stream, NodePtr& node, int num)
     {
         node = new(pool_) Node();
-        load_value(stream, *node);
-        if (node->childs.empty()) {
+        load_value(stream, node->pivot);
+        load_value(stream, node->size);
+        load_value(stream, node->level);
+        size_t childs_size = 0;
+        load_value(stream, childs_size);
+
+        if (childs_size==0) {
             load_value(stream, node->indices);
         }
         else {
-            node->childs.resize(branching_);
-            for(int i=0; i<branching_; ++i) {
+            node->childs.resize(childs_size);
+            for(size_t i=0; i<childs_size; ++i) {
                 load_tree(stream, node->childs[i], num);
             }
         }

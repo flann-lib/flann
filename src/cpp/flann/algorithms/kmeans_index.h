@@ -585,7 +585,7 @@ private:
         load_value(stream, node->radius);
         load_value(stream, node->variance);
         load_value(stream, node->size);
-        size_t childs_size = node->childs.size();
+        size_t childs_size = 0;
         load_value(stream, childs_size);
 
         if (childs_size==0) {
