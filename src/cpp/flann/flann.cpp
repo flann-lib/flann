@@ -62,6 +62,7 @@ flann::IndexParams create_parameters(FLANNParameters* p)
         params["trees"] = p->trees;
         params["leaf_max_size"] = p->leaf_max_size;
     }
+
 #ifdef FLANN_USE_CUDA
     if (p->algorithm == FLANN_INDEX_KDTREE_CUDA) {
         params["leaf_max_size"] = p->leaf_max_size;
