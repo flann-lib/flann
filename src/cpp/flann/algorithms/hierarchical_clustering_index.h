@@ -56,7 +56,7 @@ struct HierarchicalClusteringIndexParams : public IndexParams
 {
     HierarchicalClusteringIndexParams(int branching = 32,
                                       flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM,
-                                      int trees = 4, int leaf_size = 100)
+                                      int trees = 4, int leaf_max_size = 100)
     {
         (*this)["algorithm"] = FLANN_INDEX_HIERARCHICAL;
         // The branching factor used in the hierarchical clustering
@@ -66,7 +66,7 @@ struct HierarchicalClusteringIndexParams : public IndexParams
         // number of parallel trees to build
         (*this)["trees"] = trees;
         // maximum leaf size
-        (*this)["leaf_size"] = leaf_size;
+        (*this)["leaf_max_size"] = leaf_max_size;
     }
 };
 
@@ -276,7 +276,7 @@ public:
         branching_ = get_param(index_params_,"branching",32);
         centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
         trees_ = get_param(index_params_,"trees",4);
-        leaf_size_ = get_param(index_params_,"leaf_size",100);
+        leaf_max_size_ = get_param(index_params_,"leaf_max_size",100);
 
         if (centers_init_==FLANN_CENTERS_RANDOM) {
             chooseCenters = &HierarchicalClusteringIndex::chooseCentersRandom;
@@ -311,7 +311,7 @@ public:
         branching_ = get_param(index_params_,"branching",32);
         centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
         trees_ = get_param(index_params_,"trees",4);
-        leaf_size_ = get_param(index_params_,"leaf_size",100);
+        leaf_max_size_ = get_param(index_params_,"leaf_max_size",100);
 
         if (centers_init_==FLANN_CENTERS_RANDOM) {
             chooseCenters = &HierarchicalClusteringIndex::chooseCentersRandom;
@@ -410,7 +410,7 @@ public:
         save_value(stream, branching_);
         save_value(stream, trees_);
         save_value(stream, centers_init_);
-        save_value(stream, leaf_size_);
+        save_value(stream, leaf_max_size_);
         save_value(stream, memoryCounter_);
         for (int i=0; i<trees_; ++i) {
             save_tree(stream, tree_roots_[i], i);
@@ -424,7 +424,7 @@ public:
         load_value(stream, branching_);
         load_value(stream, trees_);
         load_value(stream, centers_init_);
-        load_value(stream, leaf_size_);
+        load_value(stream, leaf_max_size_);
         load_value(stream, memoryCounter_);
         tree_roots_.resize(trees_);
         for (int i=0; i<trees_; ++i) {
@@ -435,7 +435,7 @@ public:
         index_params_["branching"] = branching_;
         index_params_["trees"] = trees_;
         index_params_["centers_init"] = centers_init_;
-        index_params_["leaf_size"] = leaf_size_;
+        index_params_["leaf_max_size"] = leaf_max_size_;
     }
 
 
@@ -589,7 +589,7 @@ private:
         node->size = indices_length;
         node->level = level;
 
-        if (indices_length < leaf_size_) { // leaf node
+        if (indices_length < leaf_max_size_) { // leaf node
             node->indices.resize(indices_length);
             std::copy(indices, indices+indices_length, node->indices.begin());
             std::sort(node->indices.begin(),node->indices.end());
@@ -775,7 +775,7 @@ private:
     /**
      * Max size of leaf nodes
      */
-    int leaf_size_;
+    int leaf_max_size_;
 
     
 
