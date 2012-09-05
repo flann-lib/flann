@@ -419,6 +419,8 @@ private:
         if (lim1>count/2) index = lim1;
         else if (lim2<count/2) index = lim2;
         else index = count/2;
+
+        assert(index > 0 && index < count-1);
     }
 
 
@@ -461,6 +463,8 @@ private:
         if (lim1>count/2) index = lim1;
         else if (lim2<count/2) index = lim2;
         else index = count/2;
+
+        assert(index > 0 && index < count-1);
     }
 
 
