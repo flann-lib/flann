@@ -345,6 +345,18 @@ public:
         if (ownDataset_) {
             delete[] dataset_.ptr();
         }
+
+        clearNodeTrees();
+    }
+
+    /**
+     * Clears Node tree
+     * calling Node destructor explicitly
+     */
+    void clearNodeTrees(){
+        for (int i=0; i<trees_; ++i) {
+            tree_roots_[i]->~Node();
+        }
     }
 
     /**
@@ -386,6 +398,7 @@ public:
         extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
+            clearNodeTrees();
             pool_.free();
             buildIndex();
         }
@@ -501,6 +514,17 @@ private:
          * Level
          */
         int level;
+
+        /**
+         * destructor
+         * calling Node destructor explicitly
+         */
+        ~Node(){
+            for(int i=0; i<childs.size(); i++){
+                childs[i]->~Node();
+            }
+        };
+
     };
     typedef Node* NodePtr;
 
