@@ -6,7 +6,7 @@ function [index, params, speedup] = flann_build_index(dataset, build_params)
 
 % Marius Muja, January 2008
 
-    algos = struct( 'linear', 0, 'kdtree', 1, 'kmeans', 2, 'composite', 3, 'saved', 254, 'autotuned', 255 );
+    algos = struct( 'linear', 0, 'kdtree', 1, 'kmeans', 2, 'composite', 3, 'kdtree_single', 4, 'hierarchical', 5, 'lsh', 6, 'saved', 254, 'autotuned', 255 );
     center_algos = struct('random', 0, 'gonzales', 1, 'kmeanspp', 2 );
     log_levels = struct('none', 0, 'fatal', 1, 'error', 2, 'warning', 3, 'info', 4);
     function value = id2value(map, id)
