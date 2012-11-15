@@ -122,7 +122,7 @@ public:
      * Params:
      *     value = the new element to be inserted in the heap
      */
-    void insert(T value)
+    void insert(const T& value)
     {
         /* If heap is full, then return without adding this element. */
         if (count == length) {
@@ -159,6 +159,297 @@ public:
         return true;  /* Return old last node. */
     }
 };
+
+
+template <typename T>
+class IntervalHeap
+{
+	struct Interval
+	{
+		T left;
+		T right;
+	};
+
+    /**
+     * Storage array for the heap.
+     * Type T must be comparable.
+     */
+    std::vector<Interval> heap;
+    size_t capacity_;
+    size_t size_;
+
+public:
+    /**
+     * Constructor.
+     *
+     * Params:
+     *     size = heap size
+     */
+
+    IntervalHeap(int capacity) : capacity_(capacity), size_(0)
+    {
+        heap.resize(capacity/2 + capacity%2 + 1); // 1-based indexing
+    }
+
+    /**
+     * @return Heap size
+     */
+    size_t size()
+    {
+        return size_;
+    }
+
+    /**
+     * Tests if the heap is empty
+     * @return true is heap empty, false otherwise
+     */
+    bool empty()
+    {
+        return size_==0;
+    }
+
+    /**
+     * Clears the heap.
+     */
+    void clear()
+    {
+        size_ = 0;
+    }
+
+    void insert(const T& value)
+    {
+        /* If heap is full, then return without adding this element. */
+        if (size_ == capacity_) {
+            return;
+        }
+
+        // insert into the root
+        if (size_<2) {
+        	if (size_==0) {
+        		heap[1].left = value;
+        		heap[1].right = value;
+        	}
+        	else {
+        		if (value<heap[1].left) {
+        			heap[1].left = value;
+        		}
+        		else {
+        			heap[1].right = value;
+        		}
+        	}
+        	++size_;
+        	return;
+        }
+
+        size_t last_pos = size_/2 + size_%2;
+        bool min_heap;
+
+        if (size_%2) { // odd number of elements
+        	min_heap = (value<heap[last_pos].left)? true : false;
+        }
+        else {
+        	++last_pos;
+        	min_heap = (value<heap[last_pos/2].left)? true : false;
+        }
+
+        if (min_heap) {
+        	size_t pos = last_pos;
+        	size_t par = pos/2;
+        	while (pos>1 && value < heap[par].left) {
+        		heap[pos].left = heap[par].left;
+        		pos = par;
+        		par = pos/2;
+        	}
+        	heap[pos].left = value;
+        	++size_;
+
+        	if (size_%2) { // duplicate element in last position if size is odd
+        		heap[last_pos].right = heap[last_pos].left;
+        	}
+        }
+        else {
+        	size_t pos = last_pos;
+        	size_t par = pos/2;
+        	while (pos>1 && heap[par].right < value) {
+        		heap[pos].right = heap[par].right;
+        		pos = par;
+        		par = pos/2;
+        	}
+        	heap[pos].right = value;
+        	++size_;
+
+        	if (size_%2) { // duplicate element in last position if size is odd
+        		heap[last_pos].left = heap[last_pos].right;
+        	}
+        }
+    }
+
+
+    /**
+     * Returns the node of minimum value from the heap
+     * @param value out parameter used to return the min element
+     * @return false if heap empty
+     */
+    bool popMin(T& value)
+    {
+        if (size_ == 0) {
+            return false;
+        }
+
+        value = heap[1].left;
+        size_t last_pos = size_/2 + size_%2;
+        T elem = heap[last_pos].left;
+
+        if (size_ % 2) { // odd number of elements
+        	--last_pos;
+        }
+        else {
+        	heap[last_pos].left = heap[last_pos].right;
+        }
+        --size_;
+        if (size_<2) return true;
+
+        size_t crt=1; // root node
+        size_t child = crt*2;
+
+        while (child <= last_pos) {
+        	if (child < last_pos && heap[child+1].left < heap[child].left) ++child; // pick the child with min
+
+        	if (!(heap[child].left<elem)) break;
+
+        	heap[crt].left = heap[child].left;
+        	if (heap[child].right<elem) {
+        		std::swap(elem, heap[child].right);
+        	}
+
+        	crt = child;
+    		child *= 2;
+        }
+        heap[crt].left = elem;
+        return true;
+    }
+
+
+    /**
+     * Returns the element of maximum value from the heap
+     * @param value
+     * @return false if heap empty
+     */
+    bool popMax(T& value)
+    {
+        if (size_ == 0) {
+            return false;
+        }
+
+        value = heap[1].right;
+        size_t last_pos = size_/2 + size_%2;
+        T elem = heap[last_pos].right;
+
+        if (size_%2) { // odd number of elements
+        	--last_pos;
+        }
+        else {
+        	heap[last_pos].right = heap[last_pos].left;
+        }
+        --size_;
+        if (size_<2) return true;
+
+        size_t crt=1; // root node
+        size_t child = crt*2;
+
+        while (child <= last_pos) {
+        	if (child < last_pos && heap[child].right < heap[child+1].right) ++child; // pick the child with max
+
+        	if (!(elem < heap[child].right)) break;
+
+        	heap[crt].right = heap[child].right;
+        	if (elem<heap[child].left) {
+        		std::swap(elem, heap[child].left);
+        	}
+
+        	crt = child;
+    		child *= 2;
+        }
+        heap[crt].right = elem;
+        return true;
+    }
+
+
+    bool getMin(T& value)
+    {
+    	if (size_==0) {
+    		return false;
+    	}
+    	value = heap[1].left;
+    	return true;
+    }
+
+
+    bool getMax(T& value)
+    {
+    	if (size_==0) {
+    		return false;
+    	}
+    	value = heap[1].right;
+    	return true;
+    }
+};
+
+
+template <typename T>
+class BoundedHeap
+{
+	IntervalHeap<T> interval_heap_;
+	size_t capacity_;
+public:
+	BoundedHeap(size_t capacity) : interval_heap_(capacity), capacity_(capacity)
+	{
+
+	}
+
+    /**
+     * Returns: heap size
+     */
+    int size()
+    {
+        return interval_heap_.size();
+    }
+
+    /**
+     * Tests if the heap is empty
+     * Returns: true is heap empty, false otherwise
+     */
+    bool empty()
+    {
+        return interval_heap_.empty();
+    }
+
+    /**
+     * Clears the heap.
+     */
+    void clear()
+    {
+    	interval_heap_.clear();
+    }
+
+    void insert(const T& value)
+    {
+    	if (interval_heap_.size()==capacity_) {
+    		T max;
+    		interval_heap_.getMax(max);
+    		if (max<value) return;
+   			interval_heap_.popMax(max);
+    	}
+    	interval_heap_.insert(value);
+    }
+
+    bool popMin(T& value)
+    {
+    	return interval_heap_.popMin(value);
+    }
+};
+
+
 
 }
 
