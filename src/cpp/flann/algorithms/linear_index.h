@@ -46,32 +46,27 @@ struct LinearIndexParams : public IndexParams
 };
 
 template <typename Distance>
-class LinearIndex : public NNIndex<LinearIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
+class LinearIndex : public NNIndex<Distance>
 {
 public:
 
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
-    typedef NNIndex<LinearIndex<Distance>, ElementType, DistanceType> BaseClass;
 
 
     LinearIndex(const IndexParams& params = LinearIndexParams(), Distance d = Distance()) :
-                	BaseClass(params), distance_(d)
+    	NNIndex<Distance>(params), distance_(d)
     {
     }
 
     LinearIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LinearIndexParams(), Distance d = Distance()) :
-                	BaseClass(params), distance_(d)
+    	NNIndex<Distance>(params), distance_(d)
     {
-        bool copy_dataset = get_param(index_params_, "copy_dataset", false);
-        setDataset(input_data, copy_dataset);
+        setDataset(input_data);
     }
 
-    ~LinearIndex()
+    virtual ~LinearIndex()
     {
-        if (ownDataset_) {
-            delete[] dataset_.ptr();
-        }
     }
 
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
@@ -113,12 +108,11 @@ public:
         index_params_["algorithm"] = getType();
     }
 
-    template <typename ResultSet>
-    void findNeighbors(ResultSet& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/)
+    void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/)
     {
-        for (size_t i = 0; i < dataset_.rows; ++i) {
+        for (size_t i = 0; i < points_.size(); ++i) {
         	if (removed_points_.test(i)) continue;
-            DistanceType dist = distance_(dataset_[i], vec, dataset_.cols);
+            DistanceType dist = distance_(points_[i], vec, veclen_);
             resultSet.addPoint(dist, i);
         }
     }
@@ -128,14 +122,7 @@ private:
     /** Index distance */
     Distance distance_;
 
-    using BaseClass::removed_points_;
-    using BaseClass::dataset_;
-    using BaseClass::ownDataset_;
-    using BaseClass::index_params_;
-    using BaseClass::size_;
-    using BaseClass::veclen_;
-    using BaseClass::extendDataset;
-    using BaseClass::setDataset;
+    USING_BASECLASS_SYMBOLS
 };
 
 }

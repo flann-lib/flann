@@ -72,7 +72,7 @@ struct AutotunedIndexParams : public IndexParams
 
 
 template <typename Distance>
-class AutotunedIndex : public NNIndex<AutotunedIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
+class AutotunedIndex : public NNIndex<Distance>
 {
 public:
     typedef typename Distance::ElementType ElementType;
@@ -95,7 +95,7 @@ public:
     AutotunedIndex(const AutotunedIndex&);
     AutotunedIndex& operator=(const AutotunedIndex&);
 
-    ~AutotunedIndex()
+    virtual ~AutotunedIndex()
     {
         if (bestIndex_ != NULL) {
             delete bestIndex_;
@@ -223,8 +223,7 @@ public:
     /**
      *      Method that searches for nearest-neighbors
      */
-    template <typename ResultSet>
-    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
         // should not get here
         assert(false);

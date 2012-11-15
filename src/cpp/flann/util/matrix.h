@@ -43,14 +43,15 @@ class Matrix_
 {
 public:
 
-	Matrix_() : rows(0), cols(0), stride(0), data(NULL)
+	Matrix_() : rows(0), cols(0), stride(0), type(FLANN_NONE), data(NULL)
 	{
 	};
 
-    Matrix_(void* data_, size_t rows_, size_t cols_, flann_datatype_t type, size_t stride_ = 0) :
-        rows(rows_), cols(cols_),  stride(stride_)
+    Matrix_(void* data_, size_t rows_, size_t cols_, flann_datatype_t type_, size_t stride_ = 0) :
+        rows(rows_), cols(cols_), stride(stride_), type(type_)
     {
     	data = static_cast<uchar*>(data_);
+
     	if (stride==0) stride = flann_datatype_size(type)*cols;
     }
 
@@ -97,21 +98,12 @@ public:
     Matrix(T* data_, size_t rows_, size_t cols_, size_t stride_ = 0) :
     	Matrix_(data_, rows_, cols_, flann_datatype<T>::value, stride_)
     {
+    	if (stride==0) stride = sizeof(T)*cols;
     }
 
-    Matrix(const Matrix_ m)
+    Matrix(const Matrix_& m)
     {
     	*this = m;
-    }
-    /**
-     * Convenience function for deallocating the storage data.
-     */
-    FLANN_DEPRECATED void free()
-    {
-        fprintf(stderr, "The flann::Matrix<T>::free() method is deprecated "
-                "and it does not do any memory deallocation any more.  You are"
-                "responsible for deallocating the matrix memory (by doing"
-                "'delete[] matrix.ptr()' for example)");
     }
 
     /**
@@ -119,13 +111,13 @@ public:
      */
     inline T* operator[](size_t index) const
     {
-    	return reinterpret_cast<T*>(static_cast<uchar*>(Matrix_::data)+index*stride);
-//    	return (T*)(Matrix_::operator [](index));
+    	return reinterpret_cast<T*>(data+index*stride);
     }
+
 
     T* ptr() const
     {
-    	return reinterpret_cast<T*>(Matrix_::data);
+    	return reinterpret_cast<T*>(data);
     }
 };
 

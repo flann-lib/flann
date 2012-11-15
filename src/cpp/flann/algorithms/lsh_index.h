@@ -75,19 +75,18 @@ struct LshIndexParams : public IndexParams
  * for nearest-neighbor matching.
  */
 template<typename Distance>
-class LshIndex : public NNIndex<LshIndex<Distance>,typename Distance::ElementType, typename Distance::ResultType>
+class LshIndex : public NNIndex<Distance>
 {
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
-    typedef NNIndex<LshIndex<Distance>, ElementType, DistanceType> BaseClass;
 
     /** Constructor
      * @param params parameters passed to the LSH algorithm
      * @param d the distance used
      */
     LshIndex(const IndexParams& params = LshIndexParams(), Distance d = Distance()) :
-        BaseClass(params), distance_(d)
+    	NNIndex<Distance>(params), distance_(d)
     {
         table_number_ = get_param<unsigned int>(index_params_,"table_number",12);
         key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
@@ -103,7 +102,7 @@ public:
      * @param d the distance used
      */
     LshIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LshIndexParams(), Distance d = Distance()) :
-        BaseClass(params), distance_(d)
+    	NNIndex<Distance>(params), distance_(d)
     {
         table_number_ = get_param<unsigned int>(index_params_,"table_number",12);
         key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
@@ -111,16 +110,12 @@ public:
 
         fill_xor_mask(0, key_size_, multi_probe_level_, xor_masks_);
 
-        bool copy_dataset = get_param(index_params_, "copy_dataset", false);
-        setDataset(input_data, copy_dataset);
+        setDataset(input_data);
     }
 
     
-    ~LshIndex()
+    virtual ~LshIndex()
     {
-        if (ownDataset_) {
-            delete[] dataset_.ptr();
-        }
     }
 
     LshIndex(const LshIndex&);
@@ -132,32 +127,37 @@ public:
     void buildIndex()
     {
         tables_.resize(table_number_);
+        std::vector<std::pair<size_t,ElementType*> > features;
+        features.reserve(points_.size());
+        for (size_t i=0;i<points_.size();++i) {
+        	features.push_back(std::make_pair(i, points_[i]));
+        }
         for (unsigned int i = 0; i < table_number_; ++i) {
             lsh::LshTable<ElementType>& table = tables_[i];
             table = lsh::LshTable<ElementType>(veclen_, key_size_);
 
             // Add the features to the table
-            table.add(dataset_);
+            table.add(features);
         }
         
-        size_at_build_ = dataset_.rows;;
+        size_at_build_ = size_;
     }
     
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         assert(points.cols==veclen_);
-        size_t old_size = dataset_.rows;
+        size_t old_size = size_;
 
         extendDataset(points);
         
-        if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<dataset_.rows) {
+        if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
             buildIndex();
         }
         else {
             for (unsigned int i = 0; i < table_number_; ++i) {
                 lsh::LshTable<ElementType>& table = tables_[i];                
-                for (size_t i=0;i<points.rows;++i) {
-                    table.add(old_size+i, points[i]);
+                for (size_t i=old_size;i<size_;++i) {
+                    table.add(i, points_[i]);
                 }            
             }
         }
@@ -199,7 +199,7 @@ public:
      */
     int usedMemory() const
     {
-        return dataset_.rows * sizeof(int);
+        return size_ * sizeof(int);
     }
 
     /**
@@ -305,8 +305,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    template <typename ResultSet>
-    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& /*searchParams*/)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& /*searchParams*/)
     {
         getNeighbors(vec, result);
     }
@@ -374,8 +373,8 @@ private:
 
                     // Process the rest of the candidates
                     for (; training_index < last_training_index; ++training_index) {
-                    	if (removed_points_.test(*training_index)) continue;
-                        hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
+                    	if (points_[*training_index].removed) continue;
+                        hamming_distance = distance_(vec, points_[*training_index].point, veclen_);
 
                         if (hamming_distance < worst_score) {
                             // Insert the new element
@@ -413,9 +412,9 @@ private:
 
                     // Process the rest of the candidates
                     for (; training_index < last_training_index; ++training_index) {
-                    	if (removed_points_.test(*training_index)) continue;
+                    	if (points_[*training_index].removed) continue;
                         // Compute the Hamming distance
-                        hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
+                        hamming_distance = distance_(vec, points_[*training_index].point, veclen_);
                         if (hamming_distance < radius) score_index_heap.push_back(ScoreIndexPair(hamming_distance, training_index));
                     }
                 }
@@ -450,7 +449,7 @@ private:
                 for (; training_index < last_training_index; ++training_index) {
                 	if (removed_points_.test(*training_index)) continue;
                     // Compute the Hamming distance
-                    hamming_distance = distance_(vec, dataset_[*training_index], dataset_.cols);
+                    hamming_distance = distance_(vec, points_[*training_index], veclen_);
                     result.addPoint(hamming_distance, *training_index);
                 }
             }
@@ -475,14 +474,7 @@ private:
 
     Distance distance_;
 
-    using BaseClass::removed_points_;
-    using BaseClass::dataset_;
-    using BaseClass::ownDataset_;
-    using BaseClass::size_;
-    using BaseClass::veclen_;
-    using BaseClass::index_params_;
-    using BaseClass::extendDataset;
-    using BaseClass::setDataset;
+    USING_BASECLASS_SYMBOLS
 };
 }
 

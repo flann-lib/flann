@@ -67,12 +67,11 @@ struct KDTreeCuda3dIndexParams : public IndexParams
  * on your CPU and GPU.
  */
 template <typename Distance>
-class KDTreeCuda3dIndex : public NNIndex<KDTreeCuda3dIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
+class KDTreeCuda3dIndex : public NNIndex<Distance>
 {
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
-    typedef NNIndex<KDTreeCuda3dIndex<Distance>, ElementType, DistanceType> BaseClass;
 
     int visited_leafs;
 
@@ -85,7 +84,7 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeCuda3dIndex(const IndexParams& params = KDTreeCuda3dIndexParams(), Distance d = Distance() ) :
-    	BaseClass(params), distance_(d)
+    	NNIndex<Distance>(params), distance_(d)
     {
         int dim_param = get_param(params,"dim",-1);
         if (dim_param>0) dim_ = dim_param;
@@ -103,7 +102,7 @@ public:
      */
     KDTreeCuda3dIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KDTreeCuda3dIndexParams(),
                       Distance d = Distance() ) :
-        BaseClass(params), distance_(d)
+                    	  NNIndex<Distance>(params), distance_(d)
     {
         int dim_param = get_param(params,"dim",-1);
         if (dim_param>0) dim_ = dim_param;
@@ -311,15 +310,8 @@ private:
 
     Distance distance_;
 
-    using BaseClass::removed_points_;
-    using BaseClass::dataset_;
-    using BaseClass::ownDataset_;
-    using BaseClass::size_;
-    using BaseClass::veclen_;
-    using BaseClass::index_params_;
-    using BaseClass::extendDataset;
-    using BaseClass::setDataset;
-};   // class KDTree
+    USING_BASECLASS_SYMBOLS
+};   // class KDTreeCuda3dIndex
 
 
 }

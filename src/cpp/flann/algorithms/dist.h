@@ -48,22 +48,6 @@ namespace flann
 {
 
 template<typename T>
-inline T abs(T x) { return (x<0) ? -x : x; }
-
-template<>
-inline int abs<int>(int x) { return ::abs(x); }
-
-template<>
-inline float abs<float>(float x) { return fabsf(x); }
-
-template<>
-inline double abs<double>(double x) { return fabs(x); }
-
-template<>
-inline long double abs<long double>(long double x) { return fabsl(x); }
-
-
-template<typename T>
 struct Accumulator { typedef T Type; };
 template<>
 struct Accumulator<unsigned char>  { typedef float Type; };
@@ -233,10 +217,10 @@ struct L1
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-            diff0 = (ResultType)abs(a[0] - b[0]);
-            diff1 = (ResultType)abs(a[1] - b[1]);
-            diff2 = (ResultType)abs(a[2] - b[2]);
-            diff3 = (ResultType)abs(a[3] - b[3]);
+            diff0 = (ResultType)std::abs(a[0] - b[0]);
+            diff1 = (ResultType)std::abs(a[1] - b[1]);
+            diff2 = (ResultType)std::abs(a[2] - b[2]);
+            diff3 = (ResultType)std::abs(a[3] - b[3]);
             result += diff0 + diff1 + diff2 + diff3;
             a += 4;
             b += 4;
@@ -247,7 +231,7 @@ struct L1
         }
         /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
         while (a < last) {
-            diff0 = (ResultType)abs(*a++ - *b++);
+            diff0 = (ResultType)std::abs(*a++ - *b++);
             result += diff0;
         }
         return result;
@@ -259,7 +243,7 @@ struct L1
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int) const
     {
-        return abs(a-b);
+        return std::abs(a-b);
     }
 };
 
@@ -296,10 +280,10 @@ struct MinkowskiDistance
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-            diff0 = (ResultType)abs(a[0] - b[0]);
-            diff1 = (ResultType)abs(a[1] - b[1]);
-            diff2 = (ResultType)abs(a[2] - b[2]);
-            diff3 = (ResultType)abs(a[3] - b[3]);
+            diff0 = (ResultType)std::abs(a[0] - b[0]);
+            diff1 = (ResultType)std::abs(a[1] - b[1]);
+            diff2 = (ResultType)std::abs(a[2] - b[2]);
+            diff3 = (ResultType)std::abs(a[3] - b[3]);
             result += pow(diff0,order) + pow(diff1,order) + pow(diff2,order) + pow(diff3,order);
             a += 4;
             b += 4;
@@ -310,7 +294,7 @@ struct MinkowskiDistance
         }
         /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
         while (a < last) {
-            diff0 = (ResultType)abs(*a++ - *b++);
+            diff0 = (ResultType)std::abs(*a++ - *b++);
             result += pow(diff0,order);
         }
         return result;
@@ -322,7 +306,7 @@ struct MinkowskiDistance
     template <typename U, typename V>
     inline ResultType accum_dist(const U& a, const V& b, int) const
     {
-        return pow(static_cast<ResultType>(abs(a-b)),order);
+        return pow(static_cast<ResultType>(std::abs(a-b)),order);
     }
 };
 
@@ -351,10 +335,10 @@ struct MaxDistance
 
         /* Process 4 items with each loop for efficiency. */
         while (a < lastgroup) {
-            diff0 = abs(a[0] - b[0]);
-            diff1 = abs(a[1] - b[1]);
-            diff2 = abs(a[2] - b[2]);
-            diff3 = abs(a[3] - b[3]);
+            diff0 = std::abs(a[0] - b[0]);
+            diff1 = std::abs(a[1] - b[1]);
+            diff2 = std::abs(a[2] - b[2]);
+            diff3 = std::abs(a[3] - b[3]);
             if (diff0>result) {result = diff0; }
             if (diff1>result) {result = diff1; }
             if (diff2>result) {result = diff2; }
@@ -368,7 +352,7 @@ struct MaxDistance
         }
         /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
         while (a < last) {
-            diff0 = abs(*a++ - *b++);
+            diff0 = std::abs(*a++ - *b++);
             result = (diff0>result) ? diff0 : result;
         }
         return result;

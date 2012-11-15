@@ -80,7 +80,7 @@ inline size_t flann_datatype_size(flann_datatype_t type)
 		return 8;
 	break;
 	default:
-		return 1;
+		return 0;
 	}
 }
 

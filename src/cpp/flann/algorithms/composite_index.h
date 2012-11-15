@@ -68,12 +68,11 @@ struct CompositeIndexParams : public IndexParams
  * as some of the neighbours that are missed by one index are found by the other.
  */
 template <typename Distance>
-class CompositeIndex : public NNIndex<CompositeIndex<Distance>, typename Distance::ElementType, typename Distance::ResultType>
+class CompositeIndex : public NNIndex<Distance>
 {
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
-    typedef NNIndex<CompositeIndex<Distance>, ElementType, DistanceType> BaseClass;
 
     typedef bool needs_kdtree_distance;
 
@@ -85,7 +84,7 @@ public:
      * @return
      */
     CompositeIndex(const IndexParams& params = CompositeIndexParams(), Distance d = Distance()) :
-    	BaseClass(params)
+    	NNIndex<Distance>(params)
     {
         kdtree_index_ = new KDTreeIndex<Distance>(params, d);
         kmeans_index_ = new KMeansIndex<Distance>(params, d);
@@ -93,7 +92,7 @@ public:
     }
 
     CompositeIndex(const Matrix<ElementType>& inputData, const IndexParams& params = CompositeIndexParams(),
-                   Distance d = Distance()) : BaseClass(params)
+                   Distance d = Distance()) : NNIndex<Distance>(params)
     {
         kdtree_index_ = new KDTreeIndex<Distance>(inputData, params, d);
         kmeans_index_ = new KMeansIndex<Distance>(inputData, params, d);
@@ -188,8 +187,7 @@ public:
     /**
      * \brief Method that searches for nearest-neighbours
      */
-    template <typename ResultSet>
-    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
         kmeans_index_->findNeighbors(result, vec, searchParams);
         kdtree_index_->findNeighbors(result, vec, searchParams);

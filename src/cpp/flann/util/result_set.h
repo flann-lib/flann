@@ -78,13 +78,27 @@ struct DistanceIndex
 };
 
 
+template <typename DistanceType>
+class ResultSet
+{
+public:
+    virtual ~ResultSet() {}
+
+    virtual bool full() const = 0;
+
+    virtual void addPoint(DistanceType dist, size_t index) = 0;
+
+    virtual DistanceType worstDist() const = 0;
+
+};
+
 /**
  * KNNSimpleResultSet does not ensure that the element it holds are unique.
  * Is used in those cases where the nearest neighbour algorithm used does not
  * attempt to insert the same element multiple times.
  */
 template <typename DistanceType>
-class KNNSimpleResultSet
+class KNNSimpleResultSet : public ResultSet<DistanceType>
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -188,7 +202,7 @@ private:
  * K-Nearest neighbour result set. Ensures that the elements inserted are unique
  */
 template <typename DistanceType>
-class KNNResultSet
+class KNNResultSet : public ResultSet<DistanceType>
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -289,7 +303,7 @@ private:
 
 
 template <typename DistanceType>
-class KNNResultSet2
+class KNNResultSet2 : public ResultSet<DistanceType>
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -411,7 +425,7 @@ private:
  * are added to it.
  */
 template <typename DistanceType>
-class RadiusResultSet
+class RadiusResultSet : public ResultSet<DistanceType>
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -512,7 +526,7 @@ private:
  * it can hold to a preset capacity.
  */
 template <typename DistanceType>
-class KNNRadiusResultSet
+class KNNRadiusResultSet : public ResultSet<DistanceType>
 {
 public:
 	typedef DistanceIndex<DistanceType> DistIndex;
@@ -637,7 +651,7 @@ private:
  */
 
 template <typename DistanceType>
-class CountRadiusResultSet
+class CountRadiusResultSet : public ResultSet<DistanceType>
 {
     DistanceType radius;
     size_t count;
@@ -689,7 +703,7 @@ public:
 /** Class that holds the k NN neighbors
  */
 template<typename DistanceType>
-class UniqueResultSet
+class UniqueResultSet : public ResultSet<DistanceType>
 {
 public:
     struct DistIndex
