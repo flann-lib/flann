@@ -32,7 +32,6 @@
 
 #include "flann/general.h"
 
-#include "flann/algorithms/index_abstractions.h"
 #include "flann/algorithms/nn_index.h"
 #include "flann/algorithms/kdtree_index.h"
 #include "flann/algorithms/kdtree_single_index.h"
@@ -128,28 +127,27 @@ struct valid_combination
  * Create index
  **********************************************************/
 template <template<typename> class Index, typename Distance, typename T>
-inline IndexWrapper<Index<Distance> >* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
+inline NNIndex<Distance>* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
 		typename enable_if<valid_combination<Index,Distance,T>::value,void>::type* = 0)
 {
-	typedef Index<Distance> IndexType;
-    return new IndexWrapper<IndexType>(new IndexType(data, params,distance));
+    return new Index<Distance>(data, params, distance);
 }
 
 template <template<typename> class Index, typename Distance, typename T>
-inline IndexWrapper<Index<Distance> >* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
+inline NNIndex<Distance>* create_index_(flann::Matrix<T> data, const flann::IndexParams& params, const Distance& distance,
 		typename disable_if<valid_combination<Index,Distance,T>::value,void>::type* = 0)
 {
     return NULL;
 }
 
 template<typename Distance>
-inline TypedIndexBase<typename Distance::ElementType, typename Distance::ResultType>*
+inline NNIndex<Distance>*
   create_index_by_type(const flann_algorithm_t index_type,
 		const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
 {
 	typedef typename Distance::ElementType ElementType;
 
-	TypedIndexBase<typename Distance::ElementType, typename Distance::ResultType>* nnIndex;
+	NNIndex<Distance>* nnIndex;
     
     switch (index_type) {
 #define FLANN_INDEX_CASE(name,index,_) \

@@ -88,7 +88,6 @@ public:
         NNIndex<Distance>(params), distance_(d)
     {
         trees_ = get_param(index_params_,"trees",4);
-        tree_roots_ = new NodePtr[trees_];
     }
 
 
@@ -103,7 +102,6 @@ public:
                 Distance d = Distance() ) : NNIndex<Distance>(params), distance_(d)
     {
         trees_ = get_param(index_params_,"trees",4);
-        tree_roots_ = new NodePtr[trees_];
 
         setDataset(dataset);
     }
@@ -116,11 +114,10 @@ public:
      */
     virtual ~KDTreeIndex()
     {
-        if (tree_roots_!=NULL) {
-            delete[] tree_roots_;
-        }
+    	freeIndex();
     }
 
+    using NNIndex<Distance>::buildIndex;
     /**
      * Builds the index
      */
@@ -135,6 +132,7 @@ public:
         mean_ = new DistanceType[veclen_];
         var_ = new DistanceType[veclen_];
 
+        tree_roots_.resize(trees_);
         /* Construct the randomized trees. */
         for (int i = 0; i < trees_; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
@@ -155,7 +153,7 @@ public:
         extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
-            pool_.free();
+            freeIndex();
             cleanRemovedPoints();
             buildIndex();
         }
@@ -174,27 +172,44 @@ public:
     }
 
 
+    template<typename Archive>
+    void serialize(Archive& ar)
+    {
+    	ar.setObject(this);
+
+    	ar & *static_cast<NNIndex<Distance>*>(this);
+
+    	ar & trees_;
+
+    	if (Archive::is_loading::value) {
+    		tree_roots_.resize(trees_);
+    	}
+    	for (size_t i=0;i<tree_roots_.size();++i) {
+    		if (Archive::is_loading::value) {
+    			tree_roots_[i] = new(pool_) Node();
+    		}
+    		ar & *tree_roots_[i];
+    	}
+
+    	if (Archive::is_loading::value) {
+            index_params_["algorithm"] = getType();
+            index_params_["trees"] = trees_;
+    	}
+    }
+
+
     void saveIndex(FILE* stream)
     {
-        save_value(stream, trees_);
-        for (int i=0; i<trees_; ++i) {
-            save_tree(stream, tree_roots_[i]);
-        }
+    	serialization::SaveArchive sa(stream);
+    	sa & *this;
     }
+
 
     void loadIndex(FILE* stream)
     {
-        load_value(stream, trees_);
-        if (tree_roots_!=NULL) {
-            delete[] tree_roots_;
-        }
-        tree_roots_ = new NodePtr[trees_];
-        for (int i=0; i<trees_; ++i) {
-            load_tree(stream,tree_roots_[i]);
-        }
-
-        index_params_["algorithm"] = getType();
-        index_params_["trees"] = tree_roots_;
+    	freeIndex();
+    	serialization::LoadArchive la(stream);
+    	la & *this;
     }
 
     /**
@@ -230,6 +245,15 @@ public:
 
 private:
 
+    void freeIndex()
+    {
+    	for (size_t i=0;i<tree_roots_.size();++i) {
+    		// using placement new, so call destructor explicitly
+    		if (tree_roots_[i]!=NULL) tree_roots_[i]->~Node();
+    	}
+    	pool_.free();
+    }
+
 
     /*--------------------- Internal Data Structures --------------------------*/
     struct Node
@@ -250,36 +274,48 @@ private:
          * The child nodes.
          */
         Node* child1, * child2;
+
+        ~Node() {
+        	if (child1!=NULL) child1->~Node();
+        	if (child2!=NULL) child2->~Node();
+        }
+
+    private:
+    	template<typename Archive>
+    	void serialize(Archive& ar)
+    	{
+    		typedef KDTreeIndex<Distance> Index;
+    		Index* obj = static_cast<Index*>(ar.getObject());
+
+    		ar & divfeat;
+    		ar & divval;
+
+    		bool leaf_node = false;
+    		if (Archive::is_saving::value) {
+    			leaf_node = ((child1==NULL) && (child2==NULL));
+    		}
+    		ar & leaf_node;
+
+    		if (leaf_node) {
+    			if (Archive::is_loading::value) {
+    				point = obj->points_[divfeat];
+    			}
+    		}
+
+    		if (!leaf_node) {
+				if (Archive::is_loading::value) {
+					child1 = new(obj->pool_) Node();
+					child2 = new(obj->pool_) Node();
+				}
+    			ar & *child1;
+    			ar & *child2;
+    		}
+    	}
+    	friend struct serialization::access;
     };
     typedef Node* NodePtr;
     typedef BranchStruct<NodePtr, DistanceType> BranchSt;
     typedef BranchSt* Branch;
-
-
-
-    void save_tree(FILE* stream, NodePtr tree)
-    {
-        save_value(stream, *tree);
-        if (tree->child1!=NULL) {
-            save_tree(stream, tree->child1);
-        }
-        if (tree->child2!=NULL) {
-            save_tree(stream, tree->child2);
-        }
-    }
-
-
-    void load_tree(FILE* stream, NodePtr& tree)
-    {
-        tree = new(pool_) Node();
-        load_value(stream, *tree);
-        if (tree->child1!=NULL) {
-            load_tree(stream, tree->child1);
-        }
-        if (tree->child2!=NULL) {
-            load_tree(stream, tree->child2);
-        }
-    }
 
 
     /**
@@ -648,7 +684,7 @@ private:
     /**
      * Array of k-d trees used to find neighbours.
      */
-    NodePtr* tree_roots_;
+    std::vector<NodePtr> tree_roots_;
 
     /**
      * Pooled memory allocator.

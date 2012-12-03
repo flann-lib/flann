@@ -47,7 +47,7 @@
 #include "flann/util/allocator.h"
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
-
+#include "flann/util/serialization.h"
 
 namespace flann
 {
@@ -69,6 +69,7 @@ struct HierarchicalClusteringIndexParams : public IndexParams
         (*this)["leaf_size"] = leaf_size;
     }
 };
+
 
 
 /**
@@ -162,7 +163,19 @@ public:
      */
     virtual ~HierarchicalClusteringIndex()
     {
+    	clearNodeTrees();
     }
+
+    /**
+     * Clears Node tree
+     * calling Node destructor explicitly
+     */
+    void clearNodeTrees(){
+    	for (int i=0; i<trees_; ++i) {
+    		tree_roots_[i]->~Node();
+    	}
+    }
+
 
     /**
      * Computes the inde memory usage
@@ -173,6 +186,7 @@ public:
         return pool_.usedMemory+pool_.wastedMemory+memoryCounter_;
     }
 
+    using NNIndex<Distance>::buildIndex;
     /**
      * Builds the index
      */
@@ -202,6 +216,7 @@ public:
         extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
+        	clearNodeTrees();
             pool_.free();
             buildIndex();
         }
@@ -221,37 +236,48 @@ public:
     }
 
 
+    template<typename Archive>
+    void serialize(Archive& ar)
+    {
+    	ar.setObject(this);
+
+    	ar & *static_cast<NNIndex<Distance>*>(this);
+
+    	ar & branching_;
+    	ar & trees_;
+    	ar & centers_init_;
+    	ar & leaf_size_;
+
+    	if (Archive::is_loading::value) {
+    		tree_roots_.resize(trees_);
+    	}
+    	for (size_t i=0;i<tree_roots_.size();++i) {
+    		if (Archive::is_loading::value) {
+    			tree_roots_[i] = new(pool_) Node();
+    		}
+    		ar & *tree_roots_[i];
+    	}
+
+    	if (Archive::is_loading::value) {
+            index_params_["algorithm"] = getType();
+            index_params_["branching"] = branching_;
+            index_params_["trees"] = trees_;
+            index_params_["centers_init"] = centers_init_;
+            index_params_["leaf_size"] = leaf_size_;
+    	}
+    }
+
     void saveIndex(FILE* stream)
     {
-        save_value(stream, branching_);
-        save_value(stream, trees_);
-        save_value(stream, centers_init_);
-        save_value(stream, leaf_size_);
-        save_value(stream, memoryCounter_);
-        for (int i=0; i<trees_; ++i) {
-            save_tree(stream, tree_roots_[i], i);
-        }
-
+    	serialization::SaveArchive sa(stream);
+    	sa & *this;
     }
 
 
     void loadIndex(FILE* stream)
     {
-        load_value(stream, branching_);
-        load_value(stream, trees_);
-        load_value(stream, centers_init_);
-        load_value(stream, leaf_size_);
-        load_value(stream, memoryCounter_);
-        tree_roots_.resize(trees_);
-        for (int i=0; i<trees_; ++i) {
-            load_tree(stream, tree_roots_[i], i);
-        }
-
-        index_params_["algorithm"] = getType();
-        index_params_["branching"] = branching_;
-        index_params_["trees"] = trees_;
-        index_params_["centers_init"] = centers_init_;
-        index_params_["leaf_size"] = leaf_size_;
+    	serialization::LoadArchive la(stream);
+    	la & *this;
     }
 
 
@@ -297,6 +323,22 @@ private:
     	size_t index;
     	/** Point data */
     	ElementType* point;
+
+    private:
+    	template<typename Archive>
+    	void serialize(Archive& ar)
+    	{
+    		typedef HierarchicalClusteringIndex<Distance> Index;
+    		Index* obj = static_cast<Index*>(ar.getObject());
+
+    		ar & index;
+//    		ar & point;
+
+			if (Archive::is_loading::value) {
+				point = obj->points_[index];
+			}
+    	}
+    	friend struct serialization::access;
     };
 
     /**
@@ -308,6 +350,7 @@ private:
          * The cluster center
          */
     	ElementType* pivot;
+    	size_t pivot_index;
         /**
          * Child nodes (only for non-terminal nodes)
          */
@@ -316,6 +359,50 @@ private:
          * Node points (only for terminal nodes)
          */
         std::vector<PointInfo> points;
+
+        /**
+         * destructor
+         * calling Node destructor explicitly
+         */
+        ~Node(){
+        	for(size_t i=0; i<childs.size(); i++){
+        		childs[i]->~Node();
+        	}
+        };
+
+    private:
+    	template<typename Archive>
+    	void serialize(Archive& ar)
+    	{
+    		typedef HierarchicalClusteringIndex<Distance> Index;
+    		Index* obj = static_cast<Index*>(ar.getObject());
+    		ar & pivot_index;
+    		if (Archive::is_loading::value) {
+    			pivot = obj->points_[pivot_index];
+    		}
+    		size_t childs_size;
+    		if (Archive::is_saving::value) {
+    			childs_size = childs.size();
+    		}
+    		ar & childs_size;
+
+    		if (childs_size==0) {
+    			ar & points;
+    		}
+    		else {
+    			if (Archive::is_loading::value) {
+    				childs.resize(childs_size);
+    			}
+    			for (size_t i=0;i<childs_size;++i) {
+    				if (Archive::is_loading::value) {
+    					childs[i] = new(obj->pool_) Node();
+    				}
+    				ar & *childs[i];
+    			}
+    		}
+
+    	}
+    	friend struct serialization::access;
     };
     typedef Node* NodePtr;
 
@@ -325,47 +412,6 @@ private:
      * Alias definition for a nicer syntax.
      */
     typedef BranchStruct<NodePtr, DistanceType> BranchSt;
-
-
-
-    void save_tree(FILE* stream, NodePtr node, int num)
-    {
-    	//FIXME
-        save_value(stream, node->pivot);
-        size_t childs_size = node->childs.size();
-        save_value(stream, childs_size);
-
-        if (childs_size==0) {
-//            save_value(stream, node->indices);
-        }
-        else {
-            for(size_t i=0; i<childs_size; ++i) {
-                save_tree(stream, node->childs[i], num);
-            }
-        }
-    }
-
-
-    void load_tree(FILE* stream, NodePtr& node, int num)
-    {
-    	//FIXME
-        node = new(pool_) Node();
-        load_value(stream, node->pivot);
-        size_t childs_size = 0;
-        load_value(stream, childs_size);
-
-        if (childs_size==0) {
-//            load_value(stream, node->indices);
-        }
-        else {
-            node->childs.resize(childs_size);
-            for(size_t i=0; i<childs_size; ++i) {
-                load_tree(stream, node->childs[i], num);
-            }
-        }
-    }
-
-
 
 
     void computeLabels(int* indices, int indices_length,  int* centers, int centers_length, int* labels, DistanceType& cost)
@@ -442,6 +488,7 @@ private:
             }
 
             node->childs[i] = new(pool_) Node();
+            node->childs[i]->pivot_index = centers[i];
             node->childs[i]->pivot = points_[centers[i]];
             node->childs[i]->points.clear();
             computeClustering(node->childs[i],indices+start, end-start);

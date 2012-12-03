@@ -121,6 +121,7 @@ public:
     LshIndex(const LshIndex&);
     LshIndex& operator=(const LshIndex&);
 
+    using NNIndex<Distance>::buildIndex;
     /**
      * Builds the index
      */
@@ -170,27 +171,40 @@ public:
     }
 
 
+    template<typename Archive>
+    void serialize(Archive& ar)
+    {
+    	ar.setObject(this);
+
+    	ar & *static_cast<NNIndex<Distance>*>(this);
+
+    	ar & table_number_;
+    	ar & key_size_;
+    	ar & multi_probe_level_;
+
+    	if (Archive::is_loading::value) {
+            // Building the index is so fast we can afford not storing it
+            buildIndex();
+    	}
+
+    	if (Archive::is_loading::value) {
+            index_params_["algorithm"] = getType();
+            index_params_["table_number"] = table_number_;
+            index_params_["key_size"] = key_size_;
+            index_params_["multi_probe_level"] = multi_probe_level_;
+    	}
+    }
+
     void saveIndex(FILE* stream)
     {
-        save_value(stream,table_number_);
-        save_value(stream,key_size_);
-        save_value(stream,multi_probe_level_);
-//         save_value(stream, dataset_);
+    	serialization::SaveArchive sa(stream);
+    	sa & *this;
     }
 
     void loadIndex(FILE* stream)
     {
-        load_value(stream, table_number_);
-        load_value(stream, key_size_);
-        load_value(stream, multi_probe_level_);
-//         load_value(stream, dataset_);
-        // Building the index is so fast we can afford not storing it
-        buildIndex();
-
-        index_params_["algorithm"] = getType();
-        index_params_["table_number"] = table_number_;
-        index_params_["key_size"] = key_size_;
-        index_params_["multi_probe_level"] = multi_probe_level_;
+    	serialization::LoadArchive la(stream);
+    	la & *this;
     }
 
     /**
@@ -211,7 +225,7 @@ public:
      * \param[in] params Search parameters
      */
     int knnSearch(const Matrix<ElementType>& queries,
-    					Matrix<int>& indices,
+    					Matrix<size_t>& indices,
     					Matrix<DistanceType>& dists,
     					size_t knn,
     					const SearchParams& params)
@@ -254,7 +268,7 @@ public:
      * \param[in] params Search parameters
      */
     int knnSearch(const Matrix<ElementType>& queries,
-					std::vector< std::vector<int> >& indices,
+					std::vector< std::vector<size_t> >& indices,
 					std::vector<std::vector<DistanceType> >& dists,
     				size_t knn,
     				const SearchParams& params)

@@ -41,7 +41,7 @@
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
 #include "flann/util/logger.h"
-#include "flann/algorithms/index_abstractions.h"
+
 
 
 
@@ -49,7 +49,7 @@ namespace flann
 {
 
 template<typename Distance>
-inline TypedIndexBase<typename Distance::ElementType, typename Distance::ResultType>*
+inline NNIndex<Distance>*
   create_index_by_type(const flann_algorithm_t index_type,
         const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance = Distance());
 
@@ -103,6 +103,8 @@ public:
         }
     }
 
+
+    using NNIndex<Distance>::buildIndex;
     /**
      *          Method responsible with building the index.
      */
@@ -136,32 +138,57 @@ public:
     }
     
     
-    /**
-     *  Saves the index to a stream
-     */
-    void saveIndex(FILE* stream)
+    template<typename Archive>
+    void serialize(Archive& ar)
     {
-        save_value(stream, (int)bestIndex_->getType());
-        bestIndex_->saveIndex(stream);
-        save_value(stream, bestSearchParams_.checks);
+    	ar.setObject(this);
+
+    	ar & *static_cast<NNIndex<Distance>*>(this);
+
+    	ar & target_precision_;
+    	ar & build_weight_;
+    	ar & memory_weight_;
+    	ar & sample_fraction_;
+
+    	flann_algorithm_t index_type;
+    	if (Archive::is_saving::value) {
+    		index_type = get_param<flann_algorithm_t>(bestParams_,"algorithm");
+    	}
+    	ar & index_type;
+    	ar & bestSearchParams_.checks;
+
+    	if (Archive::is_loading::value) {
+    		bestParams_["algorithm"] = index_type;
+
+    		index_params_["algorithm"] = getType();
+            index_params_["target_precision_"] = target_precision_;
+            index_params_["build_weight_"] = build_weight_;
+            index_params_["memory_weight_"] = memory_weight_;
+            index_params_["sample_fraction_"] = sample_fraction_;
+    	}
     }
 
-    /**
-     *  Loads the index from a stream
-     */
+    void saveIndex(FILE* stream)
+    {
+    	serialization::SaveArchive sa(stream);
+    	sa & *this;
+
+    	bestIndex_->saveIndex(stream);
+    }
+
     void loadIndex(FILE* stream)
     {
-        int index_type;
+    	serialization::LoadArchive la(stream);
+    	la & *this;
 
-        load_value(stream, index_type);
         IndexParams params;
+        flann_algorithm_t index_type = get_param<flann_algorithm_t>(bestParams_,"algorithm");
         bestIndex_ = create_index_by_type<Distance>((flann_algorithm_t)index_type, dataset_, params, distance_);
         bestIndex_->loadIndex(stream);
-        load_value(stream, bestSearchParams_.checks);
     }
 
     int knnSearch(const Matrix<ElementType>& queries,
-            Matrix<int>& indices,
+            Matrix<size_t>& indices,
             Matrix<DistanceType>& dists,
             size_t knn,
             const SearchParams& params)
@@ -176,7 +203,7 @@ public:
     }
 
     int knnSearch(const Matrix<ElementType>& queries,
-            std::vector< std::vector<int> >& indices,
+            std::vector< std::vector<size_t> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             size_t knn,
             const SearchParams& params)
@@ -191,7 +218,7 @@ public:
     }
 
     int radiusSearch(const Matrix<ElementType>& queries,
-            Matrix<int>& indices,
+            Matrix<size_t>& indices,
             Matrix<DistanceType>& dists,
             DistanceType radius,
             const SearchParams& params)
@@ -205,7 +232,7 @@ public:
     }
 
     int radiusSearch(const Matrix<ElementType>& queries,
-            std::vector< std::vector<int> >& indices,
+            std::vector< std::vector<size_t> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             DistanceType radius,
             const SearchParams& params)
@@ -501,7 +528,7 @@ private:
 
         // We compute the ground truth using linear search
         Logger::info("Computing ground truth... \n");
-        gt_matches_ = Matrix<int>(new int[testDataset_.rows], testDataset_.rows, 1);
+        gt_matches_ = Matrix<size_t>(new size_t[testDataset_.rows], testDataset_.rows, 1);
         StartStopTimer t;
         int repeats = 0;
         t.reset();
@@ -581,7 +608,7 @@ private:
             Logger::info("Computing ground truth\n");
 
             // we need to compute the ground truth first
-            Matrix<int> gt_matches(new int[testDataset.rows], testDataset.rows, 1);
+            Matrix<size_t> gt_matches(new size_t[testDataset.rows], testDataset.rows, 1);
             StartStopTimer t;
             int repeats = 0;
             t.reset();
@@ -600,7 +627,7 @@ private:
             float cb_index;
             if (bestIndex_->getType() == FLANN_INDEX_KMEANS) {
                 Logger::info("KMeans algorithm, estimating cluster border factor\n");
-                KMeansIndex<Distance>* kmeans = static_cast<IndexWrapper<KMeansIndex<Distance> >*>(bestIndex_)->getIndex();
+                KMeansIndex<Distance>* kmeans = static_cast<KMeansIndex<Distance>*>(bestIndex_);
                 float bestSearchTime = -1;
                 float best_cb_index = -1;
                 int best_checks = -1;
@@ -638,14 +665,14 @@ private:
     }
 
 private:
-    TypedIndexBase<ElementType,DistanceType>* bestIndex_;
+    NNIndex<Distance>* bestIndex_;
 
     IndexParams bestParams_;
     SearchParams bestSearchParams_;
 
     Matrix<ElementType> sampledDataset_;
     Matrix<ElementType> testDataset_;
-    Matrix<int> gt_matches_;
+    Matrix<size_t> gt_matches_;
 
     float speedup_;
 
@@ -664,7 +691,7 @@ private:
 
     Distance distance_;
 
-
+    USING_BASECLASS_SYMBOLS
 };
 }
 

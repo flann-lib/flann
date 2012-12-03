@@ -142,6 +142,15 @@ public:
     }
 
 private:
+    template <typename Archive>
+    void serialize(Archive& ar)
+    {
+    	ar & size_;
+    	ar & bitset_;
+    }
+    friend serialization::access;
+
+private:
     std::vector<size_t> bitset_;
     size_t size_;
     static const unsigned int cell_bit_size_ = CHAR_BIT * sizeof(size_t);

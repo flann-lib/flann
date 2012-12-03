@@ -140,6 +140,7 @@ public:
         return kmeans_index_->usedMemory() + kdtree_index_->usedMemory();
     }
 
+    using NNIndex<Distance>::buildIndex;
     /**
      * \brief Builds the index
      */

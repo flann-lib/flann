@@ -90,22 +90,35 @@ public:
         return 0;
     }
 
+    using NNIndex<Distance>::buildIndex;
+
     void buildIndex()
     {
         /* nothing to do here for linear search */
     }
 
-    void saveIndex(FILE*)
+    template<typename Archive>
+    void serialize(Archive& ar)
     {
-        /* nothing to do here for linear search */
+    	ar.setObject(this);
+
+    	ar & *static_cast<NNIndex<Distance>*>(this);
+
+    	if (Archive::is_loading::value) {
+            index_params_["algorithm"] = getType();
+    	}
     }
 
-
-    void loadIndex(FILE*)
+    void saveIndex(FILE* stream)
     {
-        /* nothing to do here for linear search */
+    	serialization::SaveArchive sa(stream);
+    	sa & *this;
+    }
 
-        index_params_["algorithm"] = getType();
+    void loadIndex(FILE* stream)
+    {
+    	serialization::LoadArchive la(stream);
+    	la & *this;
     }
 
     void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/)

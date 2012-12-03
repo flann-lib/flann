@@ -43,7 +43,6 @@ class IndexBase
 public:
     virtual ~IndexBase() {};
 
-    virtual void buildIndex() = 0;
 
     virtual size_t veclen() const = 0;
 
@@ -69,30 +68,34 @@ public:
     typedef ElementType_ ElementType;
     typedef DistanceType_ DistanceType;
 
+    virtual void buildIndex() = 0;
+
+    virtual void buildIndex(const Matrix<ElementType>& points) = 0;
+
     virtual void addPoints(const Matrix<ElementType>& points, float rebuild_threshold) = 0;
     
     virtual void removePoint(size_t index) = 0;
 
     virtual int knnSearch(const Matrix<ElementType>& queries,
-            Matrix<int>& indices,
+            Matrix<size_t>& indices,
             Matrix<DistanceType>& dists,
             size_t knn,
             const SearchParams& params) = 0;
 
     virtual int knnSearch(const Matrix<ElementType>& queries,
-            std::vector< std::vector<int> >& indices,
+            std::vector< std::vector<size_t> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             size_t knn,
             const SearchParams& params) = 0;
 
     virtual int radiusSearch(const Matrix<ElementType>& queries,
-            Matrix<int>& indices,
+            Matrix<size_t>& indices,
             Matrix<DistanceType>& dists,
             DistanceType radius,
             const SearchParams& params) = 0;
 
     virtual int radiusSearch(const Matrix<ElementType>& queries,
-            std::vector< std::vector<int> >& indices,
+            std::vector< std::vector<size_t> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             DistanceType radius,
             const SearchParams& params) = 0;
@@ -122,9 +125,9 @@ public:
         index_->buildIndex();
     }
 
-    void buildIndex(const Matrix<ElementType>& dataset)
+    void buildIndex(const Matrix<ElementType>& points)
     {
-        index_->buildIndex(dataset);
+        index_->buildIndex(points);
     }
     
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
@@ -179,7 +182,7 @@ public:
     
 
     int knnSearch(const Matrix<ElementType>& queries,
-            Matrix<int>& indices,
+            Matrix<size_t>& indices,
             Matrix<DistanceType>& dists,
             size_t knn,
             const SearchParams& params)
@@ -188,7 +191,7 @@ public:
     }
 
     int knnSearch(const Matrix<ElementType>& queries,
-            std::vector< std::vector<int> >& indices,
+            std::vector< std::vector<size_t> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             size_t knn,
             const SearchParams& params)
@@ -197,7 +200,7 @@ public:
     }
 
     int radiusSearch(const Matrix<ElementType>& queries,
-            Matrix<int>& indices,
+            Matrix<size_t>& indices,
             Matrix<DistanceType>& dists,
             DistanceType radius,
             const SearchParams& params)
@@ -206,7 +209,7 @@ public:
     }
 
     int radiusSearch(const Matrix<ElementType>& queries,
-            std::vector< std::vector<int> >& indices,
+            std::vector< std::vector<size_t> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             DistanceType radius,
             const SearchParams& params)

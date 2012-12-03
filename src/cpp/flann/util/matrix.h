@@ -32,6 +32,7 @@
 #define FLANN_DATASET_H_
 
 #include "flann/general.h"
+#include "flann/util/serialization.h"
 #include <stdio.h>
 
 namespace flann
@@ -75,6 +76,19 @@ public:
 protected:
     uchar* data;
 
+    template<typename Archive>
+    void serialize(Archive& ar)
+    {
+    	ar & rows;
+    	ar & cols;
+    	ar & stride;
+    	ar & type;
+    	if (Archive::is_loading::value) {
+    		data = new uchar[rows*stride];
+    	}
+    	ar & serialization::make_binary_object(data, rows*stride);
+    }
+    friend serialization::access;
 };
 
 
@@ -99,11 +113,6 @@ public:
     	Matrix_(data_, rows_, cols_, flann_datatype<T>::value, stride_)
     {
     	if (stride==0) stride = sizeof(T)*cols;
-    }
-
-    Matrix(const Matrix_& m)
-    {
-    	*this = m;
     }
 
     /**

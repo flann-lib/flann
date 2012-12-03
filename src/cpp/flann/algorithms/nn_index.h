@@ -46,6 +46,7 @@
 #include "flann/util/params.h"
 #include "flann/util/result_set.h"
 #include "flann/util/dynamic_bitset.h"
+#include "flann/util/saving.h"
 #ifdef TBB
 #include "flann/tbb/bodies.hpp"
 #endif
@@ -56,23 +57,50 @@ namespace flann
 #define KNN_HEAP_THRESHOLD 250
 
 
+
+class IndexBase
+{
+public:
+    virtual ~IndexBase() {};
+
+    virtual size_t veclen() const = 0;
+
+    virtual size_t size() const = 0;
+
+    virtual flann_algorithm_t getType() const = 0;
+
+    virtual int usedMemory() const = 0;
+
+    virtual IndexParams getParameters() const = 0;
+
+    virtual void loadIndex(FILE* stream) = 0;
+
+    virtual void saveIndex(FILE* stream) = 0;
+};
+
 /**
  * Nearest-neighbour index base class
  */
 template <typename Distance>
-class NNIndex
+class NNIndex : public IndexBase
 {
+public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
-public:
-
-	NNIndex()
+	NNIndex() : data_ptr_(NULL)
 	{
 	}
 
-	NNIndex(const IndexParams& params) : index_params_(params)
+	NNIndex(const IndexParams& params) : index_params_(params), data_ptr_(NULL)
 	{
+	}
+
+	virtual ~NNIndex()
+	{
+		if (data_ptr_) {
+			delete[] data_ptr_;
+		}
 	}
 
 	/**
@@ -87,7 +115,7 @@ public:
     void buildIndex(const Matrix<ElementType>& dataset)
     {
         setDataset(dataset);
-        buildIndex();
+        this->buildIndex();
     }
 
 	/**
@@ -95,7 +123,7 @@ public:
 	 * @param points Matrix with points to be added
 	 * @param rebuild_threshold
 	 */
-    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    virtual void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         throw FLANNException("Functionality not supported by this index");
     }
@@ -157,6 +185,78 @@ public:
         return index_params_;
     }
 
+
+    template<typename Archive>
+    void serialize(Archive& ar)
+    {
+    	IndexHeader header;
+
+    	if (Archive::is_saving::value) {
+    		header.data_type = flann_datatype<ElementType>::value;
+    		header.index_type = getType();
+    		header.rows = size_;
+    		header.cols = veclen_;
+    	}
+    	ar & header;
+
+    	// sanity checks
+    	if (Archive::is_loading::value) {
+    	    if (strcmp(header.signature,FLANN_SIGNATURE_)!=0) {
+    	        throw FLANNException("Invalid index file, wrong signature");
+    	    }
+            if (header.data_type != flann_datatype<ElementType>::value) {
+                throw FLANNException("Datatype of saved index is different than of the one to be created.");
+            }
+            if (header.index_type != getType()) {
+                throw FLANNException("Saved index type is different then the current index type.");
+            }
+            // TODO: check for distance type
+
+    	}
+
+    	ar & size_;
+    	ar & veclen_;
+
+    	bool save_dataset;
+    	if (Archive::is_saving::value) {
+    		save_dataset = get_param(index_params_,"save_dataset", false);
+    	}
+    	ar & save_dataset;
+
+    	if (save_dataset) {
+    		if (Archive::is_loading::value) {
+    			if (data_ptr_) {
+    				delete[] data_ptr_;
+    			}
+    			data_ptr_ = new ElementType[size_*veclen_];
+    			points_.resize(size_);
+        		for (size_t i=0;i<size_;++i) {
+        			points_[i] = data_ptr_ + i*veclen_;
+        		}
+    		}
+    		for (size_t i=0;i<size_;++i) {
+    			ar & serialization::make_binary_object (points_[i], veclen_*sizeof(ElementType));
+    		}
+    	} else {
+    		if (points_.size()!=size_) {
+    			throw FLANNException("Saved index does not contain the dataset and no dataset was provided.");
+    		}
+    	}
+
+    	ar & last_id_;
+    	ar & ids_;
+    	ar & removed_;
+
+    	if (removed_) {
+    		ar & removed_points_;
+    	}
+    	else {
+    		if (Archive::is_loading::value) {
+    			removed_points_.resize(size_);
+    		}
+    	}
+    }
+
     /**
      * @brief Perform k-nearest neighbor search
      * @param[in] queries The query points for which to find the nearest neighbors
@@ -165,80 +265,7 @@ public:
      * @param[in] knn Number of nearest neighbors to return
      * @param[in] params Search parameters
      */
-    /*
-    int knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
-    {
-        assert(queries.cols == veclen());
-        assert(indices.rows >= queries.rows);
-        assert(dists.rows >= queries.rows);
-        assert(indices.cols >= knn);
-        assert(dists.cols >= knn);
-        bool use_heap;
-
-        if (params.use_heap==FLANN_Undefined) {
-        	use_heap = (knn>KNN_HEAP_THRESHOLD)?true:false;
-        }
-        else {
-        	use_heap = (params.use_heap==FLANN_True)?true:false;
-        }
-        int count = 0;
-
-#ifdef TBB
-        // Check if we need to do multicore search or stick with single core FLANN (less overhead)
-        if(params.cores == 1)
-        {
-#endif
-        	if (use_heap) {
-        		KNNResultSet2<DistanceType> resultSet(knn);
-        		for (size_t i = 0; i < queries.rows; i++) {
-        			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
-        			size_t n = std::min(resultSet.size(), knn);
-        			resultSet.copy(indices[i], dists[i], n, params.sorted);
-                    for (size_t j=0;j<n;++j) {
-                    	indices[i][j] = ids_[indices[i][j]];
-                    }
-        			count += n;
-        		}
-        	}
-        	else {
-        		KNNSimpleResultSet<DistanceType> resultSet(knn);
-        		for (size_t i = 0; i < queries.rows; i++) {
-        			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
-        			size_t n = std::min(resultSet.size(), knn);
-        			resultSet.copy(indices[i], dists[i], knn, params.sorted);
-                    for (size_t j=0;j<n;++j) {
-                    	indices[i][j] = ids_[indices[i][j]];
-                    }
-        			count += n;
-        		}
-        	}
-#ifdef TBB
-    }
-    else
-    {
-        // Initialise the task scheduler for the use of Intel TBB parallel constructs
-        tbb::task_scheduler_init task_sched(params.cores);
-
-        // Make an atomic integer count, such that we can keep track of amount of neighbors found
-        tbb::atomic<int> atomic_count;
-        atomic_count = 0;
-        // Use auto partitioner to choose the optimal grainsize for dividing the query points
-        flann::parallel_knnSearch<Distance> parallel_knn(queries, indices, dists, knn, params, static_cast<Index*>(this), atomic_count);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
-                          parallel_knn,
-                          tbb::auto_partitioner());
-
-        count = atomic_count;
-    }
-#endif
-
-        return count;
-    }
-    */
-
-    virtual int knnSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
+    virtual int knnSearch(const Matrix<ElementType>& queries, Matrix<size_t>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
        {
            assert(queries.cols == veclen());
            assert(indices.rows >= queries.rows);
@@ -301,6 +328,31 @@ public:
            return count;
        }
 
+    /**
+     *
+     * @param queries
+     * @param indices
+     * @param dists
+     * @param knn
+     * @param params
+     * @return
+     */
+    int knnSearch(const Matrix<ElementType>& queries,
+                                 Matrix<int>& indices,
+                                 Matrix<DistanceType>& dists,
+                                 size_t knn,
+                           const SearchParams& params)
+    {
+    	flann::Matrix<size_t> indices_(new size_t[indices.rows*indices.cols], indices.rows, indices.cols);
+    	int result = knnSearch(queries, indices_, dists, knn, params);
+
+    	for (size_t i=0;i<indices.rows;++i) {
+    		for (size_t j=0;j<indices.cols;++j) {
+    			indices[i][j] = indices_[i][j];
+    		}
+    	}
+    	return result;
+    }
 
 
     /**
@@ -312,7 +364,7 @@ public:
      * @param[in] params Search parameters
      */
     int knnSearch(const Matrix<ElementType>& queries,
-					std::vector< std::vector<int> >& indices,
+					std::vector< std::vector<size_t> >& indices,
 					std::vector<std::vector<DistanceType> >& dists,
     				size_t knn,
     				const SearchParams& params)
@@ -394,6 +446,34 @@ public:
 
 
     /**
+     *
+     * @param queries
+     * @param indices
+     * @param dists
+     * @param knn
+     * @param params
+     * @return
+     */
+    int knnSearch(const Matrix<ElementType>& queries,
+                                 std::vector< std::vector<int> >& indices,
+                                 std::vector<std::vector<DistanceType> >& dists,
+                                 size_t knn,
+                           const SearchParams& params)
+    {
+    	std::vector<std::vector<size_t> > indices_;
+    	int result = knnSearch(queries, indices_, dists, knn, params);
+
+    	indices.resize(indices_.size());
+    	for (size_t i=0;i<indices_.size();++i) {
+    		indices[i].resize(indices_[i].size());
+    		for (int j=0;j<indices_[j].size();++j) {
+    			indices[i][j] = indices_[i][j];
+    		}
+    	}
+    	return result;
+    }
+
+    /**
      * @brief Perform radius search
      * @param[in] query The query point
      * @param[out] indices The indinces of the neighbors found within the given radius
@@ -402,7 +482,7 @@ public:
      * @param[in] params Search parameters
      * @return Number of neighbors found
      */
-    int radiusSearch(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists,
+    int radiusSearch(const Matrix<ElementType>& queries, Matrix<size_t>& indices, Matrix<DistanceType>& dists,
     		float radius, const SearchParams& params)
     {
         assert(queries.cols == veclen());
@@ -489,6 +569,33 @@ public:
         return count;
     }
 
+
+    /**
+     *
+     * @param queries
+     * @param indices
+     * @param dists
+     * @param radius
+     * @param params
+     * @return
+     */
+    int radiusSearch(const Matrix<ElementType>& queries,
+                                    Matrix<int>& indices,
+                                    Matrix<DistanceType>& dists,
+                                    float radius,
+                              const SearchParams& params)
+    {
+    	flann::Matrix<size_t> indices_(new size_t[indices.rows*indices.cols], indices.rows, indices.cols);
+    	int result = radiusSearch(queries, indices, dists, radius, params);
+
+    	for (size_t i=0;i<indices.rows;++i) {
+    		for (size_t j=0;j<indices.cols;++j) {
+    			indices[i][j] = indices_[i][j];
+    		}
+    	}
+    	return result;
+    }
+
     /**
      * @brief Perform radius search
      * @param[in] query The query point
@@ -498,7 +605,7 @@ public:
      * @param[in] params Search parameters
      * @return Number of neighbors found
      */
-    int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
+    int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<size_t> >& indices,
     		std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params)
     {
         assert(queries.cols == veclen());
@@ -582,6 +689,34 @@ public:
         return count;
     }
 
+    /**
+     *
+     * @param queries
+     * @param indices
+     * @param dists
+     * @param radius
+     * @param params
+     * @return
+     */
+    int radiusSearch(const Matrix<ElementType>& queries,
+                                    std::vector< std::vector<int> >& indices,
+                                    std::vector<std::vector<DistanceType> >& dists,
+                                    float radius,
+                              const SearchParams& params)
+    {
+    	std::vector<std::vector<size_t> > indices_;
+    	int result = radiusSearch(queries, indices, dists, radius, params);
+
+    	indices.resize(indices_.size());
+    	for (size_t i=0;i<indices_.size();++i) {
+    		indices[i].resize(indices_[i].size());
+    		for (int j=0;j<indices_[j].size();++j) {
+    			indices[i][j] = indices_[i][j];
+    		}
+    	}
+    	return result;
+    }
+
 
     virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;
 
@@ -634,16 +769,6 @@ protected:
 
 protected:
 
-    struct PointInfo
-    {
-    	/** The point ID, returned by the nearest neighbour operations */
-    	size_t id;
-    	/** The point data */
-    	ElementType* point;
-    	/** Flag indicating the point was removed from the tree */
-    	bool removed;
-    };
-
     /**
      * Each index point has an associated ID. IDs are assigned sequentially in
      * increasing order. This indicates the ID assigned to the last point added to the
@@ -680,6 +805,11 @@ protected:
      * Point data
      */
     std::vector<ElementType*> points_;
+
+    /**
+     * Pointer to dataset memory if allocated by this index, otherwise NULL
+     */
+    ElementType* data_ptr_;
 
     /**
      * Flag indicating if at least a point was removed from the index

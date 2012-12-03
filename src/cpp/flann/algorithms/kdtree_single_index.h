@@ -84,6 +84,7 @@ public:
     	NNIndex<Distance>(params), distance_(d)
     {
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
+        reorder_ = get_param(params, "reorder", true);
     }
 
     /**
@@ -98,6 +99,7 @@ public:
                     	  NNIndex<Distance>(params), distance_(d)
     {
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
+        reorder_ = get_param(params, "reorder", true);
 
         setDataset(inputData);
     }
@@ -112,6 +114,7 @@ public:
     {
     }
 
+    using NNIndex<Distance>::buildIndex;
     /**
      * Builds the index
      */
@@ -126,9 +129,11 @@ public:
         computeBoundingBox(root_bbox_);
         root_node_ = divideTree(0, size_, root_bbox_ );   // construct the tree
 
-        data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
-        for (size_t i=0; i<size_; ++i) {
-        	std::copy(points_[vind_[i]], points_[vind_[i]]+veclen_, data_[i]);
+        if (reorder_) {
+        	data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
+        	for (size_t i=0; i<size_; ++i) {
+        		std::copy(points_[vind_[i]], points_[vind_[i]]+veclen_, data_[i]);
+        	}
         }
     }    
 
@@ -147,31 +152,49 @@ public:
     }
 
 
+    template<typename Archive>
+    void serialize(Archive& ar)
+    {
+    	ar.setObject(this);
+
+    	if (reorder_) index_params_["save_dataset"] = false;
+
+    	ar & *static_cast<NNIndex<Distance>*>(this);
+
+    	ar & reorder_;
+    	ar & leaf_max_size_;
+    	ar & root_bbox_;
+    	ar & vind_;
+
+        if (reorder_) {
+        	ar & data_;
+        }
+
+        if (Archive::is_loading::value) {
+        	root_node_ = new(pool_) Node();
+        }
+
+        ar & *root_node_;
+
+    	if (Archive::is_loading::value) {
+            index_params_["algorithm"] = getType();
+            index_params_["leaf_max_size"] = leaf_max_size_;
+            index_params_["reorder"] = reorder_;
+    	}
+    }
+
+
     void saveIndex(FILE* stream)
     {
-        save_value(stream, size_);
-        save_value(stream, veclen_);
-        save_value(stream, root_bbox_);
-        save_value(stream, leaf_max_size_);
-        save_value(stream, vind_);
-        save_value(stream, data_);
-        save_tree(stream, root_node_);
+    	serialization::SaveArchive sa(stream);
+    	sa & *this;
     }
 
 
     void loadIndex(FILE* stream)
     {
-        load_value(stream, size_);
-        load_value(stream, veclen_);
-        load_value(stream, root_bbox_);
-        load_value(stream, leaf_max_size_);
-        load_value(stream, vind_);
-        load_value(stream, data_);
-        load_tree(stream, root_node_);
-
-
-        index_params_["algorithm"] = getType();
-        index_params_["leaf_max_size"] = leaf_max_size_;
+    	serialization::LoadArchive la(stream);
+    	la & *this;
     }
 
     /**
@@ -198,7 +221,12 @@ public:
 
         std::vector<DistanceType> dists(veclen_,0);
         DistanceType distsq = computeInitialDistances(vec, dists);
-        searchLevel(result, vec, root_node_, distsq, dists, epsError);
+        if (reorder_) {
+        	searchLevel<true>(result, vec, root_node_, distsq, dists, epsError);
+        }
+        else {
+        	searchLevel<false>(result, vec, root_node_, distsq, dists, epsError);
+        }
     }
 
 private:
@@ -223,6 +251,37 @@ private:
          * The child nodes.
          */
         Node* child1, * child2;
+
+    private:
+    	template<typename Archive>
+    	void serialize(Archive& ar)
+    	{
+    		typedef KDTreeSingleIndex<Distance> Index;
+    		Index* obj = static_cast<Index*>(ar.getObject());
+
+    		ar & left;
+    		ar & right;
+    		ar & divfeat;
+    		ar & divlow;
+    		ar & divhigh;
+
+    		bool leaf_node = false;
+    		if (Archive::is_saving::value) {
+    			leaf_node = ((child1==NULL) && (child2==NULL));
+    		}
+    		ar & leaf_node;
+
+    		if (!leaf_node) {
+				if (Archive::is_loading::value) {
+					child1 = new(obj->pool_) Node();
+					child2 = new(obj->pool_) Node();
+				}
+    			ar & *child1;
+    			ar & *child2;
+    		}
+    	}
+    	friend struct serialization::access;
+
     };
     typedef Node* NodePtr;
 
@@ -230,6 +289,15 @@ private:
     struct Interval
     {
         DistanceType low, high;
+
+    private:
+        template <typename Archive>
+        void serialize(Archive& ar)
+        {
+        	ar & low;
+        	ar & high;
+        }
+        friend serialization::access;
     };
 
     typedef std::vector<Interval> BoundingBox;
@@ -495,18 +563,25 @@ private:
     /**
      * Performs an exact search in the tree starting from a node.
      */
-    template<typename ResultSet>
-    void searchLevel(ResultSet& result_set, const ElementType* vec, const NodePtr node, DistanceType mindistsq,
+    template<bool reorder>
+    void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindistsq,
                      std::vector<DistanceType>& dists, const float epsError)
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
             DistanceType worst_dist = result_set.worstDist();
-            for (int index=node->left; index<node->right; ++index) {
+            for (int i=node->left; i<node->right; ++i) {
+            	int index = vind_[i];
                 if (removed_points_.test(index)) continue;
-                DistanceType dist = distance_(vec, data_[index], veclen_, worst_dist);
+                DistanceType dist;
+                if (reorder) {
+                	dist = distance_(vec, data_[i], veclen_, worst_dist);
+                }
+                else {
+                	dist = distance_(vec, points_[index], veclen_, worst_dist);
+                }
                 if (dist<worst_dist) {
-                    result_set.addPoint(dist,vind_[index]);
+                    result_set.addPoint(dist,index);
                 }
             }
             return;
@@ -533,13 +608,13 @@ private:
         }
 
         /* Call recursively to search next level down. */
-        searchLevel(result_set, vec, bestChild, mindistsq, dists, epsError);
+        searchLevel<reorder>(result_set, vec, bestChild, mindistsq, dists, epsError);
 
         DistanceType dst = dists[idx];
         mindistsq = mindistsq + cut_dist - dst;
         dists[idx] = cut_dist;
         if (mindistsq*epsError<=result_set.worstDist()) {
-            searchLevel(result_set, vec, otherChild, mindistsq, dists, epsError);
+            searchLevel<reorder>(result_set, vec, otherChild, mindistsq, dists, epsError);
         }
         dists[idx] = dst;
     }
@@ -547,6 +622,8 @@ private:
 private:
 
     int leaf_max_size_;
+
+    bool reorder_;
 
     /**
      *  Array of indices to vectors in the dataset.

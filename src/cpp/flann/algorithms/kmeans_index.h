@@ -183,10 +183,7 @@ public:
      */
     virtual ~KMeansIndex()
     {
-        if (root_ != NULL) {
-            freeNodes(root_);
-            root_ = NULL;
-        }
+    	freeIndex();
     }
 
     void set_cb_index( float index)
@@ -203,6 +200,7 @@ public:
         return pool_.usedMemory+pool_.wastedMemory+memoryCounter_;
     }
 
+    using NNIndex<Distance>::buildIndex;
     /**
      * Builds the index
      */
@@ -217,7 +215,7 @@ public:
         	indices[i] = int(i);
         }
 
-        root_ = new KMeansNode();
+        root_ = new(pool_) Node();
         computeNodeStatistics(root_, indices);
         computeClustering(root_, &indices[0], (int)size_, branching_);
         
@@ -233,7 +231,7 @@ public:
         extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
-            freeNodes(root_);
+            freeIndex();
             buildIndex();
         }
         else {
@@ -244,38 +242,46 @@ public:
         }
     }
 
-    void saveIndex(FILE* stream)
-    {
-        save_value(stream, branching_);
-        save_value(stream, iterations_);
-        save_value(stream, memoryCounter_);
-        save_value(stream, cb_index_);
 
-        save_tree(stream, root_);
+    template<typename Archive>
+    void serialize(Archive& ar)
+    {
+    	ar.setObject(this);
+
+    	ar & *static_cast<NNIndex<Distance>*>(this);
+
+    	ar & branching_;
+    	ar & iterations_;
+    	ar & memoryCounter_;
+    	ar & cb_index_;
+    	ar & centers_init_;
+
+    	if (Archive::is_loading::value) {
+    		root_ = new(pool_) Node();
+    	}
+    	ar & *root_;
+
+    	if (Archive::is_loading::value) {
+            index_params_["algorithm"] = getType();
+            index_params_["branching"] = branching_;
+            index_params_["iterations"] = iterations_;
+            index_params_["centers_init"] = centers_init_;
+            index_params_["cb_index"] = cb_index_;
+    	}
     }
 
+    void saveIndex(FILE* stream)
+    {
+    	serialization::SaveArchive sa(stream);
+    	sa & *this;
+    }
 
     void loadIndex(FILE* stream)
     {
-        load_value(stream, branching_);
-        load_value(stream, iterations_);
-        load_value(stream, memoryCounter_);
-        load_value(stream, cb_index_);
-
-        if (root_!=NULL) {
-            freeNodes(root_);
-            root_ = NULL;
-        }
-        load_tree(stream, root_);
-
-        index_params_["algorithm"] = getType();
-        index_params_["branching"] = branching_;
-        index_params_["iterations"] = iterations_;
-        index_params_["centers_init"] = centers_init_;
-        index_params_["cb_index"] = cb_index_;
-
+    	freeIndex();
+    	serialization::LoadArchive la(stream);
+    	la & *this;
     }
-
 
     /**
      * Find set of nearest neighbors to vec. Their indices are stored inside
@@ -303,7 +309,7 @@ public:
 
             BranchSt branch;
             while (heap->popMin(branch) && (checks<maxChecks || !result.full())) {
-                KMeansNodePtr node = branch.node;
+                NodePtr node = branch.node;
                 findNN(node, result, vec, checks, maxChecks, heap);
             }
 
@@ -327,7 +333,7 @@ public:
         }
 
         DistanceType variance;
-        std::vector<KMeansNodePtr> clusters(numClusters);
+        std::vector<NodePtr> clusters(numClusters);
 
         int clusterCount = getMinVarianceClusters(root_, clusters, numClusters, variance);
 
@@ -349,12 +355,25 @@ private:
     {
     	size_t index;
     	ElementType* point;
+    private:
+    	template<typename Archive>
+    	void serialize(Archive& ar)
+    	{
+    		typedef KMeansIndex<Distance> Index;
+    		Index* obj = static_cast<Index*>(ar.getObject());
+
+    		ar & index;
+//    		ar & point;
+
+			if (Archive::is_loading::value) point = obj->points_[index];
+    	}
+    	friend struct serialization::access;
     };
 
     /**
      * Struture representing a node in the hierarchical k-means tree.
      */
-    struct KMeansNode
+    struct Node
     {
         /**
          * The cluster center.
@@ -375,7 +394,7 @@ private:
         /**
          * Child nodes (only for non-terminal nodes)
          */
-        std::vector<KMeansNode*> childs;
+        std::vector<Node*> childs;
         /**
          * Node points (only for terminal nodes)
          */
@@ -384,74 +403,70 @@ private:
          * Level
          */
 //        int level;
+
+        ~Node()
+        {
+            delete[] pivot;
+            if (!childs.empty()) {
+                for (size_t i=0; i<childs.size(); ++i) {
+                    childs[i]->~Node();
+                }
+            }
+        }
+
+    	template<typename Archive>
+    	void serialize(Archive& ar)
+    	{
+    		typedef KMeansIndex<Distance> Index;
+    		Index* obj = static_cast<Index*>(ar.getObject());
+
+    		if (Archive::is_loading::value) {
+    			pivot = new DistanceType[obj->veclen_];
+    		}
+    		ar & serialization::make_binary_object(pivot, obj->veclen_*sizeof(DistanceType));
+    		ar & radius;
+    		ar & variance;
+    		ar & size;
+
+    		size_t childs_size;
+    		if (Archive::is_saving::value) {
+    			childs_size = childs.size();
+    		}
+    		ar & childs_size;
+
+    		if (childs_size==0) {
+    			ar & points;
+    		}
+    		else {
+    			if (Archive::is_loading::value) {
+    				childs.resize(childs_size);
+    			}
+    			for (size_t i=0;i<childs_size;++i) {
+    				if (Archive::is_loading::value) {
+    					childs[i] = new(obj->pool_) Node();
+    				}
+    				ar & *childs[i];
+    			}
+    		}
+    	}
+    	friend struct serialization::access;
     };
-    typedef KMeansNode* KMeansNodePtr;
+    typedef Node* NodePtr;
 
     /**
      * Alias definition for a nicer syntax.
      */
-    typedef BranchStruct<KMeansNodePtr, DistanceType> BranchSt;
-
-
-
-
-    void save_tree(FILE* stream, KMeansNodePtr node)
-    {
-        save_value(stream, *(node->pivot), (int)veclen_);
-        save_value(stream, node->radius);
-        save_value(stream, node->variance);
-        save_value(stream, node->size);
-        size_t childs_size = node->childs.size();
-        save_value(stream, childs_size);
-
-        if (childs_size==0) {
-        	// FIXME
-            //save_value(stream, node->indices);
-        }
-        else {
-            for(size_t i=0; i<childs_size; ++i) {
-                save_tree(stream, node->childs[i]);
-            }
-        }
-    }
-
-
-    void load_tree(FILE* stream, KMeansNodePtr& node)
-    {
-        node = new KMeansNode();
-        node->pivot = new DistanceType[veclen_];
-        load_value(stream, *(node->pivot), (int)veclen_);
-        load_value(stream, node->radius);
-        load_value(stream, node->variance);
-        load_value(stream, node->size);
-        size_t childs_size = 0;
-        load_value(stream, childs_size);
-
-        if (childs_size==0) {
-        	// FIXME
-//            load_value(stream, node->indices);
-        }
-        else {
-            node->childs.resize(childs_size);
-            for(size_t i=0; i<childs_size; ++i) {
-                load_tree(stream, node->childs[i]);
-            }
-        }
-    }
+    typedef BranchStruct<NodePtr, DistanceType> BranchSt;
 
 
     /**
      * Helper function
      */
-    void freeNodes(KMeansNodePtr node)
+    void freeIndex()
     {
-        delete[] node->pivot;
-        if (!node->childs.empty()) {
-            for (int k=0; k<branching_; ++k) {
-                freeNodes(node->childs[k]);
-            }
-        }
-        delete node;
+    	if (root_) root_->~Node();
+    	root_ = NULL;
+    	pool_.free();
     }
 
     /**
@@ -461,7 +476,7 @@ private:
      *     node = the node to use
      *     indices = the indices of the points belonging to the node
      */
-    void computeNodeStatistics(KMeansNodePtr node, const std::vector<int>& indices)
+    void computeNodeStatistics(NodePtr node, const std::vector<int>& indices)
     {
         size_t size = indices.size();
 
@@ -508,7 +523,7 @@ private:
      *
      * TODO: for 1-sized clusters don't store a cluster center (it's the same as the single cluster point)
      */
-    void computeClustering(KMeansNodePtr node, int* indices, int indices_length, int branching)
+    void computeClustering(NodePtr node, int* indices, int indices_length, int branching)
     {
         node->size = indices_length;
 
@@ -668,7 +683,7 @@ private:
             }
             variance /= s;
 
-            node->childs[c] = new KMeansNode();
+            node->childs[c] = new(pool_) Node();
             node->childs[c]->radius = radiuses[c];
             node->childs[c]->pivot = centers[c];
             node->childs[c]->variance = variance;
@@ -695,7 +710,7 @@ private:
 
 
     template<typename ResultSet>
-    void findNN(KMeansNodePtr node, ResultSet& result, const ElementType* vec, int& checks, int maxChecks,
+    void findNN(NodePtr node, ResultSet& result, const ElementType* vec, int& checks, int maxChecks,
                 Heap<BranchSt>* heap)
     {
         // Ignore those clusters that are too far away
@@ -740,7 +755,7 @@ private:
      *     distances = array with the distances to each child node.
      * Returns:
      */
-    int exploreNodeBranches(KMeansNodePtr node, const ElementType* q, Heap<BranchSt>* heap)
+    int exploreNodeBranches(NodePtr node, const ElementType* q, Heap<BranchSt>* heap)
     {
         std::vector<DistanceType> domain_distances(branching_);
         int best_index = 0;
@@ -773,7 +788,7 @@ private:
      * Function the performs exact nearest neighbor search by traversing the entire tree.
      */
     template<typename ResultSet>
-    void findExactNN(KMeansNodePtr node, ResultSet& result, const ElementType* vec)
+    void findExactNN(NodePtr node, ResultSet& result, const ElementType* vec)
     {
         // Ignore those clusters that are too far away
         {
@@ -816,7 +831,7 @@ private:
      *
      * I computes the order in which to traverse the child nodes of a particular node.
      */
-    void getCenterOrdering(KMeansNodePtr node, const ElementType* q, std::vector<int>& sort_indices)
+    void getCenterOrdering(NodePtr node, const ElementType* q, std::vector<int>& sort_indices)
     {
         std::vector<DistanceType> domain_distances(branching_);
         for (int i=0; i<branching_; ++i) {
@@ -862,7 +877,7 @@ private:
      *     varianceValue = variance of the clustering (return value)
      * Returns:
      */
-    int getMinVarianceClusters(KMeansNodePtr root, std::vector<KMeansNodePtr>& clusters, int clusters_length, DistanceType& varianceValue)
+    int getMinVarianceClusters(NodePtr root, std::vector<NodePtr>& clusters, int clusters_length, DistanceType& varianceValue)
     {
         int clusterCount = 1;
         clusters[0] = root;
@@ -894,7 +909,7 @@ private:
             meanVariance = minVariance;
 
             // split node
-            KMeansNodePtr toSplit = clusters[splitIndex];
+            NodePtr toSplit = clusters[splitIndex];
             clusters[splitIndex] = toSplit->childs[0];
             for (int i=1; i<branching_; ++i) {
                 clusters[clusterCount++] = toSplit->childs[i];
@@ -905,7 +920,7 @@ private:
         return clusterCount;
     }
     
-    void addPointToTree(KMeansNodePtr node, size_t index, DistanceType dist_to_pivot)
+    void addPointToTree(NodePtr node, size_t index, DistanceType dist_to_pivot)
     {
         ElementType* point = points_[index];
         if (dist_to_pivot>node->radius) {
@@ -972,7 +987,7 @@ private:
     /**
      * The root node in the tree.
      */
-    KMeansNodePtr root_;
+    NodePtr root_;
 
     /**
      * The distance
