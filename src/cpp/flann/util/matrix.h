@@ -110,7 +110,7 @@ public:
     }
 
     Matrix(T* data_, size_t rows_, size_t cols_, size_t stride_ = 0) :
-    	Matrix_(data_, rows_, cols_, flann_datatype<T>::value, stride_)
+    	Matrix_(data_, rows_, cols_, flann_datatype_value<T>::value, stride_)
     {
     	if (stride==0) stride = sizeof(T)*cols;
     }

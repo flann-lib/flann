@@ -34,6 +34,7 @@
 #include "defines.h"
 #include <stdexcept>
 #include <cassert>
+#include <limits.h>
 
 namespace flann
 {
@@ -46,97 +47,189 @@ public:
     FLANNException(const std::string& message) : std::runtime_error(message) { }
 };
 
-inline size_t flann_datatype_size(flann_datatype_t type)
-{
-	switch (type) {
-	case FLANN_INT8:
-		return 1;
-	break;
-	case FLANN_INT16:
-		return 2;
-	break;
-	case FLANN_INT32:
-		return 4;
-	break;
-	case FLANN_INT64:
-		return 8;
-	break;
-	case FLANN_UINT8:
-		return 1;
-	break;
-	case FLANN_UINT16:
-		return 2;
-	break;
-	case FLANN_UINT32:
-		return 4;
-	break;
-	case FLANN_UINT64:
-		return 8;
-	break;
-	case FLANN_FLOAT32:
-		return 4;
-	break;
-	case FLANN_FLOAT64:
-		return 8;
-	break;
-	default:
-		return 0;
-	}
-}
 
 template <typename T>
-struct flann_datatype
+struct flann_datatype_value
 {
 	static const flann_datatype_t value = FLANN_NONE;
 };
 
 template<>
-struct flann_datatype<char>
+struct flann_datatype_value<char>
 {
 	static const flann_datatype_t value = FLANN_INT8;
 };
 
 template<>
-struct flann_datatype<short>
+struct flann_datatype_value<short>
 {
 	static const flann_datatype_t value = FLANN_INT16;
 };
 
 template<>
-struct flann_datatype<int>
+struct flann_datatype_value<int>
 {
 	static const flann_datatype_t value = FLANN_INT32;
 };
 
+#ifdef LLONG_MAX
 template<>
-struct flann_datatype<unsigned char>
+struct flann_datatype_value<long long>
+{
+	static const flann_datatype_t value = FLANN_INT64;
+};
+#endif
+
+template<>
+struct flann_datatype_value<unsigned char>
 {
 	static const flann_datatype_t value = FLANN_UINT8;
 };
 
 template<>
-struct flann_datatype<unsigned short>
+struct flann_datatype_value<unsigned short>
 {
 	static const flann_datatype_t value = FLANN_UINT16;
 };
 
 template<>
-struct flann_datatype<unsigned int>
+struct flann_datatype_value<unsigned int>
 {
 	static const flann_datatype_t value = FLANN_UINT32;
 };
 
+#ifdef ULLONG_MAX
 template<>
-struct flann_datatype<float>
+struct flann_datatype_value<unsigned long long>
+{
+	static const flann_datatype_t value = FLANN_UINT64;
+};
+#endif
+
+
+template<>
+struct flann_datatype_value<float>
 {
 	static const flann_datatype_t value = FLANN_FLOAT32;
 };
 
 template<>
-struct flann_datatype<double>
+struct flann_datatype_value<double>
 {
 	static const flann_datatype_t value = FLANN_FLOAT64;
 };
+
+
+
+template <flann_datatype_t datatype>
+struct flann_datatype_type
+{
+	typedef void type;
+};
+
+template<>
+struct flann_datatype_type<FLANN_INT8>
+{
+	typedef char type;
+};
+
+template<>
+struct flann_datatype_type<FLANN_INT16>
+{
+	typedef short type;
+};
+
+template<>
+struct flann_datatype_type<FLANN_INT32>
+{
+	typedef int type;
+};
+
+#ifdef LLONG_MAX
+template<>
+struct flann_datatype_type<FLANN_INT64>
+{
+	typedef long long type;
+};
+#endif
+
+template<>
+struct flann_datatype_type<FLANN_UINT8>
+{
+	typedef unsigned char type;
+};
+
+
+template<>
+struct flann_datatype_type<FLANN_UINT16>
+{
+	typedef unsigned short type;
+};
+
+template<>
+struct flann_datatype_type<FLANN_UINT32>
+{
+	typedef unsigned int type;
+};
+
+#ifdef ULLONG_MAX
+template<>
+struct flann_datatype_type<FLANN_UINT64>
+{
+	typedef unsigned long long type;
+};
+#endif
+
+template<>
+struct flann_datatype_type<FLANN_FLOAT32>
+{
+	typedef float type;
+};
+
+template<>
+struct flann_datatype_type<FLANN_FLOAT64>
+{
+	typedef double type;
+};
+
+
+inline size_t flann_datatype_size(flann_datatype_t type)
+{
+	switch (type) {
+	case FLANN_INT8:
+		return sizeof(flann_datatype_type<FLANN_INT8>::type);
+	break;
+	case FLANN_INT16:
+		return sizeof(flann_datatype_type<FLANN_INT16>::type);
+	break;
+	case FLANN_INT32:
+		return sizeof(flann_datatype_type<FLANN_INT32>::type);
+	break;
+	case FLANN_INT64:
+		return sizeof(flann_datatype_type<FLANN_INT64>::type);
+	break;
+	case FLANN_UINT8:
+		return sizeof(flann_datatype_type<FLANN_UINT8>::type);
+	break;
+	case FLANN_UINT16:
+		return sizeof(flann_datatype_type<FLANN_UINT16>::type);
+	break;
+	case FLANN_UINT32:
+		return sizeof(flann_datatype_type<FLANN_UINT32>::type);
+	break;
+	case FLANN_UINT64:
+		return sizeof(flann_datatype_type<FLANN_UINT64>::type);
+	break;
+	case FLANN_FLOAT32:
+		return sizeof(flann_datatype_type<FLANN_FLOAT32>::type);
+	break;
+	case FLANN_FLOAT64:
+		return sizeof(flann_datatype_type<FLANN_FLOAT64>::type);
+	break;
+	default:
+		return 0;
+	}
+}
 
 }
 

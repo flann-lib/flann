@@ -192,7 +192,7 @@ public:
     	IndexHeader header;
 
     	if (Archive::is_saving::value) {
-    		header.data_type = flann_datatype<ElementType>::value;
+    		header.data_type = flann_datatype_value<ElementType>::value;
     		header.index_type = getType();
     		header.rows = size_;
     		header.cols = veclen_;
@@ -204,7 +204,7 @@ public:
     	    if (strcmp(header.signature,FLANN_SIGNATURE_)!=0) {
     	        throw FLANNException("Invalid index file, wrong signature");
     	    }
-            if (header.data_type != flann_datatype<ElementType>::value) {
+            if (header.data_type != flann_datatype_value<ElementType>::value) {
                 throw FLANNException("Datatype of saved index is different than of the one to be created.");
             }
             if (header.index_type != getType()) {

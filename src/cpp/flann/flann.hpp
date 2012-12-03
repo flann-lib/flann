@@ -337,7 +337,7 @@ private:
             return NULL;
         }
         IndexHeader header = load_header(fin);
-        if (header.data_type != flann_datatype<ElementType>::value) {
+        if (header.data_type != flann_datatype_value<ElementType>::value) {
             throw FLANNException("Datatype of saved index is different than of the one to be created.");
         }
 //        if ((size_t(header.rows) != dataset.rows)||(size_t(header.cols) != dataset.cols)) {

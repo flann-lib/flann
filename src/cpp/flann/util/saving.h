@@ -91,7 +91,7 @@ template<typename Index>
 void save_header(FILE* stream, const Index& index)
 {
     IndexHeader header;
-    header.data_type = flann_datatype<typename Index::ElementType>::value;
+    header.data_type = flann_datatype_value<typename Index::ElementType>::value;
     header.index_type = index.getType();
     header.rows = index.size();
     header.cols = index.veclen();
