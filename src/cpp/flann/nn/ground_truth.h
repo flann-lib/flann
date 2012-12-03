@@ -39,8 +39,8 @@ namespace flann
 {
 
 template <typename Distance>
-void find_nearest(const Matrix<typename Distance::ElementType>& dataset, typename Distance::ElementType* query, int* matches, int nn,
-                  int skip = 0, Distance distance = Distance())
+void find_nearest(const Matrix<typename Distance::ElementType>& dataset, typename Distance::ElementType* query, size_t* matches, size_t nn,
+                  size_t skip = 0, Distance distance = Distance())
 {
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
@@ -74,7 +74,7 @@ void find_nearest(const Matrix<typename Distance::ElementType>& dataset, typenam
         }
     }
 
-    for (int i=0; i<nn; ++i) {
+    for (size_t i=0; i<nn; ++i) {
         matches[i] = match[i+skip];
     }
 
@@ -84,11 +84,11 @@ void find_nearest(const Matrix<typename Distance::ElementType>& dataset, typenam
 
 
 template <typename Distance>
-void compute_ground_truth(const Matrix<typename Distance::ElementType>& dataset, const Matrix<typename Distance::ElementType>& testset, Matrix<int>& matches,
+void compute_ground_truth(const Matrix<typename Distance::ElementType>& dataset, const Matrix<typename Distance::ElementType>& testset, Matrix<size_t>& matches,
                           int skip=0, Distance d = Distance())
 {
     for (size_t i=0; i<testset.rows; ++i) {
-        find_nearest<Distance>(dataset, testset[i], matches[i], (int)matches.cols, skip, d);
+        find_nearest<Distance>(dataset, testset[i], matches[i], matches.cols, skip, d);
     }
 }
 
