@@ -54,7 +54,7 @@ macro(flann_add_gtest exe)
     add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
     target_link_libraries(${exe} ${GTEST_LIBRARIES})
     # add dependency to 'tests' target
-    add_dependencies(tests ${exe})
+    add_dependencies(flann_gtests ${exe})
 
     # add target for running test
     string(REPLACE "/" "_" _testname ${exe})
@@ -66,7 +66,7 @@ macro(flann_add_gtest exe)
                     VERBATIM
                     COMMENT "Runnint gtest test(s) ${exe}")
     # add dependency to 'test' target
-    add_dependencies(test test_${_testname})
+    add_dependencies(flann_gtest test_${_testname})
 endmacro(flann_add_gtest)
 
 macro(flann_add_cuda_gtest exe)
