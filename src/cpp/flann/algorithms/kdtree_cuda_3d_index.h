@@ -158,11 +158,6 @@ public:
     void saveIndex(FILE* stream)
     {
         throw FLANNException( "Index saving not implemented!" );
-        //         save_value(stream, size_);
-        //         save_value(stream, dim_);
-        //         save_value(stream, leaf_max_size_);
-        //         save_value(stream, vind_);
-        //         save_value(stream, data_);
 
     }
 
@@ -170,15 +165,6 @@ public:
     void loadIndex(FILE* stream)
     {
         throw FLANNException( "Index loading not implemented!" );
-        //         load_value(stream, size_);
-        //         load_value(stream, dim_);
-        //         load_value(stream, leaf_max_size_);
-        //         load_value(stream, vind_);
-        //         load_value(stream, data_);
-
-
-        //         index_params_["algorithm"] = getType();
-        //         index_params_["leaf_max_size"] = leaf_max_size_;
     }
 
     /**

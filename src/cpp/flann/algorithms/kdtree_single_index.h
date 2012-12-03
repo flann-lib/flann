@@ -85,6 +85,9 @@ public:
     {
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
         reorder_ = get_param(params, "reorder", true);
+
+        data_ = flann::Matrix<ElementType>();
+        root_node_ = NULL;
     }
 
     /**
@@ -101,6 +104,9 @@ public:
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
         reorder_ = get_param(params, "reorder", true);
 
+        data_ = flann::Matrix<ElementType>();
+        root_node_ = NULL;
+
         setDataset(inputData);
     }
 
@@ -112,6 +118,7 @@ public:
      */
     virtual ~KDTreeSingleIndex()
     {
+    	freeIndex();
     }
 
     using NNIndex<Distance>::buildIndex;
@@ -193,6 +200,7 @@ public:
 
     void loadIndex(FILE* stream)
     {
+    	freeIndex();
     	serialization::LoadArchive la(stream);
     	la & *this;
     }
@@ -252,6 +260,12 @@ private:
          */
         Node* child1, * child2;
 
+        ~Node()
+        {
+        	if (child1) child1->~Node();
+        	if (child2) child2->~Node();
+        }
+
     private:
     	template<typename Archive>
     	void serialize(Archive& ar)
@@ -307,31 +321,15 @@ private:
 
 
 
-
-    void save_tree(FILE* stream, NodePtr tree)
+    void freeIndex()
     {
-        save_value(stream, *tree);
-        if (tree->child1!=NULL) {
-            save_tree(stream, tree->child1);
-        }
-        if (tree->child2!=NULL) {
-            save_tree(stream, tree->child2);
-        }
+    	if (data_.ptr()) {
+    		delete[] data_.ptr();
+    		data_ = flann::Matrix<ElementType>();
+    	}
+    	if (root_node_) root_node_->~Node();
+    	pool_.free();
     }
-
-
-    void load_tree(FILE* stream, NodePtr& tree)
-    {
-        tree = new(pool_) Node();
-        load_value(stream, *tree);
-        if (tree->child1!=NULL) {
-            load_tree(stream, tree->child1);
-        }
-        if (tree->child2!=NULL) {
-            load_tree(stream, tree->child2);
-        }
-    }
-
 
     void computeBoundingBox(BoundingBox& bbox)
     {
