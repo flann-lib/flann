@@ -85,6 +85,8 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef NNIndex<Distance> BaseClass;
+
     /**
      * Constructor.
      *
@@ -92,7 +94,7 @@ public:
      * @param d
      */
     HierarchicalClusteringIndex(const IndexParams& index_params = HierarchicalClusteringIndexParams(), Distance d = Distance())
-        : NNIndex<Distance>(index_params), distance_(d), size_at_build_(0)
+        : BaseClass(index_params, d), size_at_build_(0)
     {
         memoryCounter_ = 0;
 
@@ -101,19 +103,7 @@ public:
         trees_ = get_param(index_params_,"trees",4);
         leaf_size_ = get_param(index_params_,"leaf_size",100);
 
-        switch(centers_init_) {
-        case FLANN_CENTERS_RANDOM:
-        	chooseCenters_ = new RandomCenterChooser<Distance>(d);
-        	break;
-        case FLANN_CENTERS_GONZALES:
-        	chooseCenters_ = new GonzalesCenterChooser<Distance>(d);
-        	break;
-        case FLANN_CENTERS_KMEANSPP:
-            chooseCenters_ = new KMeansppCenterChooser<Distance>(d);
-        	break;
-        default:
-            throw FLANNException("Unknown algorithm for choosing initial centers.");
-        }
+        initCenterChooser();
     }
 
 
@@ -126,7 +116,7 @@ public:
      */
     HierarchicalClusteringIndex(const Matrix<ElementType>& inputData, const IndexParams& index_params = HierarchicalClusteringIndexParams(),
                                 Distance d = Distance())
-        : NNIndex<Distance>(index_params), distance_(d), size_at_build_(0)
+        : BaseClass(index_params, d), size_at_build_(0)
     {
         memoryCounter_ = 0;
 
@@ -135,26 +125,52 @@ public:
         trees_ = get_param(index_params_,"trees",4);
         leaf_size_ = get_param(index_params_,"leaf_size",100);
 
-        switch(centers_init_) {
-        case FLANN_CENTERS_RANDOM:
-        	chooseCenters_ = new RandomCenterChooser<Distance>(d);
-        	break;
-        case FLANN_CENTERS_GONZALES:
-        	chooseCenters_ = new GonzalesCenterChooser<Distance>(d);
-        	break;
-        case FLANN_CENTERS_KMEANSPP:
-            chooseCenters_ = new KMeansppCenterChooser<Distance>(d);
-        	break;
-        default:
-            throw FLANNException("Unknown algorithm for choosing initial centers.");
-        }
+        initCenterChooser();
         chooseCenters_->setDataset(inputData);
         
         setDataset(inputData);
     }
 
-    HierarchicalClusteringIndex(const HierarchicalClusteringIndex&);
-    HierarchicalClusteringIndex& operator=(const HierarchicalClusteringIndex&);
+
+    HierarchicalClusteringIndex(const HierarchicalClusteringIndex& other) : BaseClass(other),
+    		size_at_build_(other.size_at_build_),
+    		memoryCounter_(other.memoryCounter_),
+    		branching_(other.branching_),
+    		trees_(other.trees_),
+    		centers_init_(other.centers_init_),
+    		leaf_size_(other.leaf_size_)
+
+    {
+    	initCenterChooser();
+        tree_roots_.resize(other.tree_roots_.size());
+        for (size_t i=0;i<tree_roots_.size();++i) {
+        	copyTree(tree_roots_[i], other.tree_roots_[i]);
+        }
+    }
+
+    HierarchicalClusteringIndex& operator=(HierarchicalClusteringIndex other)
+    {
+    	this->swap(other);
+    	return *this;
+    }
+
+
+    void initCenterChooser()
+    {
+        switch(centers_init_) {
+        case FLANN_CENTERS_RANDOM:
+        	chooseCenters_ = new RandomCenterChooser<Distance>(distance_);
+        	break;
+        case FLANN_CENTERS_GONZALES:
+        	chooseCenters_ = new GonzalesCenterChooser<Distance>(distance_);
+        	break;
+        case FLANN_CENTERS_KMEANSPP:
+            chooseCenters_ = new KMeansppCenterChooser<Distance>(distance_);
+        	break;
+        default:
+            throw FLANNException("Unknown algorithm for choosing initial centers.");
+        }
+    }
 
     /**
      * Index destructor.
@@ -163,19 +179,14 @@ public:
      */
     virtual ~HierarchicalClusteringIndex()
     {
-    	clearNodeTrees();
+    	delete chooseCenters_;
+    	freeIndex();
     }
 
-    /**
-     * Clears Node tree
-     * calling Node destructor explicitly
-     */
-    void clearNodeTrees(){
-    	for (int i=0; i<trees_; ++i) {
-    		tree_roots_[i]->~Node();
-    	}
+    BaseClass* clone() const
+    {
+    	return new HierarchicalClusteringIndex(*this);
     }
-
 
     /**
      * Computes the inde memory usage
@@ -216,8 +227,7 @@ public:
         extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
-        	clearNodeTrees();
-            pool_.free();
+        	freeIndex();
             buildIndex();
         }
         else {
@@ -364,7 +374,8 @@ private:
          * destructor
          * calling Node destructor explicitly
          */
-        ~Node(){
+        ~Node()
+        {
         	for(size_t i=0; i<childs.size(); i++){
         		childs[i]->~Node();
         	}
@@ -412,6 +423,36 @@ private:
      * Alias definition for a nicer syntax.
      */
     typedef BranchStruct<NodePtr, DistanceType> BranchSt;
+
+
+    /**
+     * Clears Node tree
+     * calling Node destructor explicitly
+     */
+    void freeIndex(){
+    	for (size_t i=0; i<tree_roots_.size(); ++i) {
+    		tree_roots_[i]->~Node();
+    	}
+    	pool_.free();
+    }
+
+    void copyTree(NodePtr& dst, const NodePtr& src)
+    {
+    	dst = new(pool_) Node();
+    	dst->pivot_index = src->pivot_index;
+    	dst->pivot = points_[dst->pivot_index];
+
+    	if (src->childs.size()==0) {
+    		dst->points = src->points;
+    	}
+    	else {
+    		dst->childs.resize(src->childs.size());
+    		for (size_t i=0;i<src->childs.size();++i) {
+    			copyTree(dst->childs[i], src->childs[i]);
+    		}
+    	}
+    }
+
 
 
     void computeLabels(int* indices, int indices_length,  int* centers, int centers_length, int* labels, DistanceType& cost)
@@ -586,17 +627,27 @@ private:
         }                
     }
 
+    void swap(HierarchicalClusteringIndex& other)
+    {
+    	BaseClass::swap(other);
+
+    	std::swap(tree_roots_, other.tree_roots_);
+    	std::swap(size_at_build_, other.size_at_build_);
+    	std::swap(pool_, other.pool_);
+    	std::swap(memoryCounter_, other.memoryCounter_);
+    	std::swap(branching_, other.branching_);
+    	std::swap(trees_, other.trees_);
+    	std::swap(centers_init_, other.centers_init_);
+    	std::swap(leaf_size_, other.leaf_size_);
+    	std::swap(chooseCenters_, other.chooseCenters_);
+    }
+
 private:
 
     /**
      * The root nodes in the tree.
      */
     std::vector<Node*> tree_roots_;
-
-    /**
-     * The distance
-     */
-    Distance distance_;
 
     /**
      * Number of features in the dataset when the index was last built.

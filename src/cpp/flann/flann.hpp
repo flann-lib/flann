@@ -72,11 +72,6 @@ struct SavedIndexParams : public IndexParams
 
 
 
-
-
-
-
-
 template<typename Distance>
 class Index
 {
@@ -99,6 +94,18 @@ public:
         	flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
             nnIndex_ = create_index_by_type<Distance>(index_type, features, params, distance);
         }
+    }
+
+
+    Index(const Index& other) : loaded_(other.loaded_), index_params_(other.index_params_)
+    {
+    	nnIndex_ = other.nnIndex_->clone();
+    }
+
+    Index& operator=(Index other)
+    {
+    	this->swap(other);
+    	return *this;
     }
 
     virtual ~Index()
@@ -340,9 +347,6 @@ private:
         if (header.data_type != flann_datatype_value<ElementType>::value) {
             throw FLANNException("Datatype of saved index is different than of the one to be created.");
         }
-//        if ((size_t(header.rows) != dataset.rows)||(size_t(header.cols) != dataset.cols)) {
-//            throw FLANNException("The index saved belongs to a different dataset");
-//        }
 
         IndexParams params;
         params["algorithm"] = header.index_type;
@@ -352,6 +356,13 @@ private:
         fclose(fin);
 
         return nnIndex;
+    }
+
+    void swap( Index& other)
+    {
+    	std::swap(nnIndex_, other.nnIndex_);
+    	std::swap(loaded_, other.loaded_);
+    	std::swap(index_params_, other.index_params_);
     }
 
 private:

@@ -39,6 +39,15 @@
 namespace flann
 {
 
+namespace anyimpl
+{
+SMALL_POLICY(flann_algorithm_t);
+SMALL_POLICY(flann_centers_init_t);
+SMALL_POLICY(flann_log_level_t);
+SMALL_POLICY(flann_datatype_t);
+}
+
+
 typedef std::map<std::string, any> IndexParams;
 
 

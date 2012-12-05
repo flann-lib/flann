@@ -86,6 +86,8 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef NNIndex<Distance> BaseClass;
+
     typedef bool needs_vector_space_distance;
 
 
@@ -104,10 +106,8 @@ public:
      */
     KMeansIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KMeansIndexParams(),
                 Distance d = Distance())
-        : NNIndex<Distance>(params), root_(NULL), distance_(d)
+        : BaseClass(params,d), cb_index_(0.4f), size_at_build_(0), root_(NULL), memoryCounter_(0)
     {
-        memoryCounter_ = 0;
-
         branching_ = get_param(params,"branching",32);
         iterations_ = get_param(params,"iterations",11);
         if (iterations_<0) {
@@ -115,22 +115,8 @@ public:
         }
         centers_init_  = get_param(params,"centers_init",FLANN_CENTERS_RANDOM);
 
-        switch(centers_init_) {
-        case FLANN_CENTERS_RANDOM:
-        	chooseCenters_ = new RandomCenterChooser<Distance>(d);
-        	break;
-        case FLANN_CENTERS_GONZALES:
-        	chooseCenters_ = new GonzalesCenterChooser<Distance>(d);
-        	break;
-        case FLANN_CENTERS_KMEANSPP:
-            chooseCenters_ = new KMeansppCenterChooser<Distance>(d);
-        	break;
-        default:
-            throw FLANNException("Unknown algorithm for choosing initial centers.");
-        }
+        initCenterChooser();
         chooseCenters_->setDataset(inputData);
-
-        cb_index_ = 0.4f;
         
         setDataset(inputData);
     }
@@ -144,10 +130,9 @@ public:
      *          params = parameters passed to the hierarchical k-means algorithm
      */
     KMeansIndex(const IndexParams& params = KMeansIndexParams(), Distance d = Distance())
-        : NNIndex<Distance>(params), root_(NULL), distance_(d)
+        : BaseClass(params, d), cb_index_(0.4f), size_at_build_(0),
+          root_(NULL), memoryCounter_(0)
     {
-        memoryCounter_ = 0;
-
         branching_ = get_param(params,"branching",32);
         iterations_ = get_param(params,"iterations",11);
         if (iterations_<0) {
@@ -155,26 +140,46 @@ public:
         }
         centers_init_  = get_param(params,"centers_init",FLANN_CENTERS_RANDOM);
 
+        initCenterChooser();
+    }
+
+
+    KMeansIndex(const KMeansIndex& other) : BaseClass(other),
+    		branching_(other.branching_),
+    		iterations_(other.iterations_),
+    		centers_init_(other.centers_init_),
+    		cb_index_(other.cb_index_),
+    		size_at_build_(other.size_at_build_),
+    		memoryCounter_(other.memoryCounter_)
+    {
+    	initCenterChooser();
+
+    	copyTree(root_, other.root_);
+    }
+
+    KMeansIndex& operator=(KMeansIndex other)
+    {
+    	this->swap(other);
+    	return *this;
+    }
+
+
+    void initCenterChooser()
+    {
         switch(centers_init_) {
         case FLANN_CENTERS_RANDOM:
-        	chooseCenters_ = new RandomCenterChooser<Distance>(d);
+        	chooseCenters_ = new RandomCenterChooser<Distance>(distance_);
         	break;
         case FLANN_CENTERS_GONZALES:
-        	chooseCenters_ = new GonzalesCenterChooser<Distance>(d);
+        	chooseCenters_ = new GonzalesCenterChooser<Distance>(distance_);
         	break;
         case FLANN_CENTERS_KMEANSPP:
-            chooseCenters_ = new KMeansppCenterChooser<Distance>(d);
+            chooseCenters_ = new KMeansppCenterChooser<Distance>(distance_);
         	break;
         default:
             throw FLANNException("Unknown algorithm for choosing initial centers.");
         }
-
-        cb_index_ = 0.4f;
     }
-
-    KMeansIndex(const KMeansIndex&);
-    KMeansIndex& operator=(const KMeansIndex&);
-
 
     /**
      * Index destructor.
@@ -183,8 +188,15 @@ public:
      */
     virtual ~KMeansIndex()
     {
+    	delete chooseCenters_;
     	freeIndex();
     }
+
+    BaseClass* clone() const
+    {
+    	return new KMeansIndex(*this);
+    }
+
 
     void set_cb_index( float index)
     {
@@ -468,6 +480,27 @@ private:
     	root_ = NULL;
     	pool_.free();
     }
+
+    void copyTree(NodePtr& dst, const NodePtr& src)
+    {
+    	dst = new(pool_) Node();
+    	dst->pivot = new DistanceType[veclen_];
+    	std::copy(src->pivot, src->pivot+veclen_, dst->pivot);
+    	dst->radius = src->radius;
+    	dst->variance = src->variance;
+    	dst->size = src->size;
+
+    	if (src->childs.size()==0) {
+    		dst->points = src->points;
+    	}
+    	else {
+    		dst->childs.resize(src->childs.size());
+    		for (size_t i=0;i<src->childs.size();++i) {
+    			copyTree(dst->childs[i], src->childs[i]);
+    		}
+    	}
+    }
+
 
     /**
      * Computes the statistics of a node (mean, radius, variance).
@@ -961,6 +994,20 @@ private:
     }
 
 
+    void swap(KMeansIndex& other)
+    {
+    	std::swap(branching_, other.branching_);
+    	std::swap(iterations_, other.iterations_);
+    	std::swap(centers_init_, other.centers_init_);
+    	std::swap(cb_index_, other.cb_index_);
+    	std::swap(size_at_build_, other.size_at_build_);
+    	std::swap(root_, other.root_);
+    	std::swap(pool_, other.pool_);
+    	std::swap(memoryCounter_, other.memoryCounter_);
+    	std::swap(chooseCenters_, other.chooseCenters_);
+    }
+
+
 private:
     /** The branching factor used in the hierarchical k-means clustering */
     int branching_;
@@ -988,11 +1035,6 @@ private:
      * The root node in the tree.
      */
     NodePtr root_;
-
-    /**
-     * The distance
-     */
-    Distance distance_;
 
     /**
      * Pooled memory allocator.

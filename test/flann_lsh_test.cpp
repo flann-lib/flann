@@ -195,6 +195,85 @@ TEST_F(LshIndex_Brief100K, SavedTest)
 }
 
 
+TEST_F(LshIndex_Brief100K, TestCopy)
+{
+    flann::Index<Distance> index(data, flann::LshIndexParams(12, 20, 2));
+    start_timer("Building LSH index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    printf("Precision: %g\n", precision);
+    EXPECT_GE(precision, 0.75);
+
+    // test copy constructor
+    flann::Index<Distance> index2(index);
+
+    start_timer("Searching KNN...");
+    index2.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision2 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision2);
+    EXPECT_EQ(precision, precision2);
+
+    // test assignment operator
+    flann::Index<Distance> index3(data, flann::LshIndexParams(12, 20, 2));
+    index3 = index;
+
+    start_timer("Searching KNN...");
+    index3.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision3 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision3);
+    EXPECT_EQ(precision, precision3);
+}
+
+
+TEST_F(LshIndex_Brief100K, TestCopy2)
+{
+    flann::LshIndex<Distance> index(data, flann::LshIndexParams(12, 20, 2));
+    start_timer("Building LSH index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    printf("Precision: %g\n", precision);
+    EXPECT_GE(precision, 0.75);
+
+    // test copy constructor
+    flann::LshIndex<Distance> index2(index);
+
+    start_timer("Searching KNN...");
+    index2.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision2 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision2);
+    EXPECT_EQ(precision, precision2);
+
+    // test assignment operator
+    flann::LshIndex<Distance> index3(data, flann::LshIndexParams(12, 20, 2));
+    index3 = index;
+
+    start_timer("Searching KNN...");
+    index3.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision3 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision3);
+    EXPECT_EQ(precision, precision3);
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

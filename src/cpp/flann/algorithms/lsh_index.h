@@ -81,12 +81,14 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef NNIndex<Distance> BaseClass;
+
     /** Constructor
      * @param params parameters passed to the LSH algorithm
      * @param d the distance used
      */
     LshIndex(const IndexParams& params = LshIndexParams(), Distance d = Distance()) :
-    	NNIndex<Distance>(params), distance_(d)
+    	BaseClass(params, d), size_at_build_(0)
     {
         table_number_ = get_param<unsigned int>(index_params_,"table_number",12);
         key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
@@ -102,7 +104,7 @@ public:
      * @param d the distance used
      */
     LshIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LshIndexParams(), Distance d = Distance()) :
-    	NNIndex<Distance>(params), distance_(d)
+    	BaseClass(params, d), size_at_build_(0)
     {
         table_number_ = get_param<unsigned int>(index_params_,"table_number",12);
         key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
@@ -113,13 +115,32 @@ public:
         setDataset(input_data);
     }
 
+    LshIndex(const LshIndex& other) : BaseClass(other),
+    	tables_(other.tables_),
+    	size_at_build_(other.size_at_build_),
+    	table_number_(other.table_number_),
+    	key_size_(other.key_size_),
+    	multi_probe_level_(other.multi_probe_level_),
+    	xor_masks_(other.xor_masks_)
+    {
+    }
     
+    LshIndex& operator=(LshIndex other)
+    {
+    	this->swap(other);
+    	return *this;
+    }
+
     virtual ~LshIndex()
     {
     }
 
-    LshIndex(const LshIndex&);
-    LshIndex& operator=(const LshIndex&);
+
+    BaseClass* clone() const
+    {
+    	return new LshIndex(*this);
+    }
+
 
     using NNIndex<Distance>::buildIndex;
     /**
@@ -470,6 +491,18 @@ private:
         }
     }
 
+
+    void swap(LshIndex& other)
+    {
+    	BaseClass::swap(other);
+    	std::swap(tables_, other.tables_);
+    	std::swap(size_at_build_, other.size_at_build_);
+    	std::swap(table_number_, other.table_number_);
+    	std::swap(key_size_, other.key_size_);
+    	std::swap(multi_probe_level_, other.multi_probe_level_);
+    	std::swap(xor_masks_, other.xor_masks_);
+    }
+
     /** The different hash tables */
     std::vector<lsh::LshTable<ElementType> > tables_;
     
@@ -485,8 +518,6 @@ private:
 
     /** The XOR masks to apply to a key to get the neighboring buckets */
     std::vector<lsh::BucketKey> xor_masks_;
-
-    Distance distance_;
 
     USING_BASECLASS_SYMBOLS
 };

@@ -73,6 +73,8 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef NNIndex<Distance> BaseClass;
+
     int visited_leafs;
 
     typedef bool needs_kdtree_distance;
@@ -84,7 +86,7 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeCuda3dIndex(const IndexParams& params = KDTreeCuda3dIndexParams(), Distance d = Distance() ) :
-    	NNIndex<Distance>(params), distance_(d)
+    	BaseClass(params, d), leaf_count_(0), visited_leafs(0), node_count_(0), current_node_count_(0)
     {
         int dim_param = get_param(params,"dim",-1);
         if (dim_param>0) dim_ = dim_param;
@@ -101,8 +103,7 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeCuda3dIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KDTreeCuda3dIndexParams(),
-                      Distance d = Distance() ) :
-                    	  NNIndex<Distance>(params), distance_(d)
+                      Distance d = Distance() ) : BaseClass(params,d), leaf_count_(0), visited_leafs(0), node_count_(0), current_node_count_(0)
     {
         int dim_param = get_param(params,"dim",-1);
         if (dim_param>0) dim_ = dim_param;
@@ -113,6 +114,9 @@ public:
         setDataset(inputData);
     }
 
+    KDTreeCuda3dIndex(const KDTreeCuda3dIndex& other);
+    KDTreeCuda3dIndex operator=(KDTreeCuda3dIndex other);
+
     /**
      * Standard destructor
      */
@@ -121,6 +125,12 @@ public:
         delete[] data_.ptr();
         clearGpuBuffers();
     }
+
+    BaseClass* clone() const
+    {
+    	throw FLANNException("KDTreeCuda3dIndex cloning is not implemented");
+    }
+
 
     /**
      * Builds the index
@@ -293,8 +303,6 @@ private:
     Matrix<ElementType> data_;
 
     size_t dim_;
-
-    Distance distance_;
 
     USING_BASECLASS_SYMBOLS
 };   // class KDTreeCuda3dIndex

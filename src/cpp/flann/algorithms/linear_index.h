@@ -53,20 +53,36 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef NNIndex<Distance> BaseClass;
 
     LinearIndex(const IndexParams& params = LinearIndexParams(), Distance d = Distance()) :
-    	NNIndex<Distance>(params), distance_(d)
+    	BaseClass(params, d)
     {
     }
 
     LinearIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LinearIndexParams(), Distance d = Distance()) :
-    	NNIndex<Distance>(params), distance_(d)
+    	BaseClass(params, d)
     {
         setDataset(input_data);
     }
 
+    LinearIndex(const LinearIndex& other) : BaseClass(other)
+    {
+    }
+
+    LinearIndex& operator=(LinearIndex other)
+    {
+    	this->swap(other);
+    	return *this;
+    }
+
     virtual ~LinearIndex()
     {
+    }
+
+    BaseClass* clone() const
+    {
+    	return new LinearIndex(*this);
     }
 
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
@@ -74,10 +90,6 @@ public:
         assert(points.cols==veclen_);
         extendDataset(points);
     }
-
-    
-    LinearIndex(const LinearIndex&);
-    LinearIndex& operator=(const LinearIndex&);
 
     flann_algorithm_t getType() const
     {
@@ -130,10 +142,7 @@ public:
         }
     }
 
-
 private:
-    /** Index distance */
-    Distance distance_;
 
     USING_BASECLASS_SYMBOLS
 };

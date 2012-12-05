@@ -74,6 +74,8 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef NNIndex<Distance> BaseClass;
+
     typedef bool needs_kdtree_distance;
 
     /**
@@ -84,7 +86,7 @@ public:
      * @return
      */
     CompositeIndex(const IndexParams& params = CompositeIndexParams(), Distance d = Distance()) :
-    	NNIndex<Distance>(params)
+    	BaseClass(params, d)
     {
         kdtree_index_ = new KDTreeIndex<Distance>(params, d);
         kmeans_index_ = new KMeansIndex<Distance>(params, d);
@@ -92,20 +94,32 @@ public:
     }
 
     CompositeIndex(const Matrix<ElementType>& inputData, const IndexParams& params = CompositeIndexParams(),
-                   Distance d = Distance()) : NNIndex<Distance>(params)
+                   Distance d = Distance()) : BaseClass(params, d)
     {
         kdtree_index_ = new KDTreeIndex<Distance>(inputData, params, d);
         kmeans_index_ = new KMeansIndex<Distance>(inputData, params, d);
-
     }
 
-    CompositeIndex(const CompositeIndex&);
-    CompositeIndex& operator=(const CompositeIndex&);
+    CompositeIndex(const CompositeIndex& other) : BaseClass(other),
+    	kmeans_index_(other.kmeans_index_), kdtree_index_(other.kdtree_index_)
+    {
+    }
+
+    CompositeIndex& operator=(CompositeIndex other)
+    {
+    	this->swap(other);
+    	return *this;
+    }
 
     virtual ~CompositeIndex()
     {
         delete kdtree_index_;
         delete kmeans_index_;
+    }
+
+    BaseClass* clone() const
+    {
+    	return new CompositeIndex(*this);
     }
 
     /**
@@ -192,6 +206,13 @@ public:
     {
         kmeans_index_->findNeighbors(result, vec, searchParams);
         kdtree_index_->findNeighbors(result, vec, searchParams);
+    }
+
+protected:
+    void swap(CompositeIndex& other)
+    {
+    	std::swap(kmeans_index_, other.kmeans_index_);
+    	std::swap(kdtree_index_, other.kdtree_index_);
     }
 
 private:

@@ -74,6 +74,8 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef NNIndex<Distance> BaseClass;
+
     typedef bool needs_kdtree_distance;
 
 
@@ -85,7 +87,7 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeIndex(const IndexParams& params = KDTreeIndexParams(), Distance d = Distance() ) :
-        NNIndex<Distance>(params), distance_(d)
+    	BaseClass(params, d), size_at_build_(0), mean_(NULL), var_(NULL)
     {
         trees_ = get_param(index_params_,"trees",4);
     }
@@ -99,15 +101,28 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeIndex(const Matrix<ElementType>& dataset, const IndexParams& params = KDTreeIndexParams(),
-                Distance d = Distance() ) : NNIndex<Distance>(params), distance_(d)
+                Distance d = Distance() ) : BaseClass(params,d ), size_at_build_(0), mean_(NULL), var_(NULL)
     {
         trees_ = get_param(index_params_,"trees",4);
 
         setDataset(dataset);
     }
 
-    KDTreeIndex(const KDTreeIndex&);
-    KDTreeIndex& operator=(const KDTreeIndex&);
+    KDTreeIndex(const KDTreeIndex& other) : BaseClass(other),
+    		trees_(other.trees_),
+    		size_at_build_(other.size_at_build_)
+    {
+        tree_roots_.resize(other.tree_roots_.size());
+        for (size_t i=0;i<tree_roots_.size();++i) {
+        	copyTree(tree_roots_[i], other.tree_roots_[i]);
+        }
+    }
+
+    KDTreeIndex& operator=(KDTreeIndex other)
+    {
+    	this->swap(other);
+    	return *this;
+    }
 
     /**
      * Standard destructor
@@ -115,6 +130,11 @@ public:
     virtual ~KDTreeIndex()
     {
     	freeIndex();
+    }
+
+    BaseClass* clone() const
+    {
+    	return new KDTreeIndex(*this);
     }
 
     using NNIndex<Distance>::buildIndex;
@@ -255,6 +275,8 @@ private:
     }
 
 
+
+
     /*--------------------- Internal Data Structures --------------------------*/
     struct Node
     {
@@ -317,6 +339,22 @@ private:
     typedef BranchStruct<NodePtr, DistanceType> BranchSt;
     typedef BranchSt* Branch;
 
+
+    void copyTree(NodePtr& dst, const NodePtr& src)
+    {
+    	dst = new(pool_) Node();
+    	dst->divfeat = src->divfeat;
+    	dst->divval = src->divval;
+    	if (src->child1==NULL && src->child2==NULL) {
+    		dst->point = points_[dst->divfeat];
+    		dst->child1 = NULL;
+    		dst->child2 = NULL;
+    	}
+    	else {
+    		copyTree(dst->child1, src->child1);
+    		copyTree(dst->child2, src->child2);
+    	}
+    }
 
     /**
      * Create a tree node that subdivides the list of vecs from vind[first]
@@ -649,6 +687,15 @@ private:
             }
         }
     }
+private:
+    void swap(KDTreeIndex& other)
+    {
+    	BaseClass::swap(other);
+    	std::swap(trees_, other.trees_);
+    	std::swap(size_at_build_, other.size_at_build_);
+    	std::swap(tree_roots_, other.tree_roots_);
+    	std::swap(pool_, other.pool_);
+    }
 
 private:
 
@@ -694,9 +741,6 @@ private:
      * number small of memory allocations.
      */
     PooledAllocator pool_;
-
-    Distance distance_;
-
 
     USING_BASECLASS_SYMBOLS
 };   // class KDTreeIndex

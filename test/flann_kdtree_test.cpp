@@ -150,7 +150,86 @@ TEST_F(KDTree_SIFT10K, TestSave)
     float precision2 = compute_precision(match, indices);
     printf("Precision: %g\n", precision2);
     EXPECT_EQ(precision, precision2);
+}
 
+
+TEST_F(KDTree_SIFT10K, TestCopy)
+{
+	Index<L2<float> > index(data, flann::KDTreeIndexParams(4));
+    start_timer("Building k-d tree index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    printf("Precision: %g\n", precision);
+    EXPECT_GE(precision, 0.75);
+
+    // test copy constructor
+    Index<L2<float> > index2(index);
+
+    start_timer("Searching KNN...");
+    index2.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision2 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision2);
+    EXPECT_EQ(precision, precision2);
+
+    // test assignment operator
+    Index<L2<float> > index3(data, flann::KDTreeIndexParams(4));
+    index3 = index;
+
+    start_timer("Searching KNN...");
+    index3.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision3 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision3);
+    EXPECT_EQ(precision, precision3);
+
+}
+
+TEST_F(KDTree_SIFT10K, TestCopy2)
+{
+	KDTreeIndex<L2<float> > index(data, flann::KDTreeIndexParams(4));
+    start_timer("Building k-d tree index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    printf("Precision: %g\n", precision);
+    EXPECT_GE(precision, 0.75);
+
+    // test copy constructor
+    KDTreeIndex<L2<float> > index2(index);
+
+    start_timer("Searching KNN...");
+    index2.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision2 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision2);
+    EXPECT_EQ(precision, precision2);
+
+    // test assignment operator
+    KDTreeIndex<L2<float> > index3(data, flann::KDTreeIndexParams(4));
+    index3 = index;
+
+    start_timer("Searching KNN...");
+    index3.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision3 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision3);
+    EXPECT_EQ(precision, precision3);
 
 }
 

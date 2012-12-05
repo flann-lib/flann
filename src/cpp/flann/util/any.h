@@ -134,7 +134,7 @@ SMALL_POLICY(unsigned long);
 SMALL_POLICY(float);
 SMALL_POLICY(bool);
 
-#undef SMALL_POLICY
+//#undef SMALL_POLICY
 
 /// This function will return a different policy for each type.
 template<typename T>

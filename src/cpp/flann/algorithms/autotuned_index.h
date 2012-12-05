@@ -43,8 +43,6 @@
 #include "flann/util/logger.h"
 
 
-
-
 namespace flann
 {
 
@@ -78,29 +76,49 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
     
+    typedef NNIndex<Distance> BaseClass;
+
     typedef AutotunedIndex<Distance> IndexType;
 
     typedef bool needs_kdtree_distance;
 
     AutotunedIndex(const Matrix<ElementType>& inputData, const IndexParams& params = AutotunedIndexParams(), Distance d = Distance()) :
-        dataset_(inputData), distance_(d)
+        BaseClass(params, d), bestIndex_(NULL), speedup_(0), dataset_(inputData)
     {
         target_precision_ = get_param(params, "target_precision",0.8f);
         build_weight_ =  get_param(params,"build_weight", 0.01f);
         memory_weight_ = get_param(params, "memory_weight", 0.0f);
         sample_fraction_ = get_param(params,"sample_fraction", 0.1f);
-        bestIndex_ = NULL;
     }
 
-    AutotunedIndex(const AutotunedIndex&);
-    AutotunedIndex& operator=(const AutotunedIndex&);
+
+    AutotunedIndex(const AutotunedIndex& other) : BaseClass(other),
+    		bestParams_(other.bestParams_),
+    		bestSearchParams_(other.bestSearchParams_),
+    		speedup_(other.speedup_),
+    		dataset_(other.dataset_),
+    		target_precision_(other.target_precision_),
+    		build_weight_(other.build_weight_),
+    		memory_weight_(other.memory_weight_),
+    		sample_fraction_(other.sample_fraction_)
+    {
+    		bestIndex_ = other.bestIndex_->clone();
+    }
+
+    AutotunedIndex& operator=(AutotunedIndex other)
+    {
+    	this->swap(other);
+    	return * this;
+    }
 
     virtual ~AutotunedIndex()
     {
-        if (bestIndex_ != NULL) {
-            delete bestIndex_;
-            bestIndex_ = NULL;
-        }
+    	delete bestIndex_;
+    }
+
+    BaseClass* clone() const
+    {
+    	return new AutotunedIndex(*this);
     }
 
 
@@ -664,6 +682,21 @@ private:
         return speedup;
     }
 
+
+    void swap(AutotunedIndex& other)
+    {
+    	BaseClass::swap(other);
+    	std::swap(bestIndex_, other.bestIndex_);
+    	std::swap(bestParams_, other.bestParams_);
+    	std::swap(bestSearchParams_, other.bestSearchParams_);
+    	std::swap(speedup_, other.speedup_);
+    	std::swap(dataset_, other.dataset_);
+    	std::swap(target_precision_, other.target_precision_);
+    	std::swap(build_weight_, other.build_weight_);
+    	std::swap(memory_weight_, other.memory_weight_);
+    	std::swap(sample_fraction_, other.sample_fraction_);
+    }
+
 private:
     NNIndex<Distance>* bestIndex_;
 
@@ -679,7 +712,7 @@ private:
     /**
      * The dataset used by this index
      */
-    const Matrix<ElementType> dataset_;
+    Matrix<ElementType> dataset_;
 
     /**
      * Index parameters
@@ -688,8 +721,6 @@ private:
     float build_weight_;
     float memory_weight_;
     float sample_fraction_;
-
-    Distance distance_;
 
     USING_BASECLASS_SYMBOLS
 };

@@ -72,6 +72,8 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
+    typedef NNIndex<Distance> BaseClass;
+
     typedef bool needs_kdtree_distance;
 
     /**
@@ -81,13 +83,10 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeSingleIndex(const IndexParams& params = KDTreeSingleIndexParams(), Distance d = Distance() ) :
-    	NNIndex<Distance>(params), distance_(d)
+    	BaseClass(params, d), root_node_(NULL)
     {
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
         reorder_ = get_param(params, "reorder", true);
-
-        data_ = flann::Matrix<ElementType>();
-        root_node_ = NULL;
     }
 
     /**
@@ -98,20 +97,33 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeSingleIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KDTreeSingleIndexParams(),
-                      Distance d = Distance() ) :
-                    	  NNIndex<Distance>(params), distance_(d)
+                      Distance d = Distance() ) : BaseClass(params, d), root_node_(NULL)
     {
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
         reorder_ = get_param(params, "reorder", true);
 
-        data_ = flann::Matrix<ElementType>();
-        root_node_ = NULL;
-
         setDataset(inputData);
     }
 
-    KDTreeSingleIndex(const KDTreeSingleIndex&);
-    KDTreeSingleIndex& operator=(const KDTreeSingleIndex&);
+
+    KDTreeSingleIndex(const KDTreeSingleIndex& other) : BaseClass(other),
+    		leaf_max_size_(other.leaf_max_size_),
+    		reorder_(other.reorder_),
+    		vind_(other.vind_),
+    		root_bbox_(other.root_bbox_)
+    {
+    	if (reorder_) {
+        	data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
+        	std::copy(other.data_[0], other.data_[0]+size_*veclen_, data_[0]);
+    	}
+    	copyTree(root_node_, other.root_node_);
+    }
+
+    KDTreeSingleIndex& operator=(KDTreeSingleIndex other)
+    {
+    	this->swap(other);
+    	return *this;
+    }
 
     /**
      * Standard destructor
@@ -119,6 +131,11 @@ public:
     virtual ~KDTreeSingleIndex()
     {
     	freeIndex();
+    }
+
+    BaseClass* clone() const
+    {
+    	return new KDTreeSingleIndex(*this);
     }
 
     using NNIndex<Distance>::buildIndex;
@@ -329,6 +346,16 @@ private:
     	}
     	if (root_node_) root_node_->~Node();
     	pool_.free();
+    }
+
+    void copyTree(NodePtr& dst, const NodePtr& src)
+    {
+    	dst = new(pool_) Node();
+    	*dst = *src;
+    	if (src->child1!=NULL && src->child2!=NULL) {
+    		copyTree(dst->child1, src->child1);
+    		copyTree(dst->child2, src->child2);
+    	}
     }
 
     void computeBoundingBox(BoundingBox& bbox)
@@ -617,6 +644,18 @@ private:
         dists[idx] = dst;
     }
 
+    void swap(KDTreeSingleIndex& other)
+    {
+    	BaseClass::swap(other);
+    	std::swap(leaf_max_size_, other.leaf_max_size_);
+    	std::swap(reorder_, other.reorder_);
+    	std::swap(vind_, other.vind_);
+    	std::swap(data_, other.data_);
+    	std::swap(root_node_, other.root_node_);
+    	std::swap(root_bbox_, other.root_bbox_);
+    	std::swap(pool_, other.pool_);
+    }
+
 private:
 
     int leaf_max_size_;
@@ -648,8 +687,6 @@ private:
      * number small of memory allocations.
      */
     PooledAllocator pool_;
-
-    Distance distance_;
 
     USING_BASECLASS_SYMBOLS
 };   // class KDTreeSingleIndex

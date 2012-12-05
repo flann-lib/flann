@@ -88,12 +88,34 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
-	NNIndex() : data_ptr_(NULL)
+	NNIndex(Distance d) : distance_(d), last_id_(0), size_(0), veclen_(0), data_ptr_(NULL), removed_(false)
 	{
 	}
 
-	NNIndex(const IndexParams& params) : index_params_(params), data_ptr_(NULL)
+	NNIndex(const IndexParams& params, Distance d) : distance_(d), last_id_(0), size_(0), veclen_(0),
+			index_params_(params), data_ptr_(NULL), removed_(false)
 	{
+	}
+
+	NNIndex(const NNIndex& other) :
+		distance_(other.distance_),
+		last_id_(other.last_id_),
+		size_(other.size_),
+		veclen_(other.veclen_),
+		index_params_(other.index_params_),
+		removed_points_(other.removed_points_),
+		ids_(other.ids_),
+		points_(other.points_),
+		data_ptr_(NULL),
+		removed_(other.removed_)
+	{
+		if (other.data_ptr_) {
+			data_ptr_ = new ElementType[size_*veclen_];
+			std::copy(other.data_ptr_, other.data_ptr_+size_*veclen_, data_ptr_);
+			for (size_t i=0;i<size_;++i) {
+				points_[i] = data_ptr_ + i*veclen_;
+			}
+		}
 	}
 
 	virtual ~NNIndex()
@@ -102,6 +124,9 @@ public:
 			delete[] data_ptr_;
 		}
 	}
+
+
+	virtual NNIndex* clone() const = 0;
 
 	/**
 	 * Builds the index
@@ -765,9 +790,27 @@ protected:
     	size_ = last_idx;
     }
 
-
+    void swap(NNIndex& other)
+    {
+    	std::swap(distance_, other.distance_);
+    	std::swap(last_id_, other.last_id_);
+    	std::swap(size_, other.size_);
+    	std::swap(veclen_, other.veclen_);
+    	std::swap(index_params_, other.index_params_);
+    	std::swap(removed_points_, other.removed_points_);
+    	std::swap(ids_, other.ids_);
+    	std::swap(points_, other.points_);
+    	std::swap(data_ptr_, other.data_ptr_);
+    	std::swap(removed_, other.removed_);
+    }
 
 protected:
+
+    /**
+     * The distance functor
+     */
+    Distance distance_;
+
 
     /**
      * Each index point has an associated ID. IDs are assigned sequentially in
@@ -820,16 +863,17 @@ protected:
 
 
 #define USING_BASECLASS_SYMBOLS \
-	using NNIndex<Distance>::size_;\
-	using NNIndex<Distance>::veclen_;\
-	using NNIndex<Distance>::index_params_;\
-	using NNIndex<Distance>::removed_points_;\
-	using NNIndex<Distance>::ids_;\
-	using NNIndex<Distance>::removed_;\
-	using NNIndex<Distance>::points_;\
-	using NNIndex<Distance>::extendDataset;\
-	using NNIndex<Distance>::setDataset;\
-	using NNIndex<Distance>::cleanRemovedPoints;
+		using NNIndex<Distance>::distance_;\
+		using NNIndex<Distance>::size_;\
+		using NNIndex<Distance>::veclen_;\
+		using NNIndex<Distance>::index_params_;\
+		using NNIndex<Distance>::removed_points_;\
+		using NNIndex<Distance>::ids_;\
+		using NNIndex<Distance>::removed_;\
+		using NNIndex<Distance>::points_;\
+		using NNIndex<Distance>::extendDataset;\
+		using NNIndex<Distance>::setDataset;\
+		using NNIndex<Distance>::cleanRemovedPoints;
 
 
 

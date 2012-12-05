@@ -193,6 +193,86 @@ TEST_F(HierarchicalIndex_Brief100K, TestSave)
 }
 
 
+TEST_F(HierarchicalIndex_Brief100K, TestCopy)
+{
+    flann::Index<Distance> index(data, flann::HierarchicalClusteringIndexParams());
+    start_timer("Building hierarchical clustering index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    printf("Precision: %g\n", precision);
+    EXPECT_GE(precision, 0.75);
+
+    // test copy constructor
+    flann::Index<Distance> index2(index);
+
+    start_timer("Searching KNN...");
+    index2.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision2 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision2);
+    EXPECT_EQ(precision, precision2);
+
+    // test assignment operator
+    flann::Index<Distance> index3(data, flann::HierarchicalClusteringIndexParams());
+    index3 = index;
+
+    start_timer("Searching KNN...");
+    index3.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision3 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision3);
+    EXPECT_EQ(precision, precision3);
+
+}
+
+TEST_F(HierarchicalIndex_Brief100K, TestCopy2)
+{
+    flann::HierarchicalClusteringIndex<Distance> index(data, flann::HierarchicalClusteringIndexParams());
+    start_timer("Building hierarchical clustering index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision = compute_precision(match, indices);
+    printf("Precision: %g\n", precision);
+    EXPECT_GE(precision, 0.75);
+
+    // test copy constructor
+    flann::HierarchicalClusteringIndex<Distance > index2(index);
+
+    start_timer("Searching KNN...");
+    index2.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision2 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision2);
+    EXPECT_EQ(precision, precision2);
+
+    // test assignment operator
+    flann::HierarchicalClusteringIndex<Distance> index3(data, flann::HierarchicalClusteringIndexParams());
+    index3 = index;
+
+    start_timer("Searching KNN...");
+    index3.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(2000));
+    printf("done (%g seconds)\n", stop_timer());
+
+    float precision3 = compute_precision(match, indices);
+    printf("Precision: %g\n", precision3);
+    EXPECT_EQ(precision, precision3);
+}
+
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
