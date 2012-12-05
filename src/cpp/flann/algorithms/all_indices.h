@@ -91,6 +91,23 @@ HAS_MEMBER(needs_vector_space_distance)
 HAS_MEMBER(is_kdtree_distance)
 HAS_MEMBER(is_vector_space_distance)
 
+struct DummyDistance
+{
+    typedef float ElementType;
+    typedef float ResultType;
+
+    template <typename Iterator1, typename Iterator2>
+    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
+    {
+        return ResultType(0);
+    }
+
+    template <typename U, typename V>
+    inline ResultType accum_dist(const U& a, const V& b, int) const
+    {
+        return ResultType(0);
+    }
+};
 
 /**
  * Checks if an index and a distance can be used together
@@ -98,24 +115,6 @@ HAS_MEMBER(is_vector_space_distance)
 template<template <typename> class Index, typename Distance, typename ElemType>
 struct valid_combination
 {
-    struct DummyDistance
-    {
-        typedef float ElementType;
-        typedef float ResultType;
-
-        template <typename Iterator1, typename Iterator2>
-        ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
-        {
-            return ResultType(0);
-        }
-
-        template <typename U, typename V>
-        inline ResultType accum_dist(const U& a, const V& b, int) const
-        {
-            return ResultType(0);
-        }
-    };
-    
     static const bool value = same_type<ElemType,typename Distance::ElementType>::value &&
     				(!needs_kdtree_distance<Index<DummyDistance> >::value || is_kdtree_distance<Distance>::value) &&
     				(!needs_vector_space_distance<Index<DummyDistance> >::value || is_kdtree_distance<Distance>::value || is_vector_space_distance<Distance>::value);
@@ -148,84 +147,50 @@ inline NNIndex<Distance>*
 	typedef typename Distance::ElementType ElementType;
 
 	NNIndex<Distance>* nnIndex;
-    
-    switch (index_type) {
-#define FLANN_INDEX_CASE(name,index,_) \
-    case FLANN_INDEX_##name: \
-        nnIndex = create_index_<index,Distance,ElementType>(dataset, params, distance); \
-        break;
-    FLANN_INDEXES(FLANN_INDEX_CASE)
 
-//     case FLANN_INDEX_LINEAR:
-//         nnIndex = create_index_<LinearIndex,Distance,ElementType>(dataset, params, distance);
-//         break;
-//     case FLANN_INDEX_KDTREE_SINGLE:
-//         nnIndex = create_index_<KDTreeSingleIndex,Distance,ElementType>(dataset, params, distance);
-//         break;
-//     case FLANN_INDEX_KDTREE:
-//         nnIndex = create_index_<KDTreeIndex,Distance,ElementType>(dataset, params, distance);
-//         break;
-// 		//! #define this symbol before including flann.h to enable GPU search algorithms. But you have
-// 		//! to link libflann_cuda then!
-// 	#ifdef FLANN_USE_CUDA
-// 	case FLANN_INDEX_KDTREE_CUDA:
-//         nnIndex = create_index_<KDTreeCuda3dIndex,Distance,ElementType>(dataset, params, distance);
-//         break;
-// 	#endif
-// 
-//     case FLANN_INDEX_KMEANS:
-//         nnIndex = create_index_<KMeansIndex,Distance,ElementType>(dataset, params, distance);
-//         break;
-//     case FLANN_INDEX_COMPOSITE:
-//         nnIndex = create_index_<CompositeIndex,Distance,ElementType>(dataset, params, distance);
-//         break;
-// //     case FLANN_INDEX_AUTOTUNED:
-// //         nnIndex = create_index_<AutotunedIndex,Distance,ElementType>(dataset, params, distance);
-// //         break;
-//     case FLANN_INDEX_HIERARCHICAL:
-//         nnIndex = create_index_<HierarchicalClusteringIndex,Distance,ElementType>(dataset, params, distance);
-//         break;
-//     case FLANN_INDEX_LSH:
-//         nnIndex = create_index_<LshIndex,Distance,ElementType>(dataset, params, distance);
-//         break;
-    default:
-        throw FLANNException("Unknown index type");
-    }
+	switch (index_type) {
+
+	case FLANN_INDEX_LINEAR:
+		nnIndex = create_index_<LinearIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+	case FLANN_INDEX_KDTREE_SINGLE:
+		nnIndex = create_index_<KDTreeSingleIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+	case FLANN_INDEX_KDTREE:
+		nnIndex = create_index_<KDTreeIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+		//! #define this symbol before including flann.h to enable GPU search algorithms. But you have
+		//! to link libflann_cuda then!
+#ifdef FLANN_USE_CUDA
+	case FLANN_INDEX_KDTREE_CUDA:
+		nnIndex = create_index_<KDTreeCuda3dIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+#endif
+
+	case FLANN_INDEX_KMEANS:
+		nnIndex = create_index_<KMeansIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+	case FLANN_INDEX_COMPOSITE:
+		nnIndex = create_index_<CompositeIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+	case FLANN_INDEX_AUTOTUNED:
+		nnIndex = create_index_<AutotunedIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+	case FLANN_INDEX_HIERARCHICAL:
+		nnIndex = create_index_<HierarchicalClusteringIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+	case FLANN_INDEX_LSH:
+		nnIndex = create_index_<LshIndex,Distance,ElementType>(dataset, params, distance);
+		break;
+	default:
+		throw FLANNException("Unknown index type");
+	}
 
     if (nnIndex==NULL) {
     	throw FLANNException("Unsupported index/distance combination");
     }
     return nnIndex;
 }
-
-
-template<typename ElementType>
-inline IndexBase* create_index_by_type_and_distance(const flann_algorithm_t index_type, const flann_distance_t distance_type,
-		flann::Matrix<ElementType> data, const flann::IndexParams& params)
-{
-	switch (distance_type)
-	{
-	case FLANN_DIST_L1:
-		return  create_index_by_type<L1,ElementType>(index_type, data, params);
-	break;
-	case FLANN_DIST_L2:
-		return  create_index_by_type<L2,ElementType>(index_type, data, params);
-	break;
-	case FLANN_DIST_MINKOWSKI:
-		return  create_index_by_type<MinkowskiDistance,ElementType>(index_type, data, params);
-	break;
-	case FLANN_DIST_HAMMING:
-		return  create_index_by_type<Hamming,ElementType>(index_type, data, params);
-	break;
-	case FLANN_DIST_HAMMING_LUT:
-		return  create_index_by_type<HammingLUT,ElementType>(index_type, data, params);
-	break;
-	case FLANN_DIST_HAMMING_POPCNT:
-		return  create_index_by_type<HammingPopcnt,ElementType>(index_type, data, params);
-	break;
-	}
-}
-
 
 }
 

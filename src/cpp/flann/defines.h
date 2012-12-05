@@ -75,51 +75,21 @@
 namespace flann {
 #endif
 
-#ifndef FLANN_INDEXES
-#ifdef FLANN_USE_CUDA
-#define FLANN_INDEXES(X) \
-	X(LINEAR,LinearIndex,0) \
-	X(KDTREE,KDTreeIndex,1) \
-	X(KMEANS,KMeansIndex,2) \
-	X(COMPOSITE,CompositeIndex,3) \
-	X(KDTREE_SINGLE,KDTreeSingleIndex,4) \
-	X(HIERARCHICAL,HierarchicalClusteringIndex,5) \
-	X(LSH,LshIndex,6) \
-	X(KDTREE_CUDA,KDTreeCuda3dIndex,7) \
-	X(AUTOTUNED,AutotunedIndex,255)
-#else
-#define FLANN_INDEXES(X) \
-	X(LINEAR,LinearIndex,0) \
-	X(KDTREE,KDTreeIndex,1) \
-	X(KMEANS,KMeansIndex,2) \
-	X(COMPOSITE,CompositeIndex,3) \
-	X(KDTREE_SINGLE,KDTreeSingleIndex,4) \
-	X(HIERARCHICAL,HierarchicalClusteringIndex,5) \
-	X(LSH,LshIndex,6) \
-	X(AUTOTUNED,AutotunedIndex,255)
-#endif
-#endif
-
-
-#define FLANN_INDEX_ENUM(name,_,num) FLANN_INDEX_##name = num,
 /* Nearest neighbour index algorithms */
 enum flann_algorithm_t
 {
-	FLANN_INDEXES(FLANN_INDEX_ENUM)
-
-	FLANN_INDEX_SAVED = 254,
-
-	// the above X-Macro trick expands to:
-	//	FLANN_INDEX_LINEAR = 0,
-	//	FLANN_INDEX_KDTREE = 1,
-	//	FLANN_INDEX_KMEANS = 2,
-	//	FLANN_INDEX_COMPOSITE = 3,
-	//	FLANN_INDEX_KDTREE_SINGLE = 4,
-	//	FLANN_INDEX_HIERARCHICAL = 5,
-	//	FLANN_INDEX_LSH = 6,
-//		FLANN_INDEX_KDTREE_CUDA = 7,
-// 		FLANN_INDEX_AUTOTUNED = 255,
-
+    FLANN_INDEX_LINEAR 			= 0,
+    FLANN_INDEX_KDTREE 			= 1,
+    FLANN_INDEX_KMEANS 			= 2,
+    FLANN_INDEX_COMPOSITE 		= 3,
+    FLANN_INDEX_KDTREE_SINGLE 	= 4,
+    FLANN_INDEX_HIERARCHICAL 	= 5,
+    FLANN_INDEX_LSH 			= 6,
+#ifdef FLANN_USE_CUDA
+    FLANN_INDEX_KDTREE_CUDA 	= 7,
+#endif
+    FLANN_INDEX_SAVED 			= 254,
+    FLANN_INDEX_AUTOTUNED 		= 255,
 };
 
 enum flann_centers_init_t
@@ -139,53 +109,37 @@ enum flann_log_level_t
     FLANN_LOG_DEBUG = 5
 };
 
-
-#ifndef FLANN_DISTANCES
-#define FLANN_DISTANCES(X) \
-	X(L2,L2,1) \
-	X(L1,L1,2) \
-    X(MINKOWSKI,MinkowskiDistance,3) \
-	X(MAX,MaxDistance,4) \
-	X(HIST_INTERSECT,HistIntersectionDistance,5) \
-	X(HELLINGER,HellingerDistance,6) \
-	X(CHI_SQUARE,ChiSquareDistance,7) \
-	X(KULLBACK_LEIBLER,KL_Divergence,8) \
-	X(HAMMING,Hamming,9) \
-	X(HAMMING_LUT,HammingLUT,10) \
-	X(HAMMING_POPCNT,HammingPopcnt,11) \
-	X(L2_SIMPLE,L2_Simple,12)
-#endif
-
-
-#define FLANN_DISTANCE_ENUM(name,_,num) FLANN_DIST_##name = num,
 enum flann_distance_t
 {
-	FLANN_DISTANCES(FLANN_DISTANCE_ENUM)
-	// duplicate distance constants
-    FLANN_DIST_EUCLIDEAN = 1,
-    FLANN_DIST_MANHATTAN = 2,
+    FLANN_DIST_EUCLIDEAN 			= 1,
+    FLANN_DIST_L2 					= 1,
+    FLANN_DIST_MANHATTAN 			= 2,
+    FLANN_DIST_L1 					= 2,
+    FLANN_DIST_MINKOWSKI 			= 3,
+    FLANN_DIST_MAX   				= 4,
+    FLANN_DIST_HIST_INTERSECT  		= 5,
+    FLANN_DIST_HELLINGER 			= 6,
+    FLANN_DIST_CHI_SQUARE		 	= 7,
+    FLANN_DIST_KULLBACK_LEIBLER  	= 8,
+    FLANN_DIST_HAMMING         		= 9,
+    FLANN_DIST_HAMMING_LUT			= 10,
+    FLANN_DIST_HAMMING_POPCNT   	= 11,
+    FLANN_DIST_L2_SIMPLE	   		= 12,
 };
 
-#ifndef FLANN_DATATYPES
-#define FLANN_DATATYPES(X) \
-	X(NONE, void,-1) \
-	X(INT8, char,0) \
-	X(INT16, short int,1) \
-	X(INT32, int,2) \
-	X(INT64, long int,3) \
-	X(UINT8, unsigned char,4) \
-	X(UINT16, unsigned short int,5) \
-	X(UINT32, unsigned int,6) \
-	X(UINT64, unsigned long int,7) \
-	X(FLOAT32, float,8) \
-	X(FLOAT64, double,9)
-#endif
-
-
-#define FLANN_DATATYPE_ENUM(name,_,value) FLANN_##name = value,
 enum flann_datatype_t
 {
-	FLANN_DATATYPES(FLANN_DATATYPE_ENUM)
+    FLANN_NONE 		= -1,
+    FLANN_INT8 		= 0,
+    FLANN_INT16 	= 1,
+    FLANN_INT32 	= 2,
+    FLANN_INT64 	= 3,
+    FLANN_UINT8 	= 4,
+    FLANN_UINT16 	= 5,
+    FLANN_UINT32 	= 6,
+    FLANN_UINT64 	= 7,
+    FLANN_FLOAT32 	= 8,
+    FLANN_FLOAT64 	= 9
 };
 
 enum flann_checks_t {
