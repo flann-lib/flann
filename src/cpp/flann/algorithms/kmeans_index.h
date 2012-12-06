@@ -106,7 +106,7 @@ public:
      */
     KMeansIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KMeansIndexParams(),
                 Distance d = Distance())
-        : BaseClass(params,d), cb_index_(0.4f), size_at_build_(0), root_(NULL), memoryCounter_(0)
+        : BaseClass(params,d), size_at_build_(0), root_(NULL), memoryCounter_(0)
     {
         branching_ = get_param(params,"branching",32);
         iterations_ = get_param(params,"iterations",11);
@@ -114,6 +114,7 @@ public:
             iterations_ = (std::numeric_limits<int>::max)();
         }
         centers_init_  = get_param(params,"centers_init",FLANN_CENTERS_RANDOM);
+        cb_index_  = get_param(params,"cb_index",0.4f);
 
         initCenterChooser();
         chooseCenters_->setDataset(inputData);
@@ -130,7 +131,7 @@ public:
      *          params = parameters passed to the hierarchical k-means algorithm
      */
     KMeansIndex(const IndexParams& params = KMeansIndexParams(), Distance d = Distance())
-        : BaseClass(params, d), cb_index_(0.4f), size_at_build_(0),
+        : BaseClass(params, d), size_at_build_(0),
           root_(NULL), memoryCounter_(0)
     {
         branching_ = get_param(params,"branching",32);
@@ -139,6 +140,7 @@ public:
             iterations_ = (std::numeric_limits<int>::max)();
         }
         centers_init_  = get_param(params,"centers_init",FLANN_CENTERS_RANDOM);
+        cb_index_  = get_param(params,"cb_index",0.4f);
 
         initCenterChooser();
     }
@@ -253,7 +255,6 @@ public:
             }            
         }
     }
-
 
     template<typename Archive>
     void serialize(Archive& ar)

@@ -91,6 +91,14 @@ public:
         sample_fraction_ = get_param(params,"sample_fraction", 0.1f);
     }
 
+    AutotunedIndex(const IndexParams& params = AutotunedIndexParams(), Distance d = Distance()) :
+        BaseClass(params, d), bestIndex_(NULL), speedup_(0)
+    {
+        target_precision_ = get_param(params, "target_precision",0.8f);
+        build_weight_ =  get_param(params,"build_weight", 0.01f);
+        memory_weight_ = get_param(params, "memory_weight", 0.0f);
+        sample_fraction_ = get_param(params,"sample_fraction", 0.1f);
+    }
 
     AutotunedIndex(const AutotunedIndex& other) : BaseClass(other),
     		bestParams_(other.bestParams_),
@@ -148,6 +156,13 @@ public:
         bestParams_["speedup"] = speedup_;
     }
     
+    void buildIndex(const Matrix<ElementType>& dataset)
+    {
+    	dataset_ = dataset;
+    	this->buildIndex();
+    }
+
+
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         if (bestIndex_) {
@@ -155,6 +170,13 @@ public:
         }
     }
     
+    void removePoint(size_t id)
+    {
+        if (bestIndex_) {
+            bestIndex_->removePoint(id);
+        }
+    }
+
     
     template<typename Archive>
     void serialize(Archive& ar)
@@ -217,7 +239,6 @@ public:
         else {
             return bestIndex_->knnSearch(queries, indices, dists, knn, params);
         }
-
     }
 
     int knnSearch(const Matrix<ElementType>& queries,

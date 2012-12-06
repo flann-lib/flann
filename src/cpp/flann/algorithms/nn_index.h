@@ -137,7 +137,7 @@ public:
 	 * Builds th index using using the specified dataset
 	 * @param dataset the dataset to use
 	 */
-    void buildIndex(const Matrix<ElementType>& dataset)
+    virtual void buildIndex(const Matrix<ElementType>& dataset)
     {
         setDataset(dataset);
         this->buildIndex();
@@ -157,7 +157,7 @@ public:
      * Remove point from the index
      * @param index Index of point to be removed
      */
-    void removePoint(size_t id)
+    virtual void removePoint(size_t id)
     {
     	size_t point_index = id;
     	if (ids_[point_index]!=id) {

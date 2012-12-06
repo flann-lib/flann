@@ -26,9 +26,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
 
-#include "flann.h"
-
 #define FLANN_FIRST_MATCH
+
+#include "flann.h"
 
 
 struct FLANNParameters DEFAULT_FLANN_PARAMETERS = {
