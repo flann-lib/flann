@@ -482,7 +482,7 @@ optimized for searching lower dimensionality data (for example 3D point clouds)
 \begin{Verbatim}[fontsize=\footnotesize]
 struct KDTreeSingleIndexParams : public IndexParams
 {
-      KDTreeSingleIndexParams( int max_leaf_size = 10 );
+      KDTreeSingleIndexParams( int leaf_max_size = 10 );
 };
 \end{Verbatim}
 \begin{description}
@@ -511,7 +511,7 @@ struct HierarchicalClusteringIndexParams : public IndexParams
 {
     HierarchicalClusteringIndexParams(int branching = 32,
                               flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM,
-                              int trees = 4, int leaf_size = 100)
+                              int trees = 4, int leaf_max_size = 100)
 };
 \end{Verbatim}
 \begin{description}
@@ -873,6 +873,11 @@ struct FLANNParameters {
   float build_weight;        /* build tree time weighting factor */
   float memory_weight;       /* index memory weigthing factor */
   float sample_fraction;     /* what fraction of the dataset to use for autotuning */
+
+  /* LSH parameters */
+  unsigned int table_number_; /** The number of hash tables to use */
+  unsigned int key_size_;     /** The length of the key in the hash tables */
+  unsigned int multi_probe_level_; /** Number of levels to use in multi-probe LSH, 0 for standard LSH */
 
   /* other parameters */
   enum flann_log_level_t log_level;   /* determines the verbosity of each flann function */
@@ -1327,14 +1332,15 @@ used:
 
 \subsubsection{Example 1:}
 
-In this example the index is constructed using automatic parameter estimation, requesting 90\% as desired precision and using the default values for the build time and memory usage factors. The index is then used to search for the nearest-neighbors of the points in the testset matrix and finally the index is deleted.
+In this example the index is constructed using automatic parameter estimation, requesting 70\% as desired precision and using the default values for the build time and memory usage factors. The index is then used to search for the nearest-neighbors of the points in the testset matrix and finally the index is deleted.
 
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
 
 dataset = single(rand(128,10000));
 testset = single(rand(128,1000));
 
-build_params.target_precision = 0.9;
+build_params.algorithm = 'autotuned';
+build_params.target_precision = 0.7;
 build_params.build_weight = 0.01;
 build_params.memory_weight = 0;
 
@@ -1435,7 +1441,7 @@ dataset = rand(10000, 128)
 testset = rand(1000, 128)
 
 flann = FLANN()
-params = flann.build_index(dataset, target_precision=0.9, log_level = "info");
+params = flann.build_index(dataset, algorithm="autotuned", target_precision=0.9, log_level = "info");
 print params
 
 result, dists = flann.nn_index(testset,5, checks=params["checks"]);

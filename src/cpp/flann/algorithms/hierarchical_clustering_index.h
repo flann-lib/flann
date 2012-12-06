@@ -56,7 +56,7 @@ struct HierarchicalClusteringIndexParams : public IndexParams
 {
     HierarchicalClusteringIndexParams(int branching = 32,
                                       flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM,
-                                      int trees = 4, int leaf_size = 100)
+                                      int trees = 4, int leaf_max_size = 100)
     {
         (*this)["algorithm"] = FLANN_INDEX_HIERARCHICAL;
         // The branching factor used in the hierarchical clustering
@@ -66,7 +66,7 @@ struct HierarchicalClusteringIndexParams : public IndexParams
         // number of parallel trees to build
         (*this)["trees"] = trees;
         // maximum leaf size
-        (*this)["leaf_size"] = leaf_size;
+        (*this)["leaf_max_size"] = leaf_max_size;
     }
 };
 
@@ -101,7 +101,7 @@ public:
         branching_ = get_param(index_params_,"branching",32);
         centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
         trees_ = get_param(index_params_,"trees",4);
-        leaf_size_ = get_param(index_params_,"leaf_size",100);
+        leaf_max_size_ = get_param(index_params_,"leaf_max_size",100);
 
         initCenterChooser();
     }
@@ -123,7 +123,7 @@ public:
         branching_ = get_param(index_params_,"branching",32);
         centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
         trees_ = get_param(index_params_,"trees",4);
-        leaf_size_ = get_param(index_params_,"leaf_size",100);
+        leaf_max_size_ = get_param(index_params_,"leaf_max_size",100);
 
         initCenterChooser();
         chooseCenters_->setDataset(inputData);
@@ -138,7 +138,7 @@ public:
     		branching_(other.branching_),
     		trees_(other.trees_),
     		centers_init_(other.centers_init_),
-    		leaf_size_(other.leaf_size_)
+    		leaf_max_size_(other.leaf_max_size_)
 
     {
     	initCenterChooser();
@@ -256,7 +256,7 @@ public:
     	ar & branching_;
     	ar & trees_;
     	ar & centers_init_;
-    	ar & leaf_size_;
+    	ar & leaf_max_size_;
 
     	if (Archive::is_loading::value) {
     		tree_roots_.resize(trees_);
@@ -273,7 +273,7 @@ public:
             index_params_["branching"] = branching_;
             index_params_["trees"] = trees_;
             index_params_["centers_init"] = centers_init_;
-            index_params_["leaf_size"] = leaf_size_;
+            index_params_["leaf_size"] = leaf_max_size_;
     	}
     }
 
@@ -485,7 +485,7 @@ private:
      */
     void computeClustering(NodePtr node, int* indices, int indices_length)
     {
-        if (indices_length < leaf_size_) { // leaf node
+        if (indices_length < leaf_max_size_) { // leaf node
             node->points.resize(indices_length);
             for (int i=0;i<indices_length;++i) {
             	node->points[i].index = indices[i];
@@ -638,7 +638,7 @@ private:
     	std::swap(branching_, other.branching_);
     	std::swap(trees_, other.trees_);
     	std::swap(centers_init_, other.centers_init_);
-    	std::swap(leaf_size_, other.leaf_size_);
+    	std::swap(leaf_max_size_, other.leaf_max_size_);
     	std::swap(chooseCenters_, other.chooseCenters_);
     }
 
@@ -687,7 +687,7 @@ private:
     /**
      * Max size of leaf nodes
      */
-    int leaf_size_;
+    int leaf_max_size_;
     
     /**
      * Algorithm used to choose initial centers

@@ -63,16 +63,7 @@ if (BUILD_CUDA_LIB)
 endif()
 
 
-#debug libraries
-add_library(flann_cpp-gd SHARED ${CPP_SOURCES})
-set_target_properties(flann_cpp-gd PROPERTIES 
-    COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG}
-    DEFINE_SYMBOL FLANN_EXPORTS
-)
 
-add_library(flann_cpp_s-gd STATIC ${CPP_SOURCES})
-set_target_properties(flann_cpp_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
-set_property(TARGET flann_cpp_s-gd PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
 
 
@@ -95,17 +86,6 @@ if (HDF5_FOUND)
     endif()
 endif()
 
-if (BUILD_CUDA_LIB)
-    add_library(flann_cuda-gd SHARED ${CPP_SOURCES})
-    set_target_properties(flann_cuda-gd PROPERTIES 
-        COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG}
-        DEFINE_SYMBOL FLANN_EXPORTS
-    )
-
-    add_library(flann_cuda_s-gd STATIC ${CPP_SOURCES})
-    set_target_properties(flann_cuda_s-gd PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
-    set_property(TARGET flann_cuda_s-gd PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
-endif()
 
 if (BUILD_C_BINDINGS)
     add_library(flann_s STATIC ${C_SOURCES})
@@ -129,7 +109,6 @@ if (BUILD_C_BINDINGS)
     ) 
 endif()
 
-
 if(WIN32)
 if (BUILD_C_BINDINGS)
     install (
@@ -141,7 +120,7 @@ endif(WIN32)
 
 
 install (
-    TARGETS flann_cpp flann_cpp_s flann_cpp-gd flann_cpp_s-gd
+    TARGETS flann_cpp flann_cpp_s
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
@@ -149,7 +128,7 @@ install (
  
 if (BUILD_CUDA_LIB)
     install (
-        TARGETS flann_cuda flann_cuda_s flann_cuda-gd flann_cuda_s-gd
+        TARGETS flann_cuda flann_cuda_s
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
         ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}

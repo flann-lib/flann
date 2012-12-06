@@ -62,6 +62,7 @@ flann::IndexParams create_parameters(FLANNParameters* p)
         params["trees"] = p->trees;
         params["leaf_max_size"] = p->leaf_max_size;
     }
+
 #ifdef FLANN_USE_CUDA
     if (p->algorithm == FLANN_INDEX_KDTREE_CUDA) {
         params["leaf_max_size"] = p->leaf_max_size;
@@ -85,7 +86,7 @@ flann::IndexParams create_parameters(FLANNParameters* p)
         params["branching"] = p->branching;
         params["centers_init"] = p->centers_init;
         params["trees"] = p->trees;
-        params["leaf_size"] = p->leaf_max_size;
+        params["leaf_max_size"] = p->leaf_max_size;
     }
 
     if (p->algorithm == FLANN_INDEX_LSH) {
@@ -100,6 +101,57 @@ flann::IndexParams create_parameters(FLANNParameters* p)
     return params;
 }
 
+
+
+
+void update_flann_parameters(const IndexParams& params, FLANNParameters* flann_params)
+{
+	if (has_param(params,"algorithm")) {
+		flann_params->algorithm = get_param<flann_algorithm_t>(params,"algorithm");
+	}
+	if (has_param(params,"trees")) {
+		flann_params->trees = get_param<int>(params,"trees");
+	}
+	if (has_param(params,"leaf_max_size")) {
+		flann_params->leaf_max_size = get_param<int>(params,"leaf_max_size");
+	}
+	if (has_param(params,"branching")) {
+		flann_params->branching = get_param<int>(params,"branching");
+	}
+	if (has_param(params,"iterations")) {
+		flann_params->iterations = get_param<int>(params,"iterations");
+	}
+	if (has_param(params,"centers_init")) {
+		flann_params->centers_init = get_param<flann_centers_init_t>(params,"centers_init");
+	}
+	if (has_param(params,"target_precision")) {
+		flann_params->target_precision = get_param<float>(params,"target_precision");
+	}
+	if (has_param(params,"build_weight")) {
+		flann_params->build_weight = get_param<float>(params,"build_weight");
+	}
+	if (has_param(params,"memory_weight")) {
+		flann_params->memory_weight = get_param<float>(params,"memory_weight");
+	}
+	if (has_param(params,"sample_fraction")) {
+		flann_params->sample_fraction = get_param<float>(params,"sample_fraction");
+	}
+	if (has_param(params,"table_number")) {
+		flann_params->table_number_ = get_param<unsigned int>(params,"table_number");
+	}
+	if (has_param(params,"key_size")) {
+		flann_params->key_size_ = get_param<unsigned int>(params,"key_size");
+	}
+	if (has_param(params,"multi_probe_level")) {
+		flann_params->multi_probe_level_ = get_param<unsigned int>(params,"multi_probe_level");
+	}
+	if (has_param(params,"log_level")) {
+		flann_params->log_level = get_param<flann_log_level_t>(params,"log_level");
+	}
+	if (has_param(params,"random_seed")) {
+		flann_params->random_seed = get_param<long>(params,"random_seed");
+	}
+}
 
 
 void init_flann_parameters(FLANNParameters* p)
@@ -142,10 +194,10 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
         IndexParams params = create_parameters(flann_params);
         Index<Distance>* index = new Index<Distance>(Matrix<ElementType>(dataset,rows,cols), params, d);
         index->buildIndex();
-        params = index->getParameters();
 
-        if (index->getType()==FLANN_INDEX_AUTOTUNED) {
+        if (flann_params->algorithm==FLANN_INDEX_AUTOTUNED) {
             IndexParams params = index->getParameters();
+            update_flann_parameters(params,flann_params);
             SearchParams search_params = get_param<SearchParams>(params,"search_params");
             *speedup = get_param<float>(params,"speedup");
             flann_params->checks = search_params.checks;

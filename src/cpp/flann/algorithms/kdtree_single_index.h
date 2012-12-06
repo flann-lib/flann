@@ -530,6 +530,8 @@ private:
         if (lim1>count/2) index = lim1;
         else if (lim2<count/2) index = lim2;
         else index = count/2;
+
+        assert(index > 0 && index < count);
     }
 
 
@@ -544,7 +546,6 @@ private:
      */
     void planeSplit(int* ind, int count, int cutfeat, DistanceType cutval, int& lim1, int& lim2)
     {
-        /* Move vector indices for left subtree to front of list. */
         int left = 0;
         int right = count-1;
         for (;; ) {
@@ -553,9 +554,6 @@ private:
             if (left>right) break;
             std::swap(ind[left], ind[right]); ++left; --right;
         }
-        /* If either list is empty, it means that all remaining features
-         * are identical. Split in the middle to maintain a balanced tree.
-         */
         lim1 = left;
         right = count-1;
         for (;; ) {
