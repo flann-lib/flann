@@ -83,7 +83,7 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeSingleIndex(const IndexParams& params = KDTreeSingleIndexParams(), Distance d = Distance() ) :
-    	BaseClass(params, d), root_node_(NULL)
+        BaseClass(params, d), root_node_(NULL)
     {
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
         reorder_ = get_param(params, "reorder", true);
@@ -107,36 +107,37 @@ public:
 
 
     KDTreeSingleIndex(const KDTreeSingleIndex& other) : BaseClass(other),
-    		leaf_max_size_(other.leaf_max_size_),
-    		reorder_(other.reorder_),
-    		vind_(other.vind_),
-    		root_bbox_(other.root_bbox_)
+            leaf_max_size_(other.leaf_max_size_),
+            reorder_(other.reorder_),
+            vind_(other.vind_),
+            root_bbox_(other.root_bbox_)
     {
-    	if (reorder_) {
-        	data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
-        	std::copy(other.data_[0], other.data_[0]+size_*veclen_, data_[0]);
-    	}
-    	copyTree(root_node_, other.root_node_);
+        if (reorder_) {
+            data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
+            std::copy(other.data_[0], other.data_[0]+size_*veclen_, data_[0]);
+        }
+        copyTree(root_node_, other.root_node_);
     }
 
     KDTreeSingleIndex& operator=(KDTreeSingleIndex other)
     {
-    	this->swap(other);
-    	return *this;
+        this->swap(other);
+        return *this;
     }
-
+    
     /**
      * Standard destructor
      */
     virtual ~KDTreeSingleIndex()
     {
-    	freeIndex();
+        freeIndex();
     }
-
+    
     BaseClass* clone() const
     {
-    	return new KDTreeSingleIndex(*this);
+        return new KDTreeSingleIndex(*this);
     }
+
 
     using NNIndex<Distance>::buildIndex;
     /**
@@ -144,6 +145,9 @@ public:
      */
     void buildIndex()
     {
+    	freeIndex();
+    	cleanRemovedPoints();
+
         // Create a permutable array of indices to the input vectors.
         vind_.resize(size_);
         for (size_t i = 0; i < size_; i++) {
@@ -154,21 +158,19 @@ public:
         root_node_ = divideTree(0, size_, root_bbox_ );   // construct the tree
 
         if (reorder_) {
-        	data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
-        	for (size_t i=0; i<size_; ++i) {
-        		std::copy(points_[vind_[i]], points_[vind_[i]]+veclen_, data_[i]);
-        	}
+            data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
+            for (size_t i=0; i<size_; ++i) {
+                std::copy(points_[vind_[i]], points_[vind_[i]]+veclen_, data_[i]);
+            }
         }
-    }    
-
-
+    }
+    
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         assert(points.cols==veclen_);
         extendDataset(points);
         buildIndex();
     }
-
 
     flann_algorithm_t getType() const
     {
@@ -179,47 +181,47 @@ public:
     template<typename Archive>
     void serialize(Archive& ar)
     {
-    	ar.setObject(this);
+        ar.setObject(this);
 
-    	if (reorder_) index_params_["save_dataset"] = false;
+        if (reorder_) index_params_["save_dataset"] = false;
 
-    	ar & *static_cast<NNIndex<Distance>*>(this);
+        ar & *static_cast<NNIndex<Distance>*>(this);
 
-    	ar & reorder_;
-    	ar & leaf_max_size_;
-    	ar & root_bbox_;
-    	ar & vind_;
+        ar & reorder_;
+        ar & leaf_max_size_;
+        ar & root_bbox_;
+        ar & vind_;
 
         if (reorder_) {
-        	ar & data_;
+            ar & data_;
         }
 
         if (Archive::is_loading::value) {
-        	root_node_ = new(pool_) Node();
+            root_node_ = new(pool_) Node();
         }
 
         ar & *root_node_;
 
-    	if (Archive::is_loading::value) {
+        if (Archive::is_loading::value) {
             index_params_["algorithm"] = getType();
             index_params_["leaf_max_size"] = leaf_max_size_;
             index_params_["reorder"] = reorder_;
-    	}
+        }
     }
 
 
     void saveIndex(FILE* stream)
     {
-    	serialization::SaveArchive sa(stream);
-    	sa & *this;
+        serialization::SaveArchive sa(stream);
+        sa & *this;
     }
 
 
     void loadIndex(FILE* stream)
     {
-    	freeIndex();
-    	serialization::LoadArchive la(stream);
-    	la & *this;
+        freeIndex();
+        serialization::LoadArchive la(stream);
+        la & *this;
     }
 
     /**
@@ -246,11 +248,11 @@ public:
 
         std::vector<DistanceType> dists(veclen_,0);
         DistanceType distsq = computeInitialDistances(vec, dists);
-        if (reorder_) {
-        	searchLevel<true>(result, vec, root_node_, distsq, dists, epsError);
+        if (removed_) {
+            searchLevel<true>(result, vec, root_node_, distsq, dists, epsError);
         }
         else {
-        	searchLevel<false>(result, vec, root_node_, distsq, dists, epsError);
+            searchLevel<false>(result, vec, root_node_, distsq, dists, epsError);
         }
     }
 
@@ -276,43 +278,42 @@ private:
          * The child nodes.
          */
         Node* child1, * child2;
-
+        
         ~Node()
         {
-        	if (child1) child1->~Node();
-        	if (child2) child2->~Node();
+            if (child1) child1->~Node();
+            if (child2) child2->~Node();
         }
 
     private:
-    	template<typename Archive>
-    	void serialize(Archive& ar)
-    	{
-    		typedef KDTreeSingleIndex<Distance> Index;
-    		Index* obj = static_cast<Index*>(ar.getObject());
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            typedef KDTreeSingleIndex<Distance> Index;
+            Index* obj = static_cast<Index*>(ar.getObject());
 
-    		ar & left;
-    		ar & right;
-    		ar & divfeat;
-    		ar & divlow;
-    		ar & divhigh;
+            ar & left;
+            ar & right;
+            ar & divfeat;
+            ar & divlow;
+            ar & divhigh;
 
-    		bool leaf_node = false;
-    		if (Archive::is_saving::value) {
-    			leaf_node = ((child1==NULL) && (child2==NULL));
-    		}
-    		ar & leaf_node;
+            bool leaf_node = false;
+            if (Archive::is_saving::value) {
+                leaf_node = ((child1==NULL) && (child2==NULL));
+            }
+            ar & leaf_node;
 
-    		if (!leaf_node) {
-				if (Archive::is_loading::value) {
-					child1 = new(obj->pool_) Node();
-					child2 = new(obj->pool_) Node();
-				}
-    			ar & *child1;
-    			ar & *child2;
-    		}
-    	}
-    	friend struct serialization::access;
-
+            if (!leaf_node) {
+                if (Archive::is_loading::value) {
+                    child1 = new(obj->pool_) Node();
+                    child2 = new(obj->pool_) Node();
+                }
+                ar & *child1;
+                ar & *child2;
+            }
+        }
+        friend struct serialization::access;
     };
     typedef Node* NodePtr;
 
@@ -320,13 +321,13 @@ private:
     struct Interval
     {
         DistanceType low, high;
-
+        
     private:
         template <typename Archive>
         void serialize(Archive& ar)
         {
-        	ar & low;
-        	ar & high;
+            ar & low;
+            ar & high;
         }
         friend serialization::access;
     };
@@ -337,26 +338,28 @@ private:
     typedef BranchSt* Branch;
 
 
-
+    
     void freeIndex()
     {
-    	if (data_.ptr()) {
-    		delete[] data_.ptr();
-    		data_ = flann::Matrix<ElementType>();
-    	}
-    	if (root_node_) root_node_->~Node();
-    	pool_.free();
+        if (data_.ptr()) {
+            delete[] data_.ptr();
+            data_ = flann::Matrix<ElementType>();
+        }
+        if (root_node_) root_node_->~Node();
+        pool_.free();
     }
-
+    
     void copyTree(NodePtr& dst, const NodePtr& src)
     {
-    	dst = new(pool_) Node();
-    	*dst = *src;
-    	if (src->child1!=NULL && src->child2!=NULL) {
-    		copyTree(dst->child1, src->child1);
-    		copyTree(dst->child2, src->child2);
-    	}
+        dst = new(pool_) Node();
+        *dst = *src;
+        if (src->child1!=NULL && src->child2!=NULL) {
+            copyTree(dst->child1, src->child1);
+            copyTree(dst->child2, src->child2);
+        }
     }
+
+
 
     void computeBoundingBox(BoundingBox& bbox)
     {
@@ -385,7 +388,7 @@ private:
      */
     NodePtr divideTree(int left, int right, BoundingBox& bbox)
     {
-        NodePtr node = new(pool_) Node(); // allocate memory
+        NodePtr node = new (pool_) Node(); // allocate memory
 
         /* If too few exemplars remain, then make this a leaf node. */
         if ( (right-left) <= leaf_max_size_) {
@@ -486,7 +489,7 @@ private:
         if (lim1>count/2) index = lim1;
         else if (lim2<count/2) index = lim2;
         else index = count/2;
-
+        
         assert(index > 0 && index < count);
     }
 
@@ -530,7 +533,7 @@ private:
         if (lim1>count/2) index = lim1;
         else if (lim2<count/2) index = lim2;
         else index = count/2;
-
+        
         assert(index > 0 && index < count);
     }
 
@@ -554,6 +557,7 @@ private:
             if (left>right) break;
             std::swap(ind[left], ind[right]); ++left; --right;
         }
+
         lim1 = left;
         right = count-1;
         for (;; ) {
@@ -586,7 +590,7 @@ private:
     /**
      * Performs an exact search in the tree starting from a node.
      */
-    template<bool reorder>
+    template <bool with_removed>
     void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindistsq,
                      std::vector<DistanceType>& dists, const float epsError)
     {
@@ -594,17 +598,13 @@ private:
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
             DistanceType worst_dist = result_set.worstDist();
             for (int i=node->left; i<node->right; ++i) {
-            	int index = vind_[i];
-                if (removed_points_.test(index)) continue;
-                DistanceType dist;
-                if (reorder) {
-                	dist = distance_(vec, data_[i], veclen_, worst_dist);
+                if (with_removed) {
+                    if (removed_points_.test(vind_[i])) continue;
                 }
-                else {
-                	dist = distance_(vec, points_[index], veclen_, worst_dist);
-                }
+                ElementType* point = reorder_ ? data_[i] : points_[vind_[i]];
+                DistanceType dist = distance_(vec, point, veclen_, worst_dist);
                 if (dist<worst_dist) {
-                    result_set.addPoint(dist,index);
+                    result_set.addPoint(dist,vind_[i]);
                 }
             }
             return;
@@ -631,33 +631,37 @@ private:
         }
 
         /* Call recursively to search next level down. */
-        searchLevel<reorder>(result_set, vec, bestChild, mindistsq, dists, epsError);
+        searchLevel<with_removed>(result_set, vec, bestChild, mindistsq, dists, epsError);
 
         DistanceType dst = dists[idx];
         mindistsq = mindistsq + cut_dist - dst;
         dists[idx] = cut_dist;
         if (mindistsq*epsError<=result_set.worstDist()) {
-            searchLevel<reorder>(result_set, vec, otherChild, mindistsq, dists, epsError);
+            searchLevel<with_removed>(result_set, vec, otherChild, mindistsq, dists, epsError);
         }
         dists[idx] = dst;
     }
 
+    
     void swap(KDTreeSingleIndex& other)
     {
-    	BaseClass::swap(other);
-    	std::swap(leaf_max_size_, other.leaf_max_size_);
-    	std::swap(reorder_, other.reorder_);
-    	std::swap(vind_, other.vind_);
-    	std::swap(data_, other.data_);
-    	std::swap(root_node_, other.root_node_);
-    	std::swap(root_bbox_, other.root_bbox_);
-    	std::swap(pool_, other.pool_);
+        BaseClass::swap(other);
+        std::swap(leaf_max_size_, other.leaf_max_size_);
+        std::swap(reorder_, other.reorder_);
+        std::swap(vind_, other.vind_);
+        std::swap(data_, other.data_);
+        std::swap(root_node_, other.root_node_);
+        std::swap(root_bbox_, other.root_bbox_);
+        std::swap(pool_, other.pool_);
     }
-
+    
 private:
 
-    int leaf_max_size_;
 
+
+    int leaf_max_size_;
+    
+    
     bool reorder_;
 
     /**
@@ -687,6 +691,7 @@ private:
     PooledAllocator pool_;
 
     USING_BASECLASS_SYMBOLS
+
 };   // class KDTreeSingleIndex
 
 }

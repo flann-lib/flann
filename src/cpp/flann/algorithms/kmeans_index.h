@@ -220,6 +220,9 @@ public:
      */
     void buildIndex()
     {
+    	freeIndex();
+    	cleanRemovedPoints();
+
         if (branching_<2) {
             throw FLANNException("Branching factor must be at least 2");
         }
@@ -245,7 +248,6 @@ public:
         extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
-            freeIndex();
             buildIndex();
         }
         else {
@@ -305,29 +307,15 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     searchParams = parameters that influence the search algorithm (checks, cb_index)
      */
+
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-
-        int maxChecks = searchParams.checks;
-
-        if (maxChecks==FLANN_CHECKS_UNLIMITED) {
-            findExactNN(root_, result, vec);
-        }
-        else {
-            // Priority queue storing intermediate branches in the best-bin-first search
-            Heap<BranchSt>* heap = new Heap<BranchSt>((int)size_);
-
-            int checks = 0;
-            findNN(root_, result, vec, checks, maxChecks, heap);
-
-            BranchSt branch;
-            while (heap->popMin(branch) && (checks<maxChecks || !result.full())) {
-                NodePtr node = branch.node;
-                findNN(node, result, vec, checks, maxChecks, heap);
-            }
-
-            delete heap;
-        }
+    	if (removed_) {
+    		findNeighbors<true>(result, vec, searchParams);
+    	}
+    	else {
+    		findNeighbors<false>(result, vec, searchParams);
+    	}
 
     }
 
@@ -729,6 +717,33 @@ private:
     }
 
 
+    template<bool with_removed>
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    {
+
+        int maxChecks = searchParams.checks;
+
+        if (maxChecks==FLANN_CHECKS_UNLIMITED) {
+            findExactNN<with_removed>(root_, result, vec);
+        }
+        else {
+            // Priority queue storing intermediate branches in the best-bin-first search
+            Heap<BranchSt>* heap = new Heap<BranchSt>((int)size_);
+
+            int checks = 0;
+            findNN<with_removed>(root_, result, vec, checks, maxChecks, heap);
+
+            BranchSt branch;
+            while (heap->popMin(branch) && (checks<maxChecks || !result.full())) {
+                NodePtr node = branch.node;
+                findNN<with_removed>(node, result, vec, checks, maxChecks, heap);
+            }
+
+            delete heap;
+        }
+
+    }
+
 
     /**
      * Performs one descent in the hierarchical k-means tree. The branches not
@@ -742,9 +757,8 @@ private:
      *      maxChecks = maximum dataset points to checks
      */
 
-
-    template<typename ResultSet>
-    void findNN(NodePtr node, ResultSet& result, const ElementType* vec, int& checks, int maxChecks,
+    template<bool with_removed>
+    void findNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec, int& checks, int maxChecks,
                 Heap<BranchSt>* heap)
     {
         // Ignore those clusters that are too far away
@@ -769,7 +783,9 @@ private:
             for (int i=0; i<node->size; ++i) {
             	PointInfo& point_info = node->points[i];
                 int index = point_info.index;
-                if (removed_points_.test(index)) continue;
+                if (with_removed) {
+                	if (removed_points_.test(index)) continue;
+                }
                 DistanceType dist = distance_(point_info.point, vec, veclen_);
                 result.addPoint(dist, index);
                 ++checks;
@@ -777,7 +793,7 @@ private:
         }
         else {
             int closest_center = exploreNodeBranches(node, vec, heap);
-            findNN(node->childs[closest_center],result,vec, checks, maxChecks, heap);
+            findNN<with_removed>(node->childs[closest_center],result,vec, checks, maxChecks, heap);
         }
     }
 
@@ -821,8 +837,8 @@ private:
     /**
      * Function the performs exact nearest neighbor search by traversing the entire tree.
      */
-    template<typename ResultSet>
-    void findExactNN(NodePtr node, ResultSet& result, const ElementType* vec)
+    template<bool with_removed>
+    void findExactNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec)
     {
         // Ignore those clusters that are too far away
         {
@@ -843,7 +859,9 @@ private:
             for (int i=0; i<node->size; ++i) {
             	PointInfo& point_info = node->points[i];
                 int index = point_info.index;
-                if (removed_points_.test(index)) continue;
+                if (with_removed) {
+                	if (removed_points_.test(index)) continue;
+                }
                 DistanceType dist = distance_(point_info.point, vec, veclen_);
                 result.addPoint(dist, index);
             }
@@ -853,7 +871,7 @@ private:
             getCenterOrdering(node, vec, sort_indices);
 
             for (int i=0; i<branching_; ++i) {
-                findExactNN(node->childs[sort_indices[i]],result,vec);
+                findExactNN<with_removed>(node->childs[sort_indices[i]],result,vec);
             }
 
         }

@@ -135,11 +135,19 @@ public:
 
     void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/)
     {
-        for (size_t i = 0; i < points_.size(); ++i) {
-        	if (removed_points_.test(i)) continue;
-            DistanceType dist = distance_(points_[i], vec, veclen_);
-            resultSet.addPoint(dist, i);
-        }
+    	if (removed_) {
+    		for (size_t i = 0; i < points_.size(); ++i) {
+    			if (removed_points_.test(i)) continue;
+    			DistanceType dist = distance_(points_[i], vec, veclen_);
+    			resultSet.addPoint(dist, i);
+    		}
+    	}
+    	else {
+    		for (size_t i = 0; i < points_.size(); ++i) {
+    			DistanceType dist = distance_(points_[i], vec, veclen_);
+    			resultSet.addPoint(dist, i);
+    		}
+    	}
     }
 
 private:

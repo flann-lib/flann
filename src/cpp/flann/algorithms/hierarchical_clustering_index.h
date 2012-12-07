@@ -203,6 +203,9 @@ public:
      */
     void buildIndex()
     {
+    	freeIndex();
+    	cleanRemovedPoints();
+
         if (branching_<2) {
             throw FLANNException("Branching factor must be at least 2");
         }
@@ -227,7 +230,6 @@ public:
         extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
-        	freeIndex();
             buildIndex();
         }
         else {
@@ -300,30 +302,16 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     searchParams = parameters that influence the search algorithm (checks)
      */
+
     void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
-
-        int maxChecks = searchParams.checks;
-
-        // Priority queue storing intermediate branches in the best-bin-first search
-        Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
-
-        DynamicBitset checked(size_);
-        int checks = 0;
-        for (int i=0; i<trees_; ++i) {
-            findNN(tree_roots_[i], result, vec, checks, maxChecks, heap, checked);
-        }
-
-        BranchSt branch;
-        while (heap->popMin(branch) && (checks<maxChecks || !result.full())) {
-            NodePtr node = branch.node;
-            findNN(node, result, vec, checks, maxChecks, heap, checked);
-        }
-
-        delete heap;
-
+    	if (removed_) {
+    		findNeighbors<true>(result, vec, searchParams);
+    	}
+    	else {
+    		findNeighbors<false>(result, vec, searchParams);
+    	}
     }
-
 
 private:
 
@@ -538,6 +526,29 @@ private:
     }
 
 
+    template<bool with_removed>
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    {
+        int maxChecks = searchParams.checks;
+
+        // Priority queue storing intermediate branches in the best-bin-first search
+        Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
+
+        DynamicBitset checked(size_);
+        int checks = 0;
+        for (int i=0; i<trees_; ++i) {
+            findNN<with_removed>(tree_roots_[i], result, vec, checks, maxChecks, heap, checked);
+        }
+
+        BranchSt branch;
+        while (heap->popMin(branch) && (checks<maxChecks || !result.full())) {
+            NodePtr node = branch.node;
+            findNN<with_removed>(node, result, vec, checks, maxChecks, heap, checked);
+        }
+
+        delete heap;
+    }
+
 
     /**
      * Performs one descent in the hierarchical k-means tree. The branches not
@@ -551,9 +562,8 @@ private:
      *      maxChecks = maximum dataset points to checks
      */
 
-
-    template<typename ResultSet>
-    void findNN(NodePtr node, ResultSet& result, const ElementType* vec, int& checks, int maxChecks,
+    template<bool with_removed>
+    void findNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec, int& checks, int maxChecks,
                 Heap<BranchSt>* heap,  DynamicBitset& checked)
     {
         if (node->childs.empty()) {
@@ -563,8 +573,10 @@ private:
 
             for (size_t i=0; i<node->points.size(); ++i) {
             	PointInfo& pointInfo = node->points[i];
-
-                if (checked.test(pointInfo.index) || removed_points_.test(pointInfo.index)) continue;
+            	if (with_removed) {
+            		if (removed_points_.test(pointInfo.index)) continue;
+            	}
+                if (checked.test(pointInfo.index)) continue;
                 DistanceType dist = distance_(pointInfo.point, vec, veclen_);
                 result.addPoint(dist, pointInfo.index);
                 checked.set(pointInfo.index);
@@ -587,7 +599,7 @@ private:
                 }
             }
             delete[] domain_distances;
-            findNN(node->childs[best_index],result,vec, checks, maxChecks, heap, checked);
+            findNN<with_removed>(node->childs[best_index],result,vec, checks, maxChecks, heap, checked);
         }
     }
     

@@ -107,7 +107,21 @@ TEST_F(KDTreeSingle, TestRemove)
 		for (size_t j=0;j<indices.cols;++j) {
 			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
 		}
-	}}
+	}
+
+	// rebuild index
+	index.buildIndex();
+
+	start_timer("Searching KNN after remove points and rebuild index...");
+	index.knnSearch(query, indices, dists, knn, flann::SearchParams(-1) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+		}
+	}
+}
 
 
 TEST_F(KDTreeSingle, TestSave)

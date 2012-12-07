@@ -159,6 +159,16 @@ public:
      */
     virtual void removePoint(size_t id)
     {
+    	if (!removed_) {
+    		ids_.resize(size_);
+    		for (size_t i=0;i<size_;++i) {
+    			ids_[i] = i;
+    		}
+    		removed_points_.resize(size_);
+    		removed_points_.reset();
+    		last_id_ = size_;
+    	}
+
     	size_t point_index = id;
     	if (ids_[point_index]!=id) {
     		// binary search
@@ -282,6 +292,7 @@ public:
     	}
     }
 
+
     /**
      * @brief Perform k-nearest neighbor search
      * @param[in] queries The query points for which to find the nearest neighbors
@@ -317,8 +328,10 @@ public:
            		for (size_t i = 0; i < queries.rows; i++) {
            			resultSet.clear();
            			findNeighbors(resultSet, queries[i], params);
-           			resultSet.copy(indices[i], dists[i], knn, params.sorted);
-           			count += resultSet.size();
+        			size_t n = std::min(resultSet.size(), knn);
+           			resultSet.copy(indices[i], dists[i], n, params.sorted);
+           			indices_to_ids(indices[i], indices[i], n);
+           			count += n;
            		}
            	}
            	else {
@@ -326,8 +339,10 @@ public:
            		for (size_t i = 0; i < queries.rows; i++) {
            			resultSet.clear();
            			findNeighbors(resultSet, queries[i], params);
-           			resultSet.copy(indices[i], dists[i], knn, params.sorted);
-           			count += resultSet.size();
+        			size_t n = std::min(resultSet.size(), knn);
+           			resultSet.copy(indices[i], dists[i], n, params.sorted);
+           			indices_to_ids(indices[i], indices[i], n);
+        			count += n;
            		}
            	}
    #ifdef TBB
@@ -423,9 +438,7 @@ public:
                     if (n>0) {
             			resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
                     }
-                    for (size_t j=0;j<n;++j) {
-                    	indices[i][j] = ids_[indices[i][j]];
-                    }
+           			indices_to_ids(&indices[i][0], &indices[i][0], n);
         			count += n;
         		}
         	}
@@ -440,9 +453,7 @@ public:
                     if (n>0) {
             			resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
                     }
-                    for (size_t j=0;j<n;++j) {
-                    	indices[i][j] = ids_[indices[i][j]];
-                    }
+           			indices_to_ids(&indices[i][0], &indices[i][0], n);
         			count += n;
         		}
         	}
@@ -490,10 +501,7 @@ public:
 
     	indices.resize(indices_.size());
     	for (size_t i=0;i<indices_.size();++i) {
-    		indices[i].resize(indices_[i].size());
-    		for (int j=0;j<indices_[j].size();++j) {
-    			indices[i][j] = indices_[i][j];
-    		}
+            indices[i].assign(indices_[i].begin(), indices_[i].end());
     	}
     	return result;
     }
@@ -546,9 +554,7 @@ public:
     					// mark the next element in the output buffers as unused
     					if (n<indices.cols) indices[i][n] = -1;
     					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
-                        for (size_t j=0;j<n;++j) {
-                        	indices[i][j] = ids_[indices[i][j]];
-                        }
+               			indices_to_ids(indices[i], indices[i], n);
     				}
     			}
     			else {
@@ -565,9 +571,7 @@ public:
     					// mark the next element in the output buffers as unused
     					if (n<indices.cols) indices[i][n] = -1;
     					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
-                        for (size_t j=0;j<n;++j) {
-                        	indices[i][j] = ids_[indices[i][j]];
-                        }
+               			indices_to_ids(indices[i], indices[i], n);
     				}
     			}
     		}
@@ -611,7 +615,7 @@ public:
                               const SearchParams& params)
     {
     	flann::Matrix<size_t> indices_(new size_t[indices.rows*indices.cols], indices.rows, indices.cols);
-    	int result = radiusSearch(queries, indices, dists, radius, params);
+    	int result = radiusSearch(queries, indices_, dists, radius, params);
 
     	for (size_t i=0;i<indices.rows;++i) {
     		for (size_t j=0;j<indices.cols;++j) {
@@ -666,9 +670,7 @@ public:
         				if (n > 0) {
 	        				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
         				}
-                        for (size_t j=0;j<n;++j) {
-                        	indices[i][j] = ids_[indices[i][j]];
-                        }
+               			indices_to_ids(&indices[i][0], &indices[i][0], n);
         			}
         		}
         		else {
@@ -685,9 +687,7 @@ public:
         				if (n > 0) {
 	        				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
         				}
-                        for (size_t j=0;j<n;++j) {
-                        	indices[i][j] = ids_[indices[i][j]];
-                        }
+               			indices_to_ids(&indices[i][0], &indices[i][0], n);
         			}
         		}
         	}
@@ -730,14 +730,11 @@ public:
                               const SearchParams& params)
     {
     	std::vector<std::vector<size_t> > indices_;
-    	int result = radiusSearch(queries, indices, dists, radius, params);
+    	int result = radiusSearch(queries, indices_, dists, radius, params);
 
     	indices.resize(indices_.size());
     	for (size_t i=0;i<indices_.size();++i) {
-    		indices[i].resize(indices_[i].size());
-    		for (int j=0;j<indices_[j].size();++j) {
-    			indices[i][j] = indices_[i][j];
-    		}
+            indices[i].assign(indices_[i].begin(), indices_[i].end());
     	}
     	return result;
     }
@@ -747,25 +744,45 @@ public:
 
 protected:
 
+    void indices_to_ids(const size_t* in, size_t* out, size_t size)
+    {
+		if (removed_) {
+			for (size_t i=0;i<size;++i) {
+				out[i] = ids_[in[i]];
+			}
+		}
+    }
+
     void setDataset(const Matrix<ElementType>& dataset)
     {
-    	size_ = 0;
+    	size_ = dataset.rows;
     	veclen_ = dataset.cols;
     	last_id_ = 0;
 
-    	extendDataset(dataset);
+    	ids_.clear();
+    	removed_points_.clear();
+    	removed_ = false;
+
+    	points_.resize(size_);
+    	for (size_t i=0;i<size_;++i) {
+    		points_[i] = dataset[i];
+    	}
     }
 
     void extendDataset(const Matrix<ElementType>& new_points)
     {
     	size_t new_size = size_ + new_points.rows;
-    	removed_points_.resize(new_size);
-    	ids_.resize(new_size);
+    	if (removed_) {
+    		removed_points_.resize(new_size);
+    		ids_.resize(new_size);
+    	}
     	points_.resize(new_size);
     	for (size_t i=size_;i<new_size;++i) {
-    		ids_[i] = last_id_++;
     		points_[i] = new_points[i-size_];
-    		removed_points_.reset(i);
+    		if (removed_) {
+    			ids_[i] = last_id_++;
+    			removed_points_.reset(i);
+    		}
     	}
     	size_ = new_size;
     }
@@ -873,7 +890,8 @@ protected:
 		using NNIndex<Distance>::points_;\
 		using NNIndex<Distance>::extendDataset;\
 		using NNIndex<Distance>::setDataset;\
-		using NNIndex<Distance>::cleanRemovedPoints;
+		using NNIndex<Distance>::cleanRemovedPoints;\
+		using NNIndex<Distance>::indices_to_ids;
 
 
 

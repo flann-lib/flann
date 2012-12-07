@@ -143,6 +143,9 @@ public:
      */
     void buildIndex()
     {
+    	freeIndex();
+    	cleanRemovedPoints();
+
         // Create a permutable array of indices to the input vectors.
     	std::vector<int> ind(size_);
         for (size_t i = 0; i < size_; ++i) {
@@ -256,10 +259,20 @@ public:
         float epsError = 1+searchParams.eps;
 
         if (maxChecks==FLANN_CHECKS_UNLIMITED) {
-            getExactNeighbors(result, vec, epsError);
+        	if (removed_) {
+        		getExactNeighbors<true>(result, vec, epsError);
+        	}
+        	else {
+        		getExactNeighbors<false>(result, vec, epsError);
+        	}
         }
         else {
-            getNeighbors(result, vec, maxChecks, epsError);
+        	if (removed_) {
+        		getNeighbors<true>(result, vec, maxChecks, epsError);
+        	}
+        	else {
+        		getNeighbors<false>(result, vec, maxChecks, epsError);
+        	}
         }
     }
 
@@ -510,8 +523,8 @@ private:
      * Performs an exact nearest neighbor search. The exact search performs a full
      * traversal of the tree.
      */
-    template<typename ResultSet>
-    void getExactNeighbors(ResultSet& result, const ElementType* vec, float epsError)
+    template<bool with_removed>
+    void getExactNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, float epsError)
     {
         //		checkID -= 1;  /* Set a different unique ID for each search. */
 
@@ -519,7 +532,7 @@ private:
             fprintf(stderr,"It doesn't make any sense to use more than one tree for exact search");
         }
         if (trees_>0) {
-            searchLevelExact(result, vec, tree_roots_[0], 0.0, epsError);
+            searchLevelExact<with_removed>(result, vec, tree_roots_[0], 0.0, epsError);
         }
     }
 
@@ -528,6 +541,7 @@ private:
      * because the tree traversal is abandoned after a given number of descends in
      * the tree.
      */
+    template<bool with_removed>
     void getNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, int maxCheck, float epsError)
     {
         int i;
@@ -539,12 +553,12 @@ private:
 
         /* Search once through each tree down to root. */
         for (i = 0; i < trees_; ++i) {
-            searchLevel(result, vec, tree_roots_[i], 0, checkCount, maxCheck, epsError, heap, checked);
+            searchLevel<with_removed>(result, vec, tree_roots_[i], 0, checkCount, maxCheck, epsError, heap, checked);
         }
 
         /* Keep searching other branches from heap until finished. */
         while ( heap->popMin(branch) && (checkCount < maxCheck || !result.full() )) {
-            searchLevel(result, vec, branch.node, branch.mindist, checkCount, maxCheck, epsError, heap, checked);
+            searchLevel<with_removed>(result, vec, branch.node, branch.mindist, checkCount, maxCheck, epsError, heap, checked);
         }
 
         delete heap;
@@ -556,6 +570,7 @@ private:
      *  higher levels, all exemplars below this level must have a distance of
      *  at least "mindistsq".
      */
+    template<bool with_removed>
     void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, NodePtr node, DistanceType mindist, int& checkCount, int maxCheck,
                      float epsError, Heap<BranchSt>* heap, DynamicBitset& checked)
     {
@@ -567,8 +582,11 @@ private:
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
             int index = node->divfeat;
+            if (with_removed) {
+            	if (removed_points_.test(index)) return;
+            }
             /*  Do not check same node more than once when searching multiple trees. */
-            if ( checked.test(index) || removed_points_.test(index) || ((checkCount>=maxCheck)&& result_set.full()) ) return;
+            if ( checked.test(index) || ((checkCount>=maxCheck)&& result_set.full()) ) return;
             checked.set(index);
             checkCount++;
 
@@ -598,19 +616,21 @@ private:
         }
 
         /* Call recursively to search next level down. */
-        searchLevel(result_set, vec, bestChild, mindist, checkCount, maxCheck, epsError, heap, checked);
+        searchLevel<with_removed>(result_set, vec, bestChild, mindist, checkCount, maxCheck, epsError, heap, checked);
     }
 
     /**
      * Performs an exact search in the tree starting from a node.
      */
-    template<typename ResultSet>
-    void searchLevelExact(ResultSet& result_set, const ElementType* vec, const NodePtr node, DistanceType mindist, const float epsError)
+    template<bool with_removed>
+    void searchLevelExact(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindist, const float epsError)
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {
             int index = node->divfeat;
-            if (removed_points_.test(index)) return; // ignore removed points
+            if (with_removed) {
+            	if (removed_points_.test(index)) return; // ignore removed points
+            }
             DistanceType dist = distance_(node->point, vec, veclen_);
             result_set.addPoint(dist,index);
 
@@ -634,10 +654,10 @@ private:
         DistanceType new_distsq = mindist + distance_.accum_dist(val, node->divval, node->divfeat);
 
         /* Call recursively to search next level down. */
-        searchLevelExact(result_set, vec, bestChild, mindist, epsError);
+        searchLevelExact<with_removed>(result_set, vec, bestChild, mindist, epsError);
 
         if (mindist*epsError<=result_set.worstDist()) {
-            searchLevelExact(result_set, vec, otherChild, new_distsq, epsError);
+            searchLevelExact<with_removed>(result_set, vec, otherChild, new_distsq, epsError);
         }
     }
     

@@ -118,6 +118,20 @@ TEST_F(KMeans_SIFT10K, TestRemove)
         	EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
         }
     }
+
+	// rebuild index
+	index.buildIndex();
+
+	start_timer("Searching KNN after remove points and rebuild index...");
+	index.knnSearch(query, indices, dists, knn, flann::SearchParams(128) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			EXPECT_GE(indices[i][j], offset);
+			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+		}
+	}
 }
 
 
@@ -244,12 +258,10 @@ protected:
 
 TEST_F(KMeans_SIFT100K, TestSearch)
 {
-    Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
+    Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4));
     start_timer("Building hierarchical k-means index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
-
-    index.save("kmeans_tree.idx");
 
     start_timer("Searching KNN...");
     index.knnSearch(query, indices, dists, knn, flann::SearchParams(96) );
@@ -267,7 +279,7 @@ TEST_F(KMeans_SIFT100K, TestIncremental)
     size_t size2 = data.rows-size1;
     Matrix<float> data1(data[0], size1, data.cols);
     Matrix<float> data2(data[size1], size2, data.cols);
-    Index<L2<float> > index(data1, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
+    Index<L2<float> > index(data1, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4));
     start_timer("Building hierarchical k-means index...");
     index.buildIndex();
     index.addPoints(data2);
@@ -290,7 +302,7 @@ TEST_F(KMeans_SIFT100K, TestIncremental2)
     size_t size2 = data.rows-size1;
     Matrix<float> data1(data[0], size1, data.cols);
     Matrix<float> data2(data[size1], size2, data.cols);
-    Index<L2<float> > index(data1, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
+    Index<L2<float> > index(data1, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4));
     start_timer("Building hierarchical k-means index...");
     index.buildIndex();
     index.addPoints(data2);
@@ -310,7 +322,7 @@ TEST_F(KMeans_SIFT100K, TestIncremental2)
 
 TEST_F(KMeans_SIFT100K, TestRemove)
 {
-    Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
+    Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4));
     start_timer("Building hierarchical k-means index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
@@ -352,7 +364,7 @@ TEST_F(KMeans_SIFT100K, TestRemove)
 
 TEST_F(KMeans_SIFT100K, TestSave)
 {
-	Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
+	Index<L2<float> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4));
     start_timer("Building kmeans index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
@@ -417,7 +429,7 @@ protected:
 
 TEST_F(KMeans_SIFT100K_byte, TestSearch)
 {
-    flann::Index<L2<unsigned char> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.2));
+    flann::Index<L2<unsigned char> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4));
     start_timer("Building hierarchical k-means index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());

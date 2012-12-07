@@ -148,6 +148,8 @@ public:
      */
     void buildIndex()
     {
+    	cleanRemovedPoints();
+
         tables_.resize(table_number_);
         std::vector<std::pair<size_t,ElementType*> > features;
         features.reserve(points_.size());
@@ -263,8 +265,10 @@ public:
         	for (size_t i = 0; i < queries.rows; i++) {
         		resultSet.clear();
         		findNeighbors(resultSet, queries[i], params);
-        		resultSet.copy(indices[i], dists[i], knn, params.sorted);
-        		count += resultSet.size();
+    			size_t n = std::min(resultSet.size(), knn);
+        		resultSet.copy(indices[i], dists[i], n, params.sorted);
+       			indices_to_ids(indices[i], indices[i], n);
+        		count += n;
         	}
         }
         else {
@@ -272,8 +276,10 @@ public:
         	for (size_t i = 0; i < queries.rows; i++) {
         		resultSet.clear();
         		findNeighbors(resultSet, queries[i], params);
-        		resultSet.copy(indices[i], dists[i], knn, params.sorted);
-        		count += resultSet.size();
+    			size_t n = std::min(resultSet.size(), knn);
+        		resultSet.copy(indices[i], dists[i], n, params.sorted);
+       			indices_to_ids(indices[i], indices[i], n);
+        		count += n;
         	}
         }
 
@@ -310,6 +316,7 @@ public:
 				if (n > 0) {
 					resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
 				}
+       			indices_to_ids(&indices[i][0], &indices[i][0], n);
 				count += n;
 			}
 		}
@@ -324,6 +331,7 @@ public:
 				if (n > 0) {
 					resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
 				}
+       			indices_to_ids(&indices[i][0], &indices[i][0], n);
 				count += n;
 			}
 		}
@@ -408,7 +416,7 @@ private:
 
                     // Process the rest of the candidates
                     for (; training_index < last_training_index; ++training_index) {
-                    	if (points_[*training_index].removed) continue;
+                    	if (removed_ && removed_points_.test(*training_index)) continue;
                         hamming_distance = distance_(vec, points_[*training_index].point, veclen_);
 
                         if (hamming_distance < worst_score) {
@@ -447,7 +455,7 @@ private:
 
                     // Process the rest of the candidates
                     for (; training_index < last_training_index; ++training_index) {
-                    	if (points_[*training_index].removed) continue;
+                    	if (removed_ && removed_points_.test(*training_index)) continue;
                         // Compute the Hamming distance
                         hamming_distance = distance_(vec, points_[*training_index].point, veclen_);
                         if (hamming_distance < radius) score_index_heap.push_back(ScoreIndexPair(hamming_distance, training_index));
@@ -461,8 +469,7 @@ private:
      * This is a slower version than the above as it uses the ResultSet
      * @param vec the feature to analyze
      */
-    template<typename ResultSet>
-    void getNeighbors(const ElementType* vec, ResultSet& result)
+    void getNeighbors(const ElementType* vec, ResultSet<DistanceType>& result)
     {
         typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin();
         typename std::vector<lsh::LshTable<ElementType> >::const_iterator table_end = tables_.end();
@@ -482,7 +489,7 @@ private:
 
                 // Process the rest of the candidates
                 for (; training_index < last_training_index; ++training_index) {
-                	if (removed_points_.test(*training_index)) continue;
+                	if (removed_ && removed_points_.test(*training_index)) continue;
                     // Compute the Hamming distance
                     hamming_distance = distance_(vec, points_[*training_index], veclen_);
                     result.addPoint(hamming_distance, *training_index);

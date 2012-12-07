@@ -165,6 +165,20 @@ TEST_F(LshIndex_Brief100K, TestRemove)
 			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
 		}
 	}
+
+	// rebuild index
+	index.buildIndex();
+
+	start_timer("Searching KNN after remove points and rebuild index...");
+	index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(128) );
+	printf("done (%g seconds)\n", stop_timer());
+
+	for (size_t i=0;i<indices.rows;++i) {
+		for (size_t j=0;j<indices.cols;++j) {
+			EXPECT_GE(indices[i][j], offset);
+			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+		}
+	}
 }
 
 
