@@ -51,7 +51,7 @@ public:
 	typedef typename Distance::ResultType DistanceType;
 
 	parallel_knnSearch(const Matrix<ElementType>& queries,
-			Matrix<int>& indices,
+			Matrix<size_t>& indices,
 			Matrix<DistanceType>& distances,
 			size_t knn,
 			const SearchParams& params,
@@ -111,7 +111,7 @@ private:
 	//! Matrix for storing the indices of the nearest neighbors
 	//! \note no need for this to be a parallel container, each worker thread
 	//!       solely operates on its specified range!
-	Matrix<int>& indices_;
+	Matrix<size_t>& indices_;
 
 	//! Matrix for storing the distances to the nearest neighbors
 	//! \note no need for this to be a parallel container, each worker thread
@@ -141,7 +141,7 @@ public:
 	typedef typename Distance::ResultType DistanceType;
 
 	parallel_knnSearch2(const Matrix<ElementType>& queries,
-			std::vector< std::vector<int> >& indices,
+			std::vector< std::vector<size_t> >& indices,
 			std::vector<std::vector<DistanceType> >& distances,
 			size_t knn,
 			const SearchParams& params,
@@ -209,7 +209,7 @@ private:
 	//! Vector for storing the indices of the nearest neighbors
 	//! \note no need for this to be a parallel container, each worker thread
 	//!       solely operates on its specified range!
-	std::vector< std::vector<int> >& indices_;
+	std::vector< std::vector<size_t> >& indices_;
 
 	//! Vector for storing the distances to the nearest neighbors
 	//! \note no need for this to be a parallel container, each worker thread
@@ -249,7 +249,7 @@ public:
 	 * (specified by the blocked_range parameter)
 	 */
 	parallel_radiusSearch(const Matrix<ElementType>& queries,
-			Matrix<int>& indices,
+			Matrix<size_t>& indices,
 			Matrix<DistanceType>& distances,
 			float radius,
 			const SearchParams& params,
@@ -329,7 +329,7 @@ private:
 	//! Matrix for storing the indices of the nearest neighbors
 	//! \note no need for this to be a parallel container, each worker thread
 	//!       solely operates on its specified range!
-	Matrix<int>& indices_;
+	Matrix<size_t>& indices_;
 
 	//! Matrix for storing the distances to the nearest neighbors
 	//! \note no need for this to be a parallel container, each worker thread
@@ -369,7 +369,7 @@ public:
 	 * (specified by the blocked_range parameter)
 	 */
 	parallel_radiusSearch2(const Matrix<ElementType>& queries,
-			std::vector< std::vector<int> >& indices,
+			std::vector< std::vector<size_t> >& indices,
 			std::vector<std::vector<DistanceType> >& distances,
 			float radius,
 			const SearchParams& params,
@@ -446,7 +446,7 @@ private:
 	//! Vector for storing the indices of the nearest neighbors
 	//! \note no need for this to be a parallel container, each worker thread
 	//!       solely operates on its specified range!
-	std::vector< std::vector<int> >& indices_;
+	std::vector< std::vector<size_t> >& indices_;
 
 	//! Vector for storing the distances to the nearest neighbors
 	//! \note no need for this to be a parallel container, each worker thread

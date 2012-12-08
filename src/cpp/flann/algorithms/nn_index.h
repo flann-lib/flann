@@ -469,7 +469,7 @@ public:
             atomic_count = 0;
 
             // Use auto partitioner to choose the optimal grainsize for dividing the query points
-            flann::parallel_knnSearch2<Distance> parallel_knn(queries, indices, dists, knn, params, static_cast<Index*>(this), atomic_count);
+            flann::parallel_knnSearch2<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count);
             tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                               parallel_knn,
                               tbb::auto_partitioner());
@@ -587,7 +587,7 @@ public:
             atomic_count = 0;
 
             // Use auto partitioner to choose the optimal grainsize for dividing the query points
-            flann::parallel_radiusSearch<Distance> parallel_radius(queries, indices, dists, radius, params, static_cast<Index*>(this), atomic_count);
+            flann::parallel_radiusSearch<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count);
             tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                               parallel_radius,
                               tbb::auto_partitioner());
@@ -703,7 +703,7 @@ public:
           atomic_count = 0;
 
           // Use auto partitioner to choose the optimal grainsize for dividing the query points
-          flann::parallel_radiusSearch2<Distance> parallel_radius(queries, indices, dists, radius, params, static_cast<Index*>(this), atomic_count);
+          flann::parallel_radiusSearch2<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count);
           tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
                             parallel_radius,
                             tbb::auto_partitioner());
