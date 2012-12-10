@@ -242,7 +242,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
     {
         float epsError = 1+searchParams.eps;
 
@@ -569,7 +569,7 @@ private:
         lim2 = left;
     }
 
-    DistanceType computeInitialDistances(const ElementType* vec, std::vector<DistanceType>& dists)
+    DistanceType computeInitialDistances(const ElementType* vec, std::vector<DistanceType>& dists) const
     {
         DistanceType distsq = 0.0;
 
@@ -592,7 +592,7 @@ private:
      */
     template <bool with_removed>
     void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindistsq,
-                     std::vector<DistanceType>& dists, const float epsError)
+                     std::vector<DistanceType>& dists, const float epsError) const
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {

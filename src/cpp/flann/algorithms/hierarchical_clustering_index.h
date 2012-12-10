@@ -303,13 +303,13 @@ public:
      *     searchParams = parameters that influence the search algorithm (checks)
      */
 
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
     {
     	if (removed_) {
-    		findNeighbors<true>(result, vec, searchParams);
+    		findNeighborsWithRemoved<true>(result, vec, searchParams);
     	}
     	else {
-    		findNeighbors<false>(result, vec, searchParams);
+    		findNeighborsWithRemoved<false>(result, vec, searchParams);
     	}
     }
 
@@ -527,7 +527,7 @@ private:
 
 
     template<bool with_removed>
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighborsWithRemoved(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
     {
         int maxChecks = searchParams.checks;
 
@@ -564,7 +564,7 @@ private:
 
     template<bool with_removed>
     void findNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec, int& checks, int maxChecks,
-                Heap<BranchSt>* heap,  DynamicBitset& checked)
+                Heap<BranchSt>* heap,  DynamicBitset& checked) const
     {
         if (node->childs.empty()) {
             if (checks>=maxChecks) {

@@ -251,7 +251,7 @@ public:
     					Matrix<size_t>& indices,
     					Matrix<DistanceType>& dists,
     					size_t knn,
-    					const SearchParams& params)
+    					const SearchParams& params) const
     {
         assert(queries.cols == veclen_);
         assert(indices.rows >= queries.rows);
@@ -298,7 +298,7 @@ public:
 					std::vector< std::vector<size_t> >& indices,
 					std::vector<std::vector<DistanceType> >& dists,
     				size_t knn,
-    				const SearchParams& params)
+    				const SearchParams& params) const
     {
         assert(queries.cols == veclen_);
 		if (indices.size() < queries.rows ) indices.resize(queries.rows);
@@ -348,7 +348,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& /*searchParams*/)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& /*searchParams*/) const
     {
         getNeighbors(vec, result);
     }
@@ -469,7 +469,7 @@ private:
      * This is a slower version than the above as it uses the ResultSet
      * @param vec the feature to analyze
      */
-    void getNeighbors(const ElementType* vec, ResultSet<DistanceType>& result)
+    void getNeighbors(const ElementType* vec, ResultSet<DistanceType>& result) const
     {
         typename std::vector<lsh::LshTable<ElementType> >::const_iterator table = tables_.begin();
         typename std::vector<lsh::LshTable<ElementType> >::const_iterator table_end = tables_.end();

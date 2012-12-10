@@ -289,7 +289,7 @@ public:
     /**
      *      Method that searches for nearest-neighbors
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
     {
         // should not get here
         assert(false);

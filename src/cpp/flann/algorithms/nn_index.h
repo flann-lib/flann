@@ -33,29 +33,17 @@
 
 #include <vector>
 
-#ifdef TBB
-#include <tbb/parallel_for.h>
-#include <tbb/blocked_range.h>
-#include <tbb/atomic.h>
-#include <tbb/task_scheduler_init.h>
-#endif
-
-
 #include "flann/general.h"
 #include "flann/util/matrix.h"
 #include "flann/util/params.h"
 #include "flann/util/result_set.h"
 #include "flann/util/dynamic_bitset.h"
 #include "flann/util/saving.h"
-#ifdef TBB
-#include "flann/tbb/bodies.hpp"
-#endif
 
 namespace flann
 {
 
 #define KNN_HEAP_THRESHOLD 250
-
 
 
 class IndexBase
@@ -301,71 +289,58 @@ public:
      * @param[in] knn Number of nearest neighbors to return
      * @param[in] params Search parameters
      */
-    virtual int knnSearch(const Matrix<ElementType>& queries, Matrix<size_t>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
-       {
-           assert(queries.cols == veclen());
-           assert(indices.rows >= queries.rows);
-           assert(dists.rows >= queries.rows);
-           assert(indices.cols >= knn);
-           assert(dists.cols >= knn);
-           bool use_heap;
+    virtual int knnSearch(const Matrix<ElementType>& queries,
+    		Matrix<size_t>& indices,
+    		Matrix<DistanceType>& dists,
+    		size_t knn,
+    		const SearchParams& params) const
+    {
+    	assert(queries.cols == veclen());
+    	assert(indices.rows >= queries.rows);
+    	assert(dists.rows >= queries.rows);
+    	assert(indices.cols >= knn);
+    	assert(dists.cols >= knn);
+    	bool use_heap;
 
-           if (params.use_heap==FLANN_Undefined) {
-           	use_heap = (knn>KNN_HEAP_THRESHOLD)?true:false;
-           }
-           else {
-           	use_heap = (params.use_heap==FLANN_True)?true:false;
-           }
-           int count = 0;
+    	if (params.use_heap==FLANN_Undefined) {
+    		use_heap = (knn>KNN_HEAP_THRESHOLD)?true:false;
+    	}
+    	else {
+    		use_heap = (params.use_heap==FLANN_True)?true:false;
+    	}
+    	int count = 0;
 
-   #ifdef TBB
-           // Check if we need to do multicore search or stick with single core FLANN (less overhead)
-           if(params.cores == 1)
-           {
-   #endif
-           	if (use_heap) {
-           		KNNResultSet2<DistanceType> resultSet(knn);
-           		for (size_t i = 0; i < queries.rows; i++) {
-           			resultSet.clear();
-           			findNeighbors(resultSet, queries[i], params);
-        			size_t n = std::min(resultSet.size(), knn);
-           			resultSet.copy(indices[i], dists[i], n, params.sorted);
-           			indices_to_ids(indices[i], indices[i], n);
-           			count += n;
-           		}
-           	}
-           	else {
-           		KNNSimpleResultSet<DistanceType> resultSet(knn);
-           		for (size_t i = 0; i < queries.rows; i++) {
-           			resultSet.clear();
-           			findNeighbors(resultSet, queries[i], params);
-        			size_t n = std::min(resultSet.size(), knn);
-           			resultSet.copy(indices[i], dists[i], n, params.sorted);
-           			indices_to_ids(indices[i], indices[i], n);
-        			count += n;
-           		}
-           	}
-   #ifdef TBB
-       }
-       else
-       {
-           // Initialise the task scheduler for the use of Intel TBB parallel constructs
-           tbb::task_scheduler_init task_sched(params.cores);
-
-           // Make an atomic integer count, such that we can keep track of amount of neighbors found
-           tbb::atomic<int> atomic_count;
-           atomic_count = 0;
-           // Use auto partitioner to choose the optimal grainsize for dividing the query points
-           flann::parallel_knnSearch<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count);
-           tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
-                             parallel_knn,
-                             tbb::auto_partitioner());
-
-           count = atomic_count;
-       }
-   #endif
-
-           return count;
+    	if (use_heap) {
+#pragma omp parallel num_threads(params.cores)
+    		{
+    			KNNResultSet2<DistanceType> resultSet(knn);
+#pragma omp for schedule(static) reduction(+:count)
+    			for (size_t i = 0; i < queries.rows; i++) {
+    				resultSet.clear();
+    				findNeighbors(resultSet, queries[i], params);
+    				size_t n = std::min(resultSet.size(), knn);
+    				resultSet.copy(indices[i], dists[i], n, params.sorted);
+    				indices_to_ids(indices[i], indices[i], n);
+    				count += n;
+    			}
+    		}
+    	}
+    	else {
+#pragma omp parallel num_threads(params.cores)
+    		{
+    			KNNSimpleResultSet<DistanceType> resultSet(knn);
+#pragma omp for schedule(static) reduction(+:count)
+    			for (size_t i = 0; i < queries.rows; i++) {
+    				resultSet.clear();
+    				findNeighbors(resultSet, queries[i], params);
+    				size_t n = std::min(resultSet.size(), knn);
+    				resultSet.copy(indices[i], dists[i], n, params.sorted);
+    				indices_to_ids(indices[i], indices[i], n);
+    				count += n;
+    			}
+    		}
+    	}
+    	return count;
        }
 
     /**
@@ -381,7 +356,7 @@ public:
                                  Matrix<int>& indices,
                                  Matrix<DistanceType>& dists,
                                  size_t knn,
-                           const SearchParams& params)
+                           const SearchParams& params) const
     {
     	flann::Matrix<size_t> indices_(new size_t[indices.rows*indices.cols], indices.rows, indices.cols);
     	int result = knnSearch(queries, indices_, dists, knn, params);
@@ -407,7 +382,7 @@ public:
 					std::vector< std::vector<size_t> >& indices,
 					std::vector<std::vector<DistanceType> >& dists,
     				size_t knn,
-    				const SearchParams& params)
+    				const SearchParams& params) const
     {
         assert(queries.cols == veclen());
         bool use_heap;
@@ -422,61 +397,45 @@ public:
 		if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
 		int count = 0;
-#ifdef TBB
-        // Check if we need to do multicore search or stick with single core FLANN (less overhead)
-        if(params.cores == 1)
-        {
-#endif
-        	if (use_heap) {
-        		KNNResultSet2<DistanceType> resultSet(knn);
-        		for (size_t i = 0; i < queries.rows; i++) {
-        			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
-        			size_t n = std::min(resultSet.size(), knn);
-        			indices[i].resize(n);
-        			dists[i].resize(n);
-                    if (n>0) {
-            			resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
-                    }
-           			indices_to_ids(&indices[i][0], &indices[i][0], n);
-        			count += n;
-        		}
-        	}
-        	else {
-        		KNNSimpleResultSet<DistanceType> resultSet(knn);
-        		for (size_t i = 0; i < queries.rows; i++) {
-        			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
-        			size_t n = std::min(resultSet.size(), knn);
-        			indices[i].resize(n);
-        			dists[i].resize(n);
-                    if (n>0) {
-            			resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
-                    }
-           			indices_to_ids(&indices[i][0], &indices[i][0], n);
-        			count += n;
-        		}
-        	}
-#ifdef TBB
-        }
-        else
-        {
-            // Initialise the task scheduler for the use of Intel TBB parallel constructs
-            tbb::task_scheduler_init task_sched(params.cores);
+		if (use_heap) {
+#pragma omp parallel num_threads(params.cores)
+			{
+				KNNResultSet2<DistanceType> resultSet(knn);
+#pragma omp for schedule(static) reduction(+:count)
+				for (size_t i = 0; i < queries.rows; i++) {
+					resultSet.clear();
+					findNeighbors(resultSet, queries[i], params);
+					size_t n = std::min(resultSet.size(), knn);
+					indices[i].resize(n);
+					dists[i].resize(n);
+					if (n>0) {
+						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+					}
+					indices_to_ids(&indices[i][0], &indices[i][0], n);
+					count += n;
+				}
+			}
+		}
+		else {
+#pragma omp parallel num_threads(params.cores)
+			{
+				KNNSimpleResultSet<DistanceType> resultSet(knn);
+#pragma omp for schedule(static) reduction(+:count)
+				for (size_t i = 0; i < queries.rows; i++) {
+					resultSet.clear();
+					findNeighbors(resultSet, queries[i], params);
+					size_t n = std::min(resultSet.size(), knn);
+					indices[i].resize(n);
+					dists[i].resize(n);
+					if (n>0) {
+						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+					}
+					indices_to_ids(&indices[i][0], &indices[i][0], n);
+					count += n;
+				}
+			}
+		}
 
-            // Make an atomic integer count, such that we can keep track of amount of neighbors found
-            tbb::atomic<int> atomic_count;
-            atomic_count = 0;
-
-            // Use auto partitioner to choose the optimal grainsize for dividing the query points
-            flann::parallel_knnSearch2<Distance> parallel_knn(queries, indices, dists, knn, params, this, atomic_count);
-            tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
-                              parallel_knn,
-                              tbb::auto_partitioner());
-
-            count = atomic_count;
-        }
-#endif
 		return count;
     }
 
@@ -494,7 +453,7 @@ public:
                                  std::vector< std::vector<int> >& indices,
                                  std::vector<std::vector<DistanceType> >& dists,
                                  size_t knn,
-                           const SearchParams& params)
+                           const SearchParams& params) const
     {
     	std::vector<std::vector<size_t> > indices_;
     	int result = knnSearch(queries, indices_, dists, knn, params);
@@ -515,34 +474,39 @@ public:
      * @param[in] params Search parameters
      * @return Number of neighbors found
      */
-    int radiusSearch(const Matrix<ElementType>& queries, Matrix<size_t>& indices, Matrix<DistanceType>& dists,
-    		float radius, const SearchParams& params)
+    int radiusSearch(const Matrix<ElementType>& queries,
+    		Matrix<size_t>& indices,
+    		Matrix<DistanceType>& dists,
+    		float radius,
+    		const SearchParams& params) const
     {
-        assert(queries.cols == veclen());
-        int count = 0;
-#ifdef TBB
-        // Check if we need to do multicore search or stick with single core FLANN (less overhead)
-        if(params.cores == 1)
-        {
-#endif
-			size_t num_neighbors = std::min(indices.cols, dists.cols);
-			int max_neighbors = params.max_neighbors;
-			if (max_neighbors<0) max_neighbors = num_neighbors;
-			else max_neighbors = std::min(max_neighbors,(int)num_neighbors);
+    	assert(queries.cols == veclen());
+    	int count = 0;
+    	size_t num_neighbors = std::min(indices.cols, dists.cols);
+    	int max_neighbors = params.max_neighbors;
+    	if (max_neighbors<0) max_neighbors = num_neighbors;
+    	else max_neighbors = std::min(max_neighbors,(int)num_neighbors);
 
-    		if (max_neighbors==0) {
+    	if (max_neighbors==0) {
+#pragma omp parallel num_threads(params.cores)
+    		{
     			CountRadiusResultSet<DistanceType> resultSet(radius);
+#pragma omp for schedule(static) reduction(+:count)
     			for (size_t i = 0; i < queries.rows; i++) {
     				resultSet.clear();
     				findNeighbors(resultSet, queries[i], params);
     				count += resultSet.size();
     			}
     		}
-    		else {
-    			// explicitly indicated to use unbounded radius result set
-    			// or we know there'll be enough room for resulting indices and dists
-    			if (params.max_neighbors<0 && (num_neighbors>=size())) {
+    	}
+    	else {
+    		// explicitly indicated to use unbounded radius result set
+    		// or we know there'll be enough room for resulting indices and dists
+    		if (params.max_neighbors<0 && (num_neighbors>=size())) {
+#pragma omp parallel num_threads(params.cores)
+    			{
     				RadiusResultSet<DistanceType> resultSet(radius);
+#pragma omp for schedule(static) reduction(+:count)
     				for (size_t i = 0; i < queries.rows; i++) {
     					resultSet.clear();
     					findNeighbors(resultSet, queries[i], params);
@@ -554,12 +518,16 @@ public:
     					// mark the next element in the output buffers as unused
     					if (n<indices.cols) indices[i][n] = -1;
     					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
-               			indices_to_ids(indices[i], indices[i], n);
+    					indices_to_ids(indices[i], indices[i], n);
     				}
     			}
-    			else {
-    				// number of neighbors limited to max_neighbors
+    		}
+    		else {
+    			// number of neighbors limited to max_neighbors
+#pragma omp parallel num_threads(params.cores)
+    			{
     				KNNRadiusResultSet<DistanceType> resultSet(radius, max_neighbors);
+#pragma omp for schedule(static) reduction(+:count)
     				for (size_t i = 0; i < queries.rows; i++) {
     					resultSet.clear();
     					findNeighbors(resultSet, queries[i], params);
@@ -571,30 +539,11 @@ public:
     					// mark the next element in the output buffers as unused
     					if (n<indices.cols) indices[i][n] = -1;
     					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
-               			indices_to_ids(indices[i], indices[i], n);
+    					indices_to_ids(indices[i], indices[i], n);
     				}
     			}
     		}
-#ifdef TBB
-        }
-        else
-        {
-            // Initialise the task scheduler for the use of Intel TBB parallel constructs
-            tbb::task_scheduler_init task_sched(params.cores);
-
-            // Make an atomic integer count, such that we can keep track of amount of neighbors found
-            tbb::atomic<int> atomic_count;
-            atomic_count = 0;
-
-            // Use auto partitioner to choose the optimal grainsize for dividing the query points
-            flann::parallel_radiusSearch<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count);
-            tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
-                              parallel_radius,
-                              tbb::auto_partitioner());
-
-            count = atomic_count;
-        }
-#endif
+    	}
         return count;
     }
 
@@ -612,7 +561,7 @@ public:
                                     Matrix<int>& indices,
                                     Matrix<DistanceType>& dists,
                                     float radius,
-                              const SearchParams& params)
+                              const SearchParams& params) const
     {
     	flann::Matrix<size_t> indices_(new size_t[indices.rows*indices.cols], indices.rows, indices.cols);
     	int result = radiusSearch(queries, indices_, dists, radius, params);
@@ -634,84 +583,74 @@ public:
      * @param[in] params Search parameters
      * @return Number of neighbors found
      */
-    int radiusSearch(const Matrix<ElementType>& queries, std::vector< std::vector<size_t> >& indices,
-    		std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params)
+    int radiusSearch(const Matrix<ElementType>& queries,
+    		std::vector< std::vector<size_t> >& indices,
+    		std::vector<std::vector<DistanceType> >& dists,
+    		float radius,
+    		const SearchParams& params) const
     {
         assert(queries.cols == veclen());
     	int count = 0;
-#ifdef TBB
-        // Check if we need to do multicore search or stick with single core FLANN (less overhead)
-        if(params.cores == 1)
-        {
-#endif
-        	// just count neighbors
-        	if (params.max_neighbors==0) {
-        		CountRadiusResultSet<DistanceType> resultSet(radius);
-        		for (size_t i = 0; i < queries.rows; i++) {
-        			resultSet.clear();
-        			findNeighbors(resultSet, queries[i], params);
-        			count += resultSet.size();
-        		}
-        	}
-        	else {
-        		if (indices.size() < queries.rows ) indices.resize(queries.rows);
-        		if (dists.size() < queries.rows ) dists.resize(queries.rows);
+    	// just count neighbors
+    	if (params.max_neighbors==0) {
+#pragma omp parallel num_threads(params.cores)
+    		{
+    			CountRadiusResultSet<DistanceType> resultSet(radius);
+#pragma omp for schedule(static) reduction(+:count)
+    			for (size_t i = 0; i < queries.rows; i++) {
+    				resultSet.clear();
+    				findNeighbors(resultSet, queries[i], params);
+    				count += resultSet.size();
+    			}
+    		}
+    	}
+    	else {
+    		if (indices.size() < queries.rows ) indices.resize(queries.rows);
+    		if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
-        		if (params.max_neighbors<0) {
-        			// search for all neighbors
-        			RadiusResultSet<DistanceType> resultSet(radius);
-        			for (size_t i = 0; i < queries.rows; i++) {
-        				resultSet.clear();
-        				findNeighbors(resultSet, queries[i], params);
-        				size_t n = resultSet.size();
-        				count += n;
-        				indices[i].resize(n);
-        				dists[i].resize(n);
-        				if (n > 0) {
-	        				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
-        				}
-               			indices_to_ids(&indices[i][0], &indices[i][0], n);
-        			}
-        		}
-        		else {
-        			// number of neighbors limited to max_neighbors
-        			KNNRadiusResultSet<DistanceType> resultSet(radius, params.max_neighbors);
-        			for (size_t i = 0; i < queries.rows; i++) {
-        				resultSet.clear();
-        				findNeighbors(resultSet, queries[i], params);
-        				size_t n = resultSet.size();
-        				count += n;
-        				if ((int)n>params.max_neighbors) n = params.max_neighbors;
-        				indices[i].resize(n);
-        				dists[i].resize(n);
-        				if (n > 0) {
-	        				resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
-        				}
-               			indices_to_ids(&indices[i][0], &indices[i][0], n);
-        			}
-        		}
-        	}
-#ifdef TBB
-        }
-        else
-        {
-          // Initialise the task scheduler for the use of Intel TBB parallel constructs
-          tbb::task_scheduler_init task_sched(params.cores);
-
-          // Reset atomic count before passing it on to the threads, such that we can keep track of amount of neighbors found
-          tbb::atomic<int> atomic_count;
-          atomic_count = 0;
-
-          // Use auto partitioner to choose the optimal grainsize for dividing the query points
-          flann::parallel_radiusSearch2<Distance> parallel_radius(queries, indices, dists, radius, params, this, atomic_count);
-          tbb::parallel_for(tbb::blocked_range<size_t>(0,queries.rows),
-                            parallel_radius,
-                            tbb::auto_partitioner());
-
-          count = atomic_count;
-        }
-#endif
-        return count;
+    		if (params.max_neighbors<0) {
+    			// search for all neighbors
+#pragma omp parallel num_threads(params.cores)
+    			{
+    				RadiusResultSet<DistanceType> resultSet(radius);
+#pragma omp for schedule(static) reduction(+:count)
+    				for (size_t i = 0; i < queries.rows; i++) {
+    					resultSet.clear();
+    					findNeighbors(resultSet, queries[i], params);
+    					size_t n = resultSet.size();
+    					count += n;
+    					indices[i].resize(n);
+    					dists[i].resize(n);
+    					if (n > 0) {
+    						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+    					}
+    					indices_to_ids(&indices[i][0], &indices[i][0], n);
+    				}
+    			}
+    		}
+    		else {
+    			// number of neighbors limited to max_neighbors
+#pragma omp parallel num_threads(params.cores)
+    			{
+    				KNNRadiusResultSet<DistanceType> resultSet(radius, params.max_neighbors);
+#pragma omp for schedule(static) reduction(+:count)
+    				for (size_t i = 0; i < queries.rows; i++) {
+    					resultSet.clear();
+    					findNeighbors(resultSet, queries[i], params);
+    					size_t n = resultSet.size();
+    					count += n;
+    					if ((int)n>params.max_neighbors) n = params.max_neighbors;
+    					indices[i].resize(n);
+    					dists[i].resize(n);
+    					if (n > 0) {
+    						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+    					}
+    					indices_to_ids(&indices[i][0], &indices[i][0], n);
+    				}
+    			}
+    		}
+    	}
+    	return count;
     }
 
     /**
@@ -727,7 +666,7 @@ public:
                                     std::vector< std::vector<int> >& indices,
                                     std::vector<std::vector<DistanceType> >& dists,
                                     float radius,
-                              const SearchParams& params)
+                              const SearchParams& params) const
     {
     	std::vector<std::vector<size_t> > indices_;
     	int result = radiusSearch(queries, indices_, dists, radius, params);
@@ -740,11 +679,11 @@ public:
     }
 
 
-    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) = 0;
+    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const = 0;
 
 protected:
 
-    void indices_to_ids(const size_t* in, size_t* out, size_t size)
+    void indices_to_ids(const size_t* in, size_t* out, size_t size) const
     {
 		if (removed_) {
 			for (size_t i=0;i<size;++i) {

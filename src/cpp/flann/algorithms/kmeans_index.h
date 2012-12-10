@@ -308,13 +308,13 @@ public:
      *     searchParams = parameters that influence the search algorithm (checks, cb_index)
      */
 
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
     {
     	if (removed_) {
-    		findNeighbors<true>(result, vec, searchParams);
+    		findNeighborsWithRemoved<true>(result, vec, searchParams);
     	}
     	else {
-    		findNeighbors<false>(result, vec, searchParams);
+    		findNeighborsWithRemoved<false>(result, vec, searchParams);
     	}
 
     }
@@ -718,7 +718,7 @@ private:
 
 
     template<bool with_removed>
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighborsWithRemoved(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
     {
 
         int maxChecks = searchParams.checks;
@@ -759,7 +759,7 @@ private:
 
     template<bool with_removed>
     void findNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec, int& checks, int maxChecks,
-                Heap<BranchSt>* heap)
+                Heap<BranchSt>* heap) const
     {
         // Ignore those clusters that are too far away
         {
@@ -805,7 +805,7 @@ private:
      *     distances = array with the distances to each child node.
      * Returns:
      */
-    int exploreNodeBranches(NodePtr node, const ElementType* q, Heap<BranchSt>* heap)
+    int exploreNodeBranches(NodePtr node, const ElementType* q, Heap<BranchSt>* heap) const
     {
         std::vector<DistanceType> domain_distances(branching_);
         int best_index = 0;
@@ -838,7 +838,7 @@ private:
      * Function the performs exact nearest neighbor search by traversing the entire tree.
      */
     template<bool with_removed>
-    void findExactNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec)
+    void findExactNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec) const
     {
         // Ignore those clusters that are too far away
         {
@@ -883,7 +883,7 @@ private:
      *
      * I computes the order in which to traverse the child nodes of a particular node.
      */
-    void getCenterOrdering(NodePtr node, const ElementType* q, std::vector<int>& sort_indices)
+    void getCenterOrdering(NodePtr node, const ElementType* q, std::vector<int>& sort_indices) const
     {
         std::vector<DistanceType> domain_distances(branching_);
         for (int i=0; i<branching_; ++i) {
@@ -905,7 +905,7 @@ private:
      * from inside region with center c to the border between this
      * region and the region with center p
      */
-    DistanceType getDistanceToBorder(DistanceType* p, DistanceType* c, DistanceType* q)
+    DistanceType getDistanceToBorder(DistanceType* p, DistanceType* c, DistanceType* q) const
     {
         DistanceType sum = 0;
         DistanceType sum2 = 0;
@@ -929,7 +929,7 @@ private:
      *     varianceValue = variance of the clustering (return value)
      * Returns:
      */
-    int getMinVarianceClusters(NodePtr root, std::vector<NodePtr>& clusters, int clusters_length, DistanceType& varianceValue)
+    int getMinVarianceClusters(NodePtr root, std::vector<NodePtr>& clusters, int clusters_length, DistanceType& varianceValue) const
     {
         int clusterCount = 1;
         clusters[0] = root;

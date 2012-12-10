@@ -253,7 +253,7 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
     {
         int maxChecks = searchParams.checks;
         float epsError = 1+searchParams.eps;
@@ -524,7 +524,7 @@ private:
      * traversal of the tree.
      */
     template<bool with_removed>
-    void getExactNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, float epsError)
+    void getExactNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, float epsError) const
     {
         //		checkID -= 1;  /* Set a different unique ID for each search. */
 
@@ -542,7 +542,7 @@ private:
      * the tree.
      */
     template<bool with_removed>
-    void getNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, int maxCheck, float epsError)
+    void getNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, int maxCheck, float epsError) const
     {
         int i;
         BranchSt branch;
@@ -572,7 +572,7 @@ private:
      */
     template<bool with_removed>
     void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, NodePtr node, DistanceType mindist, int& checkCount, int maxCheck,
-                     float epsError, Heap<BranchSt>* heap, DynamicBitset& checked)
+                     float epsError, Heap<BranchSt>* heap, DynamicBitset& checked) const
     {
         if (result_set.worstDist()<mindist) {
             //			printf("Ignoring branch, too far\n");
@@ -623,7 +623,7 @@ private:
      * Performs an exact search in the tree starting from a node.
      */
     template<bool with_removed>
-    void searchLevelExact(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindist, const float epsError)
+    void searchLevelExact(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, DistanceType mindist, const float epsError) const
     {
         /* If this is a leaf node, then do check and return. */
         if ((node->child1 == NULL)&&(node->child2 == NULL)) {

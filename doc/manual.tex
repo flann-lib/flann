@@ -272,12 +272,11 @@ to obtain the pointer to the memory buffer.
 
 
 \subsection{Compiling FLANN with multithreading support}
-To make use of FLANN multithreading support, it is required that Intel Threading Building Blocks is installed correctly
-on your system. You can either get it from your package manager or from: \texttt{http://threadingbuildingblocks.org/}
 
-You also need a pkgconfig file (tbb.pc) in one of the directories in your \texttt{PKG\_CONFIG\_PATH} and need to define
-the \texttt{TBB} macro on compilation of your project (for example by adding \texttt{-DTBB} to the compiler options or
-if using cmake by adding \texttt{add\_definitions(-DTBB)} to your \texttt{CMakeLists.txt}).
+For taking advantage of multithreaded search, the project that uses FLANN needs to be compiled with a compiler that 
+supports the OpenMP standard and the OpenMP support must be enabled. The number of cores to be used can be selected with 
+the \texttt{cores} field in the \texttt{SearchParams} structure. By default a single core will be used. 
+Setting the \texttt{cores} field to zero will automatically use as many threads as cores available on the machine.
 
 \section{Using FLANN}
 

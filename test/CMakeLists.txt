@@ -10,10 +10,6 @@ add_dependencies(test tests)
 
 set(EXECUTABLE_OUTPUT_PATH ${TEST_OUTPUT_PATH})
 
-#add_executable(flann_mt_test flann_mt_test.cpp)
-#find_package(Boost COMPONENTS system thread REQUIRED)
-#target_link_libraries(flann_mt_test ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} flann)
-
 if (PYTHON_EXECUTABLE) 
     flann_download_test_data(sift10K.h5 0964a910946d2dd5fe28337507a8abc3)
     flann_download_test_data(sift10K_byte.h5 f835e0148df4618a81f67febfda2b4d0)
@@ -25,34 +21,38 @@ endif()
 
 if (GTEST_FOUND AND HDF5_FOUND)
 	include_directories(${HDF5_INCLUDE_DIR})
-	flann_add_gtest(flann_linear_test flann_linear_test.cpp)
-	flann_add_gtest(flann_kdtree_test flann_kdtree_test.cpp)
-	flann_add_gtest(flann_kmeans_test flann_kmeans_test.cpp)
-	flann_add_gtest(flann_kdtree_single_test flann_kdtree_single_test.cpp)
-	flann_add_gtest(flann_hierarchical_test flann_hierarchical_test.cpp)
-	flann_add_gtest(flann_lsh_test flann_lsh_test.cpp)
-	flann_add_gtest(flann_autotuned_test flann_autotuned_test.cpp)
-    if(TBB_FOUND)
-        add_definitions(-DTBB)
-        flann_add_gtest(flann_multithreaded_test flann_multithreaded_test.cpp)
-        target_link_libraries(flann_multithreaded_test ${TBB_LIBRARIES})
-    endif()
-	    target_link_libraries(flann_linear_test flann_cpp ${HDF5_LIBRARIES})
-	    target_link_libraries(flann_kdtree_test flann_cpp ${HDF5_LIBRARIES})
-	    target_link_libraries(flann_kmeans_test flann_cpp ${HDF5_LIBRARIES})
-	    target_link_libraries(flann_kdtree_single_test flann_cpp ${HDF5_LIBRARIES})
-	    target_link_libraries(flann_hierarchical_test flann_cpp ${HDF5_LIBRARIES})
-	    target_link_libraries(flann_lsh_test flann_cpp ${HDF5_LIBRARIES})
-	    target_link_libraries(flann_autotuned_test flann_cpp ${HDF5_LIBRARIES})
-        if(TBB_FOUND)
-            target_link_libraries(flann_multithreaded_test flann_cpp ${HDF5_LIBRARIES})
-        endif()
+
+    set(TEST_LIBRARIES "${HDF5_LIBRARIES}")
     if (HDF5_IS_PARALLEL)
-	    target_link_libraries(flann_simple_test ${MPI_LIBRARIES})
-        if(TBB_FOUND)
-            target_link_libraries(flann_multithreaded_test ${MPI_LIBRARIES})
-        endif()
+        set(TEST_LINK_LIBRARIES "${TEST_LIBRARIES} ${MPI_LIBRARIES}")
     endif()
+	
+    flann_add_gtest(flann_linear_test flann_linear_test.cpp)
+    target_link_libraries(flann_linear_test flann_cpp ${TEST_LIBRARIES})
+
+	flann_add_gtest(flann_kdtree_test flann_kdtree_test.cpp)
+    target_link_libraries(flann_kdtree_test flann_cpp ${TEST_LIBRARIES})
+
+	flann_add_gtest(flann_kmeans_test flann_kmeans_test.cpp)
+    target_link_libraries(flann_kmeans_test flann_cpp ${TEST_LIBRARIES})
+
+	flann_add_gtest(flann_kdtree_single_test flann_kdtree_single_test.cpp)
+    target_link_libraries(flann_kdtree_single_test flann_cpp ${TEST_LIBRARIES})
+
+	flann_add_gtest(flann_hierarchical_test flann_hierarchical_test.cpp)
+    target_link_libraries(flann_hierarchical_test flann_cpp ${TEST_LIBRARIES})
+
+	flann_add_gtest(flann_lsh_test flann_lsh_test.cpp)
+    target_link_libraries(flann_lsh_test flann_cpp ${TEST_LIBRARIES})
+
+    flann_add_gtest(flann_autotuned_test flann_autotuned_test.cpp)
+    target_link_libraries(flann_autotuned_test flann_cpp ${TEST_LIBRARIES})
+
+    if (OPENMP_FOUND)
+        flann_add_gtest(flann_multithreaded_test flann_multithreaded_test.cpp)
+        target_link_libraries(flann_multithreaded_test flann_cpp ${TEST_LIBRARIES})
+    endif()
+
 endif()
 
 if (GTEST_FOUND AND HDF5_FOUND AND BUILD_CUDA_LIB)
@@ -62,7 +62,6 @@ if (GTEST_FOUND AND HDF5_FOUND AND BUILD_CUDA_LIB)
     endif()
 	flann_add_cuda_gtest(flann_cuda_test flann_cuda_test.cu)
 	target_link_libraries(flann_cuda_test flann_cpp ${HDF5_LIBRARIES} flann_cuda)
-
 endif()
 
 #---------- pyunit tests --------------

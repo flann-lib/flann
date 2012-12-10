@@ -7,7 +7,8 @@
 
 using namespace flann;
 
-float compute_precision(const flann::Matrix<int>& match, const flann::Matrix<int>& indices)
+template<typename T>
+float compute_precision(const flann::Matrix<T>& match, const flann::Matrix<T>& indices)
 {
     int count = 0;
 
@@ -29,7 +30,7 @@ float compute_precision(const flann::Matrix<int>& match, const flann::Matrix<int
 
 class FLANNTestFixture : public ::testing::Test {
 protected:
-    clock_t start_time_;
+    timespec ts_;
 
     void start_timer(const std::string& message = "")
     {
@@ -37,12 +38,14 @@ protected:
             printf("%s", message.c_str());
             fflush(stdout);
         }
-        start_time_ = clock();
+        clock_gettime(CLOCK_REALTIME, &ts_);
     }
 
     double stop_timer()
     {
-        return double(clock()-start_time_)/CLOCKS_PER_SEC;
+		timespec ts2;
+        clock_gettime(CLOCK_REALTIME, &ts2);
+        return double((ts2.tv_sec-ts_.tv_sec)+(ts2.tv_nsec-ts_.tv_nsec)/1e9);
     }
 
 };
@@ -51,45 +54,44 @@ protected:
 /* Test Fixture which loads the cloud.h5 cloud as data and query matrix */
 class FlannTest : public FLANNTestFixture {
 protected:
-    flann::Matrix<float> data;
-    flann::Matrix<float> query;
-    flann::Matrix<int> match;
-    flann::Matrix<float> dists;
-    flann::Matrix<int> indices;
+    flann::Matrix<float> data_;
+    flann::Matrix<float> query_;
+    flann::Matrix<size_t> match_;
+    flann::Matrix<float> dists_;
+    flann::Matrix<size_t> indices_;
 
-    int nn;
+    int knn_;
 
     void SetUp()
     {
-        nn = 5;
+        knn_ = 5;
 
         printf("Reading test data...");
         fflush(stdout);
-        flann::load_from_file(data, "cloud.h5","dataset");
-        flann::load_from_file(query,"cloud.h5","query");
-        flann::load_from_file(match,"cloud.h5","match");
+        flann::load_from_file(data_, "cloud.h5","dataset");
+        flann::load_from_file(query_,"cloud.h5","query");
+        flann::load_from_file(match_,"cloud.h5","match");
 
-        dists = flann::Matrix<float>(new float[query.rows*nn], query.rows, nn);
-        indices = flann::Matrix<int>(new int[query.rows*nn], query.rows, nn);
+        dists_ = flann::Matrix<float>(new float[query_.rows*knn_], query_.rows, knn_);
+        indices_ = flann::Matrix<size_t>(new size_t[query_.rows*knn_], query_.rows, knn_);
 
         printf("done\n");
     }
 
     void TearDown()
     {
-        delete[] data.ptr();
-        delete[] query.ptr();
-        delete[] match.ptr();
-        delete[] dists.ptr();
-        delete[] indices.ptr();
+        delete[] data_.ptr();
+        delete[] query_.ptr();
+        delete[] match_.ptr();
+        delete[] dists_.ptr();
+        delete[] indices_.ptr();
     }
 
-    int GetNN() { return nn; }
 };
 
 TEST_F(FlannTest, HandlesSingleCoreSearch)
 {
-    flann::Index<L2_Simple<float> > index(data, flann::KDTreeSingleIndexParams(50, false));
+    flann::Index<L2_Simple<float> > index(data_, flann::KDTreeSingleIndexParams(50, false));
     start_timer("Building kd-tree index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
@@ -102,17 +104,17 @@ TEST_F(FlannTest, HandlesSingleCoreSearch)
     start_timer("Searching KNN...");
     SearchParams params(checks,eps,sorted);
     params.cores = cores;
-    index.knnSearch(query, indices, dists, GetNN(), params);
+    index.knnSearch(query_, indices_, dists_, knn_, params);
     printf("done (%g seconds)\n", stop_timer());
 
-    float precision = compute_precision(match, indices);
+    float precision = compute_precision(match_, indices_);
     EXPECT_GE(precision, 0.99);
     printf("Precision: %g\n", precision);
 }
 
 TEST_F(FlannTest, HandlesMultiCoreSearch)
 {
-    flann::Index<L2_Simple<float> > index(data, flann::KDTreeSingleIndexParams(50, false));
+    flann::Index<L2_Simple<float> > index(data_, flann::KDTreeSingleIndexParams(50, false));
     start_timer("Building kd-tree index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
@@ -125,10 +127,10 @@ TEST_F(FlannTest, HandlesMultiCoreSearch)
     start_timer("Searching KNN...");
     SearchParams params(checks,eps,sorted);
     params.cores = cores;
-    index.knnSearch(query, indices, dists, GetNN(), params);
+    index.knnSearch(query_, indices_, dists_, knn_, params);
     printf("done (%g seconds)\n", stop_timer());
 
-    float precision = compute_precision(match, indices);
+    float precision = compute_precision(match_, indices_);
     EXPECT_GE(precision, 0.99);
     printf("Precision: %g\n", precision);
 }
@@ -138,217 +140,167 @@ TEST_F(FlannTest, HandlesMultiCoreSearch)
    and indices matrices for comparing single and multi core KNN search */
 class FlannCompareKnnTest : public FLANNTestFixture {
 protected:
-    flann::Matrix<float> data;
-    flann::Matrix<float> query;
-    flann::Matrix<float> dists_single;
-    flann::Matrix<int> indices_single;
-    flann::Matrix<float> dists_multi;
-    flann::Matrix<int> indices_multi;
+    flann::Matrix<float> data_;
+    flann::Matrix<float> query_;
+    flann::Matrix<float> dists_single_;
+    flann::Matrix<size_t> indices_single_;
+    flann::Matrix<float> dists_multi_;
+    flann::Matrix<size_t> indices_multi_;
 
-    int nn;
+    int knn_;
 
     void SetUp()
     {
-        nn = 5;
+        knn_ = 5;
 
         printf("Reading test data...");
         fflush(stdout);
-        flann::load_from_file(data, "cloud.h5","dataset");
-        flann::load_from_file(query,"cloud.h5","query");
+        flann::load_from_file(data_, "cloud.h5","dataset");
+        flann::load_from_file(query_,"cloud.h5","query");
 
-        dists_single = flann::Matrix<float>(new float[query.rows*nn], query.rows, nn);
-        indices_single = flann::Matrix<int>(new int[query.rows*nn], query.rows, nn);
-        dists_multi = flann::Matrix<float>(new float[query.rows*nn], query.rows, nn);
-        indices_multi = flann::Matrix<int>(new int[query.rows*nn], query.rows, nn);
+        dists_single_ = flann::Matrix<float>(new float[query_.rows*knn_], query_.rows, knn_);
+        indices_single_ = flann::Matrix<size_t>(new size_t[query_.rows*knn_], query_.rows, knn_);
+        dists_multi_ = flann::Matrix<float>(new float[query_.rows*knn_], query_.rows, knn_);
+        indices_multi_ = flann::Matrix<size_t>(new size_t[query_.rows*knn_], query_.rows, knn_);
 
         printf("done\n");
     }
 
     void TearDown()
     {
-        delete[] data.ptr();
-        delete[] query.ptr();
-        delete[] dists_single.ptr();
-        delete[] indices_single.ptr();
-        delete[] dists_multi.ptr();
-        delete[] indices_multi.ptr();
+        delete[] data_.ptr();
+        delete[] query_.ptr();
+        delete[] dists_single_.ptr();
+        delete[] indices_single_.ptr();
+        delete[] dists_multi_.ptr();
+        delete[] indices_multi_.ptr();
     }
 
-    int GetNN() { return nn; }
 };
 
-TEST_F(FlannCompareKnnTest, CompareMultiSingleCoreKnnSearchSorted)
+
+
+TEST_F(FlannCompareKnnTest, CompareMultiSingleCoreKnnSearch)
 {
-    flann::Index<L2_Simple<float> > index(data, flann::KDTreeSingleIndexParams(50, false));
+    flann::Index<L2_Simple<float> > index(data_, flann::KDTreeSingleIndexParams(50, false));
     start_timer("Building kd-tree index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
 
-    int checks = -1;
-    float eps = 0.0f;
-    bool sorted = true;
-    int single_core = 1;
-    int multi_core = -1;
+    SearchParams params;
+    params.checks = -1;
+    params.eps = 0.0f;
+    params.sorted = true;
 
     start_timer("Searching KNN (single core)...");
-    SearchParams params(checks,eps,sorted);
-    params.cores = single_core;
-    int single_neighbor_count = index.knnSearch(query, indices_single, dists_single, GetNN(), params);
+    params.cores = 1;
+    int single_neighbor_count = index.knnSearch(query_, indices_single_, dists_single_, knn_, params);
     printf("done (%g seconds)\n", stop_timer());
 
     start_timer("Searching KNN (multi core)...");
-    params.cores = multi_core;
-    int multi_neighbor_count = index.knnSearch(query, indices_multi, dists_multi, GetNN(), params);
+    params.cores = 0;
+    int multi_neighbor_count = index.knnSearch(query_, indices_multi_, dists_multi_, knn_, params);
     printf("done (%g seconds)\n", stop_timer());
 
     EXPECT_EQ(single_neighbor_count, multi_neighbor_count);
 
-    float precision = compute_precision(indices_single, indices_multi);
+    printf("Checking results...\n");
+    float precision = compute_precision(indices_single_, indices_multi_);
     EXPECT_GE(precision, 0.99);
     printf("Precision: %g\n", precision);
 }
-
-TEST_F(FlannCompareKnnTest, CompareMultiSingleCoreKnnSearchUnsorted)
-{
-    flann::Index<L2_Simple<float> > index(data, flann::KDTreeSingleIndexParams(50, false));
-    start_timer("Building kd-tree index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    int checks = -1;
-    float eps = 0.0f;
-    bool sorted = false;
-    int single_core = 1;
-    int multi_core = -1;
-
-    start_timer("Searching KNN (single core)...");
-    SearchParams params(checks,eps,sorted);
-    params.cores = single_core;
-    int single_neighbor_count = index.knnSearch(query, indices_single, dists_single, GetNN(), params);
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN (multi core)...");
-    params.cores = multi_core;
-    int multi_neighbor_count = index.knnSearch(query, indices_multi, dists_multi, GetNN(), params);
-    printf("done (%g seconds)\n", stop_timer());
-
-    EXPECT_EQ(single_neighbor_count, multi_neighbor_count);
-
-    float precision = compute_precision(indices_single, indices_multi);
-    EXPECT_GE(precision, 0.99);
-    printf("Precision: %g\n", precision);
-}
-
 
 /* Test Fixture which loads the cloud.h5 cloud as data and query matrix and holds two dists
    and indices matrices for comparing single and multi core radius search */
 class FlannCompareRadiusTest : public FLANNTestFixture {
 protected:
-    flann::Matrix<float> data;
-    flann::Matrix<float> query;
-    flann::Matrix<float> dists_single;
-    flann::Matrix<int> indices_single;
-    flann::Matrix<float> dists_multi;
-    flann::Matrix<int> indices_multi;
+    flann::Matrix<float> data_;
+    flann::Matrix<float> query_;
+    flann::Matrix<float> dists_single_;
+    flann::Matrix<int> indices_single_;
+    flann::Matrix<float> dists_multi_;
+    flann::Matrix<int> indices_multi_;
 
-    float radius;
+    float radius_;
 
     void SetUp()
     {
-        radius = 0.1f;
+        radius_ = 0.1f;
 
         printf("Reading test data...");
         fflush(stdout);
-        flann::load_from_file(data, "cloud.h5","dataset");
-        flann::load_from_file(query,"cloud.h5","query");
+        flann::load_from_file(data_, "cloud.h5","dataset");
+        flann::load_from_file(query_,"cloud.h5","query");
 
-        // If the indices / dists matrix cannot contain all points found in the radius, only the points
-        // that can be stored in the matrix will be returned and search is stopped. For each query point
-        // we reserve as many space as we think is needed. For large point clouds, reserving 'cloudsize'
-        // space for each query point might cause memory errors.
-        int reserve_size = data.rows / 1000;
+        int reserve_size = data_.rows / 1000;
 
-        dists_single = flann::Matrix<float>(new float[query.rows*reserve_size], query.rows, reserve_size);
-        indices_single = flann::Matrix<int>(new int[query.rows*reserve_size], query.rows, reserve_size);
-        dists_multi = flann::Matrix<float>(new float[query.rows*reserve_size], query.rows, reserve_size);
-        indices_multi = flann::Matrix<int>(new int[query.rows*reserve_size], query.rows, reserve_size);
+        dists_single_ = flann::Matrix<float>(new float[query_.rows*reserve_size], query_.rows, reserve_size);
+        indices_single_ = flann::Matrix<int>(new int[query_.rows*reserve_size], query_.rows, reserve_size);
+        dists_multi_ = flann::Matrix<float>(new float[query_.rows*reserve_size], query_.rows, reserve_size);
+        indices_multi_ = flann::Matrix<int>(new int[query_.rows*reserve_size], query_.rows, reserve_size);
 
         printf("done\n");
     }
 
     void TearDown()
     {
-        delete[] data.ptr();
-        delete[] query.ptr();
-        delete[] dists_single.ptr();
-        delete[] indices_single.ptr();
-        delete[] dists_multi.ptr();
-        delete[] indices_multi.ptr();
+        delete[] data_.ptr();
+        delete[] query_.ptr();
+        delete[] dists_single_.ptr();
+        delete[] indices_single_.ptr();
+        delete[] dists_multi_.ptr();
+        delete[] indices_multi_.ptr();
     }
 
-    float GetRadius() { return radius; }
+    void runTest(const flann::Index<L2_Simple<float> >& index, SearchParams params)
+    {
+        start_timer("Searching Radius (single core)...");
+        params.cores = 1;
+        int single_neighbor_count = index.radiusSearch(query_, indices_single_, dists_single_, radius_, params);
+        printf("done (%g seconds)\n", stop_timer());
+
+        start_timer("Searching Radius (multi core)...");
+        params.cores = 0;
+        int multi_neighbor_count = index.radiusSearch(query_, indices_multi_, dists_multi_, radius_, params);
+        printf("done (%g seconds)\n", stop_timer());
+
+        EXPECT_EQ(single_neighbor_count, multi_neighbor_count);
+
+        printf("Checking results...\n");
+        float precision = compute_precision(indices_single_, indices_multi_);
+        EXPECT_GE(precision, 0.99);
+        printf("Precision: %g\n", precision);
+    }
 };
 
 TEST_F(FlannCompareRadiusTest, CompareMultiSingleCoreRadiusSearchSorted)
 {
-    flann::Index<L2_Simple<float> > index(data, flann::KDTreeSingleIndexParams(50, false));
+    flann::Index<L2_Simple<float> > index(data_, flann::KDTreeSingleIndexParams(50, false));
     start_timer("Building kd-tree index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
 
-    int checks = -1;
-    float eps = 0.0f;
-    bool sorted = true;
-    int single_core = 1;
-    int multi_core = -1;
+    SearchParams params;
+    params.checks = -1;
+    params.eps = 0.0f;
+    params.sorted = true;
 
-    start_timer("Searching Radius (single core)...");
-    SearchParams params(checks,eps,sorted);
-    params.cores = single_core;
-    int single_neighbor_count = index.radiusSearch(query, indices_single, dists_single, GetRadius(), params);
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching Radius (multi core)...");
-    params.cores = multi_core;
-    int multi_neighbor_count = index.radiusSearch(query, indices_multi, dists_multi, GetRadius(), params);
-    printf("done (%g seconds)\n", stop_timer());
-
-    EXPECT_EQ(single_neighbor_count, multi_neighbor_count);
-
-    float precision = compute_precision(indices_single, indices_multi);
-    EXPECT_GE(precision, 0.99);
-    printf("Precision: %g\n", precision);
+    runTest(index, params);
 }
 
 TEST_F(FlannCompareRadiusTest, CompareMultiSingleCoreRadiusSearchUnsorted)
 {
-    flann::Index<L2_Simple<float> > index(data, flann::KDTreeSingleIndexParams(50, false));
+    flann::Index<L2_Simple<float> > index(data_, flann::KDTreeSingleIndexParams(50, false));
     start_timer("Building kd-tree index...");
     index.buildIndex();
     printf("done (%g seconds)\n", stop_timer());
 
-    int checks = -1;
-    float eps = 0.0f;
-    bool sorted = false;
-    int single_core = 1;
-    int multi_core = -1;
+    SearchParams params;
+    params.checks = -1;
+    params.eps = 0.0f;
+    params.sorted = false;
 
-    start_timer("Searching Radius (single core)...");
-    SearchParams params(checks,eps,sorted);
-    params.cores = single_core;
-    int single_neighbor_count = index.radiusSearch(query, indices_single, dists_single, GetRadius(), params);
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching Radius (multi core)...");
-    params.cores = multi_core;
-    int multi_neighbor_count = index.radiusSearch(query, indices_multi, dists_multi, GetRadius(), params);
-    printf("done (%g seconds)\n", stop_timer());
-
-    EXPECT_EQ(single_neighbor_count, multi_neighbor_count);
-
-    float precision = compute_precision(indices_single, indices_multi);
-    EXPECT_GE(precision, 0.99);
-    printf("Precision: %g\n", precision);
+    runTest(index, params);
 }
 
 

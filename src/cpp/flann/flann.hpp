@@ -206,7 +206,7 @@ public:
                                  Matrix<size_t>& indices,
                                  Matrix<DistanceType>& dists,
                                  size_t knn,
-                           const SearchParams& params)
+                           const SearchParams& params) const
     {
     	return nnIndex_->knnSearch(queries, indices, dists, knn, params);
     }
@@ -224,7 +224,7 @@ public:
                                  Matrix<int>& indices,
                                  Matrix<DistanceType>& dists,
                                  size_t knn,
-                           const SearchParams& params)
+                           const SearchParams& params) const
     {
     	return nnIndex_->knnSearch(queries, indices, dists, knn, params);
     }
@@ -259,7 +259,7 @@ public:
                                  std::vector< std::vector<int> >& indices,
                                  std::vector<std::vector<DistanceType> >& dists,
                                  size_t knn,
-                           const SearchParams& params)
+                           const SearchParams& params) const
     {
     	return nnIndex_->knnSearch(queries, indices, dists, knn, params);
     }
@@ -277,7 +277,7 @@ public:
                                     Matrix<size_t>& indices,
                                     Matrix<DistanceType>& dists,
                                     float radius,
-                              const SearchParams& params)
+                              const SearchParams& params) const
     {
     	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
     }
@@ -295,7 +295,7 @@ public:
                                     Matrix<int>& indices,
                                     Matrix<DistanceType>& dists,
                                     float radius,
-                              const SearchParams& params)
+                              const SearchParams& params) const
     {
     	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
     }
@@ -313,7 +313,7 @@ public:
                                     std::vector< std::vector<size_t> >& indices,
                                     std::vector<std::vector<DistanceType> >& dists,
                                     float radius,
-                              const SearchParams& params)
+                              const SearchParams& params) const
     {
     	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
     }
@@ -331,7 +331,7 @@ public:
                                     std::vector< std::vector<int> >& indices,
                                     std::vector<std::vector<DistanceType> >& dists,
                                     float radius,
-                              const SearchParams& params)
+                              const SearchParams& params) const
     {
     	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
     }
