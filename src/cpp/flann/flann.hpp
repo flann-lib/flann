@@ -80,6 +80,24 @@ public:
     typedef typename Distance::ResultType DistanceType;
     typedef NNIndex<Distance> IndexType;
 
+    Index(const IndexParams& params, Distance distance = Distance() )
+        : index_params_(params)
+    {
+        flann_algorithm_t index_type = get_param<flann_algorithm_t>(params,"algorithm");
+        loaded_ = false;
+
+        Matrix<ElementType> features;
+        if (index_type == FLANN_INDEX_SAVED) {
+            nnIndex_ = load_saved_index(features, get_param<std::string>(params,"filename"), distance);
+            loaded_ = true;
+        }
+        else {
+        	flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
+            nnIndex_ = create_index_by_type<Distance>(index_type, features, params, distance);
+        }
+    }
+
+
     Index(const Matrix<ElementType>& features, const IndexParams& params, Distance distance = Distance() )
         : index_params_(params)
     {
@@ -137,9 +155,9 @@ public:
      * Remove point from the index
      * @param index Index of point to be removed
      */
-    void removePoint(size_t index)
+    void removePoint(size_t point_id)
     {
-    	nnIndex_->removePoint(index);
+    	nnIndex_->removePoint(point_id);
     }
 
 
