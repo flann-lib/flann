@@ -307,11 +307,21 @@ namespace flann
 	typedef typename Distance::ElementType ElementType;
 	typedef typename Distance::ResultType DistanceType;
     public:
-	Index(const Matrix<ElementType>& features, const IndexParams& params);
+        Index(const IndexParams& params, Distance distance = Distance() );
+        
+        Index(const Matrix<ElementType>& points, const IndexParams& params,
+                Distance distance = Distance() );
 
 	~Index();
 
-	void buildIndex();
+	void buildIndex();        
+        
+        void buildIndex(const Matrix<ElementType>& points);
+        
+        void addPoints(const Matrix<ElementType>& points, 
+                       float rebuild_threshold = 2);
+        
+        void removePoint(size_t point_id);
 
 	int knnSearch(const Matrix<ElementType>& queries, 
 		       Matrix<int>& indices, 
@@ -324,7 +334,6 @@ namespace flann
                        std::vector<std::vector<DistanceType> >& dists,
                        size_t knn,
                        const SearchParams& params);
-
 
 	int radiusSearch(const Matrix<ElementType>& queries, 
 			 Matrix<int>& indices, 
@@ -406,7 +415,10 @@ is assumed to be a metric distance and will only be used with indexes operating 
 \textbf{flann::Index::Index}
 Constructs a nearest neighbor search index for a given dataset.
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-Index(const Matrix<ElementType>& features, const IndexParams& params);
+Index(const IndexParams& params, Distance distance = Distance() );
+
+Index(const Matrix<ElementType>& points, const IndexParams& params,
+        Distance distance = Distance() );
 \end{Verbatim}
 \begin{description}
 \item[features] Matrix containing the features(points) that should be indexed, stored in a row-major order (one point 
@@ -597,12 +609,33 @@ struct SavedIndexParams : public IndexParams
 \end{description}
 
 \subsubsection{flann::Index::buildIndex}
-Constructs the nearest neighbor search index using the parameters provided to the constructor (with the
-exception of saved index type).
+Builds the nearest neighbor search index. There are two versions of the \texttt{buildIndex} method, one that
+uses the points provided as argument and one that uses the points provided to the constructor when the object was
+constructed.
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-      void buildIndex();
+void buildIndex();        
+
+void buildIndex(const Matrix<ElementType>& points);
 \end{Verbatim}
 
+\subsubsection{flann::Index::addPoints}
+The \texttt{addPoints} method can be used to incrementally add points to the index after the index was build.
+To avoid the index getting unbalanced, the \texttt{addPoints} method has the option of rebuilding the index after a
+large number of points have been added. The \texttt{rebuild\_threshold} parameter controls when the index is
+rebuild, by default this is done when it doubles in size (\texttt{rebuild\_threshold} = 2).
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2);
+\end{Verbatim}
+
+\subsubsection{flann::Index::removePoint}
+The \texttt{removePoint} method removes one point with the specified \texttt{point\_id} from the index. The indices
+ (of the remaining points) returned by the nearest neighbor operations do not change when points are removed from the
+index.
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+void removePoint(size_t point_id);
+\end{Verbatim}
 
 
 \subsubsection{flann::Index::knnSearch}
@@ -662,7 +695,7 @@ unlimited). Only used for radius search.
 FLANN\_True, FLANN\_Undefined). A heap is more efficient for a large number of neighbors and less efficient for a small
 number of neighbors. Default value is FLANN\_Undefined, which lets the code choose the best option depending on the
 number of neighbors requested. Only used for KNN search.
- \item[cores] How many cores to assign to the search (specify -1 for automatic core selection).
+ \item[cores] How many cores to assign to the search (specify 0 for automatic core selection).
  \item[matrices\_in\_gpu\_ram] for GPU search indicates if matrices are already in GPU ram.
 \end{description}
 \end{description}
@@ -804,7 +837,7 @@ The search routines support three parameters:
 \subsection{Using FLANN from C}
 
 FLANN can be used in C programs through the C bindings provided
-with the library. Because there is not template support in C, there
+with the library. Because there is no template support in C, there
 are bindings provided for the following data types: \texttt{unsigned char},
 \texttt{int}, \texttt{float} and \texttt{double}. For each of the functions 
 below there is a corresponding version for each of the for data types, for example
