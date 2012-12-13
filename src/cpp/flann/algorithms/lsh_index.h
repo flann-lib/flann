@@ -261,25 +261,33 @@ public:
 
         int count = 0;
         if (params.use_heap==FLANN_True) {
-        	KNNUniqueResultSet<DistanceType> resultSet(knn);
-        	for (size_t i = 0; i < queries.rows; i++) {
-        		resultSet.clear();
-        		findNeighbors(resultSet, queries[i], params);
-    			size_t n = std::min(resultSet.size(), knn);
-        		resultSet.copy(indices[i], dists[i], n, params.sorted);
-       			indices_to_ids(indices[i], indices[i], n);
-        		count += n;
+#pragma omp parallel num_threads(params.cores)
+        	{
+        		KNNUniqueResultSet<DistanceType> resultSet(knn);
+#pragma omp for schedule(static) reduction(+:count)
+        		for (size_t i = 0; i < queries.rows; i++) {
+        			resultSet.clear();
+        			findNeighbors(resultSet, queries[i], params);
+        			size_t n = std::min(resultSet.size(), knn);
+        			resultSet.copy(indices[i], dists[i], n, params.sorted);
+        			indices_to_ids(indices[i], indices[i], n);
+        			count += n;
+        		}
         	}
         }
         else {
-        	KNNResultSet<DistanceType> resultSet(knn);
-        	for (size_t i = 0; i < queries.rows; i++) {
-        		resultSet.clear();
-        		findNeighbors(resultSet, queries[i], params);
-    			size_t n = std::min(resultSet.size(), knn);
-        		resultSet.copy(indices[i], dists[i], n, params.sorted);
-       			indices_to_ids(indices[i], indices[i], n);
-        		count += n;
+#pragma omp parallel num_threads(params.cores)
+        	{
+        		KNNResultSet<DistanceType> resultSet(knn);
+#pragma omp for schedule(static) reduction(+:count)
+        		for (size_t i = 0; i < queries.rows; i++) {
+        			resultSet.clear();
+        			findNeighbors(resultSet, queries[i], params);
+        			size_t n = std::min(resultSet.size(), knn);
+        			resultSet.copy(indices[i], dists[i], n, params.sorted);
+        			indices_to_ids(indices[i], indices[i], n);
+        			count += n;
+        		}
         	}
         }
 
@@ -306,33 +314,41 @@ public:
 
 		int count = 0;
 		if (params.use_heap==FLANN_True) {
-			KNNUniqueResultSet<DistanceType> resultSet(knn);
-			for (size_t i = 0; i < queries.rows; i++) {
-				resultSet.clear();
-				findNeighbors(resultSet, queries[i], params);
-				size_t n = std::min(resultSet.size(), knn);
-				indices[i].resize(n);
-				dists[i].resize(n);
-				if (n > 0) {
-					resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+#pragma omp parallel num_threads(params.cores)
+			{
+				KNNUniqueResultSet<DistanceType> resultSet(knn);
+#pragma omp for schedule(static) reduction(+:count)
+				for (size_t i = 0; i < queries.rows; i++) {
+					resultSet.clear();
+					findNeighbors(resultSet, queries[i], params);
+					size_t n = std::min(resultSet.size(), knn);
+					indices[i].resize(n);
+					dists[i].resize(n);
+					if (n > 0) {
+						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+						indices_to_ids(&indices[i][0], &indices[i][0], n);
+					}
+					count += n;
 				}
-       			indices_to_ids(&indices[i][0], &indices[i][0], n);
-				count += n;
 			}
 		}
 		else {
-			KNNResultSet<DistanceType> resultSet(knn);
-			for (size_t i = 0; i < queries.rows; i++) {
-				resultSet.clear();
-				findNeighbors(resultSet, queries[i], params);
-				size_t n = std::min(resultSet.size(), knn);
-				indices[i].resize(n);
-				dists[i].resize(n);
-				if (n > 0) {
-					resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+#pragma omp parallel num_threads(params.cores)
+			{
+				KNNResultSet<DistanceType> resultSet(knn);
+#pragma omp for schedule(static) reduction(+:count)
+				for (size_t i = 0; i < queries.rows; i++) {
+					resultSet.clear();
+					findNeighbors(resultSet, queries[i], params);
+					size_t n = std::min(resultSet.size(), knn);
+					indices[i].resize(n);
+					dists[i].resize(n);
+					if (n > 0) {
+						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+						indices_to_ids(&indices[i][0], &indices[i][0], n);
+					}
+					count += n;
 				}
-       			indices_to_ids(&indices[i][0], &indices[i][0], n);
-				count += n;
 			}
 		}
 

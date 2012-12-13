@@ -341,7 +341,7 @@ public:
     		}
     	}
     	return count;
-       }
+    }
 
     /**
      *
@@ -410,8 +410,8 @@ public:
 					dists[i].resize(n);
 					if (n>0) {
 						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+						indices_to_ids(&indices[i][0], &indices[i][0], n);
 					}
-					indices_to_ids(&indices[i][0], &indices[i][0], n);
 					count += n;
 				}
 			}
@@ -429,8 +429,8 @@ public:
 					dists[i].resize(n);
 					if (n>0) {
 						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+						indices_to_ids(&indices[i][0], &indices[i][0], n);
 					}
-					indices_to_ids(&indices[i][0], &indices[i][0], n);
 					count += n;
 				}
 			}
@@ -623,8 +623,8 @@ public:
     					dists[i].resize(n);
     					if (n > 0) {
     						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+        					indices_to_ids(&indices[i][0], &indices[i][0], n);
     					}
-    					indices_to_ids(&indices[i][0], &indices[i][0], n);
     				}
     			}
     		}
@@ -644,8 +644,8 @@ public:
     					dists[i].resize(n);
     					if (n > 0) {
     						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+        					indices_to_ids(&indices[i][0], &indices[i][0], n);
     					}
-    					indices_to_ids(&indices[i][0], &indices[i][0], n);
     				}
     			}
     		}
