@@ -2,7 +2,6 @@
 .*
 tmp
 *.pyc
-doc/manual.pdf
 src/matlab/*.dat
 src/matlab/test.m
 src/python/setup.py
