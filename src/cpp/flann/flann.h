@@ -48,6 +48,9 @@ struct FLANNParameters
     int checks;                /* how many leafs (features) to check in one search */
     float cb_index;            /* cluster boundary index. Used when searching the kmeans tree */
     float eps;     /* eps parameter for eps-knn search */
+    int sorted;     /* indicates if results returned by radius search should be sorted or not */
+    int max_neighbors;  /* limits the maximum number of neighbors should be returned by radius search */
+    int cores;      /* number of paralel cores to use for searching */
 
     /*  kdtree index parameters */
     int trees;                 /* number of randomized trees to use (for kdtree) */

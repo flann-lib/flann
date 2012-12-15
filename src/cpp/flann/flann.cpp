@@ -34,6 +34,7 @@
 struct FLANNParameters DEFAULT_FLANN_PARAMETERS = {
     FLANN_INDEX_KDTREE,
     32, 0.2f, 0.0f,
+    0, -1, 0,
     4, 4,
     32, 11, FLANN_CENTERS_RANDOM,
     0.9f, 0.01f, 0, 0.1f,
@@ -101,7 +102,17 @@ flann::IndexParams create_parameters(FLANNParameters* p)
     return params;
 }
 
+flann::SearchParams create_search_params(FLANNParameters* p)
+{
+    flann::SearchParams params;
+    params.checks = p->checks;
+    params.eps = p->eps;
+    params.sorted = p->sorted;
+    params.max_neighbors = p->max_neighbors;
+    params.cores = p->cores;
 
+    return params;
+}
 
 
 void update_flann_parameters(const IndexParams& params, FLANNParameters* flann_params)
@@ -429,9 +440,10 @@ int __flann_find_nearest_neighbors(typename Distance::ElementType* dataset,  int
         index->buildIndex();
         Matrix<int> m_indices(result,tcount, nn);
         Matrix<DistanceType> m_dists(dists,tcount, nn);
+        SearchParams search_params = create_search_params(flann_params);
         index->knnSearch(Matrix<ElementType>(testset, tcount, index->veclen()),
                          m_indices,
-                         m_dists, nn, SearchParams(flann_params->checks) );
+                         m_dists, nn, search_params );
         delete index;
         return 0;
     }
@@ -517,9 +529,10 @@ int __flann_find_nearest_neighbors_index(flann_index_t index_ptr, typename Dista
         Matrix<int> m_indices(result,tcount, nn);
         Matrix<DistanceType> m_dists(dists, tcount, nn);
 
+        SearchParams search_params = create_search_params(flann_params);
         index->knnSearch(Matrix<ElementType>(testset, tcount, index->veclen()),
                          m_indices,
-                         m_dists, nn, SearchParams(flann_params->checks) );
+                         m_dists, nn, search_params );
 
         return 0;
     }
@@ -610,9 +623,10 @@ int __flann_radius_search(flann_index_t index_ptr,
 
         Matrix<int> m_indices(indices, 1, max_nn);
         Matrix<DistanceType> m_dists(dists, 1, max_nn);
+        SearchParams search_params = create_search_params(flann_params);
         int count = index->radiusSearch(Matrix<ElementType>(query, 1, index->veclen()),
                                         m_indices,
-                                        m_dists, radius, SearchParams(flann_params->checks) );
+                                        m_dists, radius, search_params );
 
 
         return count;
