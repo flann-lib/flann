@@ -329,7 +329,7 @@ private:
             ar & low;
             ar & high;
         }
-        friend serialization::access;
+        friend struct serialization::access;
     };
 
     typedef std::vector<Interval> BoundingBox;

@@ -198,34 +198,24 @@ inline size_t flann_datatype_size(flann_datatype_t type)
 	switch (type) {
 	case FLANN_INT8:
 		return sizeof(flann_datatype_type<FLANN_INT8>::type);
-	break;
 	case FLANN_INT16:
 		return sizeof(flann_datatype_type<FLANN_INT16>::type);
-	break;
 	case FLANN_INT32:
 		return sizeof(flann_datatype_type<FLANN_INT32>::type);
-	break;
 	case FLANN_INT64:
 		return sizeof(flann_datatype_type<FLANN_INT64>::type);
-	break;
 	case FLANN_UINT8:
 		return sizeof(flann_datatype_type<FLANN_UINT8>::type);
-	break;
 	case FLANN_UINT16:
 		return sizeof(flann_datatype_type<FLANN_UINT16>::type);
-	break;
 	case FLANN_UINT32:
 		return sizeof(flann_datatype_type<FLANN_UINT32>::type);
-	break;
 	case FLANN_UINT64:
 		return sizeof(flann_datatype_type<FLANN_UINT64>::type);
-	break;
 	case FLANN_FLOAT32:
 		return sizeof(flann_datatype_type<FLANN_FLOAT32>::type);
-	break;
 	case FLANN_FLOAT64:
 		return sizeof(flann_datatype_type<FLANN_FLOAT64>::type);
-	break;
 	default:
 		return 0;
 	}

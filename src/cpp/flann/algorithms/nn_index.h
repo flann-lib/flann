@@ -516,7 +516,7 @@ public:
     					resultSet.copy(indices[i], dists[i], n, params.sorted);
 
     					// mark the next element in the output buffers as unused
-    					if (n<indices.cols) indices[i][n] = -1;
+    					if (n<indices.cols) indices[i][n] = size_t(-1);
     					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
     					indices_to_ids(indices[i], indices[i], n);
     				}
@@ -537,7 +537,7 @@ public:
     					resultSet.copy(indices[i], dists[i], n, params.sorted);
 
     					// mark the next element in the output buffers as unused
-    					if (n<indices.cols) indices[i][n] = -1;
+    					if (n<indices.cols) indices[i][n] = size_t(-1);
     					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
     					indices_to_ids(indices[i], indices[i], n);
     				}

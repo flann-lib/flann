@@ -88,7 +88,7 @@ protected:
     	}
     	ar & serialization::make_binary_object(data, rows*stride);
     }
-    friend serialization::access;
+    friend struct serialization::access;
 };
 
 

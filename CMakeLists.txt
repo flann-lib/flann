@@ -12,6 +12,15 @@ set(FLANN_VERSION 1.8.0)
 DISSECT_VERSION()
 GET_OS_INFO()
 
+if ( "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILER_ARG1}" MATCHES ".*clang")
+  set(CMAKE_COMPILER_IS_CLANG 1)
+endif ()
+
+if ( "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1}" MATCHES ".*clang")
+  set(CMAKE_COMPILER_IS_CLANGXX 1)
+endif ()
+
+
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Add an "uninstall" target
@@ -63,6 +72,8 @@ endif()
 find_hdf5()
 if (NOT HDF5_FOUND)
 	message(WARNING "hdf5 library not found, some tests will not be run")
+else()
+    include_directories(${HDF5_INCLUDE_DIR})
 endif()
 
 if (USE_MPI OR HDF5_IS_PARALLEL)
@@ -88,6 +99,13 @@ if (USE_MPI)
         set(USE_MPI OFF)
     endif()
 endif(USE_MPI)
+
+
+if (USE_MPI AND HDF5_IS_PARALLEL)
+    find_package(Boost COMPONENTS mpi system serialization thread REQUIRED)
+    include_directories(${Boost_INCLUDE_DIRS})
+    add_definitions("-DHAVE_MPI")
+endif()
 
 
 find_package(GTest) 
@@ -130,7 +148,7 @@ if (WIN32)
     # lots of warnings with cl.exe right now, use /W1
     add_definitions("/W1 -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS /bigobj")
 else(WIN32)
-    add_definitions( "-Wall -Wno-unknown-pragmas" )
+    add_definitions( "-Wall -Wno-unknown-pragmas -Wno-unused-function" )
 endif(WIN32)
 
 add_subdirectory( cmake )

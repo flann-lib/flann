@@ -263,7 +263,6 @@ int Index<Distance>::radiusSearch(const flann::Matrix<ElementType>& query, flann
 } //namespace flann::mpi
 
 namespace boost { namespace mpi {
-template<>
 template<typename DistanceType>
 struct is_commutative<flann::mpi::ResultsMerger<DistanceType>, flann::mpi::SearchResults<DistanceType> > : mpl::true_ { };
 } } // end namespace boost::mpi

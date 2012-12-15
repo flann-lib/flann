@@ -78,7 +78,7 @@ private:
     	ar & rows;
     	ar & cols;
     }
-    friend serialization::access;
+    friend struct serialization::access;
 };
 
 /**

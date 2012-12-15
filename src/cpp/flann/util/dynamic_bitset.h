@@ -148,7 +148,7 @@ private:
     	ar & size_;
     	ar & bitset_;
     }
-    friend serialization::access;
+    friend struct serialization::access;
 
 private:
     std::vector<size_t> bitset_;

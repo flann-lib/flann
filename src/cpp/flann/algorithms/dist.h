@@ -548,7 +548,7 @@ struct Hamming
     }
 
     template <typename Iterator1, typename Iterator2>
-    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
+    ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = 0) const
     {
 #ifdef FLANN_PLATFORM_64_BIT
         const uint64_t* pa = reinterpret_cast<const uint64_t*>(a);

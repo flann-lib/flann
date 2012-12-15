@@ -231,7 +231,7 @@ public:
             Matrix<size_t>& indices,
             Matrix<DistanceType>& dists,
             size_t knn,
-            const SearchParams& params)
+            const SearchParams& params) const
     {
         if (params.checks == FLANN_CHECKS_AUTOTUNED) {
             return bestIndex_->knnSearch(queries, indices, dists, knn, bestSearchParams_);
@@ -245,7 +245,7 @@ public:
             std::vector< std::vector<size_t> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             size_t knn,
-            const SearchParams& params)
+            const SearchParams& params) const
     {
         if (params.checks == FLANN_CHECKS_AUTOTUNED) {
             return bestIndex_->knnSearch(queries, indices, dists, knn, bestSearchParams_);
@@ -255,12 +255,12 @@ public:
         }
 
     }
-
+    
     int radiusSearch(const Matrix<ElementType>& queries,
             Matrix<size_t>& indices,
             Matrix<DistanceType>& dists,
             DistanceType radius,
-            const SearchParams& params)
+            const SearchParams& params) const
     {
         if (params.checks == FLANN_CHECKS_AUTOTUNED) {
             return bestIndex_->radiusSearch(queries, indices, dists, radius, bestSearchParams_);
@@ -274,7 +274,7 @@ public:
             std::vector< std::vector<size_t> >& indices,
             std::vector<std::vector<DistanceType> >& dists,
             DistanceType radius,
-            const SearchParams& params)
+            const SearchParams& params) const
     {
         if (params.checks == FLANN_CHECKS_AUTOTUNED) {
             return bestIndex_->radiusSearch(queries, indices, dists, radius, bestSearchParams_);
