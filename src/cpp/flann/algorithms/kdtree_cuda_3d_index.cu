@@ -273,7 +273,7 @@ struct GpuDistance< L1<float> >
 
 
 template< typename Distance >
-void KDTreeCuda3dIndex<Distance>::knnSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params)
+void KDTreeCuda3dIndex<Distance>::knnSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params) const
 {
     assert(indices.rows >= queries.rows);
     assert(dists.rows >= queries.rows);
@@ -436,7 +436,7 @@ void KDTreeCuda3dIndex<Distance>::knnSearchGpu(const Matrix<ElementType>& querie
 
 template< typename Distance>
 int KDTreeCuda3dIndex<Distance >::radiusSearchGpu(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
-                                                  std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params)
+                                                  std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params) const
 {
     //  assert(indices.roasdfws >= queries.rows);
     //  assert(dists.rows >= queries.rows);
@@ -570,7 +570,7 @@ struct isNotMinusOne
 };
 
 template< typename Distance>
-int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params)
+int KDTreeCuda3dIndex< Distance >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params) const
 {
 	int max_neighbors = params.max_neighbors;
     assert(indices.rows >= queries.rows);
@@ -793,13 +793,13 @@ template
 struct KDTreeCuda3dIndex<flann::L2<float> >::GpuHelper;
 
 template
-void KDTreeCuda3dIndex<flann::L2<float> >::knnSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params);
+void KDTreeCuda3dIndex<flann::L2<float> >::knnSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params) const;
 
 template
-int KDTreeCuda3dIndex< flann::L2<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params);
+int KDTreeCuda3dIndex< flann::L2<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params) const;
 template
 int KDTreeCuda3dIndex< flann::L2<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
-                                                           std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params);
+                                                           std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params) const;
 
 // explicit instantiations for distance-independent functions
 template
@@ -812,13 +812,13 @@ template
 struct KDTreeCuda3dIndex<flann::L2_Simple<float> >::GpuHelper;
 
 template
-void KDTreeCuda3dIndex<flann::L2_Simple<float> >::knnSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params);
+void KDTreeCuda3dIndex<flann::L2_Simple<float> >::knnSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params) const;
 
 template
-int KDTreeCuda3dIndex< flann::L2_Simple<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params);
+int KDTreeCuda3dIndex< flann::L2_Simple<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params) const;
 template
 int KDTreeCuda3dIndex< flann::L2_Simple<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
-                                                                  std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params);
+                                                                  std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params) const;
 
 
 // explicit instantiations for distance-independent functions
@@ -832,11 +832,11 @@ template
 struct KDTreeCuda3dIndex<flann::L1<float> >::GpuHelper;
 
 template
-void KDTreeCuda3dIndex<flann::L1<float> >::knnSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params);
+void KDTreeCuda3dIndex<flann::L1<float> >::knnSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, size_t knn, const SearchParams& params) const;
 
 template
-int KDTreeCuda3dIndex< flann::L1<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params);
+int KDTreeCuda3dIndex< flann::L1<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, Matrix<int>& indices, Matrix<DistanceType>& dists, float radius, const SearchParams& params) const;
 template
 int KDTreeCuda3dIndex< flann::L1<float> >::radiusSearchGpu(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
-                                                           std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params);
+                                                           std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params) const;
 }

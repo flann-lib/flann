@@ -83,35 +83,20 @@ public:
      * KDTree constructor
      *
      * Params:
-     *          params = parameters passed to the kdtree algorithm
-     */
-    KDTreeCuda3dIndex(const IndexParams& params = KDTreeCuda3dIndexParams(), Distance d = Distance() ) :
-    	BaseClass(params, d), leaf_count_(0), visited_leafs(0), node_count_(0), current_node_count_(0)
-    {
-        int dim_param = get_param(params,"dim",-1);
-        if (dim_param>0) dim_ = dim_param;
-        leaf_max_size_ = get_param(params,"leaf_max_size",10);
-        assert( dim_ == 3 );
-        gpu_helper_=0;
-    }
-
-    /**
-     * KDTree constructor
-     *
-     * Params:
      *          inputData = dataset with the input features
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeCuda3dIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KDTreeCuda3dIndexParams(),
-                      Distance d = Distance() ) : BaseClass(params,d), leaf_count_(0), visited_leafs(0), node_count_(0), current_node_count_(0)
+                      Distance d = Distance() ) : BaseClass(params,d), dataset_(inputData), leaf_count_(0), visited_leafs(0), node_count_(0), current_node_count_(0)
     {
+        size_ = dataset_.rows;
+        dim_ = dataset_.cols;
+
         int dim_param = get_param(params,"dim",-1);
         if (dim_param>0) dim_ = dim_param;
         leaf_max_size_ = get_param(params,"leaf_max_size",10);
         assert( dim_ == 3 );
         gpu_helper_=0;
-
-        setDataset(inputData);
     }
 
     KDTreeCuda3dIndex(const KDTreeCuda3dIndex& other);
@@ -130,7 +115,6 @@ public:
     {
     	throw FLANNException("KDTreeCuda3dIndex cloning is not implemented");
     }
-
 
     /**
      * Builds the index
@@ -175,6 +159,11 @@ public:
     void loadIndex(FILE* stream)
     {
         throw FLANNException( "Index loading not implemented!" );
+    }
+
+    size_t veclen() const
+    {
+        return dim_;
     }
 
     /**
@@ -271,6 +260,13 @@ public:
     int radiusSearchGpu(const Matrix<ElementType>& queries, std::vector< std::vector<int> >& indices,
                         std::vector<std::vector<DistanceType> >& dists, float radius, const SearchParams& params) const;
 
+    /**
+     * Not implemented, since it is only used by single-element searches.
+     * (but is needed b/c it is abstract in the base class)
+     */
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
+    {
+    }
 
 private:
 
@@ -286,6 +282,8 @@ private:
     struct GpuHelper;
 
     GpuHelper* gpu_helper_;
+
+    const Matrix<ElementType> dataset_;
 
     int leaf_max_size_;
 

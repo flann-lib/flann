@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 		flann::load_from_file(match, "sift100K.h5","match");
 		//	flann::load_from_file(gt_dists, "sift100K.h5","dists");
 
-		flann::mpi::Client<float, float> index("localhost","9999");
+		flann::mpi::Client index("localhost","9999");
 
 		int nn = 1;
 		flann::Matrix<int> indices(new int[query.rows*nn], query.rows, nn);
