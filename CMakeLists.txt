@@ -12,14 +12,16 @@ set(FLANN_VERSION 1.8.0)
 DISSECT_VERSION()
 GET_OS_INFO()
 
-if ( "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILER_ARG1}" MATCHES ".*clang")
+# CMAKE_C_COMPILER_ID and CMAKE_CXX_COMPILER_ID are documented as internal variables subject to
+# change at: http://www.cmake.org/cmake/help/v2.8.8/cmake.html#variable:CMAKE_LANG_COMPILER_ID
+# however currently this seems the most robust way to detect the presence of the Clang compiler
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
   set(CMAKE_COMPILER_IS_CLANG 1)
 endif ()
 
-if ( "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1}" MATCHES ".*clang")
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set(CMAKE_COMPILER_IS_CLANGXX 1)
 endif ()
-
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
