@@ -24,7 +24,7 @@ if (GTEST_FOUND AND HDF5_FOUND)
 
     set(TEST_LIBRARIES "${HDF5_LIBRARIES}")
     if (HDF5_IS_PARALLEL)
-        set(TEST_LINK_LIBRARIES "${TEST_LIBRARIES} ${MPI_LIBRARIES}")
+        set(TEST_LIBRARIES "${TEST_LIBRARIES};${MPI_LIBRARIES}")
     endif()
 	
     flann_add_gtest(flann_linear_test flann_linear_test.cpp)

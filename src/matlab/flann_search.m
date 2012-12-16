@@ -51,7 +51,8 @@ function [indices, dists] = flann_search(data, testset, n, search_params)
         id = map.(value);
     end
 
-    default_params = struct('algorithm', 'kdtree' ,'checks', 32,  'trees', 4, 'branching', 32, 'iterations', 5, 'centers_init', 'random', 'cb_index', 0.4, 'target_precision', -1, 'build_weight', 0.01, 'memory_weight', 0, 'sample_fraction', 0.1, 'log_level', 'warning', 'random_seed', 0);
+    default_params = struct('algorithm', 'kdtree' ,'checks', 32, 'eps', 0.0, 'sorted', 1, 'max_neighbors', -1, 'cores', 1, 'trees', 4, 'branching', 32, 'iterations', 5, 'centers_init', 'random', 'cb_index', 0.4, 'target_precision', 0.9,'build_weight', 0.01, 'memory_weight', 0, 'sample_fraction', 0.1, 'log_level', 'warning', 'random_seed', 0);
+
 
     if ~isstruct(search_params)
         error('The "search_params" argument must be a structure');

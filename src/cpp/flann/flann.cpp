@@ -33,10 +33,10 @@
 
 struct FLANNParameters DEFAULT_FLANN_PARAMETERS = {
     FLANN_INDEX_KDTREE,
-    32, 0.2f, 0.0f,
+    32, 0.0f,
     0, -1, 0,
     4, 4,
-    32, 11, FLANN_CENTERS_RANDOM,
+    32, 11, FLANN_CENTERS_RANDOM, 0.2f,
     0.9f, 0.01f, 0, 0.1f,
     FLANN_LOG_NONE, 0
 };
