@@ -322,6 +322,8 @@ namespace flann
                        float rebuild_threshold = 2);
         
         void removePoint(size_t point_id);
+        
+        ElementType* getPoint(size_t point_id);
 
 	int knnSearch(const Matrix<ElementType>& queries, 
 		       Matrix<int>& indices, 
@@ -637,6 +639,12 @@ index.
 void removePoint(size_t point_id);
 \end{Verbatim}
 
+\subsubsection{flann::Index::getPoint}
+The \texttt{getPoint} method returns a pointer to the data point with the specified \texttt{point\_id}.
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single]
+ElementType* getPoint(size_t point_id);
+\end{Verbatim}
 
 \subsubsection{flann::Index::knnSearch}
 Performs a K-nearest neighbor search for a set of query points. There are two signatures for this

@@ -53,6 +53,12 @@ TEST_F(KDTree_SIFT10K, TestIncremental)
     float precision = compute_precision(match, indices);
     EXPECT_GE(precision, 0.75);
     printf("Precision: %g\n", precision);
+
+    for (size_t i=0;i<indices.rows;++i) {
+        for (size_t j=0;j<indices.cols;++j) {
+        	EXPECT_EQ(index.getPoint(indices[i][j]), data[indices[i][j]]);
+        }
+    }
 }
 
 TEST_F(KDTree_SIFT10K, TestIncremental2)
@@ -74,6 +80,12 @@ TEST_F(KDTree_SIFT10K, TestIncremental2)
     float precision = compute_precision(match, indices);
     EXPECT_GE(precision, 0.75);
     printf("Precision: %g\n", precision);
+
+    for (size_t i=0;i<indices.rows;++i) {
+        for (size_t j=0;j<indices.cols;++j) {
+        	EXPECT_EQ(index.getPoint(indices[i][j]), data[indices[i][j]]);
+        }
+    }
 }
 
 
@@ -116,6 +128,7 @@ TEST_F(KDTree_SIFT10K, TestRemove)
         for (size_t j=0;j<indices.cols;++j) {
         	EXPECT_GE(indices[i][j], offset);
         	EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+        	EXPECT_EQ(index.getPoint(indices[i][j]), data[indices[i][j]]);
         }
     }
 
@@ -130,6 +143,7 @@ TEST_F(KDTree_SIFT10K, TestRemove)
 		for (size_t j=0;j<indices.cols;++j) {
 			EXPECT_GE(indices[i][j], offset);
 			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
+			EXPECT_EQ(index.getPoint(indices[i][j]), data[indices[i][j]]);
 		}
 	}
 }

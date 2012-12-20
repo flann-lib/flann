@@ -160,7 +160,20 @@ public:
     	nnIndex_->removePoint(point_id);
     }
 
+    /**
+     * Returns pointer to a data point with the specified id.
+     * @param point_id the id of point to retrieve
+     * @return
+     */
+    ElementType* getPoint(size_t point_id)
+    {
+    	return nnIndex_->getPoint(point_id);
+    }
 
+    /**
+     * Save index to file
+     * @param filename
+     */
     void save(std::string filename)
     {
         FILE* fout = fopen(filename.c_str(), "wb");

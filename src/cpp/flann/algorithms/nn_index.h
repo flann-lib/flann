@@ -157,29 +157,28 @@ public:
     		last_id_ = size_;
     	}
 
-    	size_t point_index = id;
-    	if (ids_[point_index]!=id) {
-    		// binary search
-    		size_t start = 0;
-    		size_t end = size();
-
-    		while (start<end) {
-    			size_t mid = (start+end)/2;
-    			if (ids_[mid]==id) {
-    				point_index = mid;
-    				break;
-    			}
-    			else if (ids_[mid]<id) {
-    				start = mid + 1;
-    			}
-    			else {
-    				end = mid;
-    			}
-    		}
+    	size_t point_index = id_to_index(id);
+    	if (point_index!=size_t(-1)) {
+    		removed_points_.set(point_index);
     	}
-
-    	removed_points_.set(point_index);
     	removed_ = true;
+    }
+
+
+    /**
+     * Get point with specific id
+     * @param id
+     * @return
+     */
+    virtual ElementType* getPoint(size_t id)
+    {
+    	size_t index = id_to_index(id);
+    	if (index!=size_t(-1)) {
+    		return points_[index];
+    	}
+    	else {
+    		return NULL;
+    	}
     }
 
     /**
@@ -682,6 +681,38 @@ public:
     virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const = 0;
 
 protected:
+
+    size_t id_to_index(size_t id)
+    {
+    	if (ids_.size()==0) {
+    		return id;
+    	}
+    	size_t point_index = size_t(-1);
+    	if (ids_[id]==id) {
+    		return id;
+    	}
+    	else {
+    		// binary search
+    		size_t start = 0;
+    		size_t end = size();
+
+    		while (start<end) {
+    			size_t mid = (start+end)/2;
+    			if (ids_[mid]==id) {
+    				point_index = mid;
+    				break;
+    			}
+    			else if (ids_[mid]<id) {
+    				start = mid + 1;
+    			}
+    			else {
+    				end = mid;
+    			}
+    		}
+    	}
+    	return point_index;
+    }
+
 
     void indices_to_ids(const size_t* in, size_t* out, size_t size) const
     {

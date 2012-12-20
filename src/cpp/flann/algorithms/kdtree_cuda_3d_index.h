@@ -149,6 +149,11 @@ public:
     	throw FLANNException( "removePoint not implemented for this index type!" );
     }
 
+    ElementType* getPoint(size_t id)
+    {
+    	return dataset_[id];
+    }
+
     void saveIndex(FILE* stream)
     {
         throw FLANNException( "Index saving not implemented!" );
