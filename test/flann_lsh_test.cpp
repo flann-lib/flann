@@ -145,15 +145,26 @@ TEST_F(LshIndex_Brief100K, TestRemove)
 			}
 		}
 	}
-	for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
-		index.removePoint(*it);
-	}
+    flann::DynamicBitset removed(data.rows);
 
-	// also remove 10% of the initial points
-	size_t offset = data.rows/10;
-	for (size_t i=0;i<offset;++i) {
-		index.removePoint(i);
-	}
+    for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
+    	index.removePoint(*it);
+    	removed.set(*it);
+    }
+
+    // also remove 10% of the initial points
+    size_t offset = data.rows/10;
+    for (size_t i=0;i<offset;++i) {
+    	index.removePoint(i);
+    	removed.set(i);
+    }
+
+    size_t new_size = 0;
+    for (size_t i=0;i<removed.size();++i) {
+    	if (!removed.test(i)) ++new_size;
+    }
+
+    EXPECT_EQ(index.size(), new_size);
 
 	start_timer("Searching KNN after remove points...");
 	index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(-1) );
@@ -168,6 +179,8 @@ TEST_F(LshIndex_Brief100K, TestRemove)
 
 	// rebuild index
 	index.buildIndex();
+
+	EXPECT_EQ(index.size(), new_size);
 
 	start_timer("Searching KNN after remove points and rebuild index...");
 	index.knnSearch(query, indices, dists, k_nn_, flann::SearchParams(128) );

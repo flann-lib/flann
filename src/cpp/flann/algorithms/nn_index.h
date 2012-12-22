@@ -76,12 +76,13 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
-	NNIndex(Distance d) : distance_(d), last_id_(0), size_(0), veclen_(0), data_ptr_(NULL), removed_(false)
+	NNIndex(Distance d) : distance_(d), last_id_(0), size_(0), veclen_(0),
+			removed_(false), removed_count_(0), data_ptr_(NULL)
 	{
 	}
 
 	NNIndex(const IndexParams& params, Distance d) : distance_(d), last_id_(0), size_(0), veclen_(0),
-			index_params_(params), data_ptr_(NULL), removed_(false)
+			index_params_(params), removed_(false), removed_count_(0), data_ptr_(NULL)
 	{
 	}
 
@@ -91,11 +92,12 @@ public:
 		size_(other.size_),
 		veclen_(other.veclen_),
 		index_params_(other.index_params_),
+		removed_(other.removed_),
 		removed_points_(other.removed_points_),
+		removed_count_(other.removed_count_),
 		ids_(other.ids_),
 		points_(other.points_),
-		data_ptr_(NULL),
-		removed_(other.removed_)
+		data_ptr_(NULL)
 	{
 		if (other.data_ptr_) {
 			data_ptr_ = new ElementType[size_*veclen_];
@@ -155,13 +157,14 @@ public:
     		removed_points_.resize(size_);
     		removed_points_.reset();
     		last_id_ = size_;
+        	removed_ = true;
     	}
 
     	size_t point_index = id_to_index(id);
-    	if (point_index!=size_t(-1)) {
+    	if (point_index!=size_t(-1) && !removed_points_.test(point_index)) {
     		removed_points_.set(point_index);
+    		removed_count_++;
     	}
-    	removed_ = true;
     }
 
 
@@ -186,7 +189,7 @@ public:
      */
     inline size_t size() const
     {
-        return size_;
+    	return size_ - removed_count_;
     }
 
     /**
@@ -500,7 +503,7 @@ public:
     	}
     	else {
     		// explicitly indicated to use unbounded radius result set
-    		// or we know there'll be enough room for resulting indices and dists
+    		// and we know there'll be enough room for resulting indices and dists
     		if (params.max_neighbors<0 && (num_neighbors>=size())) {
 #pragma omp parallel num_threads(params.cores)
     			{
@@ -694,7 +697,7 @@ protected:
     	else {
     		// binary search
     		size_t start = 0;
-    		size_t end = size();
+    		size_t end = ids_.size();
 
     		while (start<end) {
     			size_t mid = (start+end)/2;
@@ -732,6 +735,7 @@ protected:
     	ids_.clear();
     	removed_points_.clear();
     	removed_ = false;
+    	removed_count_ = 0;
 
     	points_.resize(size_);
     	for (size_t i=0;i<size_;++i) {
@@ -775,6 +779,7 @@ protected:
     	ids_.resize(last_idx);
     	removed_points_.resize(last_idx);
     	size_ = last_idx;
+    	removed_count_ = 0;
     }
 
     void swap(NNIndex& other)
@@ -784,11 +789,12 @@ protected:
     	std::swap(size_, other.size_);
     	std::swap(veclen_, other.veclen_);
     	std::swap(index_params_, other.index_params_);
+    	std::swap(removed_, other.removed_);
     	std::swap(removed_points_, other.removed_points_);
+    	std::swap(removed_count_, other.removed_count_);
     	std::swap(ids_, other.ids_);
     	std::swap(points_, other.points_);
     	std::swap(data_ptr_, other.data_ptr_);
-    	std::swap(removed_, other.removed_);
     }
 
 protected:
@@ -822,9 +828,19 @@ protected:
     IndexParams index_params_;
 
     /**
+     * Flag indicating if at least a point was removed from the index
+     */
+    bool removed_;
+
+    /**
      * Array used to mark points removed from the index
      */
     DynamicBitset removed_points_;
+
+    /**
+     * Number of points removed from the index
+     */
+    size_t removed_count_;
 
     /**
      * Array of point IDs, returned by nearest-neighbour operations
@@ -841,10 +857,6 @@ protected:
      */
     ElementType* data_ptr_;
 
-    /**
-     * Flag indicating if at least a point was removed from the index
-     */
-    bool removed_;
 
 };
 
