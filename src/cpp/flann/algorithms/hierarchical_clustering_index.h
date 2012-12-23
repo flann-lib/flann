@@ -94,7 +94,7 @@ public:
      * @param d
      */
     HierarchicalClusteringIndex(const IndexParams& index_params = HierarchicalClusteringIndexParams(), Distance d = Distance())
-        : BaseClass(index_params, d), size_at_build_(0)
+        : BaseClass(index_params, d)
     {
         memoryCounter_ = 0;
 
@@ -116,7 +116,7 @@ public:
      */
     HierarchicalClusteringIndex(const Matrix<ElementType>& inputData, const IndexParams& index_params = HierarchicalClusteringIndexParams(),
                                 Distance d = Distance())
-        : BaseClass(index_params, d), size_at_build_(0)
+        : BaseClass(index_params, d)
     {
         memoryCounter_ = 0;
 
@@ -133,7 +133,6 @@ public:
 
 
     HierarchicalClusteringIndex(const HierarchicalClusteringIndex& other) : BaseClass(other),
-    		size_at_build_(other.size_at_build_),
     		memoryCounter_(other.memoryCounter_),
     		branching_(other.branching_),
     		trees_(other.trees_),
@@ -196,32 +195,9 @@ public:
     {
         return pool_.usedMemory+pool_.wastedMemory+memoryCounter_;
     }
-
-    using NNIndex<Distance>::buildIndex;
-    /**
-     * Builds the index
-     */
-    void buildIndex()
-    {
-    	freeIndex();
-    	cleanRemovedPoints();
-
-        if (branching_<2) {
-            throw FLANNException("Branching factor must be at least 2");
-        }
-        tree_roots_.resize(trees_);
-        std::vector<int> indices(size_);
-        for (int i=0; i<trees_; ++i) {
-            for (size_t j=0; j<size_; ++j) {
-                indices[j] = j;
-            }
-            tree_roots_[i] = new(pool_) Node();
-            computeClustering(tree_roots_[i], &indices[0], size_);
-        }
-        size_at_build_ = size_;
-    }
-
     
+    using BaseClass::buildIndex;
+
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         assert(points.cols==veclen_);
@@ -311,6 +287,27 @@ public:
     	else {
     		findNeighborsWithRemoved<false>(result, vec, searchParams);
     	}
+    }
+
+protected:
+
+    /**
+     * Builds the index
+     */
+    void buildIndexImpl()
+    {
+        if (branching_<2) {
+            throw FLANNException("Branching factor must be at least 2");
+        }
+        tree_roots_.resize(trees_);
+        std::vector<int> indices(size_);
+        for (int i=0; i<trees_; ++i) {
+            for (size_t j=0; j<size_; ++j) {
+                indices[j] = j;
+            }
+            tree_roots_[i] = new(pool_) Node();
+            computeClustering(tree_roots_[i], &indices[0], size_);
+        }
     }
 
 private:
@@ -644,7 +641,6 @@ private:
     	BaseClass::swap(other);
 
     	std::swap(tree_roots_, other.tree_roots_);
-    	std::swap(size_at_build_, other.size_at_build_);
     	std::swap(pool_, other.pool_);
     	std::swap(memoryCounter_, other.memoryCounter_);
     	std::swap(branching_, other.branching_);
@@ -660,11 +656,6 @@ private:
      * The root nodes in the tree.
      */
     std::vector<Node*> tree_roots_;
-
-    /**
-     * Number of features in the dataset when the index was last built.
-     */
-    size_t size_at_build_;
 
     /**
      * Pooled memory allocator.

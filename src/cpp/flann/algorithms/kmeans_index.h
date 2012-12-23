@@ -106,7 +106,7 @@ public:
      */
     KMeansIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KMeansIndexParams(),
                 Distance d = Distance())
-        : BaseClass(params,d), size_at_build_(0), root_(NULL), memoryCounter_(0)
+        : BaseClass(params,d), root_(NULL), memoryCounter_(0)
     {
         branching_ = get_param(params,"branching",32);
         iterations_ = get_param(params,"iterations",11);
@@ -131,8 +131,7 @@ public:
      *          params = parameters passed to the hierarchical k-means algorithm
      */
     KMeansIndex(const IndexParams& params = KMeansIndexParams(), Distance d = Distance())
-        : BaseClass(params, d), size_at_build_(0),
-          root_(NULL), memoryCounter_(0)
+        : BaseClass(params, d), root_(NULL), memoryCounter_(0)
     {
         branching_ = get_param(params,"branching",32);
         iterations_ = get_param(params,"iterations",11);
@@ -151,7 +150,6 @@ public:
     		iterations_(other.iterations_),
     		centers_init_(other.centers_init_),
     		cb_index_(other.cb_index_),
-    		size_at_build_(other.size_at_build_),
     		memoryCounter_(other.memoryCounter_)
     {
     	initCenterChooser();
@@ -214,31 +212,7 @@ public:
         return pool_.usedMemory+pool_.wastedMemory+memoryCounter_;
     }
 
-    using NNIndex<Distance>::buildIndex;
-    /**
-     * Builds the index
-     */
-    void buildIndex()
-    {
-    	freeIndex();
-    	cleanRemovedPoints();
-
-        if (branching_<2) {
-            throw FLANNException("Branching factor must be at least 2");
-        }
-
-        std::vector<int> indices(size_);
-        for (size_t i=0; i<size_; ++i) {
-        	indices[i] = int(i);
-        }
-
-        root_ = new(pool_) Node();
-        computeNodeStatistics(root_, indices);
-        computeClustering(root_, &indices[0], (int)size_, branching_);
-        
-        size_at_build_ = size_;
-    }
-
+    using BaseClass::buildIndex;
 
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
@@ -348,6 +322,26 @@ public:
         }
 
         return clusterCount;
+    }
+
+protected:
+    /**
+     * Builds the index
+     */
+    void buildIndexImpl()
+    {
+        if (branching_<2) {
+            throw FLANNException("Branching factor must be at least 2");
+        }
+
+        std::vector<int> indices(size_);
+        for (size_t i=0; i<size_; ++i) {
+        	indices[i] = int(i);
+        }
+
+        root_ = new(pool_) Node();
+        computeNodeStatistics(root_, indices);
+        computeClustering(root_, &indices[0], (int)size_, branching_);
     }
 
 private:
@@ -1019,7 +1013,6 @@ private:
     	std::swap(iterations_, other.iterations_);
     	std::swap(centers_init_, other.centers_init_);
     	std::swap(cb_index_, other.cb_index_);
-    	std::swap(size_at_build_, other.size_at_build_);
     	std::swap(root_, other.root_);
     	std::swap(pool_, other.pool_);
     	std::swap(memoryCounter_, other.memoryCounter_);
@@ -1044,11 +1037,6 @@ private:
      * of the cluster.
      */
     float cb_index_;
-
-    /**
-     * Number of features in the dataset when the index was last built.
-     */
-    size_t size_at_build_;
     
     /**
      * The root node in the tree.

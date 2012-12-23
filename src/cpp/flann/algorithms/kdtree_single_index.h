@@ -138,33 +138,8 @@ public:
         return new KDTreeSingleIndex(*this);
     }
 
+    using BaseClass::buildIndex;
 
-    using NNIndex<Distance>::buildIndex;
-    /**
-     * Builds the index
-     */
-    void buildIndex()
-    {
-    	freeIndex();
-    	cleanRemovedPoints();
-
-        // Create a permutable array of indices to the input vectors.
-        vind_.resize(size_);
-        for (size_t i = 0; i < size_; i++) {
-            vind_[i] = i;
-        }
-
-        computeBoundingBox(root_bbox_);
-        root_node_ = divideTree(0, size_, root_bbox_ );   // construct the tree
-
-        if (reorder_) {
-            data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
-            for (size_t i=0; i<size_; ++i) {
-                std::copy(points_[vind_[i]], points_[vind_[i]]+veclen_, data_[i]);
-            }
-        }
-    }
-    
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         assert(points.cols==veclen_);
@@ -253,6 +228,30 @@ public:
         }
         else {
             searchLevel<false>(result, vec, root_node_, distsq, dists, epsError);
+        }
+    }
+
+protected:
+
+    /**
+     * Builds the index
+     */
+    void buildIndexImpl()
+    {
+        // Create a permutable array of indices to the input vectors.
+        vind_.resize(size_);
+        for (size_t i = 0; i < size_; i++) {
+            vind_[i] = i;
+        }
+
+        computeBoundingBox(root_bbox_);
+        root_node_ = divideTree(0, size_, root_bbox_ );   // construct the tree
+
+        if (reorder_) {
+            data_ = flann::Matrix<ElementType>(new ElementType[size_*veclen_], size_, veclen_);
+            for (size_t i=0; i<size_; ++i) {
+                std::copy(points_[vind_[i]], points_[vind_[i]]+veclen_, data_[i]);
+            }
         }
     }
 

@@ -87,7 +87,7 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeIndex(const IndexParams& params = KDTreeIndexParams(), Distance d = Distance() ) :
-    	BaseClass(params, d), size_at_build_(0), mean_(NULL), var_(NULL)
+    	BaseClass(params, d), mean_(NULL), var_(NULL)
     {
         trees_ = get_param(index_params_,"trees",4);
     }
@@ -101,7 +101,7 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeIndex(const Matrix<ElementType>& dataset, const IndexParams& params = KDTreeIndexParams(),
-                Distance d = Distance() ) : BaseClass(params,d ), size_at_build_(0), mean_(NULL), var_(NULL)
+                Distance d = Distance() ) : BaseClass(params,d ), mean_(NULL), var_(NULL)
     {
         trees_ = get_param(index_params_,"trees",4);
 
@@ -109,8 +109,7 @@ public:
     }
 
     KDTreeIndex(const KDTreeIndex& other) : BaseClass(other),
-    		trees_(other.trees_),
-    		size_at_build_(other.size_at_build_)
+    		trees_(other.trees_)
     {
         tree_roots_.resize(other.tree_roots_.size());
         for (size_t i=0;i<tree_roots_.size();++i) {
@@ -137,36 +136,7 @@ public:
     	return new KDTreeIndex(*this);
     }
 
-    using NNIndex<Distance>::buildIndex;
-    /**
-     * Builds the index
-     */
-    void buildIndex()
-    {
-    	freeIndex();
-    	cleanRemovedPoints();
-
-        // Create a permutable array of indices to the input vectors.
-    	std::vector<int> ind(size_);
-        for (size_t i = 0; i < size_; ++i) {
-            ind[i] = int(i);
-        }
-
-        mean_ = new DistanceType[veclen_];
-        var_ = new DistanceType[veclen_];
-
-        tree_roots_.resize(trees_);
-        /* Construct the randomized trees. */
-        for (int i = 0; i < trees_; i++) {
-            /* Randomize the order of vectors to allow for unbiased sampling. */
-            std::random_shuffle(ind.begin(), ind.end());
-            tree_roots_[i] = divideTree(&ind[0], int(size_) );
-        }
-        delete[] mean_;
-        delete[] var_;
-        
-        size_at_build_ = size_;
-    }
+    using BaseClass::buildIndex;
     
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
@@ -176,8 +146,6 @@ public:
         extendDataset(points);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
-            freeIndex();
-            cleanRemovedPoints();
             buildIndex();
         }
         else {
@@ -276,7 +244,32 @@ public:
         }
     }
 
-private:
+protected:
+
+    /**
+     * Builds the index
+     */
+    void buildIndexImpl()
+    {
+        // Create a permutable array of indices to the input vectors.
+    	std::vector<int> ind(size_);
+        for (size_t i = 0; i < size_; ++i) {
+            ind[i] = int(i);
+        }
+
+        mean_ = new DistanceType[veclen_];
+        var_ = new DistanceType[veclen_];
+
+        tree_roots_.resize(trees_);
+        /* Construct the randomized trees. */
+        for (int i = 0; i < trees_; i++) {
+            /* Randomize the order of vectors to allow for unbiased sampling. */
+            std::random_shuffle(ind.begin(), ind.end());
+            tree_roots_[i] = divideTree(&ind[0], int(size_) );
+        }
+        delete[] mean_;
+        delete[] var_;
+    }
 
     void freeIndex()
     {
@@ -288,7 +281,7 @@ private:
     }
 
 
-
+private:
 
     /*--------------------- Internal Data Structures --------------------------*/
     struct Node
@@ -712,7 +705,6 @@ private:
     {
     	BaseClass::swap(other);
     	std::swap(trees_, other.trees_);
-    	std::swap(size_at_build_, other.size_at_build_);
     	std::swap(tree_roots_, other.tree_roots_);
     	std::swap(pool_, other.pool_);
     }
@@ -742,8 +734,6 @@ private:
      * Number of randomized trees that are used
      */
     int trees_;
-
-    size_t size_at_build_;
 
     DistanceType* mean_;
     DistanceType* var_;

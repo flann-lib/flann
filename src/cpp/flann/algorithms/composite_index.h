@@ -215,6 +215,17 @@ protected:
     	std::swap(kdtree_index_, other.kdtree_index_);
     }
 
+    void buildIndexImpl()
+    {
+        /* nothing to do here */
+    }
+
+    void freeIndex()
+    {
+        /* nothing to do here */
+    }
+
+
 private:
     /** The k-means index */
     KMeansIndex<Distance>* kmeans_index_;

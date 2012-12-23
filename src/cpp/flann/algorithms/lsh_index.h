@@ -88,7 +88,7 @@ public:
      * @param d the distance used
      */
     LshIndex(const IndexParams& params = LshIndexParams(), Distance d = Distance()) :
-    	BaseClass(params, d), size_at_build_(0)
+    	BaseClass(params, d)
     {
         table_number_ = get_param<unsigned int>(index_params_,"table_number",12);
         key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
@@ -104,7 +104,7 @@ public:
      * @param d the distance used
      */
     LshIndex(const Matrix<ElementType>& input_data, const IndexParams& params = LshIndexParams(), Distance d = Distance()) :
-    	BaseClass(params, d), size_at_build_(0)
+    	BaseClass(params, d)
     {
         table_number_ = get_param<unsigned int>(index_params_,"table_number",12);
         key_size_ = get_param<unsigned int>(index_params_,"key_size",20);
@@ -117,7 +117,6 @@ public:
 
     LshIndex(const LshIndex& other) : BaseClass(other),
     	tables_(other.tables_),
-    	size_at_build_(other.size_at_build_),
     	table_number_(other.table_number_),
     	key_size_(other.key_size_),
     	multi_probe_level_(other.multi_probe_level_),
@@ -133,6 +132,7 @@ public:
 
     virtual ~LshIndex()
     {
+    	freeIndex();
     }
 
 
@@ -140,33 +140,9 @@ public:
     {
     	return new LshIndex(*this);
     }
-
-
-    using NNIndex<Distance>::buildIndex;
-    /**
-     * Builds the index
-     */
-    void buildIndex()
-    {
-    	cleanRemovedPoints();
-
-        tables_.resize(table_number_);
-        std::vector<std::pair<size_t,ElementType*> > features;
-        features.reserve(points_.size());
-        for (size_t i=0;i<points_.size();++i) {
-        	features.push_back(std::make_pair(i, points_[i]));
-        }
-        for (unsigned int i = 0; i < table_number_; ++i) {
-            lsh::LshTable<ElementType>& table = tables_[i];
-            table = lsh::LshTable<ElementType>(veclen_, key_size_);
-
-            // Add the features to the table
-            table.add(features);
-        }
-        
-        size_at_build_ = size_;
-    }
     
+    using BaseClass::buildIndex;
+
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
         assert(points.cols==veclen_);
@@ -369,6 +345,34 @@ public:
         getNeighbors(vec, result);
     }
 
+protected:
+
+    /**
+     * Builds the index
+     */
+    void buildIndexImpl()
+    {
+        tables_.resize(table_number_);
+        std::vector<std::pair<size_t,ElementType*> > features;
+        features.reserve(points_.size());
+        for (size_t i=0;i<points_.size();++i) {
+        	features.push_back(std::make_pair(i, points_[i]));
+        }
+        for (unsigned int i = 0; i < table_number_; ++i) {
+            lsh::LshTable<ElementType>& table = tables_[i];
+            table = lsh::LshTable<ElementType>(veclen_, key_size_);
+
+            // Add the features to the table
+            table.add(features);
+        }
+    }
+
+    void freeIndex()
+    {
+        /* nothing to do here */
+    }
+
+
 private:
     /** Defines the comparator on score and index
      */
@@ -529,9 +533,6 @@ private:
     /** The different hash tables */
     std::vector<lsh::LshTable<ElementType> > tables_;
     
-    /** Number of features in the dataset when the index was last built. */
-    size_t size_at_build_;
-
     /** table number */
     unsigned int table_number_;
     /** key size */

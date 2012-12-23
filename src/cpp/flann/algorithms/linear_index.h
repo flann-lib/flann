@@ -102,13 +102,6 @@ public:
         return 0;
     }
 
-    using NNIndex<Distance>::buildIndex;
-
-    void buildIndex()
-    {
-        /* nothing to do here for linear search */
-    }
-
     template<typename Archive>
     void serialize(Archive& ar)
     {
@@ -148,6 +141,16 @@ public:
     			resultSet.addPoint(dist, i);
     		}
     	}
+    }
+protected:
+    void buildIndexImpl()
+    {
+        /* nothing to do here for linear search */
+    }
+
+    void freeIndex()
+    {
+        /* nothing to do here for linear search */
     }
 
 private:

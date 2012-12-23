@@ -76,12 +76,12 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
-	NNIndex(Distance d) : distance_(d), last_id_(0), size_(0), veclen_(0),
+	NNIndex(Distance d) : distance_(d), last_id_(0), size_(0), size_at_build_(0), veclen_(0),
 			removed_(false), removed_count_(0), data_ptr_(NULL)
 	{
 	}
 
-	NNIndex(const IndexParams& params, Distance d) : distance_(d), last_id_(0), size_(0), veclen_(0),
+	NNIndex(const IndexParams& params, Distance d) : distance_(d), last_id_(0), size_(0), size_at_build_(0), veclen_(0),
 			index_params_(params), removed_(false), removed_count_(0), data_ptr_(NULL)
 	{
 	}
@@ -90,6 +90,7 @@ public:
 		distance_(other.distance_),
 		last_id_(other.last_id_),
 		size_(other.size_),
+		size_at_build_(other.size_at_build_),
 		veclen_(other.veclen_),
 		index_params_(other.index_params_),
 		removed_(other.removed_),
@@ -121,7 +122,17 @@ public:
 	/**
 	 * Builds the index
 	 */
-	virtual void buildIndex() = 0;
+	virtual void buildIndex()
+	{
+    	freeIndex();
+    	cleanRemovedPoints();
+
+    	// building index
+		buildIndexImpl();
+
+        size_at_build_ = size_;
+
+	}
 
 	/**
 	 * Builds th index using using the specified dataset
@@ -241,6 +252,7 @@ public:
 
     	ar & size_;
     	ar & veclen_;
+    	ar & size_at_build_;
 
     	bool save_dataset;
     	if (Archive::is_saving::value) {
@@ -680,6 +692,10 @@ public:
 
 protected:
 
+    virtual void freeIndex() = 0;
+
+    virtual void buildIndexImpl() = 0;
+
     size_t id_to_index(size_t id)
     {
     	if (ids_.size()==0) {
@@ -782,6 +798,7 @@ protected:
     	std::swap(distance_, other.distance_);
     	std::swap(last_id_, other.last_id_);
     	std::swap(size_, other.size_);
+    	std::swap(size_at_build_, other.size_at_build_);
     	std::swap(veclen_, other.veclen_);
     	std::swap(index_params_, other.index_params_);
     	std::swap(removed_, other.removed_);
@@ -811,6 +828,11 @@ protected:
      * Number of points in the index (and database)
      */
     size_t size_;
+
+    /**
+     * Number of features in the dataset when the index was last built.
+     */
+    size_t size_at_build_;
 
     /**
      * Size of one point in the index (and database)
@@ -859,6 +881,7 @@ protected:
 #define USING_BASECLASS_SYMBOLS \
 		using NNIndex<Distance>::distance_;\
 		using NNIndex<Distance>::size_;\
+		using NNIndex<Distance>::size_at_build_;\
 		using NNIndex<Distance>::veclen_;\
 		using NNIndex<Distance>::index_params_;\
 		using NNIndex<Distance>::removed_points_;\

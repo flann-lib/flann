@@ -129,8 +129,6 @@ public:
     	return new AutotunedIndex(*this);
     }
 
-
-    using NNIndex<Distance>::buildIndex;
     /**
      *          Method responsible with building the index.
      */
@@ -341,6 +339,17 @@ public:
     flann_algorithm_t getType() const
     {
         return FLANN_INDEX_AUTOTUNED;
+    }
+
+protected:
+    void buildIndexImpl()
+    {
+        /* nothing to do here */
+    }
+
+    void freeIndex()
+    {
+        /* nothing to do here */
     }
 
 private:
