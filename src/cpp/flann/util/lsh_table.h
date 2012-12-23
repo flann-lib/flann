@@ -297,6 +297,33 @@ private:
         }
     }
 
+    template<typename Archive>
+    void serialize(Archive& ar)
+    {
+    	int val;
+    	if (Archive::is_saving::value) {
+    		val = (int)speed_level_;
+    	}
+    	ar & val;
+    	if (Archive::is_loading::value) {
+    		speed_level_ = (SpeedLevel) val;
+    	}
+
+    	ar & key_size_;
+    	ar & mask_;
+
+    	if (speed_level_==kArray) {
+    		ar & buckets_speed_;
+    	}
+    	if (speed_level_==kBitsetHash || speed_level_==kHash) {
+    		ar & buckets_space_;
+    	}
+		if (speed_level_==kBitsetHash) {
+			ar & key_bitset_;
+		}
+    }
+    friend struct serialization::access;
+
     /** The vector of all the buckets if they are held for speed
      */
     BucketsSpeed buckets_speed_;

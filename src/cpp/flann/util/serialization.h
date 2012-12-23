@@ -2,6 +2,7 @@
 #define SERIALIZATION_H_
 
 #include <vector>
+#include <map>
 #include <stdio.h>
 
 namespace flann
@@ -112,6 +113,36 @@ struct Serializer<std::vector<T> >
         ar & val.size();
         for (size_t i=0;i<val.size();++i) {
             ar & val[i];
+        }
+    }
+};
+
+// serializer for std::vector
+template<typename K, typename V>
+struct Serializer<std::map<K,V> >
+{
+    template<typename InputArchive>
+    static inline void load(InputArchive& ar, std::map<K,V>& map_val)
+    {
+        size_t size;
+        ar & size;
+        for (size_t i = 0; i < size; ++i)
+        {
+            K key;
+            ar & key;
+            V value;
+            ar & value;
+            map_val[key] = value;
+        }
+    }
+
+    template<typename OutputArchive>
+    static inline void save(OutputArchive& ar, const std::map<K,V>& map_val)
+    {
+        ar & map_val.size();
+        for (typename std::map<K,V>::const_iterator i=map_val.begin(); i!=map_val.end(); ++i) {
+            ar & i->first;
+            ar & i->second;
         }
     }
 };

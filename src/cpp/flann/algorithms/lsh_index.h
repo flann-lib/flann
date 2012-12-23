@@ -181,10 +181,8 @@ public:
     	ar & key_size_;
     	ar & multi_probe_level_;
 
-    	if (Archive::is_loading::value) {
-            // Building the index is so fast we can afford not storing it
-            buildIndex();
-    	}
+    	ar & xor_masks_;
+    	ar & tables_;
 
     	if (Archive::is_loading::value) {
             index_params_["algorithm"] = getType();
