@@ -271,15 +271,10 @@ public:
     	ar & last_id_;
     	ar & ids_;
     	ar & removed_;
-
     	if (removed_) {
     		ar & removed_points_;
     	}
-    	else {
-    		if (Archive::is_loading::value) {
-    			removed_points_.resize(size_);
-    		}
-    	}
+    	ar & removed_count_;
     }
 
 
