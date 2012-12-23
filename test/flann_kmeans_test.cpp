@@ -130,22 +130,6 @@ protected:
 	KMeans_SIFT100K_byte() : DatasetTestFixture("sift100K_byte.h5") {}
 };
 
-TEST_F(KMeans_SIFT100K_byte, TestSearch_)
-{
-    flann::Index<L2<unsigned char> > index(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4));
-    start_timer("Building hierarchical k-means index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, 5, flann::SearchParams(80) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision = compute_precision(gt_indices, indices);
-    EXPECT_GE(precision, 0.75);
-    printf("Precision: %g\n", precision);
-}
-
 TEST_F(KMeans_SIFT100K_byte, TestSearch)
 {
 	TestSearch<flann::L2<unsigned char> >(data, flann::KMeansIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4),
