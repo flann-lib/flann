@@ -22,9 +22,9 @@ Getting FLANN
 
 The latest version of FLANN can be downloaded from here:
 
- *  Version 1.8.2 (20 December 2012)
-    [flann-1.8.2-src.zip](http://people.cs.ubc.ca/~mariusm/uploads/FLANN/flann-1.8.2-src.zip) (Source code)  
-    [User manual](http://people.cs.ubc.ca/~mariusm/uploads/FLANN/flann_manual-1.8.2.pdf)  
+ *  Version 1.8.3 (23 December 2012)
+    [flann-1.8.3-src.zip](http://people.cs.ubc.ca/~mariusm/uploads/FLANN/flann-1.8.3-src.zip) (Source code)  
+    [User manual](http://people.cs.ubc.ca/~mariusm/uploads/FLANN/flann_manual-1.8.3.pdf)  
     [Changelog](https://github.com/mariusmuja/flann/blob/master/ChangeLog)  
 
 If you want to try out the latest changes or contribute to FLANN, then it's recommended that you checkout the git source repository: `git clone git://github.com/mariusmuja/flann.git`
