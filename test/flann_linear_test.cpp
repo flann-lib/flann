@@ -19,200 +19,34 @@ protected:
 
 TEST_F(Linear_SIFT10K, TestSearch)
 {
-    Index<L2<float> > index(data, flann::LinearIndexParams());
-    start_timer("Building linear index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, knn, flann::SearchParams(0) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision = compute_precision(match, indices);
-    EXPECT_EQ(precision, 1.0); // linear search, must be exact
-    printf("Precision: %g\n", precision);
+	TestSearch<flann::L2<float> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
 }
-
-
 
 TEST_F(Linear_SIFT10K, TestRemove)
 {
-	Index<L2<float> > index(data, flann::LinearIndexParams());
-	start_timer("Building linear index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN before removing points...");
-    index.knnSearch(query, indices, dists, knn, flann::SearchParams(128) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    // remove about 50% of neighbors found
-    std::set<int> neighbors;
-    for (size_t i=0;i<indices.rows;++i) {
-        for (size_t j=0;j<indices.cols;++j) {
-        	if (rand_double()<0.5) {
-        		neighbors.insert(indices[i][j]);
-        	}
-        }
-    }
-    flann::DynamicBitset removed(data.rows);
-
-    for (std::set<int>::iterator it = neighbors.begin(); it!=neighbors.end();++it) {
-    	index.removePoint(*it);
-    	removed.set(*it);
-    }
-
-    // also remove 10% of the initial points
-    size_t offset = data.rows/10;
-    for (size_t i=0;i<offset;++i) {
-    	index.removePoint(i);
-    	removed.set(i);
-    }
-
-    size_t new_size = 0;
-    for (size_t i=0;i<removed.size();++i) {
-    	if (!removed.test(i)) ++new_size;
-    }
-
-    EXPECT_EQ(index.size(), new_size);
-
-    start_timer("Searching KNN after remove points...");
-    index.knnSearch(query, indices, dists, 5, flann::SearchParams(128) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    for (size_t i=0;i<indices.rows;++i) {
-        for (size_t j=0;j<indices.cols;++j) {
-        	EXPECT_GE(indices[i][j], offset);
-        	EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
-        }
-    }
-
-	// rebuild index
-	index.buildIndex();
-
-    EXPECT_EQ(index.size(), new_size);
-
-	start_timer("Searching KNN after remove points and rebuild index...");
-	index.knnSearch(query, indices, dists, knn, flann::SearchParams(128) );
-	printf("done (%g seconds)\n", stop_timer());
-
-	for (size_t i=0;i<indices.rows;++i) {
-		for (size_t j=0;j<indices.cols;++j) {
-			EXPECT_GE(indices[i][j], offset);
-			EXPECT_TRUE(neighbors.find(indices[i][j])==neighbors.end());
-		}
-	}
+	TestRemove<flann::L2<float> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0));
 }
 
 
 TEST_F(Linear_SIFT10K, TestSave)
 {
-    Index<L2<float> > index(data, flann::LinearIndexParams());
-    start_timer("Building linear index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, knn, flann::SearchParams(0) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision = compute_precision(match, indices);
-    printf("Precision: %g\n", precision);
-    EXPECT_EQ(precision, 1.0);
-
-    printf("Saving index\n");
-    index.save("test_saved_index.idx");
-
-    printf("Loading index\n");
-    Index<L2<float> > index2(data, flann::SavedIndexParams("test_saved_index.idx"));
-    index2.buildIndex();
-
-    start_timer("Searching KNN...");
-    index2.knnSearch(query, indices, dists, knn, flann::SearchParams(0) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision2 = compute_precision(match, indices);
-    printf("Precision: %g\n", precision2);
-    EXPECT_EQ(precision, precision2);
+	TestSave<flann::L2<float> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
 }
 
 TEST_F(Linear_SIFT10K, TestCopy)
 {
-	Index<L2<float> > index(data, flann::LinearIndexParams());
-    start_timer("Building k-d tree index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision = compute_precision(match, indices);
-    printf("Precision: %g\n", precision);
-    EXPECT_EQ(precision, 1);
-
-    // test copy constructor
-    Index<L2<float> > index2(index);
-
-    start_timer("Searching KNN...");
-    index2.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision2 = compute_precision(match, indices);
-    printf("Precision: %g\n", precision2);
-    EXPECT_EQ(precision, precision2);
-
-    // test assignment operator
-    Index<L2<float> > index3(data, flann::LinearIndexParams());
-    index3 = index;
-
-    start_timer("Searching KNN...");
-    index3.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision3 = compute_precision(match, indices);
-    printf("Precision: %g\n", precision3);
-    EXPECT_EQ(precision, precision3);
+	TestCopy<flann::L2<float> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
 }
 
 
 TEST_F(Linear_SIFT10K, TestCopy2)
 {
-	LinearIndex<L2<float> > index(data, flann::LinearIndexParams());
-    start_timer("Building k-d tree index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision = compute_precision(match, indices);
-    printf("Precision: %g\n", precision);
-    EXPECT_EQ(precision, 1);
-
-    // test copy constructor
-    LinearIndex<L2<float> > index2(index);
-
-    start_timer("Searching KNN...");
-    index2.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision2 = compute_precision(match, indices);
-    printf("Precision: %g\n", precision2);
-    EXPECT_EQ(precision, precision2);
-
-    // test assignment operator
-    LinearIndex<L2<float> > index3(data, flann::LinearIndexParams());
-    index3 = index;
-
-    start_timer("Searching KNN...");
-    index3.knnSearch(query, indices, dists, knn, flann::SearchParams(256) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision3 = compute_precision(match, indices);
-    printf("Precision: %g\n", precision3);
-    EXPECT_EQ(precision, precision3);
+	TestCopy<flann::L2<float> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
 }
 
 
@@ -227,18 +61,8 @@ protected:
 
 TEST_F(Linear_SIFT100K, TestSearch)
 {
-    Index<L2<float> > index(data, flann::LinearIndexParams());
-    start_timer("Building linear index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, knn, flann::SearchParams(0) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision = compute_precision(match, indices);
-    EXPECT_EQ(precision, 1.0); // linear search, must be exact
-    printf("Precision: %g\n", precision);
+	TestSearch<flann::L2<float> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
 }
 
 
@@ -254,18 +78,8 @@ protected:
 
 TEST_F(Linear_SIFT10K_byte, Linear)
 {
-    flann::Index<L2<unsigned char> > index(data, flann::LinearIndexParams());
-    start_timer("Building linear index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, knn, flann::SearchParams(0) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision = compute_precision(match, indices);
-    EXPECT_EQ(precision, 1.0); // linear search, must be exact
-    printf("Precision: %g\n", precision);
+	TestSearch<flann::L2<unsigned char> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
 }
 
 
@@ -280,18 +94,8 @@ protected:
 
 TEST_F(Linear_SIFT100K_byte, TestSearch)
 {
-    flann::Index<L2<unsigned char> > index(data, flann::LinearIndexParams());
-    start_timer("Building linear index...");
-    index.buildIndex();
-    printf("done (%g seconds)\n", stop_timer());
-
-    start_timer("Searching KNN...");
-    index.knnSearch(query, indices, dists, knn, flann::SearchParams(0) );
-    printf("done (%g seconds)\n", stop_timer());
-
-    float precision = compute_precision(match, indices);
-    EXPECT_EQ(precision, 1.0); // linear search, must be exact
-    printf("Precision: %g\n", precision);
+	TestSearch<flann::L2<unsigned char> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
 }
 
 
