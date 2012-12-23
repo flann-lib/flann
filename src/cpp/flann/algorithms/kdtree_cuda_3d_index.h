@@ -273,6 +273,17 @@ public:
     {
     }
 
+protected:
+    void buildIndexImpl()
+    {
+        /* nothing to do here */
+    }
+
+    void freeIndex()
+    {
+        /* nothing to do here */
+    }
+
 private:
 
     void uploadTreeToGpu( );
