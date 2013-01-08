@@ -375,6 +375,7 @@ public:
     			indices[i][j] = indices_[i][j];
     		}
     	}
+        delete[] indices_.ptr();
     	return result;
     }
 
@@ -580,6 +581,7 @@ public:
     			indices[i][j] = indices_[i][j];
     		}
     	}
+        delete[] indices_.ptr();
     	return result;
     }
 
