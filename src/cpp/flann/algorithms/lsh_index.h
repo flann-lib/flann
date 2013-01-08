@@ -239,7 +239,7 @@ public:
         	{
         		KNNUniqueResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
-        		for (size_t i = 0; i < queries.rows; i++) {
+        		for (int i = 0; i < (int)queries.rows; i++) {
         			resultSet.clear();
         			findNeighbors(resultSet, queries[i], params);
         			size_t n = std::min(resultSet.size(), knn);
@@ -254,7 +254,7 @@ public:
         	{
         		KNNResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
-        		for (size_t i = 0; i < queries.rows; i++) {
+        		for (int i = 0; i < (int)queries.rows; i++) {
         			resultSet.clear();
         			findNeighbors(resultSet, queries[i], params);
         			size_t n = std::min(resultSet.size(), knn);
@@ -292,7 +292,7 @@ public:
 			{
 				KNNUniqueResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
-				for (size_t i = 0; i < queries.rows; i++) {
+				for (int i = 0; i < (int)queries.rows; i++) {
 					resultSet.clear();
 					findNeighbors(resultSet, queries[i], params);
 					size_t n = std::min(resultSet.size(), knn);
@@ -311,7 +311,7 @@ public:
 			{
 				KNNResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
-				for (size_t i = 0; i < queries.rows; i++) {
+				for (int i = 0; i < (int)queries.rows; i++) {
 					resultSet.clear();
 					findNeighbors(resultSet, queries[i], params);
 					size_t n = std::min(resultSet.size(), knn);
