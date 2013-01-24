@@ -252,6 +252,8 @@ options use the \texttt{cmake-gui} application after \texttt{cmake} has finished
 This section contains changes that you need to be aware of when upgrading from a previous version of FLANN.
 
 \begin{description}
+ \item[Version 1.8.0] Due to changes in the library, the on-disk format of the saved indexes has changed and it is not
+possible to load indexes previously saved with an older version of the library.
  \item[Version 1.7.0] A small breaking API change in \texttt{flann::Matrix} requires client code to be updated. In order
 to release the memory used by a matrix, use:
 \begin{Verbatim}[fontsize=\scriptsize]
