@@ -1494,12 +1494,12 @@ result, dists = flann.nn_index(testset,5, checks=params["checks"]);
 deleted the index, all in one step.
 
 \item [\texttt{def save\_index(self, filename)}] :\\
-    This method saves the index to a file. The dataset form which the index was
-build is not saved.
+    This method saves the index to a file. The dataset from which the index was
+built is not saved.
 
 \item [\texttt{def load\_index(self, filename, pts)}] :\\
-    Load the index from a file. The dataset for which the index was build must also 
-be provided since is not saved with the index.
+    Load the index from a file. The dataset for which the index was built must also 
+be provided since it is not saved with the index.
 
 \item [\texttt{def set\_distance\_type(distance\_type, order = 0)}] :\\
     This function (part of the pyflann module) sets the distance type to be used. See
