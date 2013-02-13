@@ -141,7 +141,7 @@ if (BUILD_CUDA_LIB)
 endif(BUILD_CUDA_LIB)
 
 #set the C/C++ include path to the "include" directory
-include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/cpp)
 
 # require proper c++
 #add_definitions( "-Wall -ansi -pedantic" )
