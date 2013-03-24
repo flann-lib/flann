@@ -93,6 +93,8 @@ FLANN_EXPORT extern struct FLANNParameters DEFAULT_FLANN_PARAMETERS;
 FLANN_EXPORT void flann_log_verbosity(int level);
 
 
+
+
 /**
  * Sets the distance type to use throughout FLANN.
  * If distance type specified is MINKOWSKI, the second argument
@@ -144,6 +146,47 @@ FLANN_EXPORT flann_index_t flann_build_index_int(int* dataset,
                                                  int cols,
                                                  float* speedup,
                                                  struct FLANNParameters* flann_params);
+/**
+   Adds points to an index.
+
+   Params:
+    index_id The index that should be modified
+    dataset = pointer to a data set stored in row major order
+    rows = number of rows (features) in the dataset
+    cols = number of columns in the dataset (feature dimensionality)
+    rebuild_threadhold
+
+   Returns: void
+ */
+
+FLANN_EXPORT void flann_add_points(flann_index_t index_id, float* dataset,
+                                             int rows,
+                                             int cols,
+                                             int rebuild_threshold);
+
+
+FLANN_EXPORT void flann_add_points_float(flann_index_t index_id, float* dataset,
+                                             int rows,
+                                             int cols,
+                                             int rebuild_threshold);
+
+FLANN_EXPORT void flann_add_points_double(flann_index_t index_id, double* dataset,
+                                             int rows,
+                                             int cols,
+                                             int rebuild_threshold);
+
+FLANN_EXPORT void flann_add_points_int(flann_index_t index_id, int* dataset,
+                                             int rows,
+                                             int cols,
+                                             int rebuild_threshold);
+
+FLANN_EXPORT void flann_add_points_byte(flann_index_t index_id, unsigned char* dataset,
+                                             int rows,
+                                             int cols,
+                                             int rebuild_threshold);
+
+
+
 
 /**
  * Saves the index to a file. Only the index is saved into the file, the dataset corresponding to the index is not saved.

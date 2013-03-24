@@ -171,6 +171,12 @@ class FLANN:
         
         return params
 
+    def add_points(self, pts, rebuild_threshold=2):
+        if not pts.dtype.type in allowed_types:
+            raise FLANNException("Cannot handle type: %s"%pts.dtype)
+        pts = ensure_2d_array(pts,default_flags) 
+        npts, dim = pts.shape
+        flann.add_points[self.__curindex_type](self.__curindex, pts, npts, dim, rebuild_threshold)
 
     def save_index(self, filename):
         """
