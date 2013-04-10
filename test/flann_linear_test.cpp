@@ -23,6 +23,12 @@ TEST_F(Linear_SIFT10K, TestSearch)
 			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
 }
 
+TEST_F(Linear_SIFT10K, TestSearch2)
+{
+	TestSearch2<flann::L2<float> >(data, flann::LinearIndexParams(),
+			query, indices, dists, knn, flann::SearchParams(0), 1.0, gt_indices);
+}
+
 TEST_F(Linear_SIFT10K, TestRemove)
 {
 	TestRemove<flann::L2<float> >(data, flann::LinearIndexParams(),

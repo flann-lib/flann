@@ -67,6 +67,11 @@ TEST_F(LshIndex_Brief100K, TestSearch)
 			query, indices, dists, k_nn_, flann::SearchParams(-1), 0.9, gt_indices, gt_dists);
 }
 
+TEST_F(LshIndex_Brief100K, TestSearch2)
+{
+	TestSearch2<Distance>(data, flann::LshIndexParams(12, 20, 2),
+			query, indices, dists, k_nn_, flann::SearchParams(-1), 0.9, gt_indices, gt_dists);
+}
 
 TEST_F(LshIndex_Brief100K, TestAddIncremental)
 {

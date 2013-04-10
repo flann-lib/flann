@@ -25,6 +25,12 @@ TEST_F(KMeans_SIFT10K, TestSearch)
 			query, indices, dists, knn, flann::SearchParams(128), 0.75, gt_indices);
 }
 
+TEST_F(KMeans_SIFT10K, TestSearch2)
+{
+	TestSearch2<flann::L2<float> >(data, flann::KMeansIndexParams(7, 3, FLANN_CENTERS_RANDOM, 0.4),
+			query, indices, dists, knn, flann::SearchParams(128), 0.75, gt_indices);
+}
+
 
 TEST_F(KMeans_SIFT10K, TestAddIncremental)
 {

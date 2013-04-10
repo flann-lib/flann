@@ -63,6 +63,13 @@ TEST_F(HierarchicalIndex_Brief100K, TestSearch)
 			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.9, gt_indices, gt_dists);
 }
 
+TEST_F(HierarchicalIndex_Brief100K, TestSearch2)
+{
+	TestSearch2<Distance>(data, flann::HierarchicalClusteringIndexParams(),
+			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.9, gt_indices, gt_dists);
+}
+
+
 TEST_F(HierarchicalIndex_Brief100K, TestAddIncremental)
 {
 	TestAddIncremental<Distance>(data, flann::HierarchicalClusteringIndexParams(),
@@ -99,6 +106,9 @@ TEST_F(HierarchicalIndex_Brief100K, TestCopy2)
 	TestCopy2<flann::HierarchicalClusteringIndex<Distance> >(data, flann::HierarchicalClusteringIndexParams(),
 			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.87, gt_indices, gt_dists);
 }
+
+
+
 
 
 int main(int argc, char** argv)

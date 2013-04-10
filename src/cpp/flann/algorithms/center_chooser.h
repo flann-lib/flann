@@ -20,14 +20,11 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
-    CenterChooser(const Distance& distance) : distance_(distance) {};
-
-    void setDataset(const flann::Matrix<ElementType>& dataset)
-    {
-    	dataset_ = dataset;
-    }
+    CenterChooser(const Distance& distance, const std::vector<ElementType*>& points) : distance_(distance), points_(points) {};
 
     virtual ~CenterChooser() {};
+    
+    void setDataSize(size_t cols) { cols_ = cols; }
 
     /**
      * Chooses cluster centers
@@ -41,8 +38,9 @@ public:
 	virtual void operator()(int k, int* indices, int indices_length, int* centers, int& centers_length) = 0;
 
 protected:
-	flann::Matrix<ElementType> dataset_;
-	Distance distance_;
+	const Distance distance_;
+    const std::vector<ElementType*>& points_;
+    size_t cols_;
 };
 
 
@@ -52,11 +50,12 @@ class RandomCenterChooser : public CenterChooser<Distance>
 public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
-    using CenterChooser<Distance>::dataset_;
+    using CenterChooser<Distance>::points_;
     using CenterChooser<Distance>::distance_;
+    using CenterChooser<Distance>::cols_;
 
-    RandomCenterChooser(const Distance& distance) :
-    	CenterChooser<Distance>(distance) {}
+    RandomCenterChooser(const Distance& distance, const std::vector<ElementType*>& points) :
+    	CenterChooser<Distance>(distance, points) {}
 
     void operator()(int k, int* indices, int indices_length, int* centers, int& centers_length)
     {
@@ -77,7 +76,7 @@ public:
                 centers[index] = indices[rnd];
 
                 for (int j=0; j<index; ++j) {
-                    DistanceType sq = distance_(dataset_[centers[index]], dataset_[centers[j]], dataset_.cols);
+                    DistanceType sq = distance_(points_[centers[index]], points_[centers[j]], cols_);
                     if (sq<1e-16) {
                         duplicate = true;
                     }
@@ -101,10 +100,12 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
-    using CenterChooser<Distance>::dataset_;
+    using CenterChooser<Distance>::points_;
     using CenterChooser<Distance>::distance_;
+    using CenterChooser<Distance>::cols_;
 
-    GonzalesCenterChooser(const Distance& distance) : CenterChooser<Distance>( distance) {}
+    GonzalesCenterChooser(const Distance& distance, const std::vector<ElementType*>& points) : 
+        CenterChooser<Distance>(distance, points) {}
 
     void operator()(int k, int* indices, int indices_length, int* centers, int& centers_length)
     {
@@ -121,9 +122,9 @@ public:
             int best_index = -1;
             DistanceType best_val = 0;
             for (int j=0; j<n; ++j) {
-            	DistanceType dist = distance_(dataset_[centers[0]],dataset_[indices[j]],dataset_.cols);
+            	DistanceType dist = distance_(points_[centers[0]],points_[indices[j]],cols_);
                 for (int i=1; i<index; ++i) {
-                    DistanceType tmp_dist = distance_(dataset_[centers[i]],dataset_[indices[j]],dataset_.cols);
+                    DistanceType tmp_dist = distance_(points_[centers[i]],points_[indices[j]],cols_);
                     if (tmp_dist<dist) {
                         dist = tmp_dist;
                     }
@@ -156,10 +157,12 @@ public:
     typedef typename Distance::ElementType ElementType;
     typedef typename Distance::ResultType DistanceType;
 
-    using CenterChooser<Distance>::dataset_;
+    using CenterChooser<Distance>::points_;
     using CenterChooser<Distance>::distance_;
+    using CenterChooser<Distance>::cols_;
 
-    KMeansppCenterChooser(const Distance& distance) : CenterChooser<Distance>(distance) {}
+    KMeansppCenterChooser(const Distance& distance, const std::vector<ElementType*>& points) : 
+        CenterChooser<Distance>(distance, points) {}
 
     void operator()(int k, int* indices, int indices_length, int* centers, int& centers_length)
     {
@@ -174,7 +177,7 @@ public:
         centers[0] = indices[index];
 
         for (int i = 0; i < n; i++) {
-            closestDistSq[i] = distance_(dataset_[indices[i]], dataset_[indices[index]], dataset_.cols);
+            closestDistSq[i] = distance_(points_[indices[i]], points_[indices[index]], cols_);
             currentPot += closestDistSq[i];
         }
 
@@ -200,7 +203,7 @@ public:
 
                 // Compute the new potential
                 double newPot = 0;
-                for (int i = 0; i < n; i++) newPot += std::min( distance_(dataset_[indices[i]], dataset_[indices[index]], dataset_.cols), closestDistSq[i] );
+                for (int i = 0; i < n; i++) newPot += std::min( distance_(points_[indices[i]], points_[indices[index]], cols_), closestDistSq[i] );
 
                 // Store the best result
                 if ((bestNewPot < 0)||(newPot < bestNewPot)) {
@@ -212,7 +215,7 @@ public:
             // Add the appropriate center
             centers[centerCount] = indices[bestNewIndex];
             currentPot = bestNewPot;
-            for (int i = 0; i < n; i++) closestDistSq[i] = std::min( distance_(dataset_[indices[i]], dataset_[indices[bestNewIndex]], dataset_.cols), closestDistSq[i] );
+            for (int i = 0; i < n; i++) closestDistSq[i] = std::min( distance_(points_[indices[i]], points_[indices[bestNewIndex]], cols_), closestDistSq[i] );
         }
 
         centers_length = centerCount;
