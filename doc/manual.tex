@@ -670,7 +670,11 @@ int Index::knnSearch(const Matrix<ElementType>& queries,
 \item[indices]{Matrix that will contain the indices of the K-nearest neighbors found (size should be at least
 $num\_queries \times knn$ for the pre-allocated version).}
 \item[dists]{Matrix that will contain the distances to the K-nearest neighbors found (size should be at least
-$num\_queries \times knn$ for the pre-allocated version).}
+$num\_queries \times knn$ for the pre-allocated version). \\
+\emph{Note:} For Euclidean distances, the \texttt{flann::L2} functor computes squared distances, 
+so the value passed here needs to be a squared 
+distance as well.
+}
 \item[knn]{Number of nearest neighbors to search for.}
 \item[params]{Search parameters.} Structure containing parameters used during search.
 
@@ -737,9 +741,15 @@ columns in this matrix, the element after that last index returned is -1. In cas
 will be resized as needed to fit all the neighbors to be returned, except if the ``max\_neighbors'' search parameter is
 set.}
 \item[dists]{Matrix that will contain the distances to the K-nearest neighbors found. The same number of values are
-returned here as for the \texttt{indices} matrix.}
-\item[radius]{The search radius}
-\item[params]{Search parameters}
+returned here as for the \texttt{indices} matrix.  \\
+\emph{Note:} For Euclidean distances, the 
+\texttt{flann::L2} functor computes squared distances, so the value passed here needs to 
+be a squared distance as well.}
+\item[radius]{The search radius. \\
+\emph{Note:} For Euclidean distances, the \texttt{flann::L2} functor computes squared distances, 
+so the value passed here needs to be a squared 
+distance as well.}
+\item[params]{Search parameters.}
 \end{description}
 The method returns the number of nearest neighbors found.
 
