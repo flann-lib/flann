@@ -825,7 +825,7 @@ flannindex.buildIndex();
 \begin{description}
  \item First, a GPU buffer of float4 values is created and filled with points. \footnote{For index creation, only \texttt{float4} points are supported, \texttt{float3} or structure-of-array (SOA) representations are currently not supported since
 \texttt{float4} proved to be best in terms of access speed for tree creation and search.}
- \item Then, a GPU pointer to the buffer is stored in a flann matrix with 3 columns and a stride of 4 (since the last element in the \texttt{float4} is unused).
+ \item Then, a GPU pointer to the buffer is stored in a flann matrix with 3 columns and a stride of 4 (the last element in the \texttt{float4} should be zero).
  \item Last, the index is created. The \texttt{input\_is\_gpu\_float4} flag tells the index to treat the matrix as a gpu buffer.
 \end{description}
 
