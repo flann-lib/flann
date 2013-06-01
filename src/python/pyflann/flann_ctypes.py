@@ -52,6 +52,8 @@ class CustomStructure(Structure):
         for k,v in dict.items():
             if k in self.__field_names:
                 setattr(self,k,self.__translate(k,v))
+            else:
+                raise KeyError("No such member: "+k)
     
     def __getitem__(self, k):
         if k in self.__field_names:
