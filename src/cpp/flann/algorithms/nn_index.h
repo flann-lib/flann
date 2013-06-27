@@ -319,36 +319,66 @@ public:
     	}
     	int count = 0;
 
-    	if (use_heap) {
+        if (params.cores == 1) {
+        	if (use_heap) {
+        		{
+        			KNNResultSet2<DistanceType> resultSet(knn);
+        			for (int i = 0; i < (int)queries.rows; i++) {
+        				resultSet.clear();
+        				findNeighbors(resultSet, queries[i], params);
+        				size_t n = std::min(resultSet.size(), knn);
+        				resultSet.copy(indices[i], dists[i], n, params.sorted);
+        				indices_to_ids(indices[i], indices[i], n);
+        				count += n;
+        			}
+        		}
+        	}
+        	else {
+        		{
+        			KNNSimpleResultSet<DistanceType> resultSet(knn);
+        			for (int i = 0; i < (int)queries.rows; i++) {
+        				resultSet.clear();
+        				findNeighbors(resultSet, queries[i], params);
+        				size_t n = std::min(resultSet.size(), knn);
+        				resultSet.copy(indices[i], dists[i], n, params.sorted);
+        				indices_to_ids(indices[i], indices[i], n);
+        				count += n;
+        			}
+        		}
+        	}
+        }
+        else {
+            if (use_heap) {
 #pragma omp parallel num_threads(params.cores)
-    		{
-    			KNNResultSet2<DistanceType> resultSet(knn);
+                {
+                    KNNResultSet2<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
-    			for (int i = 0; i < (int)queries.rows; i++) {
-    				resultSet.clear();
-    				findNeighbors(resultSet, queries[i], params);
-    				size_t n = std::min(resultSet.size(), knn);
-    				resultSet.copy(indices[i], dists[i], n, params.sorted);
-    				indices_to_ids(indices[i], indices[i], n);
-    				count += n;
-    			}
-    		}
-    	}
-    	else {
+                    for (int i = 0; i < (int)queries.rows; i++) {
+                        resultSet.clear();
+                        findNeighbors(resultSet, queries[i], params);
+                        size_t n = std::min(resultSet.size(), knn);
+                        resultSet.copy(indices[i], dists[i], n, params.sorted);
+                        indices_to_ids(indices[i], indices[i], n);
+                        count += n;
+                    }
+                }
+            }
+            else {
 #pragma omp parallel num_threads(params.cores)
-    		{
-    			KNNSimpleResultSet<DistanceType> resultSet(knn);
+                {
+                    KNNSimpleResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
-    			for (int i = 0; i < (int)queries.rows; i++) {
-    				resultSet.clear();
-    				findNeighbors(resultSet, queries[i], params);
-    				size_t n = std::min(resultSet.size(), knn);
-    				resultSet.copy(indices[i], dists[i], n, params.sorted);
-    				indices_to_ids(indices[i], indices[i], n);
-    				count += n;
-    			}
-    		}
-    	}
+                    for (int i = 0; i < (int)queries.rows; i++) {
+                        resultSet.clear();
+                        findNeighbors(resultSet, queries[i], params);
+                        size_t n = std::min(resultSet.size(), knn);
+                        resultSet.copy(indices[i], dists[i], n, params.sorted);
+                        indices_to_ids(indices[i], indices[i], n);
+                        count += n;
+                    }
+                }
+            }
+        }
     	return count;
     }
 
@@ -407,44 +437,82 @@ public:
 		if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
 		int count = 0;
-		if (use_heap) {
+        if (params.cores == 1) {
+            if (use_heap) {
+                {
+                    KNNResultSet2<DistanceType> resultSet(knn);
+                    for (int i = 0; i < (int)queries.rows; i++) {
+                        resultSet.clear();
+                        findNeighbors(resultSet, queries[i], params);
+                        size_t n = std::min(resultSet.size(), knn);
+                        indices[i].resize(n);
+                        dists[i].resize(n);
+                        if (n>0) {
+                            resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+                            indices_to_ids(&indices[i][0], &indices[i][0], n);
+                        }
+                        count += n;
+                    }
+                }
+            }
+            else {
+                {
+                    KNNSimpleResultSet<DistanceType> resultSet(knn);
+                    for (int i = 0; i < (int)queries.rows; i++) {
+                        resultSet.clear();
+                        findNeighbors(resultSet, queries[i], params);
+                        size_t n = std::min(resultSet.size(), knn);
+                        indices[i].resize(n);
+                        dists[i].resize(n);
+                        if (n>0) {
+                            resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+                            indices_to_ids(&indices[i][0], &indices[i][0], n);
+                        }
+                        count += n;
+                    }
+                }
+            }
+        }
+        else {
+    		if (use_heap) {
 #pragma omp parallel num_threads(params.cores)
-			{
-				KNNResultSet2<DistanceType> resultSet(knn);
+    			{
+    				KNNResultSet2<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
-				for (int i = 0; i < (int)queries.rows; i++) {
-					resultSet.clear();
-					findNeighbors(resultSet, queries[i], params);
-					size_t n = std::min(resultSet.size(), knn);
-					indices[i].resize(n);
-					dists[i].resize(n);
-					if (n>0) {
-						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
-						indices_to_ids(&indices[i][0], &indices[i][0], n);
-					}
-					count += n;
-				}
-			}
-		}
-		else {
+    				for (int i = 0; i < (int)queries.rows; i++) {
+    					resultSet.clear();
+    					findNeighbors(resultSet, queries[i], params);
+    					size_t n = std::min(resultSet.size(), knn);
+    					indices[i].resize(n);
+    					dists[i].resize(n);
+    					if (n>0) {
+    						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+    						indices_to_ids(&indices[i][0], &indices[i][0], n);
+    					}
+    					count += n;
+    				}
+    			}
+    		}
+    		else {
 #pragma omp parallel num_threads(params.cores)
-			{
-				KNNSimpleResultSet<DistanceType> resultSet(knn);
+    			{
+    				KNNSimpleResultSet<DistanceType> resultSet(knn);
 #pragma omp for schedule(static) reduction(+:count)
-				for (int i = 0; i < (int)queries.rows; i++) {
-					resultSet.clear();
-					findNeighbors(resultSet, queries[i], params);
-					size_t n = std::min(resultSet.size(), knn);
-					indices[i].resize(n);
-					dists[i].resize(n);
-					if (n>0) {
-						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
-						indices_to_ids(&indices[i][0], &indices[i][0], n);
-					}
-					count += n;
-				}
-			}
-		}
+    				for (int i = 0; i < (int)queries.rows; i++) {
+    					resultSet.clear();
+    					findNeighbors(resultSet, queries[i], params);
+    					size_t n = std::min(resultSet.size(), knn);
+    					indices[i].resize(n);
+    					dists[i].resize(n);
+    					if (n>0) {
+    						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+    						indices_to_ids(&indices[i][0], &indices[i][0], n);
+    					}
+    					count += n;
+    				}
+    			}
+    		}
+        }
 
 		return count;
     }
@@ -497,61 +565,116 @@ public:
     	if (max_neighbors<0) max_neighbors = num_neighbors;
     	else max_neighbors = std::min(max_neighbors,(int)num_neighbors);
 
-    	if (max_neighbors==0) {
-#pragma omp parallel num_threads(params.cores)
-    		{
-    			CountRadiusResultSet<DistanceType> resultSet(radius);
-#pragma omp for schedule(static) reduction(+:count)
-    			for (int i = 0; i < (int)queries.rows; i++) {
-    				resultSet.clear();
-    				findNeighbors(resultSet, queries[i], params);
-    				count += resultSet.size();
-    			}
-    		}
-    	}
-    	else {
-    		// explicitly indicated to use unbounded radius result set
-    		// and we know there'll be enough room for resulting indices and dists
-    		if (params.max_neighbors<0 && (num_neighbors>=size())) {
-#pragma omp parallel num_threads(params.cores)
-    			{
-    				RadiusResultSet<DistanceType> resultSet(radius);
-#pragma omp for schedule(static) reduction(+:count)
-    				for (int i = 0; i < (int)queries.rows; i++) {
-    					resultSet.clear();
-    					findNeighbors(resultSet, queries[i], params);
-    					size_t n = resultSet.size();
-    					count += n;
-    					if (n>num_neighbors) n = num_neighbors;
-    					resultSet.copy(indices[i], dists[i], n, params.sorted);
+        if (params.cores == 1) {
+            if (max_neighbors==0) {
+                {
+                    CountRadiusResultSet<DistanceType> resultSet(radius);
+                    for (int i = 0; i < (int)queries.rows; i++) {
+                        resultSet.clear();
+                        findNeighbors(resultSet, queries[i], params);
+                        count += resultSet.size();
+                    }
+                }
+            }
+            else {
+                // explicitly indicated to use unbounded radius result set
+                // and we know there'll be enough room for resulting indices and dists
+                if (params.max_neighbors<0 && (num_neighbors>=size())) {
+                    {
+                        RadiusResultSet<DistanceType> resultSet(radius);
+                        for (int i = 0; i < (int)queries.rows; i++) {
+                            resultSet.clear();
+                            findNeighbors(resultSet, queries[i], params);
+                            size_t n = resultSet.size();
+                            count += n;
+                            if (n>num_neighbors) n = num_neighbors;
+                            resultSet.copy(indices[i], dists[i], n, params.sorted);
 
-    					// mark the next element in the output buffers as unused
-    					if (n<indices.cols) indices[i][n] = size_t(-1);
-    					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
-    					indices_to_ids(indices[i], indices[i], n);
-    				}
-    			}
-    		}
-    		else {
-    			// number of neighbors limited to max_neighbors
-#pragma omp parallel num_threads(params.cores)
-    			{
-    				KNNRadiusResultSet<DistanceType> resultSet(radius, max_neighbors);
-#pragma omp for schedule(static) reduction(+:count)
-    				for (int i = 0; i < (int)queries.rows; i++) {
-    					resultSet.clear();
-    					findNeighbors(resultSet, queries[i], params);
-    					size_t n = resultSet.size();
-    					count += n;
-    					if ((int)n>max_neighbors) n = max_neighbors;
-    					resultSet.copy(indices[i], dists[i], n, params.sorted);
+                            // mark the next element in the output buffers as unused
+                            if (n<indices.cols) indices[i][n] = size_t(-1);
+                            if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
+                            indices_to_ids(indices[i], indices[i], n);
+                        }
+                    }
+                }
+                else {
+                    // number of neighbors limited to max_neighbors
+                    {
+                        KNNRadiusResultSet<DistanceType> resultSet(radius, max_neighbors);
+                        for (int i = 0; i < (int)queries.rows; i++) {
+                            resultSet.clear();
+                            findNeighbors(resultSet, queries[i], params);
+                            size_t n = resultSet.size();
+                            count += n;
+                            if ((int)n>max_neighbors) n = max_neighbors;
+                            resultSet.copy(indices[i], dists[i], n, params.sorted);
 
-    					// mark the next element in the output buffers as unused
-    					if (n<indices.cols) indices[i][n] = size_t(-1);
-    					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
-    					indices_to_ids(indices[i], indices[i], n);
-    				}
-    			}
+                            // mark the next element in the output buffers as unused
+                            if (n<indices.cols) indices[i][n] = size_t(-1);
+                            if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
+                            indices_to_ids(indices[i], indices[i], n);
+                        }
+                    }
+                }
+            }
+        }
+        else {
+        	if (max_neighbors==0) {
+#pragma omp parallel num_threads(params.cores)
+        		{
+        			CountRadiusResultSet<DistanceType> resultSet(radius);
+#pragma omp for schedule(static) reduction(+:count)
+        			for (int i = 0; i < (int)queries.rows; i++) {
+        				resultSet.clear();
+        				findNeighbors(resultSet, queries[i], params);
+        				count += resultSet.size();
+        			}
+        		}
+        	}
+        	else {
+        		// explicitly indicated to use unbounded radius result set
+        		// and we know there'll be enough room for resulting indices and dists
+        		if (params.max_neighbors<0 && (num_neighbors>=size())) {
+#pragma omp parallel num_threads(params.cores)
+        			{
+        				RadiusResultSet<DistanceType> resultSet(radius);
+#pragma omp for schedule(static) reduction(+:count)
+        				for (int i = 0; i < (int)queries.rows; i++) {
+        					resultSet.clear();
+        					findNeighbors(resultSet, queries[i], params);
+        					size_t n = resultSet.size();
+        					count += n;
+        					if (n>num_neighbors) n = num_neighbors;
+        					resultSet.copy(indices[i], dists[i], n, params.sorted);
+
+        					// mark the next element in the output buffers as unused
+        					if (n<indices.cols) indices[i][n] = size_t(-1);
+        					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
+        					indices_to_ids(indices[i], indices[i], n);
+        				}
+        			}
+        		}
+        		else {
+        			// number of neighbors limited to max_neighbors
+#pragma omp parallel num_threads(params.cores)
+        			{
+        				KNNRadiusResultSet<DistanceType> resultSet(radius, max_neighbors);
+#pragma omp for schedule(static) reduction(+:count)
+        				for (int i = 0; i < (int)queries.rows; i++) {
+        					resultSet.clear();
+        					findNeighbors(resultSet, queries[i], params);
+        					size_t n = resultSet.size();
+        					count += n;
+        					if ((int)n>max_neighbors) n = max_neighbors;
+        					resultSet.copy(indices[i], dists[i], n, params.sorted);
+
+        					// mark the next element in the output buffers as unused
+        					if (n<indices.cols) indices[i][n] = size_t(-1);
+        					if (n<dists.cols) dists[i][n] = std::numeric_limits<DistanceType>::infinity();
+        					indices_to_ids(indices[i], indices[i], n);
+        				}
+        			}
+                }
     		}
     	}
         return count;
@@ -602,65 +725,122 @@ public:
     {
         assert(queries.cols == veclen());
     	int count = 0;
-    	// just count neighbors
-    	if (params.max_neighbors==0) {
-#pragma omp parallel num_threads(params.cores)
-    		{
-    			CountRadiusResultSet<DistanceType> resultSet(radius);
-#pragma omp for schedule(static) reduction(+:count)
-    			for (int i = 0; i < (int)queries.rows; i++) {
-    				resultSet.clear();
-    				findNeighbors(resultSet, queries[i], params);
-    				count += resultSet.size();
-    			}
-    		}
-    	}
-    	else {
-    		if (indices.size() < queries.rows ) indices.resize(queries.rows);
-    		if (dists.size() < queries.rows ) dists.resize(queries.rows);
+        if (params.cores == 1) {
+            // just count neighbors
+            if (params.max_neighbors==0) {
+                {
+                    CountRadiusResultSet<DistanceType> resultSet(radius);
+                    for (int i = 0; i < (int)queries.rows; i++) {
+                        resultSet.clear();
+                        findNeighbors(resultSet, queries[i], params);
+                        count += resultSet.size();
+                    }
+                }
+            }
+            else {
+                if (indices.size() < queries.rows ) indices.resize(queries.rows);
+                if (dists.size() < queries.rows ) dists.resize(queries.rows);
 
-    		if (params.max_neighbors<0) {
-    			// search for all neighbors
+                if (params.max_neighbors<0) {
+                    // search for all neighbors
+                    {
+                        RadiusResultSet<DistanceType> resultSet(radius);
+                        for (int i = 0; i < (int)queries.rows; i++) {
+                            resultSet.clear();
+                            findNeighbors(resultSet, queries[i], params);
+                            size_t n = resultSet.size();
+                            count += n;
+                            indices[i].resize(n);
+                            dists[i].resize(n);
+                            if (n > 0) {
+                                resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+                                indices_to_ids(&indices[i][0], &indices[i][0], n);
+                            }
+                        }
+                    }
+                }
+                else {
+                    // number of neighbors limited to max_neighbors
+                    {
+                        KNNRadiusResultSet<DistanceType> resultSet(radius, params.max_neighbors);
+                        for (int i = 0; i < (int)queries.rows; i++) {
+                            resultSet.clear();
+                            findNeighbors(resultSet, queries[i], params);
+                            size_t n = resultSet.size();
+                            count += n;
+                            if ((int)n>params.max_neighbors) n = params.max_neighbors;
+                            indices[i].resize(n);
+                            dists[i].resize(n);
+                            if (n > 0) {
+                                resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+                                indices_to_ids(&indices[i][0], &indices[i][0], n);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else {
+        	// just count neighbors
+        	if (params.max_neighbors==0) {
 #pragma omp parallel num_threads(params.cores)
-    			{
-    				RadiusResultSet<DistanceType> resultSet(radius);
+        		{
+        			CountRadiusResultSet<DistanceType> resultSet(radius);
 #pragma omp for schedule(static) reduction(+:count)
-    				for (int i = 0; i < (int)queries.rows; i++) {
-    					resultSet.clear();
-    					findNeighbors(resultSet, queries[i], params);
-    					size_t n = resultSet.size();
-    					count += n;
-    					indices[i].resize(n);
-    					dists[i].resize(n);
-    					if (n > 0) {
-    						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
-        					indices_to_ids(&indices[i][0], &indices[i][0], n);
-    					}
-    				}
-    			}
-    		}
-    		else {
-    			// number of neighbors limited to max_neighbors
+        			for (int i = 0; i < (int)queries.rows; i++) {
+        				resultSet.clear();
+        				findNeighbors(resultSet, queries[i], params);
+        				count += resultSet.size();
+        			}
+        		}
+        	}
+        	else {
+        		if (indices.size() < queries.rows ) indices.resize(queries.rows);
+        		if (dists.size() < queries.rows ) dists.resize(queries.rows);
+
+        		if (params.max_neighbors<0) {
+        			// search for all neighbors
 #pragma omp parallel num_threads(params.cores)
-    			{
-    				KNNRadiusResultSet<DistanceType> resultSet(radius, params.max_neighbors);
+        			{
+        				RadiusResultSet<DistanceType> resultSet(radius);
 #pragma omp for schedule(static) reduction(+:count)
-    				for (int i = 0; i < (int)queries.rows; i++) {
-    					resultSet.clear();
-    					findNeighbors(resultSet, queries[i], params);
-    					size_t n = resultSet.size();
-    					count += n;
-    					if ((int)n>params.max_neighbors) n = params.max_neighbors;
-    					indices[i].resize(n);
-    					dists[i].resize(n);
-    					if (n > 0) {
-    						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
-        					indices_to_ids(&indices[i][0], &indices[i][0], n);
-    					}
-    				}
-    			}
-    		}
-    	}
+        				for (int i = 0; i < (int)queries.rows; i++) {
+        					resultSet.clear();
+        					findNeighbors(resultSet, queries[i], params);
+        					size_t n = resultSet.size();
+        					count += n;
+        					indices[i].resize(n);
+        					dists[i].resize(n);
+        					if (n > 0) {
+        						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+            					indices_to_ids(&indices[i][0], &indices[i][0], n);
+        					}
+        				}
+        			}
+        		}
+        		else {
+        			// number of neighbors limited to max_neighbors
+#pragma omp parallel num_threads(params.cores)
+        			{
+        				KNNRadiusResultSet<DistanceType> resultSet(radius, params.max_neighbors);
+#pragma omp for schedule(static) reduction(+:count)
+        				for (int i = 0; i < (int)queries.rows; i++) {
+        					resultSet.clear();
+        					findNeighbors(resultSet, queries[i], params);
+        					size_t n = resultSet.size();
+        					count += n;
+        					if ((int)n>params.max_neighbors) n = params.max_neighbors;
+        					indices[i].resize(n);
+        					dists[i].resize(n);
+        					if (n > 0) {
+        						resultSet.copy(&indices[i][0], &dists[i][0], n, params.sorted);
+            					indices_to_ids(&indices[i][0], &indices[i][0], n);
+        					}
+        				}
+        			}
+        		}
+        	}
+        }
     	return count;
     }
 
