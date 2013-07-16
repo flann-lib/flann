@@ -425,6 +425,85 @@ flann_index_t flann_load_index_int(char* filename, int* dataset, int rows, int c
 }
 
 
+template<typename Distance>
+int __flann_add_points(flann_index_t index_ptr, typename Distance::ElementType* dataset,
+                       int rows, float rebuild_threshold)
+{
+    typedef typename Distance::ElementType ElementType;
+    try {
+        if (index_ptr==NULL) {
+            throw FLANNException("Invalid index");
+        }
+        Index<Distance>* index = (Index<Distance>*)index_ptr;
+        Matrix<ElementType> newPoints(dataset,rows,index->veclen());
+        index->addPoints(newPoints, rebuild_threshold);
+
+        return 0;
+    }
+    catch (std::runtime_error& e) {
+        Logger::error("Caught exception: %s\n",e.what());
+        return -1;
+    }
+
+    return -1;
+}
+
+template<typename T>
+int _flann_add_points(flann_index_t index_ptr, T* dataset,
+                       int rows, float rebuild_threshold)
+{
+    if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
+        return __flann_add_points<L2<T> >(index_ptr, dataset, rows, rebuild_threshold);
+    }
+    else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
+        return __flann_add_points<L1<T> >(index_ptr, dataset, rows, rebuild_threshold);
+    }
+    else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
+        return __flann_add_points<MinkowskiDistance<T> >(index_ptr, dataset, rows, rebuild_threshold);
+    }
+    else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
+        return __flann_add_points<HistIntersectionDistance<T> >(index_ptr, dataset, rows, rebuild_threshold);
+    }
+    else if (flann_distance_type==FLANN_DIST_HELLINGER) {
+        return __flann_add_points<HellingerDistance<T> >(index_ptr, dataset, rows, rebuild_threshold);
+    }
+    else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
+        return __flann_add_points<ChiSquareDistance<T> >(index_ptr, dataset, rows, rebuild_threshold);
+    }
+    else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
+        return __flann_add_points<KL_Divergence<T> >(index_ptr, dataset, rows, rebuild_threshold);
+    }
+    else {
+        Logger::error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
+        return -1;
+    }
+}
+
+int flann_add_points(flann_index_t index_ptr, float* dataset, int rows, float rebuild_threshold)
+{
+    return _flann_add_points(index_ptr, dataset, rows, rebuild_threshold);
+}
+
+int flann_add_points_float(flann_index_t index_ptr, float* dataset, int rows, float rebuild_threshold)
+{
+    return _flann_add_points(index_ptr, dataset, rows, rebuild_threshold);
+}
+
+int flann_add_points_double(flann_index_t index_ptr, double* dataset, int rows, float rebuild_threshold)
+{
+    return _flann_add_points(index_ptr, dataset, rows, rebuild_threshold);
+}
+
+int flann_add_points_byte(flann_index_t index_ptr, unsigned char* dataset, int rows, float rebuild_threshold)
+{
+    return _flann_add_points(index_ptr, dataset, rows, rebuild_threshold);
+}
+
+int flann_add_points_int(flann_index_t index_ptr, int* dataset, int rows, float rebuild_threshold)
+{
+    return _flann_add_points(index_ptr, dataset, rows, rebuild_threshold);
+}
+
 
 template<typename Distance>
 int __flann_find_nearest_neighbors(typename Distance::ElementType* dataset,  int rows, int cols, typename Distance::ElementType* testset, int tcount,
