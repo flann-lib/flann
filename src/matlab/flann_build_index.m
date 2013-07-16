@@ -10,7 +10,7 @@ function [index, params, speedup] = flann_build_index(dataset, build_params)
     center_algos = struct('random', 0, 'gonzales', 1, 'kmeanspp', 2 );
     log_levels = struct('none', 0, 'fatal', 1, 'error', 2, 'warning', 3, 'info', 4);
 
-    default_params = struct('algorithm', 'kdtree' ,'checks', 32, 'eps', 0.0, 'sorted', 1, 'max_neighbors', -1, 'cores', 1, 'trees', 4, 'branching', 32, 'iterations', 5, 'centers_init', 'random', 'cb_index', 0.4, 'target_precision', 0.9,'build_weight', 0.01, 'memory_weight', 0, 'sample_fraction', 0.1, 'log_level', 'warning', 'random_seed', 0);
+    default_params = struct('algorithm', 'kdtree' ,'checks', 32, 'eps', 0.0, 'sorted', 1, 'max_neighbors', -1, 'cores', 1, 'trees', 4, 'branching', 32, 'iterations', 5, 'centers_init', 'random', 'cb_index', 0.4, 'target_precision', 0.9,'build_weight', 0.01, 'memory_weight', 0, 'sample_fraction', 0.1, 'table_number', 12, 'key_size', 20, 'multi_probe_level', 2, 'log_level', 'warning', 'random_seed', 0);
 
     if ~isstruct(build_params)
         error('The "build_params" argument must be a structure');
