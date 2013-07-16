@@ -86,11 +86,16 @@ static void matlabStructToFlannStruct( const mxArray* mexParams, FLANNParameters
     flannParams.sorted = (int)*(mxGetPr(mxGetField(mexParams, 0,"sorted")));
     flannParams.max_neighbors = (int)*(mxGetPr(mxGetField(mexParams, 0,"max_neighbors")));
     flannParams.cores = (int)*(mxGetPr(mxGetField(mexParams, 0,"cores")));
+
+    // lsh
+    flannParams.table_number_ = (unsigned int)*(mxGetPr(mxGetField(mexParams, 0, "table_number")));
+    flannParams.key_size_ = (unsigned int)*(mxGetPr(mxGetField(mexParams, 0, "key_size")));
+    flannParams.multi_probe_level_ = (unsigned int)*(mxGetPr(mxGetField(mexParams, 0, "multi_probe_level")));
 }
 
 static mxArray* flannStructToMatlabStruct( const FLANNParameters& flannParams )
 {
-    const char* fieldnames[] = {"algorithm", "checks", "eps", "sorted", "max_neighbors", "cores", "trees", "leaf_max_size", "branching", "iterations", "centers_init", "cb_index"};
+    const char* fieldnames[] = {"algorithm", "checks", "eps", "sorted", "max_neighbors", "cores", "trees", "leaf_max_size", "branching", "iterations", "centers_init", "cb_index", "table_number", "key_size", "multi_probe_level"};
     mxArray* mexParams = mxCreateStructMatrix(1, 1, sizeof(fieldnames)/sizeof(const char*), fieldnames);
 
     mxSetField(mexParams, 0, "algorithm", to_mx_array(flannParams.algorithm));
@@ -107,6 +112,10 @@ static mxArray* flannStructToMatlabStruct( const FLANNParameters& flannParams )
     mxSetField(mexParams, 0, "iterations", to_mx_array(flannParams.iterations));
     mxSetField(mexParams, 0, "centers_init", to_mx_array(flannParams.centers_init));
     mxSetField(mexParams, 0, "cb_index", to_mx_array(flannParams.cb_index));
+
+    mxSetField(mexParams, 0, "table_number", to_mx_array(flannParams.table_number_));
+    mxSetField(mexParams, 0, "key_size", to_mx_array(flannParams.key_size_));
+    mxSetField(mexParams, 0, "multi_probe_level", to_mx_array(flannParams.multi_probe_level_));
 
     return mexParams;
 }
