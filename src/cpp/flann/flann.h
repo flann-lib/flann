@@ -205,27 +205,37 @@ FLANN_EXPORT flann_index_t flann_load_index_int(char* filename,
 FLANN_EXPORT int flann_add_points(flann_index_t index_ptr,
                                   float* dataset,
                                   int rows,
-                                  float rebuild_threshold);
+                                  float rebuild_threshold,
+                                  float *speedup,
+                                  struct FLANNParameters *flann_params);
 
 FLANN_EXPORT int flann_add_points_float(flann_index_t index_ptr,
                                         float* dataset,
                                         int rows,
-                                        float rebuild_threshold);
+                                        float rebuild_threshold,
+                                        float *speedup,
+                                        struct FLANNParameters *flann_params);
 
 FLANN_EXPORT int flann_add_points_double(flann_index_t index_ptr,
                                          double* dataset,
                                          int rows,
-                                         float rebuild_threshold);
+                                         float rebuild_threshold,
+                                         float *speedup,
+                                         struct FLANNParameters *flann_params);
 
 FLANN_EXPORT int flann_add_points_byte(flann_index_t index_ptr,
                                        unsigned char* dataset,
                                        int rows,
-                                       float rebuild_threshold);
+                                       float rebuild_threshold,
+                                       float *speedup,
+                                       struct FLANNParameters *flann_params);
 
 FLANN_EXPORT int flann_add_points_int(flann_index_t index_ptr,
                                       int* dataset,
                                       int rows,
-                                      float rebuild_threshold);
+                                      float rebuild_threshold,
+                                      float *speedup,
+                                      struct FLANNParameters *flann_params);
 
 
 /**

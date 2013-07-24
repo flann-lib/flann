@@ -255,6 +255,8 @@ flannlib.flann_add_points_%(C)s.argtypes = [
         ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
         c_int, # rebuild_threshhold
+        POINTER(c_float), # speedup
+        POINTER(FLANNParameters)  # flann_params
 ]
 flann.add_points[%(numpy)s] = flannlib.flann_add_points_%(C)s
 """)

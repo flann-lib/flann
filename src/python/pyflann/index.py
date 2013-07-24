@@ -205,7 +205,15 @@ class FLANN:
             raise FLANNException("Cannot handle type: %s"%pts.dtype)
         pts = ensure_2d_array(pts,default_flags)
         npts, dim = pts.shape
-        flann.add_points[self.__curindex_type](self.__curindex, pts, npts, rebuild_threshold)
+
+        speedup = c_float(0)
+
+        flann.add_points[self.__curindex_type](self.__curindex, pts, npts, rebuild_threshold, byref(speedup), pointer(self.__flann_parameters))
+
+        params = dict(self.__flann_parameters)
+        params["speedup"] = speedup.value
+
+        return params
 
     def nn_index(self, qpts, num_neighbors = 1, **kwargs):
         """
