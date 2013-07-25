@@ -200,11 +200,13 @@ class FLANN:
         self.__curindex_data = pts
         self.__curindex_type = pts.dtype.type
 
-    def add_points(self, pts, rebuild_threshold=2):
+    def add_points(self, pts, rebuild_threshold=2, **kwargs):
         if not pts.dtype.type in allowed_types:
             raise FLANNException("Cannot handle type: %s"%pts.dtype)
         pts = ensure_2d_array(pts,default_flags)
         npts, dim = pts.shape
+
+        self.__flann_parameters.update(kwargs)
 
         speedup = c_float(0)
 
