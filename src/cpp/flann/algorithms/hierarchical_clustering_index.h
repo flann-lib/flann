@@ -37,6 +37,7 @@
 #include <cassert>
 #include <limits>
 #include <cmath>
+#include <omp.h>
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
@@ -56,7 +57,8 @@ struct HierarchicalClusteringIndexParams : public IndexParams
 {
     HierarchicalClusteringIndexParams(int branching = 32,
                                       flann_centers_init_t centers_init = FLANN_CENTERS_RANDOM,
-                                      int trees = 4, int leaf_max_size = 100)
+                                      int trees = 4, int leaf_max_size = 100,
+                                      int build_cores = 0)
     {
         (*this)["algorithm"] = FLANN_INDEX_HIERARCHICAL;
         // The branching factor used in the hierarchical clustering
@@ -67,6 +69,8 @@ struct HierarchicalClusteringIndexParams : public IndexParams
         (*this)["trees"] = trees;
         // maximum leaf size
         (*this)["leaf_max_size"] = leaf_max_size;
+        // how many cores to assign to the build (used only if compiled with OpenMP capable compiler) (0 for auto)
+        (*this)["build_cores"] = build_cores;
     }
 };
 
@@ -102,6 +106,9 @@ public:
         centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
         trees_ = get_param(index_params_,"trees",4);
         leaf_max_size_ = get_param(index_params_,"leaf_max_size",100);
+#ifdef _OPENMP
+        build_cores_ = get_param(index_params_,"build_cores", omp_get_num_procs());
+#endif
 
         initCenterChooser();
     }
@@ -124,6 +131,9 @@ public:
         centers_init_ = get_param(index_params_,"centers_init", FLANN_CENTERS_RANDOM);
         trees_ = get_param(index_params_,"trees",4);
         leaf_max_size_ = get_param(index_params_,"leaf_max_size",100);
+#ifdef _OPENMP
+        build_cores_ = get_param(index_params_,"build_cores", omp_get_num_procs());
+#endif
 
         initCenterChooser();
         
@@ -136,7 +146,8 @@ public:
     		branching_(other.branching_),
     		trees_(other.trees_),
     		centers_init_(other.centers_init_),
-    		leaf_max_size_(other.leaf_max_size_)
+    		leaf_max_size_(other.leaf_max_size_),
+    		build_cores_(other.build_cores_)
 
     {
     	initCenterChooser();
@@ -301,8 +312,11 @@ protected:
             throw FLANNException("Branching factor must be at least 2");
         }
         tree_roots_.resize(trees_);
-        std::vector<int> indices(size_);
+        std::vector<int> indices;
+
+        #pragma omp parallel for num_threads(build_cores_) private(indices)
         for (int i=0; i<trees_; ++i) {
+        	indices.resize(size_);
             for (size_t j=0; j<size_; ++j) {
                 indices[j] = j;
             }
@@ -697,6 +711,11 @@ private:
      * Algorithm used to choose initial centers
      */
     CenterChooser<Distance>* chooseCenters_;
+
+    /**
+     * how many cores to assign to the build (used only if compiled with OpenMP capable compiler) (0 for auto)
+     */
+    int build_cores_;
 
     USING_BASECLASS_SYMBOLS
 };
