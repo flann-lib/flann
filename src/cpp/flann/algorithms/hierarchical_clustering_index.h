@@ -544,17 +544,8 @@ private:
         int maxChecks = searchParams.checks;
 
         // Priority queue storing intermediate branches in the best-bin-first search
-#ifdef _OPENMP
-        static Heap<BranchSt>* heapPool[256] = {NULL};
-        Heap<BranchSt>* &heap = heapPool[omp_get_thread_num()];
-#else
-        static Heap<BranchSt>* heap = NULL;
-#endif
-        if (heap == NULL) {
-        	heap = new Heap<BranchSt>(size_);
-        } else {
-        	heap->clear();
-        }
+        HeapPool<BranchSt> &pool = HeapPool<BranchSt>::getHeapPool();
+        Heap<BranchSt>* heap = pool.getHeap(size_);
 
         DynamicBitset checked(size_);
         int checks = 0;
@@ -568,6 +559,7 @@ private:
             findNN<with_removed>(node, result, vec, checks, maxChecks, heap, checked);
         }
 
+        pool.putBackHeap(heap);
     }
 
 
