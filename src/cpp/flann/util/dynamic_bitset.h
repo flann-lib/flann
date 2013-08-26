@@ -35,6 +35,10 @@
 #ifndef FLANN_DYNAMIC_BITSET_H_
 #define FLANN_DYNAMIC_BITSET_H_
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 //#define FLANN_USE_BOOST 1
 #if FLANN_USE_BOOST
 #include <boost/dynamic_bitset.hpp>
@@ -71,7 +75,7 @@ public:
      */
     void clear()
     {
-        std::fill(bitset_.begin(), bitset_.end(), 0);
+    	bitset_.clear();
     }
 
     /** @brief checks if the bitset is empty
@@ -155,6 +159,91 @@ private:
     size_t size_;
     static const unsigned int cell_bit_size_ = CHAR_BIT * sizeof(size_t);
 };
+
+/**
+ * Pool of DynamicBitset object class
+ *
+ * This class pools DynamicBitset objects by their size.
+ */
+class BitsetPool
+{
+private:
+	std::map<size_t, std::vector<DynamicBitset*> > reservedBitset;
+#ifdef _OPENMP
+	omp_lock_t lock;
+	BitsetPool() {
+		omp_init_lock(&lock);
+	}
+	~BitsetPool() {
+		omp_destroy_lock(&lock);
+	}
+#endif
+public:
+    /**
+     * Returns: pool instance
+     */
+	static BitsetPool &getBitsetPool() {
+		static BitsetPool pool;
+		return pool;
+	}
+
+    /**
+     * Returns: DynamicBitset that has specified reserve size
+     */
+	DynamicBitset* getBitset(size_t size) {
+		DynamicBitset *ret = NULL;
+#ifdef _OPENMP
+		omp_set_lock(&lock);
+#endif
+		if (reservedBitset[size].size() == 0) {
+			ret = new DynamicBitset(size);
+		} else {
+			ret = reservedBitset[size].back();
+			reservedBitset[size].pop_back();
+		}
+#ifdef _OPENMP
+		omp_unset_lock(&lock);
+#endif
+
+		return ret;
+	}
+
+    /**
+     * After using DynamicBitset, the DynamicBitset have to be put back by this method.
+     */
+	void putBackBitset(DynamicBitset *bitset) {
+		size_t size = bitset->size();
+		bitset->clear();
+#ifdef _OPENMP
+		omp_set_lock(&lock);
+		reservedBitset[size].push_back(bitset);
+		omp_unset_lock(&lock);
+#else
+		reservedBitset[size].push_back(bitset);
+#endif
+	}
+
+    /**
+     * Delete pooled bitsets these have specified reserve size.
+     */
+	void deletePool(size_t size) {
+#ifdef _OPENMP
+		omp_set_lock(&lock);
+#endif
+
+		while (reservedBitset[size].size() > 0) {
+			DynamicBitset* bitset = reservedBitset[size].back();
+			reservedBitset[size].pop_back();
+			delete bitset;
+		}
+
+#ifdef _OPENMP
+		omp_unset_lock(&lock);
+#endif
+	}
+
+};
+
 
 } // namespace flann
 

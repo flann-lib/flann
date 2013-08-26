@@ -547,18 +547,21 @@ private:
         HeapPool<BranchSt> &pool = HeapPool<BranchSt>::getHeapPool();
         Heap<BranchSt>* heap = pool.getHeap(size_);
 
-        DynamicBitset checked(size_);
+        BitsetPool &bitsetPool = BitsetPool::getBitsetPool();
+        DynamicBitset* checked = bitsetPool.getBitset(size_);
+
         int checks = 0;
         for (int i=0; i<trees_; ++i) {
-            findNN<with_removed>(tree_roots_[i], result, vec, checks, maxChecks, heap, checked);
+            findNN<with_removed>(tree_roots_[i], result, vec, checks, maxChecks, heap, *checked);
         }
 
         BranchSt branch;
         while (heap->popMin(branch) && (checks<maxChecks || !result.full())) {
             NodePtr node = branch.node;
-            findNN<with_removed>(node, result, vec, checks, maxChecks, heap, checked);
+            findNN<with_removed>(node, result, vec, checks, maxChecks, heap, *checked);
         }
 
+        bitsetPool.putBackBitset(checked);
         pool.putBackHeap(heap);
     }
 
