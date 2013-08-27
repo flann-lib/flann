@@ -548,7 +548,7 @@ private:
         Heap<BranchSt>* heap = pool.getHeap(size_);
 
         BitsetPool &bitsetPool = BitsetPool::getBitsetPool();
-        DynamicBitset* checked = bitsetPool.getBitset(size_);
+        SparseBitset* checked = bitsetPool.getBitset(size_);
 
         int checks = 0;
         for (int i=0; i<trees_; ++i) {
@@ -580,7 +580,7 @@ private:
 
     template<bool with_removed>
     void findNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec, int& checks, int maxChecks,
-                Heap<BranchSt>* heap,  DynamicBitset& checked) const
+                Heap<BranchSt>* heap,  SparseBitset& checked) const
     {
         if (node->childs.empty()) {
             if (checks>=maxChecks) {
