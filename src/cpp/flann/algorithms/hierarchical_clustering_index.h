@@ -279,6 +279,11 @@ public:
     }
 
 
+    ThreadData *createThreadData() const {
+    	return new ThreadData_(size_);
+    }
+
+
     /**
      * Find set of nearest neighbors to vec. Their indices are stored inside
      * the result object.
@@ -289,13 +294,13 @@ public:
      *     searchParams = parameters that influence the search algorithm (checks)
      */
 
-    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams, ThreadData *threadData) const
     {
     	if (removed_) {
-    		findNeighborsWithRemoved<true>(result, vec, searchParams);
+    		findNeighborsWithRemoved<true>(result, vec, searchParams, (ThreadData_*)threadData);
     	}
     	else {
-    		findNeighborsWithRemoved<false>(result, vec, searchParams);
+    		findNeighborsWithRemoved<false>(result, vec, searchParams, (ThreadData_*)threadData);
     	}
     }
 
@@ -537,18 +542,32 @@ private:
         }
     }
 
+    class ThreadData_ : public ThreadData {
+    public:
+    	Heap<BranchSt> *heap;
+    	SparseBitset *checked;
+
+    	ThreadData_(size_t size)
+    		: heap(new Heap<BranchSt>(size))
+    		, checked(new SparseBitset(size))
+    	{
+    	}
+
+    	virtual ~ThreadData_()
+    	{
+    		delete heap;
+    		delete checked;
+    	}
+    };
 
     template<bool with_removed>
-    void findNeighborsWithRemoved(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const
+    void findNeighborsWithRemoved(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams, ThreadData_ *threadData) const
     {
         int maxChecks = searchParams.checks;
 
         // Priority queue storing intermediate branches in the best-bin-first search
-        HeapPool<BranchSt> &pool = HeapPool<BranchSt>::getHeapPool();
-        Heap<BranchSt>* heap = pool.getHeap(size_);
-
-        BitsetPool &bitsetPool = BitsetPool::getBitsetPool();
-        SparseBitset* checked = bitsetPool.getBitset(size_);
+        Heap<BranchSt>* heap = threadData->heap;
+        SparseBitset* checked = threadData->checked;
 
         int checks = 0;
         for (int i=0; i<trees_; ++i) {
@@ -561,8 +580,8 @@ private:
             findNN<with_removed>(node, result, vec, checks, maxChecks, heap, *checked);
         }
 
-        bitsetPool.putBackBitset(checked);
-        pool.putBackHeap(heap);
+        checked->clear();
+		heap->clear();
     }
 
 

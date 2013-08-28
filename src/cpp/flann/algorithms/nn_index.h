@@ -66,6 +66,11 @@ public:
     virtual void saveIndex(FILE* stream) = 0;
 };
 
+class ThreadData
+{
+
+};
+
 /**
  * Nearest-neighbour index base class
  */
@@ -323,30 +328,34 @@ public:
 #pragma omp parallel num_threads(params.cores)
     		{
     			KNNResultSet2<DistanceType> resultSet(knn);
+				ThreadData *threadData = createThreadData();
 #pragma omp for schedule(dynamic) reduction(+:count)
     			for (int i = 0; i < (int)queries.rows; i++) {
     				resultSet.clear();
-    				findNeighbors(resultSet, queries[i], params);
+    				findNeighbors(resultSet, queries[i], params, threadData);
     				size_t n = std::min(resultSet.size(), knn);
     				resultSet.copy(indices[i], dists[i], n, params.sorted);
     				indices_to_ids(indices[i], indices[i], n);
     				count += n;
     			}
+    			delete threadData;
     		}
     	}
     	else {
 #pragma omp parallel num_threads(params.cores)
     		{
     			KNNSimpleResultSet<DistanceType> resultSet(knn);
+				ThreadData *threadData = createThreadData();
 #pragma omp for schedule(dynamic) reduction(+:count)
     			for (int i = 0; i < (int)queries.rows; i++) {
     				resultSet.clear();
-    				findNeighbors(resultSet, queries[i], params);
+    				findNeighbors(resultSet, queries[i], params, threadData);
     				size_t n = std::min(resultSet.size(), knn);
     				resultSet.copy(indices[i], dists[i], n, params.sorted);
     				indices_to_ids(indices[i], indices[i], n);
     				count += n;
     			}
+    			delete threadData;
     		}
     	}
     	return count;
@@ -411,10 +420,11 @@ public:
 #pragma omp parallel num_threads(params.cores)
 			{
 				KNNResultSet2<DistanceType> resultSet(knn);
+				ThreadData *threadData = createThreadData();
 #pragma omp for schedule(dynamic) reduction(+:count)
 				for (int i = 0; i < (int)queries.rows; i++) {
 					resultSet.clear();
-					findNeighbors(resultSet, queries[i], params);
+					findNeighbors(resultSet, queries[i], params, threadData);
 					size_t n = std::min(resultSet.size(), knn);
 					indices[i].resize(n);
 					dists[i].resize(n);
@@ -424,16 +434,18 @@ public:
 					}
 					count += n;
 				}
+				delete threadData;
 			}
 		}
 		else {
 #pragma omp parallel num_threads(params.cores)
 			{
 				KNNSimpleResultSet<DistanceType> resultSet(knn);
+				ThreadData *threadData = createThreadData();
 #pragma omp for schedule(dynamic) reduction(+:count)
 				for (int i = 0; i < (int)queries.rows; i++) {
 					resultSet.clear();
-					findNeighbors(resultSet, queries[i], params);
+					findNeighbors(resultSet, queries[i], params, threadData);
 					size_t n = std::min(resultSet.size(), knn);
 					indices[i].resize(n);
 					dists[i].resize(n);
@@ -443,6 +455,7 @@ public:
 					}
 					count += n;
 				}
+				delete threadData;
 			}
 		}
 
@@ -690,7 +703,8 @@ public:
     }
 
 
-    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams) const = 0;
+    virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams, ThreadData *threadData) const = 0;
+    virtual ThreadData* createThreadData() const = 0;
 
 protected:
 
