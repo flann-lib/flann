@@ -44,7 +44,7 @@
 #include "flann/algorithms/dist.h"
 #include "flann/util/matrix.h"
 #include "flann/util/result_set.h"
-#include "flann/util/heap.h"
+#include "flann/util/free_size_heap.h"
 #include "flann/util/allocator.h"
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
@@ -544,19 +544,19 @@ private:
 
     class ThreadData_ : public ThreadData {
     public:
-    	Heap<BranchSt> *heap;
+    	FreeSizeHeap<BranchSt> *heap;
     	SparseBitset *checked;
 
     	ThreadData_(size_t size)
-    		: heap(new Heap<BranchSt>(size))
-    		, checked(new SparseBitset(size))
     	{
+    		heap = HeapPool<BranchSt>::getHeapPool().getHeap();
+    		checked = BitsetPool::getBitsetPool().getBitset(size);
     	}
 
     	virtual ~ThreadData_()
     	{
-    		delete heap;
-    		delete checked;
+    		HeapPool<BranchSt>::getHeapPool().putBackHeap(heap);
+    		BitsetPool::getBitsetPool().putBackBitset(checked);
     	}
     };
 
@@ -566,7 +566,7 @@ private:
         int maxChecks = searchParams.checks;
 
         // Priority queue storing intermediate branches in the best-bin-first search
-        Heap<BranchSt>* heap = threadData->heap;
+        FreeSizeHeap<BranchSt>* heap = threadData->heap;
         SparseBitset* checked = threadData->checked;
 
         int checks = 0;
@@ -599,7 +599,7 @@ private:
 
     template<bool with_removed>
     void findNN(NodePtr node, ResultSet<DistanceType>& result, const ElementType* vec, int& checks, int maxChecks,
-                Heap<BranchSt>* heap,  SparseBitset& checked) const
+    		FreeSizeHeap<BranchSt>* heap,  SparseBitset& checked) const
     {
         if (node->childs.empty()) {
             if (checks>=maxChecks) {

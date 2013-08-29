@@ -33,9 +33,6 @@
 
 #include <algorithm>
 #include <vector>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace flann
 {
@@ -461,90 +458,6 @@ public:
     }
 };
 
-/**
- * Pool of heap object class
- *
- * This class pools heap objects by their size.
- */
-template <typename T>
-class HeapPool
-{
-private:
-	std::map<size_t, std::vector<Heap<T>*> > reservedHeap;
-#ifdef _OPENMP
-	omp_lock_t lock;
-	HeapPool() {
-		omp_init_lock(&lock);
-	}
-	~HeapPool() {
-		omp_destroy_lock(&lock);
-	}
-#endif
-public:
-    /**
-     * Returns: pool instance
-     */
-	static HeapPool<T> &getHeapPool() {
-		static HeapPool<T> pool;
-		return pool;
-	}
-
-    /**
-     * Returns: heap that has specified reserve size
-     */
-	Heap<T>* getHeap(size_t size) {
-		Heap<T> *ret = NULL;
-#ifdef _OPENMP
-		omp_set_lock(&lock);
-#endif
-		if (reservedHeap[size].size() == 0) {
-			ret = new Heap<T>(size);
-		} else {
-			ret = reservedHeap[size].back();
-			reservedHeap[size].pop_back();
-		}
-#ifdef _OPENMP
-		omp_unset_lock(&lock);
-#endif
-
-		return ret;
-	}
-
-    /**
-     * After using heap, the heap have to be put back by this method.
-     */
-	void putBackHeap(Heap<T> *heap) {
-		size_t size = heap->reservedLength();
-		heap->clear();
-#ifdef _OPENMP
-		omp_set_lock(&lock);
-		reservedHeap[size].push_back(heap);
-		omp_unset_lock(&lock);
-#else
-		reservedHeap[size].push_back(heap);
-#endif
-	}
-
-    /**
-     * Delete pooled heaps these have specified reserve size.
-     */
-	void deletePool(size_t size) {
-#ifdef _OPENMP
-		omp_set_lock(&lock);
-#endif
-
-		while (reservedHeap[size].size() > 0) {
-			Heap<T>* heap = reservedHeap[size].back();
-			reservedHeap[size].pop_back();
-			delete heap;
-		}
-
-#ifdef _OPENMP
-		omp_unset_lock(&lock);
-#endif
-	}
-
-};
 
 }
 

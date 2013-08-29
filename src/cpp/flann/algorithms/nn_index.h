@@ -68,7 +68,8 @@ public:
 
 class ThreadData
 {
-
+public:
+	virtual ~ThreadData(){}
 };
 
 /**
