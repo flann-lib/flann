@@ -157,12 +157,14 @@ private:
 
 class SparseBitset
 {
+private:
+	static const unsigned int MAX_SET_COUNT = 1024;
 public:
     /** @param default constructor
      */
 	SparseBitset() : size_(0)
     {
-        setPointers_ = (size_t**)malloc(1024*sizeof(size_t*));
+        setPointers_ = (size_t**)malloc(MAX_SET_COUNT*sizeof(size_t*));
         setCount_ = 0;
     }
 
@@ -171,7 +173,7 @@ public:
      */
 	SparseBitset(size_t size)
     {
-        setPointers_ = (size_t**)malloc(1024*sizeof(size_t*));
+        setPointers_ = (size_t**)malloc(MAX_SET_COUNT*sizeof(size_t*));
         resize(size);
     }
 
@@ -199,7 +201,7 @@ public:
      */
     void reset()
     {
-    	 for (int i = 0; i < setCount_; ++i) {
+    	 for (unsigned int i = 0; i < setCount_; ++i) {
     		 *setPointers_[i] = 0;
     	 }
         setCount_ = 0;
@@ -240,6 +242,8 @@ public:
      */
     void set(size_t index)
     {
+    	assert(MAX_SET_COUNT > setCount_);
+
         int indexVec = index / cell_bit_size_;
         setPointers_[setCount_++] = &bitset_[indexVec];
         bitset_[indexVec] |= size_t(1) << (index % cell_bit_size_);
@@ -262,20 +266,11 @@ public:
     }
 
 private:
-    template <typename Archive>
-    void serialize(Archive& ar)
-    {
-    	ar & size_;
-    	ar & bitset_;
-    }
-    friend struct serialization::access;
-
-private:
     std::vector<size_t> bitset_;
     size_t size_;
     static const unsigned int cell_bit_size_ = CHAR_BIT * sizeof(size_t);
     size_t** setPointers_;
-    int setCount_;
+    unsigned int setCount_;
 };
 
 
