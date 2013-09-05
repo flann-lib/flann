@@ -158,7 +158,7 @@ private:
 class SparseBitset
 {
 private:
-	static const unsigned int MAX_SET_COUNT = 1024;
+	static const unsigned int MAX_SET_COUNT = 11000;
 public:
     /** @param default constructor
      */
