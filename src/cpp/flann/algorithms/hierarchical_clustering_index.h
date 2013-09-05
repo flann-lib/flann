@@ -571,7 +571,9 @@ private:
 
         int checks = 0;
         for (int i=0; i<trees_; ++i) {
-            findNN<with_removed>(tree_roots_[i], result, vec, checks, maxChecks, heap, *checked);
+        	if (checks<maxChecks || !result.full()) {
+        		findNN<with_removed>(tree_roots_[i], result, vec, checks, maxChecks, heap, *checked);
+        	}
         }
 
         BranchSt branch;
@@ -602,10 +604,6 @@ private:
     		FreeSizeHeap<BranchSt>* heap,  SparseBitset& checked) const
     {
         if (node->childs.empty()) {
-            if (checks>=maxChecks) {
-                if (result.full()) return;
-            }
-
             for (size_t i=0; i<node->points.size(); ++i) {
             	PointInfo& pointInfo = node->points[i];
             	if (with_removed) {
