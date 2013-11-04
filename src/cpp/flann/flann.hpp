@@ -59,7 +59,7 @@ inline void log_verbosity(int level)
 }
 
 /**
- * Index parameters for creating a saved index.
+ * (Deprecated) Index parameters for creating a saved index.
  */
 struct SavedIndexParams : public IndexParams
 {
@@ -375,13 +375,13 @@ private:
             return NULL;
         }
         IndexHeader header = load_header(fin);
-        if (header.data_type != flann_datatype_value<ElementType>::value) {
-            throw FLANNException("Datatype of saved index is different than of the one to be created.");
+        if (header.h.data_type != flann_datatype_value<ElementType>::value) {
+            throw FLANNException("Datatype of saved index is different than of the one to be loaded.");
         }
 
         IndexParams params;
-        params["algorithm"] = header.index_type;
-        IndexType* nnIndex = create_index_by_type<Distance>(header.index_type, dataset, params, distance);
+        params["algorithm"] = header.h.index_type;
+        IndexType* nnIndex = create_index_by_type<Distance>(header.h.index_type, dataset, params, distance);
         rewind(fin);
         nnIndex->loadIndex(fin);
         fclose(fin);
