@@ -22,6 +22,13 @@ TEST_F(KDTree_SIFT10K, TestSearch)
 			dists, knn, flann::SearchParams(256), 0.75, gt_indices);
 }
 
+TEST_F(KDTree_SIFT10K, TestSearch2)
+{
+	TestSearch2<flann::L2<float> >(data, flann::KDTreeIndexParams(4), query, indices,
+			dists, knn, flann::SearchParams(256), 0.75, gt_indices);
+}
+
+
 TEST_F(KDTree_SIFT10K, TestAddIncremental)
 {
 	TestAddIncremental<flann::L2<float> >(data, flann::KDTreeIndexParams(4), query, indices,

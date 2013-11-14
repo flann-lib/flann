@@ -164,6 +164,43 @@ protected:
 		printf("Precision: %g\n", precision);
 	}
 
+
+	template<typename Distance>
+	void TestSearch2(const flann::Matrix<typename Distance::ElementType>& data,
+			const flann::IndexParams& index_params,
+			const flann::Matrix<typename Distance::ElementType>& query,
+			flann::Matrix<size_t>& indices,
+			flann::Matrix<typename Distance::ResultType>& dists,
+			size_t knn,
+			const flann::SearchParams& search_params,
+			float expected_precision,
+			const flann::Matrix<size_t>& gt_indices,
+			const flann::Matrix<typename Distance::ResultType>& gt_dists = flann::Matrix<typename Distance::ResultType>())
+	{
+		flann::seed_random(0);
+		Index<Distance> index(index_params);
+		char message[256];
+		const char* index_name = index_type_to_name(index.getType());
+		sprintf(message, "Building %s index... ", index_name);
+		start_timer( message );
+		index.buildIndex(data);
+		printf("done (%g seconds)\n", stop_timer());
+
+		start_timer("Searching KNN...");
+		index.knnSearch(query, indices, dists, knn, search_params );
+		printf("done (%g seconds)\n", stop_timer());
+
+		float precision;
+		if (gt_dists.ptr()==NULL) {
+			precision = compute_precision(gt_indices, indices);
+		}
+		else {
+			precision = computePrecisionDiscrete(gt_dists, dists);
+		}
+		EXPECT_GE(precision, expected_precision);
+		printf("Precision: %g\n", precision);
+	}
+
 	template<typename Distance>
 	void TestAddIncremental(const flann::Matrix<typename Distance::ElementType>& data,
 			const flann::IndexParams& index_params,
