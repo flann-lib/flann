@@ -3,10 +3,26 @@
 
 #include <vector>
 #include <map>
+#include <cstdlib>
+#include <cstring>
 #include <stdio.h>
+#include "flann/ext/lz4.h"
+#include "flann/ext/lz4hc.h"
+
 
 namespace flann
 {
+    struct IndexHeaderStruct {
+        char signature[24];
+        char version[16];
+        flann_datatype_t data_type;
+        flann_algorithm_t index_type;
+        size_t rows;
+        size_t cols;
+        size_t compression;
+        size_t uncompressed_size;
+    };
+
 namespace serialization
 {
 
@@ -92,7 +108,6 @@ BASIC_TYPE_SERIALIZER(bool);
 #ifdef _MSC_VER
 BASIC_TYPE_SERIALIZER(unsigned __int64);
 #endif
-
 
 
 // serializer for std::vector
@@ -254,7 +269,6 @@ struct bool_ {
 class ArchiveBase
 {
 public:
-
 	void* getObject() { return object_; }
 
 	void setObject(void* object) { object_ = object; }
@@ -357,19 +371,57 @@ class SaveArchive : public OutputArchive<SaveArchive>
 {
     FILE* stream_;
     bool own_stream_;
+    char *buffer_;
+    size_t offset_;
+
+    void compressAndSave(FILE *stream)
+    {
+        // Copy & set the header
+        IndexHeaderStruct *head = (IndexHeaderStruct *)buffer_;
+
+        assert(head->compression == 0);
+        head->compression = 1; // Bool now, enum later
+        assert(head->uncompressed_size == 0);
+        head->uncompressed_size = offset_;
+
+        // Construct the buffer
+        char *compBuffer = (char *)malloc(LZ4_compressBound(offset_));
+        size_t headSz = sizeof(IndexHeaderStruct);
+        memcpy(compBuffer, buffer_, headSz);
+
+        // Compress the buffer
+        int compSz = LZ4_compressHC(buffer_+headSz,
+                                    compBuffer+headSz,
+                                    offset_-headSz);
+
+        // Write the compressed buffer
+        fwrite(compBuffer, compSz+headSz, 1, stream);
+
+        // Clean up
+        free(compBuffer);
+    }
+
 public:
     SaveArchive(const char* filename)
     {
-        stream_ = fopen(filename, "w");
+        stream_ = fopen(filename, "wb");
         own_stream_ = true;
+        buffer_ = NULL;
+        offset_ = 0;
     }
 
     SaveArchive(FILE* stream) : stream_(stream), own_stream_(false)
     {
+        buffer_ = NULL;
+        offset_ = 0;
     }
 
     ~SaveArchive()
     {
+        compressAndSave(stream_);
+        if (buffer_) {
+            free(buffer_);
+        }
     	if (own_stream_) {
     		fclose(stream_);
     	}
@@ -378,7 +430,9 @@ public:
     template<typename T>
     void save(const T& val)
     {
-        fwrite(&val, sizeof(val), 1, stream_);
+        buffer_ = (char *)realloc(buffer_, offset_+sizeof(val));
+        memcpy(buffer_+offset_, &val, sizeof(val));
+        offset_ += sizeof(val);
     }
 
     template<typename T>
@@ -391,7 +445,9 @@ public:
     template<typename T>
     void save_binary(T* ptr, size_t size)
     {
-    	fwrite(ptr, size, 1, stream_);
+        buffer_ = (char *)realloc(buffer_, offset_+size);
+        memcpy(buffer_+offset_, ptr, size);
+        offset_ += size;
     }
 
 };
@@ -401,19 +457,77 @@ class LoadArchive : public InputArchive<LoadArchive>
 {
     FILE* stream_;
     bool own_stream_;
+    char *buffer_;
+    char *ptr_;
+
+    void decompressAndLoad(FILE* stream)
+    {
+        // Find file size
+        size_t pos = ftell(stream);
+        fseek(stream, 0, SEEK_END);
+        size_t fileSize = ftell(stream);
+        fseek(stream, pos, SEEK_SET);
+
+        // Read the (compressed) file to a buffer
+        char *compBuffer = (char *)malloc(fileSize);
+        if (compBuffer == NULL) {
+            throw FLANNException("Error allocating file buffer space");
+        }
+        if (fread(compBuffer, fileSize, 1, stream) != 1) {
+            free(compBuffer);
+            throw FLANNException("Invalid index file, cannot read (compressed)");
+        }
+
+        // Check for compression type
+        IndexHeaderStruct *head = (IndexHeaderStruct *)compBuffer;
+        if (head->compression != 1) {
+            throw FLANNException("Compression type not supported");
+        }
+
+        // Allocate a decompressed buffer
+        ptr_ = buffer_ = (char *)malloc(head->uncompressed_size);
+        if (buffer_ == NULL) {
+            free(compBuffer);
+            throw FLANNException("Error allocating decompression buffer");
+        }
+
+        // Do the decompression
+        size_t headSz = sizeof(IndexHeaderStruct);
+        memcpy(buffer_, compBuffer, headSz);
+        size_t usedSz = LZ4_decompress_fast(compBuffer+headSz,
+                                            buffer_+headSz,
+                                            head->uncompressed_size-headSz);
+        free(compBuffer);
+
+        // Check if the decompression was the expected size.
+        if (usedSz != fileSize - headSz) {
+            printf("usedSz: %d head->uncompressed_size: %d headSz: %d\n",
+                   (int)usedSz, (int)head->uncompressed_size, (int)headSz);
+            throw FLANNException("Unexpected decompression size");
+        }
+    }
+
 public:
     LoadArchive(const char* filename)
     {
-        stream_ = fopen(filename, "r");
+        // Open the file
+        stream_ = fopen(filename, "rb");
         own_stream_ = true;
+
+        decompressAndLoad(stream_);
     }
 
-    LoadArchive(FILE* stream) : stream_(stream), own_stream_(false)
+    LoadArchive(FILE* stream)
     {
+        stream_ = stream;
+        own_stream_ = false;
+
+        decompressAndLoad(stream);
     }
 
     ~LoadArchive()
     {
+        free(buffer_);
     	if (own_stream_) {
     		fclose(stream_);
     	}
@@ -422,10 +536,8 @@ public:
     template<typename T>
     void load(T& val)
     {
-        size_t ret = fread(&val, sizeof(val), 1, stream_);
-        if (ret!=1) {
-        	throw FLANNException("Error loading from file");
-        }
+        memcpy(&val, ptr_, sizeof(val));
+        ptr_ += sizeof(val);
     }
 
     template<typename T>
@@ -438,13 +550,9 @@ public:
     template<typename T>
     void load_binary(T* ptr, size_t size)
     {
-    	size_t ret = fread(ptr, size, 1, stream_);
-        if (ret!=1) {
-        	throw FLANNException("Error loading from file");
-        }
+        memcpy(ptr, ptr_, size);
+        ptr_ += size;
     }
-
-
 };
 
 } // namespace serialization

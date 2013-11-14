@@ -14,7 +14,7 @@ if (HDF5_FOUND)
     include_directories(${HDF5_INCLUDE_DIR})
 
     add_executable(flann_example_cpp flann_example.cpp)
-    target_link_libraries(flann_example_cpp ${HDF5_LIBRARIES})
+    target_link_libraries(flann_example_cpp ${HDF5_LIBRARIES} flann_cpp)
     if (HDF5_IS_PARALLEL)
         target_link_libraries(flann_example_cpp ${MPI_LIBRARIES})
     endif()

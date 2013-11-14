@@ -228,22 +228,26 @@ public:
     	IndexHeader header;
 
     	if (Archive::is_saving::value) {
-    		header.data_type = flann_datatype_value<ElementType>::value;
-    		header.index_type = getType();
-    		header.rows = size_;
-    		header.cols = veclen_;
+            header.h.data_type = flann_datatype_value<ElementType>::value;
+            header.h.index_type = getType();
+            header.h.rows = size_;
+            header.h.cols = veclen_;
     	}
     	ar & header;
 
     	// sanity checks
     	if (Archive::is_loading::value) {
-    	    if (strcmp(header.signature,FLANN_SIGNATURE_)!=0) {
+            if (strncmp(header.h.signature,
+                        FLANN_SIGNATURE_,
+                        strlen(FLANN_SIGNATURE_)) != 0) {
     	        throw FLANNException("Invalid index file, wrong signature");
     	    }
-            if (header.data_type != flann_datatype_value<ElementType>::value) {
+
+            if (header.h.data_type != flann_datatype_value<ElementType>::value) {
                 throw FLANNException("Datatype of saved index is different than of the one to be created.");
             }
-            if (header.index_type != getType()) {
+
+            if (header.h.index_type != getType()) {
                 throw FLANNException("Saved index type is different then the current index type.");
             }
             // TODO: check for distance type
