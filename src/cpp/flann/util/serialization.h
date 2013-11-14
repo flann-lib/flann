@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <map>
+#include <cstdlib>
+#include <cstring>
 #include <stdio.h>
 #include "flann/ext/lz4.h"
 #include "flann/ext/lz4hc.h"
@@ -492,9 +494,9 @@ class LoadArchive : public InputArchive<LoadArchive>
         // Do the decompression
         size_t headSz = sizeof(IndexHeaderStruct);
         memcpy(buffer_, compBuffer, headSz);
-        int usedSz = LZ4_decompress_fast(compBuffer+headSz,
-                                         buffer_+headSz,
-                                         head->uncompressed_size-headSz);
+        size_t usedSz = LZ4_decompress_fast(compBuffer+headSz,
+                                            buffer_+headSz,
+                                            head->uncompressed_size-headSz);
         free(compBuffer);
 
         // Check if the decompression was the expected size.
