@@ -12,9 +12,8 @@ set(FLANN_VERSION 1.8.4)
 DISSECT_VERSION()
 GET_OS_INFO()
 
-# CMAKE_C_COMPILER_ID and CMAKE_CXX_COMPILER_ID are documented as internal variables subject to
-# change at: http://www.cmake.org/cmake/help/v2.8.8/cmake.html#variable:CMAKE_LANG_COMPILER_ID
-# however currently this seems the most robust way to detect the presence of the Clang compiler
+
+# detect if using the Clang compiler
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
   set(CMAKE_COMPILER_IS_CLANG 1)
 endif ()
@@ -54,6 +53,7 @@ option(BUILD_C_BINDINGS "Build C bindings" ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
 option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" ON)
 option(BUILD_CUDA_LIB "Build CUDA library" OFF)
+option(BUILD_EXAMPLES "Build examples" ON)
 option(USE_OPENMP "Use OpenMP multi-threading" ON)
 option(USE_MPI "Use MPI" OFF)
 
@@ -146,16 +146,18 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/cpp)
 # require proper c++
 #add_definitions( "-Wall -ansi -pedantic" )
 # HDF5 uses long long which is not ansi
-if (MSVC)
+if("${CMAKE_C_COMPILER_ID}" MATCHES "MSVC" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
     # lots of warnings with cl.exe right now, use /W1
     add_definitions("/W1 -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS /bigobj")
-else(MSVC)
+else()
     add_definitions( "-Wall -Wno-unknown-pragmas -Wno-unused-function" )
-endif(MSVC)
+endif()
 
 add_subdirectory( cmake )
 add_subdirectory( src )
-add_subdirectory( examples )
+if (BUILD_EXAMPLES)
+  add_subdirectory( examples )
+endif(BUILD_EXAMPLES)
 add_subdirectory( test )
 add_subdirectory( doc )
 

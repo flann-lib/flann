@@ -670,7 +670,11 @@ int Index::knnSearch(const Matrix<ElementType>& queries,
 \item[indices]{Matrix that will contain the indices of the K-nearest neighbors found (size should be at least
 $num\_queries \times knn$ for the pre-allocated version).}
 \item[dists]{Matrix that will contain the distances to the K-nearest neighbors found (size should be at least
-$num\_queries \times knn$ for the pre-allocated version).}
+$num\_queries \times knn$ for the pre-allocated version). \\
+\emph{Note:} For Euclidean distances, the \texttt{flann::L2} functor computes squared distances, 
+so the value passed here needs to be a squared 
+distance as well.
+}
 \item[knn]{Number of nearest neighbors to search for.}
 \item[params]{Search parameters.} Structure containing parameters used during search.
 
@@ -679,16 +683,16 @@ $num\_queries \times knn$ for the pre-allocated version).}
 struct SearchParams
 {
 	SearchParams(int checks = 32,
-		  float eps = 0,
-		  bool sorted = true);
+		float eps = 0,
+		bool sorted = true);
 
-    int checks;
-    float eps;
-    bool sorted;
-    int max_neighbors;
-    tri_type use_heap;
-    int cores;
-    bool matrices_in_gpu_ram;
+	int checks;
+	float eps;
+	bool sorted;
+	int max_neighbors;
+	tri_type use_heap;
+	int cores;
+	bool matrices_in_gpu_ram;
 };
 \end{Verbatim}
 \begin{description}
@@ -737,9 +741,15 @@ columns in this matrix, the element after that last index returned is -1. In cas
 will be resized as needed to fit all the neighbors to be returned, except if the ``max\_neighbors'' search parameter is
 set.}
 \item[dists]{Matrix that will contain the distances to the K-nearest neighbors found. The same number of values are
-returned here as for the \texttt{indices} matrix.}
-\item[radius]{The search radius}
-\item[params]{Search parameters}
+returned here as for the \texttt{indices} matrix.  \\
+\emph{Note:} For Euclidean distances, the 
+\texttt{flann::L2} functor computes squared distances, so the value passed here needs to 
+be a squared distance as well.}
+\item[radius]{The search radius. \\
+\emph{Note:} For Euclidean distances, the \texttt{flann::L2} functor computes squared distances, 
+so the value passed here needs to be a squared 
+distance as well.}
+\item[params]{Search parameters.}
 \end{description}
 The method returns the number of nearest neighbors found.
 
@@ -759,10 +769,10 @@ Clusters the given points by constructing a hierarchical k-means tree and choosi
 
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
 template <typename Distance>
-int hierarchicalClustering(const Matrix<typename Distance::ElementType>& features, 
-			Matrix<typename Distance::ResultType>& centers,
-			const KMeansIndexParams& params, 
-		        Distance d = Distance())
+int hierarchicalClustering(const Matrix<typename Distance::ElementType>& points, 
+	Matrix<typename Distance::ResultType>& centers,
+	const KMeansIndexParams& params,
+	Distance d = Distance())
 \end{Verbatim}
 \begin{description}
 \item[features]{The points to be clustered}
@@ -815,7 +825,7 @@ flannindex.buildIndex();
 \begin{description}
  \item First, a GPU buffer of float4 values is created and filled with points. \footnote{For index creation, only \texttt{float4} points are supported, \texttt{float3} or structure-of-array (SOA) representations are currently not supported since
 \texttt{float4} proved to be best in terms of access speed for tree creation and search.}
- \item Then, a GPU pointer to the buffer is stored in a flann matrix with 3 columns and a stride of 4 (since the last element in the \texttt{float4} is unused).
+ \item Then, a GPU pointer to the buffer is stored in a flann matrix with 3 columns and a stride of 4 (the last element in the \texttt{float4} should be zero).
  \item Last, the index is created. The \texttt{input\_is\_gpu\_float4} flag tells the index to treat the matrix as a gpu buffer.
 \end{description}
 
@@ -892,52 +902,66 @@ search achieved when using the automatic index and parameter configuration
 \item [flann\_params] - is a structure containing the parameters passed to
 the function. This structure is defined as follows:
 \begin{Verbatim}[fontsize=\footnotesize]
-struct FLANNParameters {
-  enum flann_algorithm_t algorithm; 	/* the algorithm to use */
+struct FLANNParameters
+{
+	enum flann_algorithm_t algorithm; /* the algorithm to use */
 
-  /* search parameters */
-  int checks;            /* how many leafs (features) to check in one search */
-  float cb_index;        /* cluster boundary index. Used when searching the 
-			  kmeans tree */
+	/* search time parameters */
+	int checks; /* how many leafs (features) to check in one search */
+	float eps; /* eps parameter for eps-knn search */
+	int sorted; /* indicates if results returned by radius search should be 
+	        sorted or not */
+	int max_neighbors; /* limits the maximum number of neighbors should be
+	        returned by radius search */
+	int cores; /* number of paralel cores to use for searching */
 
-  /*  kdtree index parameters */
-  int trees;                 /* number of randomized trees to use (for kdtree) */
+	/*  kdtree index parameters */
+	int trees; /* number of randomized trees to use (for kdtree) */
+	int leaf_max_size;
 
-  /* kmeans index parameters */
-  int branching;             /* branching factor (for kmeans tree) */
-  int iterations;            /* max iterations to perform in one kmeans cluetering 
-			      (kmeans tree) */
-  enum flann_centers_init_t centers_init;  /* algorithm used for picking the initial 
-				cluster centers for kmeans tree */
+	/* kmeans index parameters */
+	int branching; /* branching factor (for kmeans tree) */
+	int iterations; /* max iterations to perform in one kmeans cluetering
+	        (kmeans tree) */
+	enum flann_centers_init_t centers_init; /* algorithm used for picking the
+	        initial cluster centers for kmeans tree */
+	float cb_index; /* cluster boundary index. Used when searching the kmeans
+	        tree */
 
-  /* autotuned index parameters */
-  float target_precision;    /* precision desired (used for autotuning, -1 otherwise) */
-  float build_weight;        /* build tree time weighting factor */
-  float memory_weight;       /* index memory weigthing factor */
-  float sample_fraction;     /* what fraction of the dataset to use for autotuning */
+	/* autotuned index parameters */
+	float target_precision; /* precision desired (used for autotuning, -1
+	        otherwise) */
+	float build_weight; /* build tree time weighting factor */
+	float memory_weight; /* index memory weigthing factor */
+	float sample_fraction; /* what fraction of the dataset to use for autotuning */
+	/* LSH parameters */
+	unsigned int table_number_; /** The number of hash tables to use */
+	unsigned int key_size_; /** The length of the key in the hash tables */
+	unsigned int multi_probe_level_; /** Number of levels to use in multi-probe
+	        LSH, 0 for standard LSH */
 
-  /* LSH parameters */
-  unsigned int table_number_; /** The number of hash tables to use */
-  unsigned int key_size_;     /** The length of the key in the hash tables */
-  unsigned int multi_probe_level_; /** Number of levels to use in multi-probe LSH, 0 for standard LSH */
-
-  /* other parameters */
-  enum flann_log_level_t log_level;   /* determines the verbosity of each flann function */
-  long random_seed;          		/* random seed to use */
+	/* other parameters */
+	enum flann_log_level_t log_level; /* determines the verbosity of each flann
+	        function */
+	long random_seed; /* random seed to use */
 };
 \end{Verbatim}
 
 The \texttt{algorithm} and \texttt{centers\_init} fields can take the
 following values:
 \begin{Verbatim}[fontsize=\footnotesize]
-enum flann_algorithm_t {
+enum flann_algorithm_t
+{
 	FLANN_INDEX_LINEAR = 0,
 	FLANN_INDEX_KDTREE = 1,
 	FLANN_INDEX_KMEANS = 2,
 	FLANN_INDEX_COMPOSITE = 3,
-	FLANN_INDEX_KDTREE_SINGLE = 3,
+	FLANN_INDEX_KDTREE_SINGLE = 4,
+	FLANN_INDEX_HIERARCHICAL = 5,
+	FLANN_INDEX_LSH = 6,
+	FLANN_INDEX_KDTREE_CUDA = 7, // available if compiled with CUDA
 	FLANN_INDEX_SAVED = 254,
-	FLANN_INDEX_AUTOTUNED = 255
+	FLANN_INDEX_AUTOTUNED = 255,
 };
 
 enum flann_centers_init_t {
@@ -966,12 +990,14 @@ number generator.
 The field \texttt{log\_level} controls the verbosity of the messages generated by the FLANN
 library functions. It can take the following values:
 \begin{Verbatim}[fontsize=\footnotesize]
-enum flann_log_level_t {
-    FLANN_LOG_NONE = 0,
-    FLANN_LOG_FATAL = 1,
-    FLANN_LOG_ERROR = 2,
-    FLANN_LOG_WARN = 3,
-    FLANN_LOG_INFO = 4
+enum flann_log_level_t
+{
+	FLANN_LOG_NONE = 0,
+	FLANN_LOG_FATAL = 1,
+	FLANN_LOG_ERROR = 2,
+	FLANN_LOG_WARN = 3,
+	FLANN_LOG_INFO = 4,
+	FLANN_LOG_DEBUG = 5
 };
 \end{Verbatim}
 \end{description}
@@ -979,7 +1005,7 @@ enum flann_log_level_t {
 
 \subsubsection{flann\_find\_nearest\_neighbors\_index()}
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-int flann_find_nearest_neighbors_index(FLANN_INDEX index_id,
+int flann_find_nearest_neighbors_index(flann_index_t index_id,
 	float* testset,
 	int trows,
 	int* indices,
@@ -1023,15 +1049,13 @@ neighbor search and deletes the index in one step.
 \subsubsection{flann\_radius\_search()}
 
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-int flann_radius_search(FLANN_INDEX index_ptr,
-	float* query,   /* query point */
-	int* indices, /* array for storing the indices */
+int flann_radius_search(flann_index_t index_ptr, /* the index */
+	float* query, /* query point */
+	int* indices, /* array for storing the indices found (will be modified) */
 	float* dists, /* similar, but for storing distances */
 	int max_nn,  /* size of arrays indices and dists */
 	float radius, /* search radius (squared radius for euclidian metric) */
-	int checks,  /* number of features to check, sets the level
-			 of approximation */
-	FLANNParameters* flann_params);
+	struct FLANNParameters* flann_params);
 \end{Verbatim}
 
 This function performs a radius search to single query point. The indices of the neighbors found and
@@ -1061,7 +1085,7 @@ index, it must be provided to this function.
 
 \subsubsection{flann\_free\_index()}
 \begin{Verbatim}[fontsize=\footnotesize,frame=single]
-int flann_free_index(FLANN_INDEX index_id,
+int flann_free_index(flann_index_t index_id,
 	struct FLANNParameters* flann_params);
 \end{Verbatim}
 This function deletes a previously constructed index and frees all the memory
@@ -1077,14 +1101,22 @@ void flann_set_distance_type(enum flann_distance_t distance_type, int order);
 \begin{description}
 \item[distance\_type] The distance type to use. Possible values are
 \begin{Verbatim}[fontsize=\footnotesize]
-enum flann_distance_t {
-	FLANN_DIST_EUCLIDEAN = 1,  // squared euclidean distance
+enum flann_distance_t
+{
+	FLANN_DIST_EUCLIDEAN = 1,
+	FLANN_DIST_L2 = 1,
 	FLANN_DIST_MANHATTAN = 2,
+	FLANN_DIST_L1 = 2,
 	FLANN_DIST_MINKOWSKI = 3,
-	FLANN_DIST_HIST_INTERSECT  = 5,
-	FlANN_DIST_HELLINGER = 6,
-	FLANN_DIST_CHI_SQUARE  = 7,   // chi-square
-	FLANN_DIST_KULLBACK_LEIBLER  = 8,   // kullback-leibler divergence
+	FLANN_DIST_MAX = 4,
+	FLANN_DIST_HIST_INTERSECT = 5,
+	FLANN_DIST_HELLINGER = 6,
+	FLANN_DIST_CHI_SQUARE = 7,
+	FLANN_DIST_KULLBACK_LEIBLER = 8,
+	FLANN_DIST_HAMMING = 9,
+	FLANN_DIST_HAMMING_LUT = 10,
+	FLANN_DIST_HAMMING_POPCNT = 11,
+	FLANN_DIST_L2_SIMPLE = 12,
 };
 \end{Verbatim}
 \item[order] Used in for the \texttt{FLANN\_DIST\_MINKOWSKI} distance type, to choose the order of the Minkowski distance.

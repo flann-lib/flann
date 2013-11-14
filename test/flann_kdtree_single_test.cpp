@@ -19,6 +19,13 @@ TEST_F(KDTreeSingle, TestSearch)
 			query, indices, dists, knn, flann::SearchParams(-1), 0.99, gt_indices);
 }
 
+TEST_F(KDTreeSingle, TestSearch2)
+{
+	TestSearch2<L2_Simple<float> >(data, flann::KDTreeSingleIndexParams(12, false),
+			query, indices, dists, knn, flann::SearchParams(-1), 0.99, gt_indices);
+}
+
+
 TEST_F(KDTreeSingle, TestSearchPadded)
 {
     flann::Matrix<float> data_padded;

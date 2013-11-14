@@ -42,6 +42,7 @@ struct TypedIndex
 {
     flann_index_t index;
     flann_datatype_t type;
+    void* dataset;
 };
 
 
@@ -85,11 +86,16 @@ static void matlabStructToFlannStruct( const mxArray* mexParams, FLANNParameters
     flannParams.sorted = (int)*(mxGetPr(mxGetField(mexParams, 0,"sorted")));
     flannParams.max_neighbors = (int)*(mxGetPr(mxGetField(mexParams, 0,"max_neighbors")));
     flannParams.cores = (int)*(mxGetPr(mxGetField(mexParams, 0,"cores")));
+
+    // lsh
+    flannParams.table_number_ = (unsigned int)*(mxGetPr(mxGetField(mexParams, 0, "table_number")));
+    flannParams.key_size_ = (unsigned int)*(mxGetPr(mxGetField(mexParams, 0, "key_size")));
+    flannParams.multi_probe_level_ = (unsigned int)*(mxGetPr(mxGetField(mexParams, 0, "multi_probe_level")));
 }
 
 static mxArray* flannStructToMatlabStruct( const FLANNParameters& flannParams )
 {
-    const char* fieldnames[] = {"algorithm", "checks", "eps", "sorted", "max_neighbors", "cores", "trees", "leaf_max_size", "branching", "iterations", "centers_init", "cb_index"};
+    const char* fieldnames[] = {"algorithm", "checks", "eps", "sorted", "max_neighbors", "cores", "trees", "leaf_max_size", "branching", "iterations", "centers_init", "cb_index", "table_number", "key_size", "multi_probe_level"};
     mxArray* mexParams = mxCreateStructMatrix(1, 1, sizeof(fieldnames)/sizeof(const char*), fieldnames);
 
     mxSetField(mexParams, 0, "algorithm", to_mx_array(flannParams.algorithm));
@@ -106,6 +112,10 @@ static mxArray* flannStructToMatlabStruct( const FLANNParameters& flannParams )
     mxSetField(mexParams, 0, "iterations", to_mx_array(flannParams.iterations));
     mxSetField(mexParams, 0, "centers_init", to_mx_array(flannParams.centers_init));
     mxSetField(mexParams, 0, "cb_index", to_mx_array(flannParams.cb_index));
+
+    mxSetField(mexParams, 0, "table_number", to_mx_array(flannParams.table_number_));
+    mxSetField(mexParams, 0, "key_size", to_mx_array(flannParams.key_size_));
+    mxSetField(mexParams, 0, "multi_probe_level", to_mx_array(flannParams.multi_probe_level_));
 
     return mexParams;
 }
@@ -332,6 +342,15 @@ static void _index_find_nn(int nOutArray, mxArray* OutArray[], int nInArray, con
 }
 
 
+template<typename T>
+T* copy_array(const mxArray* array)
+{
+    size_t mem_size = mxGetN(array)*mxGetM(array)*sizeof(T);
+    void* data = malloc(mem_size);
+    memcpy(data,mxGetData(array),mem_size);
+    return (T*)data;
+}
+
 /**
  * Input arguments: dataset (matrix), params (struct)
  * Output arguments: index (pointer to index), params (struct), speedup(double)
@@ -349,6 +368,8 @@ static void _build_index(int nOutArray, mxArray* OutArray[], int nInArray, const
     const mxArray* datasetMat = InArray[0];
     check_allowed_type(datasetMat);
 
+
+
     int dcount = mxGetN(datasetMat);
     int length = mxGetM(datasetMat);
 
@@ -364,24 +385,28 @@ static void _build_index(int nOutArray, mxArray* OutArray[], int nInArray, const
     TypedIndex* typedIndex = new TypedIndex();
 
     if (mxIsSingle(datasetMat)) {
-        float* dataset = (float*) mxGetData(datasetMat);
+        float* dataset = copy_array<float>(datasetMat);
         typedIndex->index = flann_build_index_float(dataset,dcount,length, &speedup, &p);
         typedIndex->type = FLANN_FLOAT32;
+        typedIndex->dataset = dataset;
     }
     else if (mxIsDouble(datasetMat)) {
-        double* dataset = (double*) mxGetData(datasetMat);
+        double* dataset = copy_array<double>(datasetMat);
         typedIndex->index = flann_build_index_double(dataset,dcount,length, &speedup, &p);
         typedIndex->type = FLANN_FLOAT64;
+        typedIndex->dataset = dataset;
     }
     else if (mxIsUint8(datasetMat)) {
-        unsigned char* dataset = (unsigned char*) mxGetData(datasetMat);
+        unsigned char* dataset = copy_array<unsigned char>(datasetMat);
         typedIndex->index = flann_build_index_byte(dataset,dcount,length, &speedup, &p);
         typedIndex->type = FLANN_UINT8;
+        typedIndex->dataset = dataset;
     }
     else if (mxIsInt32(datasetMat)) {
-        int* dataset = (int*) mxGetData(datasetMat);
+        int* dataset = copy_array<int>(datasetMat);
         typedIndex->index = flann_build_index_int(dataset,dcount,length, &speedup, &p);
         typedIndex->type = FLANN_INT32;
+        typedIndex->dataset = dataset;
     }
 
     mxClassID classID;
@@ -432,6 +457,7 @@ static void _free_index(int nOutArray, mxArray* OutArray[], int nInArray, const 
     else if (typedIndex->type==FLANN_INT32) {
         flann_free_index_int(typedIndex->index, NULL);
     }
+    free(typedIndex->dataset);
     delete typedIndex;
 }
 
@@ -543,24 +569,28 @@ static void _load_index(int nOutArray, mxArray* OutArray[], int nInArray, const 
     TypedIndex* typedIndex = new TypedIndex();
 
     if (mxIsSingle(datasetMat)) {
-        float* dataset = (float*) mxGetData(datasetMat);
+        float* dataset = copy_array<float>(datasetMat);
         typedIndex->index = flann_load_index_float(filename, dataset,dcount,length);
         typedIndex->type = FLANN_FLOAT32;
+        typedIndex->dataset = dataset;
     }
     else if (mxIsDouble(datasetMat)) {
-        double* dataset = (double*) mxGetData(datasetMat);
+        double* dataset = copy_array<double>(datasetMat);
         typedIndex->index = flann_load_index_double(filename, dataset,dcount,length);
         typedIndex->type = FLANN_FLOAT64;
+        typedIndex->dataset = dataset;
     }
     else if (mxIsUint8(datasetMat)) {
-        unsigned char* dataset = (unsigned char*) mxGetData(datasetMat);
+        unsigned char* dataset = copy_array<unsigned char>(datasetMat);
         typedIndex->index = flann_load_index_byte(filename, dataset,dcount,length);
         typedIndex->type = FLANN_UINT8;
+        typedIndex->dataset = dataset;
     }
     else if (mxIsInt32(datasetMat)) {
-        int* dataset = (int*) mxGetData(datasetMat);
+        int* dataset = copy_array<int>(datasetMat);
         typedIndex->index = flann_load_index_int(filename, dataset,dcount,length);
         typedIndex->type = FLANN_INT32;
+        typedIndex->dataset = dataset;
     }
 
     mxClassID classID;
