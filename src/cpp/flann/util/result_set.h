@@ -254,10 +254,12 @@ public:
                 // Check for duplicate indices
                 size_t j = i - 1;
                 while (dist_index_[j].dist_ == dist) {
-                    if (dist_index_[j].index_ == index) {
+                    if (dist_index_[j].index_ == index)
                         return;
-                    }
-                    --j;
+                    else if (j == 0)
+                        break;
+                    else
+                        --j;
                 }
                 break;
             }
