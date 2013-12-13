@@ -176,8 +176,11 @@ public:
         assert(index >=0 && index < n);
         centers[0] = indices[index];
 
+        // Computing distance^2 will have the advantage of even higher probability further to pick new centers
+        // far from previous centers (and this complies to "k-means++: the advantages of careful seeding" article)
         for (int i = 0; i < n; i++) {
             closestDistSq[i] = distance_(points_[indices[i]], points_[indices[index]], cols_);
+            closestDistSq[i] *= closestDistSq[i];
             currentPot += closestDistSq[i];
         }
 
@@ -203,7 +206,10 @@ public:
 
                 // Compute the new potential
                 double newPot = 0;
-                for (int i = 0; i < n; i++) newPot += std::min( distance_(points_[indices[i]], points_[indices[index]], cols_), closestDistSq[i] );
+                for (int i = 0; i < n; i++) {
+                    DistanceType dist = distance_(points_[indices[i]], points_[indices[index]], cols_);
+                    newPot += std::min( dist*dist, closestDistSq[i] );
+                }
 
                 // Store the best result
                 if ((bestNewPot < 0)||(newPot < bestNewPot)) {
@@ -215,7 +221,10 @@ public:
             // Add the appropriate center
             centers[centerCount] = indices[bestNewIndex];
             currentPot = bestNewPot;
-            for (int i = 0; i < n; i++) closestDistSq[i] = std::min( distance_(points_[indices[i]], points_[indices[bestNewIndex]], cols_), closestDistSq[i] );
+            for (int i = 0; i < n; i++) {
+                DistanceType dist = distance_(points_[indices[i]], points_[indices[bestNewIndex]], cols_);
+                closestDistSq[i] = std::min( dist*dist, closestDistSq[i] );
+            }
         }
 
         centers_length = centerCount;
