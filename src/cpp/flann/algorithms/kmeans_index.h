@@ -55,6 +55,65 @@
 namespace flann
 {
 
+template <typename ElementType>
+double roundIfIntegerElementType( double value ) {
+    return value;
+};
+
+
+template <>
+double roundIfIntegerElementType<char>( double value ) {
+    return round(value);
+};
+
+template <>
+double roundIfIntegerElementType<short>( double value ) {
+    return round(value);
+};
+
+template <>
+double roundIfIntegerElementType<int>( double value ) {
+    return round(value);
+};
+
+template <>
+double roundIfIntegerElementType<long>( double value ) {
+    return round(value);
+};
+
+template <>
+double roundIfIntegerElementType<long long>( double value ) {
+    return round(value);
+};
+
+
+template <>
+double roundIfIntegerElementType<unsigned char>( double value ) {
+    return (double)((size_t)(value + 0.5));
+};
+
+template <>
+double roundIfIntegerElementType<unsigned short>( double value ) {
+    return (double)((size_t)(value + 0.5));
+};
+
+template <>
+double roundIfIntegerElementType<unsigned int>( double value ) {
+    return (double)((size_t)(value + 0.5));
+};
+
+template <>
+double roundIfIntegerElementType<unsigned long>( double value ) {
+    return (double)((unsigned long)(value + 0.5));
+};
+
+template <>
+double roundIfIntegerElementType<unsigned long long>( double value ) {
+    return (double)((unsigned long long)(value + 0.5));
+};
+
+
+
 struct KMeansIndexParams : public IndexParams
 {
     KMeansIndexParams(int branching = 32, int iterations = 11,
@@ -620,7 +679,7 @@ private:
                 int cnt = count[i];
                 double div_factor = 1.0/cnt;
                 for (size_t k=0; k<veclen_; ++k) {
-                    dcenters[i][k] *= div_factor;
+                    dcenters[i][k] = roundIfIntegerElementType<ElementType>( dcenters[i][k] * div_factor );
                 }
             }
 
