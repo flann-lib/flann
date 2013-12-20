@@ -42,6 +42,12 @@ struct squareDistance<L2<ElementType>, ElementType>
     ResultType operator()( ResultType dist ) { return dist; }
 };
 
+template <typename ElementType>
+struct squareDistance<MinkowskiDistance<ElementType>, ElementType>
+{
+    typedef typename MinkowskiDistance<ElementType>::ResultType ResultType;
+    ResultType operator()( ResultType dist ) { return dist; }
+};
 
 template <typename ElementType>
 struct squareDistance<HellingerDistance<ElementType>, ElementType>
@@ -49,7 +55,6 @@ struct squareDistance<HellingerDistance<ElementType>, ElementType>
     typedef typename HellingerDistance<ElementType>::ResultType ResultType;
     ResultType operator()( ResultType dist ) { return dist; }
 };
-
 
 template <typename ElementType>
 struct squareDistance<ChiSquareDistance<ElementType>, ElementType>
