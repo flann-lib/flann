@@ -165,6 +165,9 @@ public:
         case FLANN_CENTERS_KMEANSPP:
             chooseCenters_ = new KMeansppCenterChooser<Distance>(distance_, points_);
         	break;
+        case FLANN_CENTERS_GROUPWISE:
+            chooseCenters_ = new GroupWiseCenterChooser<Distance>(distance_, points_);
+            break;
         default:
             throw FLANNException("Unknown algorithm for choosing initial centers.");
         }
