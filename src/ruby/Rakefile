@@ -1,0 +1,84 @@
+require 'rubygems'
+require 'rubygems/package_task'
+require 'bundler'
+begin
+  Bundler.setup(:default, :development)
+rescue
+  $stderr.puts e.message
+  $stderr.puts "Run `bundle install` to install missing gems"
+  exit e.status_code
+end
+
+require 'rake'
+
+gemspec = eval(IO.read("flann.gemspec"))
+
+Gem::PackageTask.new(gemspec).define
+
+desc "install the gem locally"
+task :install => [:package] do
+  sh %{gem install pkg/flann-#{NMatrix::VERSION}.gem}
+end
+
+
+require 'rspec/core/rake_task'
+require 'rspec/core'
+require 'rspec/core/rake_task'
+RSpec::Core::RakeTask.new(:spec) do |spec|
+  spec.pattern = FileList['spec/**/*_spec.rb'].uniq
+end
+
+task :console do |task|
+  cmd = [ 'irb', "-r './lib/flann.rb'" ]
+  run *cmd
+end
+
+task :pry do |task|
+  cmd = [ 'pry', "-r './lib/flann.rb'" ]
+  run *cmd
+end
+
+
+task :default => :spec
+
+def run *cmd
+  sh(cmd.join(" "))
+end
+
+
+desc "Check the manifest for correctness"
+task :check_manifest do |task|
+  manifest_files  = File.read("Manifest.txt").split
+
+  git_files       = `git ls-files |grep -v 'spec/'`.split
+  ignore_files    = %w{.gitignore .rspec}
+
+  possible_files  = git_files - ignore_files
+
+  missing_files   = possible_files - manifest_files
+  extra_files     = manifest_files - possible_files
+
+  unless missing_files.empty?
+    STDERR.puts "The following files are in the git repo but not the Manifest:"
+    missing_files.each { |f| STDERR.puts " -- #{f}"}
+  end
+
+  unless extra_files.empty?
+    STDERR.puts "The following files are in the Manifest but may not be necessary:"
+    extra_files.each { |f| STDERR.puts " -- #{f}"}
+  end
+
+  if extra_files.empty? && missing_files.empty?
+    STDERR.puts "Manifest looks good!"
+  end
+
+end
+
+
+require "rdoc/task"
+RDoc::Task.new do |rdoc|
+  rdoc.main = "README.rdoc"
+  rdoc.rdoc_files.include(%w{README.rdoc History.txt LICENSE.txt lib/flann/**/*.rb})
+end
+
+# vim: syntax=ruby
