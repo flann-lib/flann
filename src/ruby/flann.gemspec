@@ -1,11 +1,11 @@
 lib = File.expand_path('../lib/', __FILE__)
 $:.unshift lib unless $:.include?(lib)
 
-# require 'flann/version'
+require 'flann/version'
 
 Gem::Specification.new do |gem|
   gem.name = "flann"
-  gem.version = '0.0.1'
+  gem.version = Flann::VERSION::STRING
   gem.summary = "Ruby interface for FLANN, approximate nearest neighbors methods in C"
   gem.description = "Ruby interface for FLANN, approximate nearest neighbors methods in C"
   gem.homepage = 'http://www.cs.ubc.ca/research/flann/'

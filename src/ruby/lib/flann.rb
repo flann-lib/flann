@@ -1,7 +1,9 @@
 require 'ffi'
 require 'nmatrix'
 
+require_relative "flann/version.rb"
 require_relative "flann/index.rb"
+
 
 module Flann
   extend FFI::Library

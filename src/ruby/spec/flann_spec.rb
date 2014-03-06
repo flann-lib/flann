@@ -1,6 +1,20 @@
 require File.dirname(__FILE__) + "/spec_helper.rb"
 
 describe Flann do
+  it "::VERSION::STRING matches #define FLANN_VERSION_ in config.h" do
+    found = false
+    File.open(File.dirname(__FILE__) + "/../../cpp/flann/config.h", "r") do |f|
+      while line = f.gets
+        next unless line =~ /#[\s]*define[\s]+FLANN_VERSION_[\s]+"\d.\d.\d"/
+        fields = line.split
+        found = true
+        expect(fields.last[1...-1]).to eq(Flann::VERSION::STRING.split('.')[0...-1].join('.'))
+      end
+    end
+
+    raise("could not find version string in config.h") unless found
+  end
+
   context "#set_distance_type!" do
     it "sets the distance functor without error" do
       pending "distance type unsupported in the C bindings, use the C++ bindings instead"
