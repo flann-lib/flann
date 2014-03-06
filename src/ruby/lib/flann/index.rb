@@ -16,7 +16,7 @@ module Flann
     #
     # * https://github.com/mariusmuja/flann/tree/master/src/cpp/flann/algorithms
     #
-    def initialize dataset: nil, dtype: :float64, parameters: Flann::DEFAULT_PARAMETERS
+    def initialize dataset: nil, dtype: :float64, parameters: Flann::Parameters::DEFAULT
       @dataset        = dataset
       @dtype          = (!dataset.nil? && dataset.is_a?(NMatrix)) ? dataset.dtype : dtype
       @index_ptr      = nil
@@ -40,7 +40,7 @@ module Flann
     end
 
     # Get the nearest neighbors based on this index. Forces a build of the index if one hasn't been done yet.
-    def nearest_neighbors testset, k, parameters: DEFAULT_PARAMETERS
+    def nearest_neighbors testset, k, parameters: Parameters.new(Parameters::DEFAULT)
       self.build! if index_ptr.nil?
 
       parameters_ptr, parameters = Flann::handle_parameters(parameters)
@@ -58,7 +58,7 @@ module Flann
     end
 
     # Perform a radius search on a single query point
-    def radius_search query, radius, max_k: dataset.shape[1], parameters: DEFAULT_PARAMETERS
+    def radius_search query, radius, max_k: dataset.shape[1], parameters: Parameters.new(Parameters::DEFAULT)
       self.build! if index_ptr.nil?
       parameters_ptr, parameters = Flann::handle_parameters(parameters)
       indices_int_ptr, distances_float_ptr = Flann::allocate_results_space(max_k)
@@ -89,7 +89,7 @@ module Flann
     end
 
     # Free an index
-    def free! parameters = DEFAULT_PARAMETERS
+    def free! parameters = Parameters.new(Parameters::DEFAULT)
       c_method = "flann_free_index_#{Flann::dtype_to_c(dtype)}".to_sym
       parameters_ptr, parameters = Flann::handle_parameters(parameters)
       Flann.send(c_method, index_ptr, parameters_ptr)

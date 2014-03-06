@@ -15,30 +15,52 @@ module Flann
   LogLevel    = enum(:none, :fatal, :error, :warn, :info)
   DistanceType = enum(:euclidean, :manhattan, :minkowski, :hist_intersect, :hellinger, :chi_square, :kullback_leibler)
 
-  DEFAULT_PARAMETERS = [:kdtree,
-                        32, 0.0,
-                        0, -1, 0,
-                        4, 4,
-                        32, 11, :random, 0.2,
-                        0.9, 0.01, 0, 0.1,
-                        :none, 0
-                       ]
-
   # For NMatrix compatibility
   typedef :float,  :float32
   typedef :double, :float64
   typedef :pointer, :index_params_ptr
   typedef :pointer, :index_ptr
 
+
+  class InitializableStruct < FFI::Struct
+    def initialize pointer=nil, *layout, &block
+      if pointer.respond_to?(:each_pair)
+        options = pointer
+        pointer = nil
+      else
+        options
+      end
+
+      super(pointer, *layout, &block)
+
+      if defined?(self.class::DEFAULTS)
+        options = self.class::DEFAULTS.merge(options)
+      end
+
+      options.each_pair do |key, value|
+        self[key] = value
+      end unless options.nil?
+    end
+  end
+
+
   # A nearest neighbor search index for a given dataset.
-  class Parameters < FFI::Struct
+  class Parameters < InitializableStruct
     layout :algorithm, Flann::Algorithm,    # The algorithm to use (linear, kdtree, kmeans, composite, kdtree_single, saved, autotuned)
            :checks, :int,                   # How many leaves (features) to use (for kdtree)
-           :cluster_boundary_index, :float, # aka cb_tree, used when searching the kmeans tree
+           :eps, :float,                    # eps parameter for eps-knn search
+           :sorted, :int,                   # indicates if results returned by radius search should be sorted or not
+           :max_neighbors, :int,            # limits the maximum number of neighbors returned
+           :cores, :int,                    # number of parallel cores to use for searching
+
            :trees, :int,                    # Number of randomized trees to use (for kdtree)
+           :leaf_max_size, :int,            # ?
+
            :branching, :int,                # Branching factor (for kmeans tree)
            :iterations, :int,               # Max iterations to perform in one kmeans clustering (kmeans tree)
            :centers_init, Flann::CentersInit, # Algorithm used (random, gonzales, kmeanspp)
+           :cluster_boundary_index, :float, # Cluster boundary index. Used when searching the kmeans tree
+
            :target_precision, :float,       # Precision desired (used for auto-tuning, -1 otherwise)
            :build_weight, :float,           # Build tree time weighting factor
            :memory_weight, :float,          # Index memory weighting factor
@@ -47,8 +69,17 @@ module Flann
            :table_number, :uint,            # The number of hash tables to use
            :key_size, :uint,                # The length of the key to use in the hash tables
            :multi_probe_level, :uint,       # Number of levels to use in multi-probe LSH, 0 for standard LSH
+
            :log_level, Flann::LogLevel,     # Determines the verbosity of each flann function
            :random_seed, :long              # Random seed to use
+
+    DEFAULT       = {algorithm: :kdtree,
+                     checks: 32, eps: 0.0,
+                     sorted: 0, max_neighbors: -1, cores: 0,
+                     trees: 4, leaf_max_size: 4,
+                     log_level: :none, random_seed: 0}
+
+
   end
 
   class << self
@@ -72,7 +103,7 @@ module Flann
 
     # Don't know if these will be a hash, a static struct, or a pointer to a struct. Return the pointer and the struct.
     def handle_parameters parameters #:nodoc:
-      parameters ||= DEFAULT_PARAMETERS unless block_given?
+      parameters ||= Parameters::DEFAULT unless block_given?
 
       if parameters.is_a?(FFI::MemoryPointer) # User supplies us with the necessary parameters already in the correct form.
         c_parameters_ptr = parameters
@@ -100,8 +131,8 @@ module Flann
 
     # Find the k nearest neighbors.
     #
-    # If no index parameters are given, FLANN_DEFAULT_PARAMETERS are used. A block is accepted as well.
-    def nearest_neighbors dataset, testset, k, parameters: DEFAULT_PARAMETERS
+    # If no index parameters are given, FLANN_Parameters::DEFAULT are used. A block is accepted as well.
+    def nearest_neighbors dataset, testset, k, parameters: Parameters.new(Parameters::DEFAULT)
       # Get a pointer and a struct regardless of how the arguments are supplied.
       parameters_ptr, parameters = handle_parameters(parameters)
       result_size = testset.shape[0] * k
@@ -123,12 +154,19 @@ module Flann
     end
 
     # Perform hierarchical clustering of a set of points.
-    def cluster dataset, clusters, parameters: DEFAULT_PARAMETERS
+    #
+    # Arguments:
+    # * dataset: NMatrix of points
+    # * parameters:
+    def cluster dataset, clusters, parameters: Parameters.new(Parameters::DEFAULT)
       c_method = "flann_compute_cluster_centers_#{Flann::dtype_to_c(dataset.dtype)}".to_sym
 
       result = dataset.clone_structure
       parameters_ptr, parameters = handle_parameters(parameters)
+
+      #err_code =
       Flann.send(c_method, FFI::Pointer.new_from_nmatrix(dataset), dataset.shape[0], dataset.shape[1], clusters, FFI::Pointer.new_from_nmatrix(result), parameters_ptr)
+      #raise("unknown error in cluster") if err_code < 0
 
       result
     end
@@ -138,8 +176,8 @@ module Flann
 
 protected
 
-    # byte: unsigned char*dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params
-    # only thing that changes is the pointer type for the first arg.
+  # byte: unsigned char*dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params
+  # only thing that changes is the pointer type for the first arg.
   attach_function :flann_build_index_byte,   [:pointer, :int, :int, :pointer, :index_params_ptr], :index_ptr
   attach_function :flann_build_index_int,    [:pointer, :int, :int, :pointer, :index_params_ptr], :index_ptr
   attach_function :flann_build_index_float,  [:pointer, :int, :int, :pointer, :index_params_ptr], :index_ptr

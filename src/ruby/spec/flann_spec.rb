@@ -1,6 +1,7 @@
 require File.dirname(__FILE__) + "/spec_helper.rb"
 
 describe Flann do
+
   it "::VERSION::STRING matches #define FLANN_VERSION_ in config.h" do
     found = false
     File.open(File.dirname(__FILE__) + "/../../cpp/flann/config.h", "r") do |f|
