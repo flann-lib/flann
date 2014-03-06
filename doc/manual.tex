@@ -1011,7 +1011,6 @@ int flann_find_nearest_neighbors_index(flann_index_t index_id,
 	int* indices,
 	float* dists,
 	int nn,
-	int checks,
 	struct FLANNParameters* flann_params);
 \end{Verbatim}
 This function searches for the nearest neighbors of the
@@ -1024,8 +1023,7 @@ nearest neighbors for each point in the \texttt{testset} and stores them in the
 row-major format). The memory for the \texttt{result} matrix must be allocated
 before the \texttt{flann\_find\_nearest\_neighbors\_index()} function is
 called. The distances to the nearest neighbors found are stored in the \texttt{dists}
-matrix. The \texttt{checks} parameter specifies how many tree traversals should
-be performed during the search.
+matrix.
 
 
 
