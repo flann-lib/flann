@@ -50,7 +50,7 @@ the exact searches.
 FLANN (Fast Library for Approximate Nearest Neighbors) is a library for
 performing fast approximate nearest neighbor searches. FLANN is written in
 the C++ programming language. FLANN can be easily used in many contexts
-through the C, MATLAB and Python bindings provided with the library.
+through the C, MATLAB, Python, and Ruby bindings provided with the library.
 
 
 
@@ -59,7 +59,7 @@ through the C, MATLAB and Python bindings provided with the library.
 
 
 This section contains small examples of how to use the FLANN library from
-different programming languages (C++, C, MATLAB and Python).
+different programming languages (C++, C, MATLAB, Python, and Ruby).
 
 \begin{itemize}
 
@@ -187,6 +187,31 @@ result,dists = flann.nn(dataset,testset,5,algorithm="kmeans",
                branching=32, iterations=7, checks=16);
 \end{Verbatim}
 
+\item \textbf{Ruby}
+\begin{Verbatim}[fontsize=\scriptsize,frame=single]
+require 'flann' # also requires NMatrix
+
+dataset = NMatrix.random([10000,128])
+testset = NMatrix.random([1000,128])
+
+index   = Flann::Index.new(dataset) do |params|
+  params[:algorithm]  = :kmeans
+  params[:branching]  = 32
+  params[:iterations] = 7
+  params[:checks]     = 16
+end
+speedup = index.build! # this is optional
+
+results, distances = index.nearest_neighbors(testset, 5)
+
+index.save "my_index.save"
+
+# Alternatively, without an index:
+results, distances = Flann.nearest_neighbors(dataset, testset, 5,
+                      algorithm: :kmeans, branching: 32,
+                      iterations: 7, checks: 16)
+
+\end{Verbatim}
 \end{itemize}
 
 
@@ -1541,7 +1566,7 @@ be provided since it is not saved with the index.
 
 
 
-See section \ref{sec:quickstart} for an example of how to use the Python
+See section \ref{sec:quickstart} for an example of how to use the Python and Ruby
 bindings.
 
 

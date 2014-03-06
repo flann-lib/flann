@@ -96,8 +96,8 @@ module Flann
     # Allocates index space and distance space for storing results from various searches. For a k-nearest neighbors
     # search, for example, you want trows (the number of rows in the testset) times k (the number of nearest neighbors
     # being searched for).
-    def allocate_results_space result_size #:nodoc:
-      [FFI::MemoryPointer.new(:int, result_size), FFI::MemoryPointer.new(:float, result_size)]
+    def allocate_results_space result_size, c_type #:nodoc:
+      [FFI::MemoryPointer.new(:int, result_size), FFI::MemoryPointer.new(c_type, result_size)]
     end
 
 
@@ -132,18 +132,23 @@ module Flann
     # Find the k nearest neighbors.
     #
     # If no index parameters are given, FLANN_Parameters::DEFAULT are used. A block is accepted as well.
-    def nearest_neighbors dataset, testset, k, parameters: Parameters.new(Parameters::DEFAULT)
+    def nearest_neighbors dataset, testset, k, parameters = {}
+      parameters = Parameters.new(Flann::Parameters::DEFAULT.merge(parameters))
       # Get a pointer and a struct regardless of how the arguments are supplied.
       parameters_ptr, parameters = handle_parameters(parameters)
       result_size = testset.shape[0] * k
-      indices_int_ptr, distances_float_ptr = allocate_results_space(result_size)
 
-      Flann.flann_find_nearest_neighbors FFI::Pointer.new_from_nmatrix(dataset), dataset.shape[0], dataset.shape[1],
-                                         FFI::Pointer.new_from_nmatrix(testset), testset.shape[0],
-                                         indices_int_ptr, distances_float_ptr, k, parameters_ptr
+      c_type = Flann::dtype_to_c(dataset.dtype)
+      c_method = "flann_find_nearest_neighbors_#{c_type}".to_sym
+      indices_int_ptr, distances_t_ptr = allocate_results_space(result_size, c_type)
+
+      # dataset, rows, cols, testset, trows, indices, dists, nn, flann_params
+      Flann.send c_method,   FFI::Pointer.new_from_nmatrix(dataset), dataset.shape[0], dataset.shape[1],
+                             FFI::Pointer.new_from_nmatrix(testset), testset.shape[0],
+                             indices_int_ptr, distances_t_ptr, k, parameters_ptr
 
       # Return results: two arrays, one of indices and one of distances.
-      [indices_int_ptr.read_array_of_int(result_size), distances_float_ptr.read_array_of_float(result_size)]
+      [indices_int_ptr.read_array_of_int(result_size), distances_t_ptr.read_array_of_float(result_size)]
     end
     alias :nn :nearest_neighbors
 
@@ -158,7 +163,8 @@ module Flann
     # Arguments:
     # * dataset: NMatrix of points
     # * parameters:
-    def cluster dataset, clusters, parameters: Parameters.new(Parameters::DEFAULT)
+    def cluster dataset, clusters, parameters = {}
+      parameters = Parameters.new(Flann::Parameters::DEFAULT.merge(parameters))
       c_method = "flann_compute_cluster_centers_#{Flann::dtype_to_c(dataset.dtype)}".to_sym
 
       result = dataset.clone_structure
@@ -184,10 +190,16 @@ protected
   attach_function :flann_build_index_double, [:pointer, :int, :int, :pointer, :index_params_ptr], :index_ptr
 
   # index, testset, trows, indices, dists, nn, flann_params
-  attach_function :flann_find_nearest_neighbors_index, [:index_ptr, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
+  attach_function :flann_find_nearest_neighbors_index_byte,   [:index_ptr, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
+  attach_function :flann_find_nearest_neighbors_index_int,    [:index_ptr, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
+  attach_function :flann_find_nearest_neighbors_index_float,  [:index_ptr, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
+  attach_function :flann_find_nearest_neighbors_index_double, [:index_ptr, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
 
   # dataset, rows, cols, testset, trows, indices, dists, nn, flann_params
-  attach_function :flann_find_nearest_neighbors, [:pointer, :int, :int, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
+  attach_function :flann_find_nearest_neighbors_byte,   [:pointer, :int, :int, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
+  attach_function :flann_find_nearest_neighbors_int,    [:pointer, :int, :int, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
+  attach_function :flann_find_nearest_neighbors_float,  [:pointer, :int, :int, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
+  attach_function :flann_find_nearest_neighbors_double, [:pointer, :int, :int, :pointer, :int, :pointer, :pointer, :int, :index_params_ptr], :int
 
   # index, query point, result indices, result distances, max_nn, radius, flann_params
   attach_function :flann_radius_search_byte,   [:index_ptr, :pointer, :pointer, :pointer, :int, :float, :index_params_ptr], :int

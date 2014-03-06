@@ -6,7 +6,7 @@ describe Flann::Index do
   before :each do
     @dataset = NMatrix.random([1000,128])
     @testset = NMatrix.random([100,128])
-    @index   = Flann::Index.new(dataset: @dataset) do |t|
+    @index   = Flann::Index.new(@dataset) do |t|
       t[:algorithm] = :kdtree
       t[:trees]     = 4
     end
@@ -43,7 +43,7 @@ describe Flann::Index do
 
       raise(IOError, "save failed") unless File.exists?("temp_index.save_file")
 
-      post_index = Flann::Index.new(dataset: @dataset)
+      post_index = Flann::Index.new(@dataset)
       post_index.load!("temp_index.save_file")
       FileUtils.rm("temp_index.save_file", :force => true)
     end
