@@ -52,23 +52,24 @@ module Flann
   class << self
 
 
-    def dtype_to_c d
-      return :float if d == :float32
-      return :double if d == :float64
-      return d
+    DTYPE_TO_C = {:float32 => :float, :float64 => :double, :int32 => :int, :byte => :byte, :int8 => :byte}
+
+    def dtype_to_c d #:nodoc:
+      return DTYPE_TO_C[d] if DTYPE_TO_C.has_key?(d)
+      raise(NMatrix::DataTypeError, "FLANN does not support this dtype")
     end
 
 
     # Allocates index space and distance space for storing results from various searches. For a k-nearest neighbors
     # search, for example, you want trows (the number of rows in the testset) times k (the number of nearest neighbors
     # being searched for).
-    def allocate_results_space result_size
+    def allocate_results_space result_size #:nodoc:
       [FFI::MemoryPointer.new(:int, result_size), FFI::MemoryPointer.new(:float, result_size)]
     end
 
 
     # Don't know if these will be a hash, a static struct, or a pointer to a struct. Return the pointer and the struct.
-    def handle_parameters parameters
+    def handle_parameters parameters #:nodoc:
       parameters ||= DEFAULT_PARAMETERS unless block_given?
 
       if parameters.is_a?(FFI::MemoryPointer) # User supplies us with the necessary parameters already in the correct form.
@@ -94,38 +95,11 @@ module Flann
       [c_parameters_ptr, c_parameters]
     end
 
-    def handle_index index
-      return index.index_ptr if index.is_a?(Flann::Index)
-      index
-    end
-
-
-    # Find the k nearest neighbors with an index already built.
-    #
-    def nearest_neighbors_by_index index, testset, k, parameters: DEFAULT_PARAMETERS
-      parameters_ptr, parameters = handle_parameters(parameters)
-      result_size = testset.shape[0] * k
-      indices_int_ptr, distances_float_ptr = allocate_results_space(result_size)
-      index_ptr = handle_index(index)
-
-      raise(ArgumentError, "did you forget to call #build! on your index?") if index.index_ptr.nil?
-
-      Flann.flann_find_nearest_neighbors_index index_ptr,
-                                               FFI::Pointer.new_from_nmatrix(testset),
-                                               testset.shape[0],
-                                               indices_int_ptr, distances_float_ptr,
-                                               k,
-                                               parameters_ptr
-
-      [indices_int_ptr.read_array_of_int(result_size), distances_float_ptr.read_array_of_float(result_size)]
-    end
-
 
     # Find the k nearest neighbors.
     #
     # If no index parameters are given, FLANN_DEFAULT_PARAMETERS are used. A block is accepted as well.
     def nearest_neighbors dataset, testset, k, parameters: DEFAULT_PARAMETERS
-
       # Get a pointer and a struct regardless of how the arguments are supplied.
       parameters_ptr, parameters = handle_parameters(parameters)
       result_size = testset.shape[0] * k
@@ -147,20 +121,23 @@ module Flann
     end
 
     # Perform hierarchical clustering of a set of points.
-    def compute_cluster_centers dataset, clusters, parameters: DEFAULT_PARAMETERS
+    def cluster dataset, clusters, parameters: DEFAULT_PARAMETERS
       c_method = "flann_compute_cluster_centers_#{Flann::dtype_to_c(dataset.dtype)}".to_sym
 
       result = dataset.clone_structure
       parameters_ptr, parameters = handle_parameters(parameters)
       Flann.send(c_method, FFI::Pointer.new_from_nmatrix(dataset), dataset.shape[0], dataset.shape[1], clusters, FFI::Pointer.new_from_nmatrix(result), parameters_ptr)
+
+      result
     end
+    alias :compute_cluster_centers :cluster
   end
 
 
 protected
 
-  # byte: unsigned char*dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params
-  # only thing that changes is the pointer type for the first arg.
+    # byte: unsigned char*dataset, int rows, int cols, float* speedup, FLANNParameters* flann_params
+    # only thing that changes is the pointer type for the first arg.
   attach_function :flann_build_index_byte,   [:pointer, :int, :int, :pointer, :index_params_ptr], :index_ptr
   attach_function :flann_build_index_int,    [:pointer, :int, :int, :pointer, :index_params_ptr], :index_ptr
   attach_function :flann_build_index_float,  [:pointer, :int, :int, :pointer, :index_params_ptr], :index_ptr
@@ -178,26 +155,26 @@ protected
   attach_function :flann_radius_search_float,  [:index_ptr, :pointer, :pointer, :pointer, :int, :float, :index_params_ptr], :int
   attach_function :flann_radius_search_double, [:index_ptr, :pointer, :pointer, :pointer, :int, :float, :index_params_ptr], :int
 
-  attach_function :flann_save_index_byte, [:index_ptr, :pointer], :int
-  attach_function :flann_save_index_int, [:index_ptr, :pointer], :int
-  attach_function :flann_save_index_float, [:index_ptr, :pointer], :int
-  attach_function :flann_save_index_double, [:index_ptr, :pointer], :int
+  attach_function :flann_save_index_byte,   [:index_ptr, :string], :int
+  attach_function :flann_save_index_int,    [:index_ptr, :string], :int
+  attach_function :flann_save_index_float,  [:index_ptr, :string], :int
+  attach_function :flann_save_index_double, [:index_ptr, :string], :int
 
-  attach_function :flann_load_index_byte, [:pointer, :pointer, :int, :int], :index_ptr
-  attach_function :flann_load_index_int, [:pointer, :pointer, :int, :int], :index_ptr
-  attach_function :flann_load_index_float, [:pointer, :pointer, :int, :int], :index_ptr
-  attach_function :flann_load_index_double, [:pointer, :pointer, :int, :int], :index_ptr
+  attach_function :flann_load_index_byte,   [:string, :pointer, :int, :int], :index_ptr
+  attach_function :flann_load_index_int,    [:string, :pointer, :int, :int], :index_ptr
+  attach_function :flann_load_index_float,  [:string, :pointer, :int, :int], :index_ptr
+  attach_function :flann_load_index_double, [:string, :pointer, :int, :int], :index_ptr
 
-  attach_function :flann_free_index_byte, [:index_ptr, :index_params_ptr], :int
-  attach_function :flann_free_index_int, [:index_ptr, :index_params_ptr], :int
-  attach_function :flann_free_index_float, [:index_ptr, :index_params_ptr], :int
+  attach_function :flann_free_index_byte,   [:index_ptr, :index_params_ptr], :int
+  attach_function :flann_free_index_int,    [:index_ptr, :index_params_ptr], :int
+  attach_function :flann_free_index_float,  [:index_ptr, :index_params_ptr], :int
   attach_function :flann_free_index_double, [:index_ptr, :index_params_ptr], :int
 
   attach_function :flann_set_distance_type, [DistanceType, :int], :void
 
-  attach_function :flann_compute_cluster_centers_byte, [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
-  attach_function :flann_compute_cluster_centers_int, [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
-  attach_function :flann_compute_cluster_centers_float, [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
-  attach_function :flann_compute_cluster_centers_double, [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
+  attach_function :flann_compute_cluster_centers_byte,    [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
+  attach_function :flann_compute_cluster_centers_int,     [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
+  attach_function :flann_compute_cluster_centers_float,   [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
+  attach_function :flann_compute_cluster_centers_double,  [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
 
 end

@@ -1,6 +1,7 @@
 class FFI::Pointer
   class << self
     def new_from_nmatrix nm
+      raise(StorageError, "dense storage expected") unless nm.dense?
       ::FFI::Pointer.new(nm.data_pointer).tap { |p| p.autorelease = false }
     end
   end
@@ -28,11 +29,11 @@ module Flann
 
     # Build an index
     def build!
-      raise("no dataset specified") if @dataset.nil?
+      raise("no dataset specified") if dataset.nil?
 
       c_method = "flann_build_index_#{Flann::dtype_to_c(dtype)}".to_sym
       speedup_float_ptr = FFI::MemoryPointer.new(:float)
-      @index_ptr = Flann.send(c_method, FFI::Pointer.new_from_nmatrix(@dataset), @dataset.shape[0], @dataset.shape[1], speedup_float_ptr, parameters_ptr)
+      @index_ptr = Flann.send(c_method, FFI::Pointer.new_from_nmatrix(dataset), dataset.shape[0], dataset.shape[1], speedup_float_ptr, parameters_ptr)
 
       # Return the speedup
       speedup_float_ptr.read_float
@@ -41,28 +42,39 @@ module Flann
     # Get the nearest neighbors based on this index. Forces a build of the index if one hasn't been done yet.
     def nearest_neighbors testset, k, parameters: DEFAULT_PARAMETERS
       self.build! if index_ptr.nil?
-      Flann::nearest_neighbors_by_index index_ptr, testset, k, parameters: parameters
+
+      parameters_ptr, parameters = Flann::handle_parameters(parameters)
+      result_size = testset.shape[0] * k
+      indices_int_ptr, distances_float_ptr = Flann::allocate_results_space(result_size)
+
+      Flann.flann_find_nearest_neighbors_index index_ptr,
+                                               FFI::Pointer.new_from_nmatrix(testset),
+                                               testset.shape[0],
+                                               indices_int_ptr, distances_float_ptr,
+                                               k,
+                                               parameters_ptr
+
+      [indices_int_ptr.read_array_of_int(result_size), distances_float_ptr.read_array_of_float(result_size)]
     end
 
     # Perform a radius search on a single query point
     def radius_search query, radius, max_k: dataset.shape[1], parameters: DEFAULT_PARAMETERS
       self.build! if index_ptr.nil?
-      parameters_ptr, parameters = handle_parameters(parameters)
-      indices_int_ptr, distances_float_ptr = allocate_results_space(max_k)
+      parameters_ptr, parameters = Flann::handle_parameters(parameters)
+      indices_int_ptr, distances_float_ptr = Flann::allocate_results_space(max_k)
 
       c_method = "flann_radius_search_#{Flann::dtype_to_c(dtype)}".to_sym
-      Flann.send(c_method, FFI::Pointer.new_from_nmatrix(query), indices_int_ptr, distances_float_ptr, max_k, radius, parameters_ptr)
+      Flann.send(c_method, index_ptr, FFI::Pointer.new_from_nmatrix(query), indices_int_ptr, distances_float_ptr, max_k, radius, parameters_ptr)
 
       # Return results: two arrays, one of indices and one of distances.
-      [indices_int_ptr.read_array_of_int(result_size), distances_float_ptr.read_array_of_float(result_size)]
+      [indices_int_ptr.read_array_of_int(max_k), distances_float_ptr.read_array_of_float(max_k)]
     end
 
     # Save an index to a file (without the dataset).
     def save filename
-      raise(IOError, "Cannot write an unbuilt index") if self.index_ptr.nil?
-      c_filename = FFI::MemoryPointer.from_string(filename)
+      raise(IOError, "Cannot write an unbuilt index") if index_ptr.nil?     # FIXME: This should probably have its own exception type.
       c_method = "flann_save_index_#{Flann::dtype_to_c(dtype)}".to_sym
-      Flann.send(c_method, c_filename)
+      Flann.send(c_method, index_ptr, filename)
       self
     end
 
@@ -70,18 +82,17 @@ module Flann
     #
     # FIXME: This needs to free the previous dataset first.
     def load! filename
-      c_filename = FFI::MemoryPointer.from_string(filename)
       c_method = "flann_load_index_#{Flann::dtype_to_c(dtype)}".to_sym
 
-      @index_ptr = Flann.send(c_method, c_filename, FFI::Pointer.new_from_nmatrix(@dataset), @dataset.shape[0], @dataset.shape[1])
+      @index_ptr = Flann.send(c_method, filename, FFI::Pointer.new_from_nmatrix(dataset), dataset.shape[0], dataset.shape[1])
       self
     end
 
     # Free an index
     def free! parameters = DEFAULT_PARAMETERS
       c_method = "flann_free_index_#{Flann::dtype_to_c(dtype)}".to_sym
-      parameters_ptr, parameters = handle_parameters(parameters)
-      Flann.send(c_method, @index_ptr, parameters_ptr)
+      parameters_ptr, parameters = Flann::handle_parameters(parameters)
+      Flann.send(c_method, index_ptr, parameters_ptr)
       @index_ptr = nil
       self
     end
