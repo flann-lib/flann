@@ -37,14 +37,17 @@ module Flann
   ffi_lib "libflann"
 
   # Declare enumerators
-  Algorithm   = enum(:linear, :kdtree, :kmeans, :composite, :kdtree_single, :saved, :autotuned)
-  CentersInit = enum(:random, :gonzales, :kmeanspp)
-  LogLevel    = enum(:none, :fatal, :error, :warn, :info)
-  DistanceType = enum(:euclidean, :manhattan, :minkowski, :hist_intersect, :hellinger, :chi_square, :kullback_leibler)
+  Algorithm    = enum(:algorithm, [:linear, :kdtree, :kmeans, :composite, :kdtree_single, :hierarchical, :lsh, :kdtree_cuda, :saved, 254, :autotuned, 255])
+  CentersInit  = enum(:centers_init, [:random, :gonzales, :kmeanspp])
+  LogLevel     = enum(:log_level, [:none, :fatal, :error, :warn, :info, :debug])
+
+  # Note that Hamming and beyond are not supported in the C API. We include them here just in case of future improvements.
+  DistanceType = enum(:distance_type, [:undefined, :euclidean, :l2, :manhattan, :l1, :minkowski, :max, :hist_intersect, :hellinger, :chi_square, :kullback_leibler, :hamming, :hamming_lut, :hamming_popcnt, :l2_simple])
 
   # For NMatrix compatibility
-  typedef :float,  :float32
-  typedef :double, :float64
+  typedef :float,   :float32
+  typedef :double,  :float64
+  typedef :char,    :byte
   typedef :pointer, :index_params_ptr
   typedef :pointer, :index_ptr
 
@@ -123,8 +126,10 @@ module Flann
     # Allocates index space and distance space for storing results from various searches. For a k-nearest neighbors
     # search, for example, you want trows (the number of rows in the testset) times k (the number of nearest neighbors
     # being searched for).
+    #
+    # Note that c_type will produce float for everything except double, which produces double.
     def allocate_results_space result_size, c_type #:nodoc:
-      [FFI::MemoryPointer.new(:int, result_size), FFI::MemoryPointer.new(c_type, result_size)]
+      [FFI::MemoryPointer.new(:int, result_size), FFI::MemoryPointer.new(c_type == :double ? :double : :float, result_size)]
     end
 
 
@@ -175,15 +180,31 @@ module Flann
                              indices_int_ptr, distances_t_ptr, k, parameters_ptr
 
       # Return results: two arrays, one of indices and one of distances.
-      [indices_int_ptr.read_array_of_int(result_size), distances_t_ptr.read_array_of_float(result_size)]
+      [indices_int_ptr.read_array_of_int(result_size),
+       c_type == :double ? distances_t_ptr.read_array_of_double(result_size) : distances_t_ptr.read_array_of_float(result_size)]
     end
     alias :nn :nearest_neighbors
 
     # Set the distance function to use when computing distances between data points.
-    def set_distance_type! distance_function, order = 0
-      Flann.send(:flann_set_distance_type, distance_function, order)
+    def set_distance_type! distance_function
+      Flann.send(:flann_set_distance_type, distance_function, get_distance_order)
       self
     end
+    alias :set_distance_type_and_order! :set_distance_type!
+
+    # Get the distance type and order
+    def get_distance_type_and_order
+      [Flann.flann_get_distance_type, Flann.flann_get_distance_order]
+    end
+    def get_distance_type
+      Flann.flann_get_distance_type
+    end
+    def get_distance_order
+      Flann.flann_get_distance_order
+    end
+    alias :distance_type :get_distance_type
+    alias :distance_order :get_distance_order
+
 
     # Perform hierarchical clustering of a set of points.
     #
@@ -249,7 +270,9 @@ protected
   attach_function :flann_free_index_float,  [:index_ptr, :index_params_ptr], :int
   attach_function :flann_free_index_double, [:index_ptr, :index_params_ptr], :int
 
-  attach_function :flann_set_distance_type, [DistanceType, :int], :void
+  attach_function :flann_set_distance_type, [:distance_type, :int], :void
+  attach_function :flann_get_distance_type, [], :distance_type
+  attach_function :flann_get_distance_order, [], :int
 
   attach_function :flann_compute_cluster_centers_byte,    [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
   attach_function :flann_compute_cluster_centers_int,     [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
