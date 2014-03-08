@@ -29,7 +29,7 @@ require File.dirname(__FILE__) + "/spec_helper.rb"
 
 
 describe Flann::Index do
-  [:byte, :float32, :float64].each do |dtype|
+  [:byte, :int32, :float32, :float64].each do |dtype|
     context dtype.inspect do
       before :each do
         scale = [:byte, :int32, :int64].include?(dtype) ? 255 : 1.0
@@ -41,21 +41,6 @@ describe Flann::Index do
           t[:trees]     = 4
         end
         @index.build!
-      end
-
-
-      context "#build!" do
-        it "builds a kdtree index with block parameters" do
-          scale = [:byte, :int].include?(dtype) ? 255 : 1.0
-
-          @dataset = NMatrix.random([1000,128], dtype: dtype, scale: scale)
-          @testset = NMatrix.random([100,128],  dtype: dtype, scale: scale)
-          @index   = Flann::Index.new(@dataset) do |t|
-            t[:algorithm] = :kdtree
-            t[:trees]     = 4
-          end
-          @index.build!
-        end
       end
 
 
