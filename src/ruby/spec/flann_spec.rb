@@ -68,10 +68,13 @@ describe Flann do
 
   context "#set_distance_type!" do
     it "sets the distance functor without error" do
-      #pending "distance type unsupported in the C bindings, use the C++ bindings instead"
       Flann.set_distance_type! :euclidean
-      d = Flann.get_distance_type
-      expect(d).to eq(:euclidean)
+
+      # Version check needed before attempting get_distance_type
+      if Flann.respond_to?(:flann_get_distance_type)
+        d = Flann.get_distance_type
+        expect(d).to eq(:euclidean)
+      end
     end
   end
 

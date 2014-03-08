@@ -271,8 +271,11 @@ protected
   attach_function :flann_free_index_double, [:index_ptr, :index_params_ptr], :int
 
   attach_function :flann_set_distance_type, [:distance_type, :int], :void
-  attach_function :flann_get_distance_type, [], :distance_type
-  attach_function :flann_get_distance_order, [], :int
+  begin
+    attach_function :flann_get_distance_type, [], :distance_type
+    attach_function :flann_get_distance_order, [], :int
+  rescue FFI::NotFoundError
+  end
 
   attach_function :flann_compute_cluster_centers_byte,    [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
   attach_function :flann_compute_cluster_centers_int,     [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
