@@ -704,7 +704,7 @@ protected:
     		return id;
     	}
     	size_t point_index = size_t(-1);
-    	if (ids_[id]==id) {
+    	if (id < ids_.size() && ids_[id]==id) {
     		return id;
     	}
     	else {
