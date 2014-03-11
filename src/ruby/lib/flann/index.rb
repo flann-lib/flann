@@ -109,7 +109,7 @@ module Flann
 
     # Perform a radius search on a single query point
     def radius_search query, radius, max_k=nil, parameters = {}
-      max_k    ||= dataset.shape[1]
+      max_k    ||= dataset.shape[0]
       parameters = Parameters.new(Flann::Parameters::DEFAULT.merge(parameters))
 
       self.build! if index_ptr.nil?
