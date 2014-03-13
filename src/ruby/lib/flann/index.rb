@@ -122,8 +122,12 @@ module Flann
       Flann.send(c_method, index_ptr, FFI::Pointer.new_from_nmatrix(query), indices_int_ptr, distances_t_ptr, max_k, radius, parameters_ptr)
 
       # Return results: two arrays, one of indices and one of distances.
-      [indices_int_ptr.read_array_of_int(max_k),
-       c_type == :double ? distances_t_ptr.read_array_of_double(max_k) : distances_t_ptr.read_array_of_float(max_k)]
+      indices   = indices_int_ptr.read_array_of_int(max_k)
+      distances = c_type == :double ? distances_t_ptr.read_array_of_double(max_k) : distances_t_ptr.read_array_of_float(max_k)
+
+      # Stop where indices == -1
+      cutoff = indices.find_index(-1)
+      cutoff.nil? ? [indices, distances] : [indices[0...cutoff], distances[0...cutoff]]
     end
 
     # Save an index to a file (without the dataset).
