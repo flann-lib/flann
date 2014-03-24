@@ -100,6 +100,16 @@ FLANN_EXPORT void flann_log_verbosity(int level);
  */
 FLANN_EXPORT void flann_set_distance_type(enum flann_distance_t distance_type, int order);
 
+/**
+ * Gets the distance type in use throughout FLANN.
+ */
+FLANN_EXPORT enum flann_distance_t flann_get_distance_type();
+
+/**
+ * Gets the distance order in use throughout FLANN (only applicable if minkowski distance
+ * is in use).
+ */
+FLANN_EXPORT int flann_get_distance_order();
 
 /**
    Builds and returns an index. It uses autotuning if the target_precision field of index_params
