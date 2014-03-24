@@ -48,6 +48,37 @@ describe Flann::Index do
         it "runs without error" do
           @index.nearest_neighbors @testset, 5
         end
+
+        if dtype == :float32
+          it "runs a :kdtree_single search correctly" do
+            @dataset = read_dataset "test.dataset"
+            @testset = @dataset[0,:*].clone
+            @index   = Flann::Index.new(@dataset) do |t|
+              t[:algorithm] = :kdtree_single
+            end
+            @index.build!
+            indices, distances = @index.nearest_neighbors @testset, 11
+            #expect(indices).to eq([0,1,256,257,2,512,258,513,514,3,768])
+            expect(indices[0]).to eq(0)
+            expect(indices[1..2].sort).to eq([1,256])
+            expect(indices[3]).to eq(257)
+            expect(indices[4..5].sort).to eq([2,512])
+            expect(indices[6..7].sort).to eq([258,513])
+            expect(indices[8]).to eq(514)
+            expect(indices[9..10].sort).to eq([3,768])
+
+            expect(distances[0]).to be_within(1E-16).of(0.0)
+            expect(distances[1]).to be_within(1E-4).of(2.614689)
+            expect(distances[2]).to be_within(1E-4).of(2.614689)
+            expect(distances[3]).to be_within(1E-4).of(5.229378)
+            expect(distances[4]).to be_within(1E-4).of(10.465225)
+            expect(distances[5]).to be_within(1E-4).of(10.465225)
+            expect(distances[6]).to be_within(1E-4).of(13.079914)
+            expect(distances[7]).to be_within(1E-4).of(13.079914)
+            expect(distances[8]).to be_within(1E-4).of(20.93045)
+            expect(distances[9]).to be_within(1E-4).of(23.541904)
+          end
+        end
       end
 
 
