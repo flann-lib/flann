@@ -191,6 +191,15 @@ void flann_set_distance_type(flann_distance_t distance_type, int order)
 }
 
 
+flann_distance_t flann_get_distance_type() {
+  return flann_distance_type;
+}
+
+int flann_get_distance_order() {
+  return flann_distance_order;
+}
+
+
 template<typename Distance>
 flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int rows, int cols, float* speedup,
                                   FLANNParameters* flann_params, Distance d = Distance())

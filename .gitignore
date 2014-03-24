@@ -15,7 +15,6 @@ test/flann_simple_test
 test/flann_uint_autotune.py
 build
 build_win
-lib
 dist/
 flann.kdev4
 TODO

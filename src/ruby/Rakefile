@@ -1,0 +1,111 @@
+# Copyright 2014 John O. Woods (john.o.woods@gmail.com), West Virginia
+#   University's Applied Space Exploration Lab, and West Virginia Robotic
+#   Technology Center. All rights reserved.
+#
+# THE BSD LICENSE
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+require 'rubygems'
+require 'rubygems/package_task'
+require 'bundler'
+begin
+  Bundler.setup(:default, :development)
+rescue
+  $stderr.puts e.message
+  $stderr.puts "Run `bundle install` to install missing gems"
+  exit e.status_code
+end
+
+require 'rake'
+
+gemspec = eval(IO.read("flann.gemspec"))
+
+Gem::PackageTask.new(gemspec).define
+
+desc "install the gem locally"
+task :install => [:package] do
+  sh %{gem install pkg/flann-#{NMatrix::VERSION}.gem}
+end
+
+
+require 'rspec/core/rake_task'
+require 'rspec/core'
+require 'rspec/core/rake_task'
+RSpec::Core::RakeTask.new(:spec) do |spec|
+  spec.pattern = FileList['spec/**/*_spec.rb'].uniq
+end
+
+task :console do |task|
+  cmd = [ 'irb', "-r './lib/flann.rb'" ]
+  run *cmd
+end
+
+task :pry do |task|
+  cmd = [ 'pry', "-r './lib/flann.rb'" ]
+  run *cmd
+end
+
+
+task :default => :spec
+
+def run *cmd
+  sh(cmd.join(" "))
+end
+
+
+desc "Check the manifest for correctness"
+task :check_manifest do |task|
+  manifest_files  = File.read("Manifest.txt").split
+
+  git_files       = `git ls-files |grep -v 'spec/'`.split
+  ignore_files    = %w{.gitignore .rspec}
+
+  possible_files  = git_files - ignore_files
+
+  missing_files   = possible_files - manifest_files
+  extra_files     = manifest_files - possible_files
+
+  unless missing_files.empty?
+    STDERR.puts "The following files are in the git repo but not the Manifest:"
+    missing_files.each { |f| STDERR.puts " -- #{f}"}
+  end
+
+  unless extra_files.empty?
+    STDERR.puts "The following files are in the Manifest but may not be necessary:"
+    extra_files.each { |f| STDERR.puts " -- #{f}"}
+  end
+
+  if extra_files.empty? && missing_files.empty?
+    STDERR.puts "Manifest looks good!"
+  end
+
+end
+
+
+require "rdoc/task"
+RDoc::Task.new do |rdoc|
+  rdoc.main = "README.rdoc"
+  rdoc.rdoc_files.include(%w{README.rdoc History.txt LICENSE.txt lib/flann/**/*.rb})
+end
+
+# vim: syntax=ruby
