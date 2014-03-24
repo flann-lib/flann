@@ -30,7 +30,7 @@ module Flann
     MAJOR = 1
     MINOR = 8
     TINY  = 4
-    MINISCULE = 1
+    MINISCULE = 2
 
     STRING = [MAJOR, MINOR, TINY, MINISCULE].compact.join('.')
   end
