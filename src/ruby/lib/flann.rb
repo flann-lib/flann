@@ -105,9 +105,19 @@ module Flann
 
     DEFAULT       = {algorithm: :kdtree,
                      checks: 32, eps: 0.0,
-                     sorted: 0, max_neighbors: -1, cores: 0,
-                     trees: 4, leaf_max_size: 4,
-                     log_level: :none, random_seed: 0}
+                     sorted: 1, max_neighbors: -1, cores: 0,
+                     trees: 1, leaf_max_size: 4,
+                     branching: 32, iterations: 5,
+                     centers_init: :random,
+                     cluster_boundary_index: 0.5,
+                     target_precision: 0.9,
+                     build_weight: 0.01,
+                     memory_weight: 0.0,
+                     sample_fraction: 0.1,
+                     table_number: 12,
+                     key_size: 20,
+                     multi_probe_level: 2,
+                     log_level: :warn, random_seed: -1}
 
 
   end
@@ -271,11 +281,9 @@ protected
   attach_function :flann_free_index_double, [:index_ptr, :index_params_ptr], :int
 
   attach_function :flann_set_distance_type, [:distance_type, :int], :void
-  begin
-    attach_function :flann_get_distance_type, [], :distance_type
-    attach_function :flann_get_distance_order, [], :int
-  rescue FFI::NotFoundError
-  end
+
+  attach_function :flann_get_distance_type, [], :distance_type
+  attach_function :flann_get_distance_order, [], :int
 
   attach_function :flann_compute_cluster_centers_byte,    [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int
   attach_function :flann_compute_cluster_centers_int,     [:pointer, :int, :int, :int, :pointer, :index_params_ptr], :int

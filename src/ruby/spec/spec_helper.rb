@@ -29,3 +29,22 @@ require 'rspec'
 require 'rspec/longrun'
 
 require "./lib/flann"
+
+# Helper function for reading a test dataset so we can test nearest neighbors
+# and radius search and such.
+def read_dataset filename
+  Dir.chdir("spec") do
+    f = File.new(filename, 'r')
+    n = NMatrix.new([65536, 3], dtype: :float32)
+    i = 0
+    while line = f.gets
+      line.chomp!
+      fields = line.split
+      n[i,:*] = fields.map { |field| field.to_f }
+
+      i += 1
+    end
+
+    n
+  end
+end
