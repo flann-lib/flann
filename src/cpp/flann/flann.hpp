@@ -298,7 +298,7 @@ public:
     /**
      * \brief Perform radius search
      * \param[in] queries The query points
-     * \param[out] indices The indinces of the neighbors found within the given radius
+     * \param[out] indices The indices of the neighbors found within the given radius
      * \param[out] dists The distances to the nearest neighbors found
      * \param[in] radius The radius used for search
      * \param[in] params Search parameters
@@ -334,7 +334,7 @@ public:
     /**
      * \brief Perform radius search
      * \param[in] queries The query points
-     * \param[out] indices The indinces of the neighbors found within the given radius
+     * \param[out] indices The indices of the neighbors found within the given radius
      * \param[out] dists The distances to the nearest neighbors found
      * \param[in] radius The radius used for search
      * \param[in] params Search parameters
