@@ -128,6 +128,8 @@ public:
         initCenterChooser();
         
         setDataset(inputData);
+
+        chooseCenters_->setDataSize(veclen_);
     }
 
 
