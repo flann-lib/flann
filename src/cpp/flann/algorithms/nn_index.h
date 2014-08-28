@@ -135,7 +135,7 @@ public:
 	}
 
 	/**
-	 * Builds th index using using the specified dataset
+	 * Builds the index using the specified dataset
 	 * @param dataset the dataset to use
 	 */
     virtual void buildIndex(const Matrix<ElementType>& dataset)
