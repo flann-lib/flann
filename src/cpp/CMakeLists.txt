@@ -89,9 +89,9 @@ if (BUILD_C_BINDINGS)
     else()
         add_library(flann SHARED ${C_SOURCES})
 
-        if(MINGW)
-          target_link_libraries(flann -lgomp)
-        endif(MINGW)
+        if(MINGW AND OPENMP_FOUND)
+          target_link_libraries(flann gomp)
+        endif()
     endif()
 
     set_target_properties(flann PROPERTIES
