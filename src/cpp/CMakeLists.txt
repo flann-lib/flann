@@ -102,7 +102,7 @@ if (BUILD_C_BINDINGS)
 endif()
 
 if(WIN32)
-if (BUILD_C_BINDINGS)
+if (BUILD_C_BINDINGS AND BUILD_MATLAB_BINDINGS)
     install (
         TARGETS flann
         RUNTIME DESTINATION share/flann/matlab
