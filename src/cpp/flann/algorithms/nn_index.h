@@ -361,7 +361,7 @@ public:
      * @param params
      * @return
      */
-    int knnSearch(const Matrix<ElementType>& queries,
+    virtual int knnSearch(const Matrix<ElementType>& queries,
                                  Matrix<int>& indices,
                                  Matrix<DistanceType>& dists,
                                  size_t knn,
