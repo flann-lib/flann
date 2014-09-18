@@ -107,9 +107,8 @@ BASIC_TYPE_SERIALIZER(float);
 BASIC_TYPE_SERIALIZER(double);
 BASIC_TYPE_SERIALIZER(bool);
 #ifdef _MSC_VER
-// unsigned __int64 ~= unsigned long long
-// Will throw error on VS2013
-#if _MSC_VER != 1800
+// unsigned __int64 != unsigned long long on some platforms
+#if _MSC_VER < 1600
 BASIC_TYPE_SERIALIZER(unsigned __int64);
 #endif
 #endif
