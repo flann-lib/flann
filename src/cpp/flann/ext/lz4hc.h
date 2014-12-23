@@ -38,8 +38,18 @@
 extern "C" {
 #endif
 
+#if defined (_MSC_VER)
+#  if defined (DEFINE_LZ4_EXPORT)
+#    define LZ4_EXPORT_KEYWORD __declspec(dllexport)
+#  else
+#    define LZ4_EXPORT_KEYWORD __declspec(dllimport)
+#  endif
+#else
+#  define LZ4_EXPORT_KEYWORD
+#endif
 
-int LZ4_compressHC (const char* source, char* dest, int inputSize);
+
+  int LZ4_EXPORT_KEYWORD LZ4_compressHC(const char* source, char* dest, int inputSize);
 /*
 LZ4_compressHC :
     return : the number of bytes in compressed buffer dest
