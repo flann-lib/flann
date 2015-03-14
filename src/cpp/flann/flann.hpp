@@ -272,7 +272,7 @@ public:
                                  std::vector< std::vector<size_t> >& indices,
                                  std::vector<std::vector<DistanceType> >& dists,
                                  size_t knn,
-                           const SearchParams& params)
+                           const SearchParams& params) const
     {
     	return nnIndex_->knnSearch(queries, indices, dists, knn, params);
     }
