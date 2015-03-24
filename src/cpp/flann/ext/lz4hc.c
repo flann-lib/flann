@@ -31,6 +31,8 @@
    - LZ4 source repository : http://code.google.com/p/lz4/
 */
 
+#define DEFINE_LZ4_EXPORT
+
 //**************************************
 // Memory routines
 //**************************************
@@ -39,7 +41,6 @@
 #define FREEMEM       free
 #include <string.h>   // memset, memcpy
 #define MEM_INIT      memset
-
 
 //**************************************
 // CPU Feature Detection

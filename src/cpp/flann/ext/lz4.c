@@ -34,6 +34,11 @@
 //**************************************
 // Tuning parameters
 //**************************************
+#define DEFINE_LZ4_EXPORT
+
+//**************************************
+// Tuning parameters
+//**************************************
 // MEMORY_USAGE :
 // Memory usage formula : N->2^N Bytes (examples : 10 -> 1KB; 12 -> 4KB ; 16 -> 64KB; 20 -> 1MB; etc.)
 // Increasing memory usage improves compression ratio

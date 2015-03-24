@@ -37,6 +37,16 @@
 extern "C" {
 #endif
 
+#if defined (_MSC_VER)
+#  if defined (DEFINE_LZ4_EXPORT)
+#    define LZ4_EXPORT_KEYWORD __declspec(dllexport)
+#  else
+#    define LZ4_EXPORT_KEYWORD __declspec(dllimport)
+#  endif
+#else
+#  define LZ4_EXPORT_KEYWORD
+#endif
+
 
 //**************************************
 // Compiler Options
@@ -106,7 +116,7 @@ LZ4_compress_limitedOutput() :
 */
 
 
-int LZ4_decompress_fast (const char* source, char* dest, int outputSize);
+int LZ4_EXPORT_KEYWORD LZ4_decompress_fast(const char* source, char* dest, int outputSize);
 
 /*
 LZ4_decompress_fast() :
@@ -119,7 +129,7 @@ LZ4_decompress_fast() :
            Destination buffer must be already allocated. Its size must be a minimum of 'outputSize' bytes.
 */
 
-int LZ4_decompress_safe_partial (const char* source, char* dest, int inputSize, int targetOutputSize, int maxOutputSize);
+int LZ4_EXPORT_KEYWORD LZ4_decompress_safe_partial(const char* source, char* dest, int inputSize, int targetOutputSize, int maxOutputSize);
 
 /*
 LZ4_decompress_safe_partial() :
