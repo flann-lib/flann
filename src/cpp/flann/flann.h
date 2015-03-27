@@ -171,28 +171,23 @@ FLANN_EXPORT flann_index_t flann_build_index_int(int* dataset,
 
 FLANN_EXPORT void flann_add_points(flann_index_t index_id, float* dataset,
                                              int rows,
-                                             int cols,
                                              int rebuild_threshold);
 
 
 FLANN_EXPORT void flann_add_points_float(flann_index_t index_id, float* dataset,
                                              int rows,
-                                             int cols,
                                              int rebuild_threshold);
 
 FLANN_EXPORT void flann_add_points_double(flann_index_t index_id, double* dataset,
                                              int rows,
-                                             int cols,
                                              int rebuild_threshold);
 
 FLANN_EXPORT void flann_add_points_int(flann_index_t index_id, int* dataset,
                                              int rows,
-                                             int cols,
                                              int rebuild_threshold);
 
 FLANN_EXPORT void flann_add_points_byte(flann_index_t index_id, unsigned char* dataset,
                                              int rows,
-                                             int cols,
                                              int rebuild_threshold);
 
 

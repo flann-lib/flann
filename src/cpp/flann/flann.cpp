@@ -290,7 +290,7 @@ flann_index_t flann_build_index_int(int* dataset, int rows, int cols, float* spe
 
 // Add Points Begin
 template<typename Distance>
-void __flann_add_points(flann_index_t index_ptr,  typename Distance::ElementType* dataset, int rows, int cols, int rebuild_threshhold)
+void __flann_add_points(flann_index_t index_ptr,  typename Distance::ElementType* dataset, int rows, int rebuild_threshhold)
 {
     typedef typename Distance::ElementType ElementType;
     try {
@@ -299,7 +299,7 @@ void __flann_add_points(flann_index_t index_ptr,  typename Distance::ElementType
         }
 
         Index<Distance>* index = (Index<Distance>*)index_ptr;
-        index->addPoints(Matrix<ElementType>(dataset,rows,cols), rebuild_threshhold);
+        index->addPoints(Matrix<ElementType>(dataset,rows,index->veclen()), rebuild_threshhold);
         return;
     }
     catch (std::runtime_error& e) {
@@ -309,53 +309,53 @@ void __flann_add_points(flann_index_t index_ptr,  typename Distance::ElementType
 }
 
 template<typename T>
-void _flann_add_points(flann_index_t index_ptr, T* dataset, int rows, int cols, int rebuild_threshold)
+void _flann_add_points(flann_index_t index_ptr, T* dataset, int rows, int rebuild_threshold)
 {
     if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
-         __flann_add_points<L2<T> >(index_ptr, dataset, rows, cols, rebuild_threshold);
+         __flann_add_points<L2<T> >(index_ptr, dataset, rows, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
-         __flann_add_points<L1<T> >(index_ptr, dataset, rows, cols, rebuild_threshold);
+         __flann_add_points<L1<T> >(index_ptr, dataset, rows, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
-       __flann_add_points<MinkowskiDistance<T> >(index_ptr, dataset, rows, cols, rebuild_threshold);
+       __flann_add_points<MinkowskiDistance<T> >(index_ptr, dataset, rows, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
-         __flann_add_points<HistIntersectionDistance<T> >(index_ptr, dataset, rows, cols, rebuild_threshold);
+         __flann_add_points<HistIntersectionDistance<T> >(index_ptr, dataset, rows, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_HELLINGER) {
-         __flann_add_points<HellingerDistance<T> >(index_ptr, dataset, rows, cols, rebuild_threshold);
+         __flann_add_points<HellingerDistance<T> >(index_ptr, dataset, rows, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
-         __flann_add_points<ChiSquareDistance<T> >(index_ptr, dataset, rows, cols, rebuild_threshold);
+         __flann_add_points<ChiSquareDistance<T> >(index_ptr, dataset, rows, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
-         __flann_add_points<KL_Divergence<T> >(index_ptr, dataset, rows, cols, rebuild_threshold);
+         __flann_add_points<KL_Divergence<T> >(index_ptr, dataset, rows, rebuild_threshold);
     }
     else {
         Logger::error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
     }
 }
 
-void flann_add_points(flann_index_t index_ptr, float* dataset, int rows, int cols, int rebuild_threshhold)
+void flann_add_points(flann_index_t index_ptr, float* dataset, int rows, int rebuild_threshhold)
 {
-    _flann_add_points<float>(index_ptr, dataset, rows, cols, rebuild_threshhold);
+    _flann_add_points<float>(index_ptr, dataset, rows, rebuild_threshhold);
 }
-void flann_add_points_float(flann_index_t index_ptr, float* dataset, int rows, int cols, int rebuild_threshhold)
+void flann_add_points_float(flann_index_t index_ptr, float* dataset, int rows, int rebuild_threshhold)
 {
-    _flann_add_points<float>(index_ptr, dataset, rows, cols, rebuild_threshhold);
+    _flann_add_points<float>(index_ptr, dataset, rows, rebuild_threshhold);
 }
-void flann_add_points_double(flann_index_t index_ptr, double* dataset, int rows, int cols, int rebuild_threshhold)
+void flann_add_points_double(flann_index_t index_ptr, double* dataset, int rows, int rebuild_threshhold)
 {
-    _flann_add_points<double>(index_ptr, dataset, rows, cols, rebuild_threshhold);
+    _flann_add_points<double>(index_ptr, dataset, rows, rebuild_threshhold);
 }
-void flann_add_points_byte(flann_index_t index_ptr, unsigned char* dataset, int rows, int cols, int rebuild_threshhold)
+void flann_add_points_byte(flann_index_t index_ptr, unsigned char* dataset, int rows, int rebuild_threshhold)
 {
-    _flann_add_points<unsigned char>(index_ptr, dataset, rows, cols, rebuild_threshhold);
+    _flann_add_points<unsigned char>(index_ptr, dataset, rows, rebuild_threshhold);
 }
-void flann_add_points_int(flann_index_t index_ptr, int* dataset, int rows, int cols, int rebuild_threshhold)
+void flann_add_points_int(flann_index_t index_ptr, int* dataset, int rows, int rebuild_threshhold)
 {
-    _flann_add_points<int>(index_ptr, dataset, rows, cols, rebuild_threshhold);
+    _flann_add_points<int>(index_ptr, dataset, rows, rebuild_threshhold);
 }
 
 
