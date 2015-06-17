@@ -33,12 +33,12 @@ index_type = int32
 
 def set_distance_type(distance_type, order = 0):
     """
-    Sets the distance type used. Possible values: euclidean, manhattan, minkowski, max_dist, 
+    Sets the distance type used. Possible values: euclidean, manhattan, minkowski, max_dist,
     hik, hellinger, cs, kl.
     """
-    
-    distance_translation = { "euclidean" : 1, 
-                            "manhattan" : 2, 
+
+    distance_translation = { "euclidean" : 1,
+                            "manhattan" : 2,
                             "minkowski" : 3,
                             "max_dist" : 4,
                             "hik" : 5,
@@ -66,7 +66,7 @@ class FLANN:
     This class defines a python interface to the FLANN lirary.
     """
     __rn_gen = _rn.RandomState()
-    
+
     _as_parameter_ = property( lambda self: self.__curindex )
 
     def __init__(self, **kwargs):
@@ -75,20 +75,20 @@ class FLANN:
         the flann libraries.  Any keyword arguments passed to __init__
         override the global defaults given.
         """
-        
+
         self.__rn_gen.seed()
 
         self.__curindex = None
         self.__curindex_data = None
         self.__curindex_type = None
-        
-        self.__flann_parameters = FLANNParameters()        
+
+        self.__flann_parameters = FLANNParameters()
         self.__flann_parameters.update(kwargs)
 
     def __del__(self):
         self.delete_index()
 
-        
+
     ################################################################################
     # actual workhorse functions
 
@@ -97,7 +97,7 @@ class FLANN:
         Returns the num_neighbors nearest points in dataset for each point
         in testset.
         """
-        
+
         if not pts.dtype.type in allowed_types:
             raise FLANNException("Cannot handle type: %s"%pts.dtype)
 
@@ -106,9 +106,9 @@ class FLANN:
 
         if pts.dtype != qpts.dtype:
             raise FLANNException("Data and query must have the same type")
-        
-        pts = ensure_2d_array(pts,default_flags) 
-        qpts = ensure_2d_array(qpts,default_flags) 
+
+        pts = ensure_2d_array(pts,default_flags)
+        qpts = ensure_2d_array(qpts,default_flags)
 
         npts, dim = pts.shape
         nqpts = qpts.shape[0]
@@ -121,11 +121,11 @@ class FLANN:
             dists = empty( (nqpts, num_neighbors), dtype=float64)
         else:
             dists = empty( (nqpts, num_neighbors), dtype=float32)
-                
+
         self.__flann_parameters.update(kwargs)
 
-        flann.find_nearest_neighbors[pts.dtype.type](pts, npts, dim, 
-                                                     qpts, nqpts, result, dists, num_neighbors, 
+        flann.find_nearest_neighbors[pts.dtype.type](pts, npts, dim,
+                                                     qpts, nqpts, result, dists, num_neighbors,
                                                      pointer(self.__flann_parameters))
 
         if num_neighbors == 1:
@@ -144,33 +144,44 @@ class FLANN:
 
         pts is a 2d numpy array or matrix. All the computation is done
         in float32 type, but pts may be any type that is convertable
-        to float32. 
+        to float32.
         """
-        
+
         if not pts.dtype.type in allowed_types:
             raise FLANNException("Cannot handle type: %s"%pts.dtype)
 
-        pts = ensure_2d_array(pts,default_flags) 
+        pts = ensure_2d_array(pts,default_flags)
         npts, dim = pts.shape
-        
+
         self.__ensureRandomSeed(kwargs)
-        
+
         self.__flann_parameters.update(kwargs)
 
         if self.__curindex != None:
             flann.free_index[self.__curindex_type](self.__curindex, pointer(self.__flann_parameters))
             self.__curindex = None
-                
+
         speedup = c_float(0)
         self.__curindex = flann.build_index[pts.dtype.type](pts, npts, dim, byref(speedup), pointer(self.__flann_parameters))
         self.__curindex_data = pts
         self.__curindex_type = pts.dtype.type
-        
+
         params = dict(self.__flann_parameters)
         params["speedup"] = speedup.value
-        
+
         return params
 
+    def add_points(self, pts, rebuild_threshold=2):
+        """
+        Adds pts to the current index. If the number of added points is more
+        than a factor of rebuild_threshold larger than the original number of
+        points, the index is rebuilt.
+        """
+        if pts.dtype.type not in allowed_types:
+            raise FLANNException("Cannot handle type: %s" % pts.dtype)
+        pts = ensure_2d_array(pts, default_flags)
+        rows = pts.shape[0]
+        flann.add_points[self.__curindex_type](self.__curindex, pts, rows, rebuild_threshold)
 
     def save_index(self, filename):
         """
@@ -183,11 +194,11 @@ class FLANN:
         """
         Loads an index previously saved to disk.
         """
-                
+
         if not pts.dtype.type in allowed_types:
             raise FLANNException("Cannot handle type: %s"%pts.dtype)
 
-        pts = ensure_2d_array(pts,default_flags) 
+        pts = ensure_2d_array(pts,default_flags)
         npts, dim = pts.shape
 
         if self.__curindex != None:
@@ -195,7 +206,7 @@ class FLANN:
             self.__curindex = None
             self.__curindex_data = None
             self.__curindex_type = None
-        
+
         self.__curindex = flann.load_index[pts.dtype.type](c_char_p(to_bytes(filename)), pts, npts, dim)
         self.__curindex_data = pts
         self.__curindex_type = pts.dtype.type
@@ -216,7 +227,7 @@ class FLANN:
         if self.__curindex_type != qpts.dtype.type:
             raise FLANNException("Index and query must have the same type")
 
-        qpts = ensure_2d_array(qpts,default_flags) 
+        qpts = ensure_2d_array(qpts,default_flags)
 
         npts, dim = self.__curindex_data.shape
 
@@ -227,7 +238,7 @@ class FLANN:
 
         assert(qpts.shape[1] == dim)
         assert(npts >= num_neighbors)
-        
+
         result = empty( (nqpts, num_neighbors), dtype=index_type)
         if self.__curindex_type==float64:
             dists = empty( (nqpts, num_neighbors), dtype=float64)
@@ -236,7 +247,7 @@ class FLANN:
 
         self.__flann_parameters.update(kwargs)
 
-        flann.find_nearest_neighbors_index[self.__curindex_type](self.__curindex, 
+        flann.find_nearest_neighbors_index[self.__curindex_type](self.__curindex,
                     qpts, nqpts,
                     result, dists, num_neighbors,
                     pointer(self.__flann_parameters))
@@ -245,10 +256,10 @@ class FLANN:
             return (result.reshape( nqpts ), dists.reshape( nqpts ))
         else:
             return (result,dists)
-        
-        
+
+
     def nn_radius(self, query, radius, **kwargs):
-        
+
         if self.__curindex == None:
             raise FLANNException("build_index(...) method not called first or current index deleted.")
 
@@ -258,32 +269,32 @@ class FLANN:
         if self.__curindex_type != query.dtype.type:
             raise FLANNException("Index and query must have the same type")
 
-        npts, dim = self.__curindex_data.shape        
+        npts, dim = self.__curindex_data.shape
         assert(query.shape[0]==dim)
-        
+
         result = empty( npts, dtype=index_type)
         if self.__curindex_type==float64:
             dists = empty( npts, dtype=float64)
         else:
             dists = empty( npts, dtype=float32)
-        
+
         self.__flann_parameters.update(kwargs)
 
-        nn = flann.radius_search[self.__curindex_type](self.__curindex, query, 
+        nn = flann.radius_search[self.__curindex_type](self.__curindex, query,
                                          result, dists, npts,
                                          radius, pointer(self.__flann_parameters))
-        
-        
+
+
         return (result[0:nn],dists[0:nn])
 
     def delete_index(self, **kwargs):
         """
-        Deletes the current index freeing all the momory it uses. 
+        Deletes the current index freeing all the momory it uses.
         The memory used by the dataset that was indexed is not freed.
         """
 
         self.__flann_parameters.update(kwargs)
-        
+
         if self.__curindex != None:
             flann.free_index[self.__curindex_type](self.__curindex, pointer(self.__flann_parameters))
             self.__curindex = None
@@ -296,47 +307,47 @@ class FLANN:
                dtype = None, **kwargs):
         """
         Runs kmeans on pts with num_clusters centroids.  Returns a
-        numpy array of size num_clusters x dim.  
+        numpy array of size num_clusters x dim.
 
         If max_iterations is not None, the algorithm terminates after
         the given number of iterations regardless of convergence.  The
         default is to run until convergence.
 
         If dtype is None (the default), the array returned is the same
-        type as pts.  Otherwise, the returned array is of type dtype.  
+        type as pts.  Otherwise, the returned array is of type dtype.
 
         """
-        
+
         if int(num_clusters) != num_clusters or num_clusters < 1:
             raise FLANNException('num_clusters must be an integer >= 1')
-        
+
         if num_clusters == 1:
             if dtype == None or dtype == pts.dtype:
                 return mean(pts, 0).reshape(1, pts.shape[1])
             else:
                 return dtype(mean(pts, 0).reshape(1, pts.shape[1]))
 
-        return self.hierarchical_kmeans(pts, int(num_clusters), 1, 
-                                        max_iterations, 
+        return self.hierarchical_kmeans(pts, int(num_clusters), 1,
+                                        max_iterations,
                                         dtype, **kwargs)
-        
+
     def hierarchical_kmeans(self, pts, branch_size, num_branches,
-                            max_iterations = None, 
+                            max_iterations = None,
                             dtype = None, **kwargs):
         """
         Clusters the data by using multiple runs of kmeans to
         recursively partition the dataset.  The number of resulting
         clusters is given by (branch_size-1)*num_branches+1.
-        
+
         This method can be significantly faster when the number of
         desired clusters is quite large (e.g. a hundred or more).
         Higher branch sizes are slower but may give better results.
 
         If dtype is None (the default), the array returned is the same
-        type as pts.  Otherwise, the returned array is of type dtype.  
-        
+        type as pts.  Otherwise, the returned array is of type dtype.
+
         """
-        
+
         # First verify the paremeters are sensible.
 
         if not pts.dtype.type in allowed_types:
@@ -352,35 +363,35 @@ class FLANN:
 
         num_branches = int(num_branches)
 
-        if max_iterations == None: 
+        if max_iterations == None:
             max_iterations = -1
         else:
             max_iterations = int(max_iterations)
 
 
         # init the arrays and starting values
-        pts = ensure_2d_array(pts,default_flags) 
+        pts = ensure_2d_array(pts,default_flags)
         npts, dim = pts.shape
         num_clusters = (branch_size-1)*num_branches+1;
-        
+
         if pts.dtype.type == float64:
             result = empty( (num_clusters, dim), dtype=float64)
         else:
             result = empty( (num_clusters, dim), dtype=float32)
 
         # set all the parameters appropriately
-        
+
         self.__ensureRandomSeed(kwargs)
-        
+
         params = {"iterations"       : max_iterations,
                     "algorithm"        : 'kmeans',
                     "branching"        : branch_size,
                     "random_seed"      : kwargs['random_seed']}
-        
+
         self.__flann_parameters.update(params)
-        
+
         numclusters = flann.compute_cluster_centers[pts.dtype.type](pts, npts, dim,
-                                        num_clusters, result, 
+                                        num_clusters, result,
                                         pointer(self.__flann_parameters))
         if numclusters <= 0:
             raise FLANNException('Error occured during clustering procedure.')
@@ -389,14 +400,14 @@ class FLANN:
             return result
         else:
             return dtype(result)
-        
+
     ##########################################################################################
     # internal bookkeeping functions
 
-        
+
     def __ensureRandomSeed(self, kwargs):
         if not 'random_seed' in kwargs:
             kwargs['random_seed'] = self.__rn_gen.randint(2**30)
-        
+
 
 
