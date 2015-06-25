@@ -247,6 +247,20 @@ flannlib.flann_load_index_%(C)s.argtypes = [
 flann.load_index[%(numpy)s] = flannlib.flann_load_index_%(C)s
 """)
 
+flann.add_points = {}
+define_functions(r"""
+flannlib.flann_add_points_%(C)s.restype = None
+flannlib.flann_add_points_%(C)s.argtypes = [
+        FLANN_INDEX, # index_id
+        ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int, # rows
+        c_int, # rebuild_threshhold
+        POINTER(c_float), # speedup
+        POINTER(FLANNParameters)  # flann_params
+]
+flann.add_points[%(numpy)s] = flannlib.flann_add_points_%(C)s
+""")
+
 flann.find_nearest_neighbors = {}    
 define_functions(r"""                          
 flannlib.flann_find_nearest_neighbors_%(C)s.restype = c_int
