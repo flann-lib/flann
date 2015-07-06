@@ -391,6 +391,10 @@ class SaveArchive : public OutputArchive<SaveArchive>
 
         // Construct the buffer
         char *compBuffer = (char *)malloc(LZ4_compressBound(offset_));
+        if (compBuffer == NULL) {
+            throw FLANNException("Error allocating compression buffer");
+        }
+
         size_t headSz = sizeof(IndexHeaderStruct);
         memcpy(compBuffer, buffer_, headSz);
 
@@ -436,6 +440,9 @@ public:
     void save(const T& val)
     {
         buffer_ = (char *)realloc(buffer_, offset_+sizeof(val));
+        if (buffer_ == NULL) {
+            throw FLANNException("Error reallocating compression buffer (save_binary())");
+        }
         memcpy(buffer_+offset_, &val, sizeof(val));
         offset_ += sizeof(val);
     }
@@ -451,6 +458,9 @@ public:
     void save_binary(T* ptr, size_t size)
     {
         buffer_ = (char *)realloc(buffer_, offset_+size);
+        if (buffer_ == NULL) {
+            throw FLANNException("Error reallocating compression buffer (save_binary())");
+        }
         memcpy(buffer_+offset_, ptr, size);
         offset_ += size;
     }
