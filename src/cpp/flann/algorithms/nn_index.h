@@ -239,7 +239,7 @@ public:
     	if (Archive::is_loading::value) {
             if (strncmp(header.h.signature,
                         FLANN_SIGNATURE_,
-                        strlen(FLANN_SIGNATURE_)) != 0) {
+                        strlen(FLANN_SIGNATURE_) - strlen("v0.0")) != 0) {
     	        throw FLANNException("Invalid index file, wrong signature");
     	    }
 

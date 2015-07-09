@@ -208,17 +208,21 @@ public:
 
     void saveIndex(FILE* stream)
     {
-    	serialization::SaveArchive sa(stream);
-    	sa & *this;
+        {
+            serialization::SaveArchive sa(stream);
+            sa & *this;
+        }
 
     	bestIndex_->saveIndex(stream);
     }
 
     void loadIndex(FILE* stream)
     {
-    	serialization::LoadArchive la(stream);
-    	la & *this;
-
+        {
+            serialization::LoadArchive la(stream);
+            la & *this;
+        }
+        
         IndexParams params;
         flann_algorithm_t index_type = get_param<flann_algorithm_t>(bestParams_,"algorithm");
         bestIndex_ = create_index_by_type<Distance>((flann_algorithm_t)index_type, dataset_, params, distance_);
