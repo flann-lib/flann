@@ -40,7 +40,7 @@
 #ifdef FLANN_SIGNATURE_
 #undef FLANN_SIGNATURE_
 #endif
-#define FLANN_SIGNATURE_ "FLANN_INDEX_v1.0"
+#define FLANN_SIGNATURE_ "FLANN_INDEX_v1.1"
 
 namespace flann
 {
@@ -60,7 +60,7 @@ struct IndexHeader
         strcpy(h.version, FLANN_VERSION_);
 
         h.compression = 0;
-        h.uncompressed_size = 0;
+        h.first_block_size = 0;
 	}
 
 private:
@@ -74,7 +74,7 @@ private:
         ar & h.rows;
         ar & h.cols;
         ar & h.compression;
-        ar & h.uncompressed_size;
+        ar & h.first_block_size;
     }
     friend struct serialization::access;
 };
@@ -114,7 +114,7 @@ inline IndexHeader load_header(FILE* stream)
 
     if (strncmp(header.h.signature,
                 FLANN_SIGNATURE_,
-                strlen(FLANN_SIGNATURE_)) != 0) {
+                strlen(FLANN_SIGNATURE_) - strlen("v0.0")) != 0) {
         throw FLANNException("Invalid index file, wrong signature");
     }
 
