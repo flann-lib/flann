@@ -37,6 +37,7 @@
 #include <cassert>
 #include <limits>
 #include <cmath>
+#include <stdint.h>
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
