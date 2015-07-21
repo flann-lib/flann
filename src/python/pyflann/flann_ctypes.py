@@ -217,9 +217,21 @@ type_mappings = ( ('float', 'float32'),
                   ('int', 'int32') )
 
 
-def define_functions(str):
-    for type in type_mappings:
-        eval(compile(str % {'C': type[0], 'numpy': type[1]}, '<string>', 'exec'))
+def define_functions(fmtstr):
+    try:
+        for type_ in type_mappings:
+            source = fmtstr % {'C': type_[0], 'numpy': type_[1]}
+            code = compile(source, '<string>', 'exec')
+            eval(code)
+    except AttributeError:
+        print('+=========')
+        print('Error compling code')
+        print('+ format string ---------')
+        print(fmtstr)
+        print('+ failing instance ---------')
+        print(source)
+        print('L_________')
+        raise
 
 flann.build_index = {}
 define_functions(r"""
@@ -233,6 +245,40 @@ flannlib.flann_build_index_%(C)s.argtypes = [
 ]
 flann.build_index[%(numpy)s] = flannlib.flann_build_index_%(C)s
 """)
+
+flann.used_memory = {}
+define_functions(r"""
+flannlib.flann_used_memory_%(C)s.restype = c_int
+flannlib.flann_used_memory_%(C)s.argtypes = [
+        FLANN_INDEX,  # index_ptr
+]
+flann.used_memory[%(numpy)s] = flannlib.flann_used_memory_%(C)s
+""")
+
+
+flann.add_points = {}
+define_functions(r"""
+flannlib.flann_add_points_%(C)s.restype = None
+flannlib.flann_add_points_%(C)s.argtypes = [
+        FLANN_INDEX, # index_id
+        ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # dataset
+        c_int, # rows
+        c_int, # rebuild_threshhold
+]
+flann.add_points[%(numpy)s] = flannlib.flann_add_points_%(C)s
+""")
+
+
+flann.remove_point = {}
+define_functions(r"""
+flannlib.flann_remove_point_%(C)s.restype = None
+flannlib.flann_remove_point_%(C)s.argtypes = [
+        FLANN_INDEX,  # index_ptr
+        c_int,  # id_
+]
+flann.remove_point[%(numpy)s] = flannlib.flann_remove_point_%(C)s
+""")
+
 
 flann.save_index = {}
 define_functions(r"""

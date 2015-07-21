@@ -156,6 +156,79 @@ FLANN_EXPORT flann_index_t flann_build_index_int(int* dataset,
                                                  struct FLANNParameters* flann_params);
 
 /**
+    Returns the amount of memory used by the index
+
+    Returns: int
+ */
+
+FLANN_EXPORT int flann_used_memory(flann_index_t index_ptr);
+
+FLANN_EXPORT int flann_used_memory_float(flann_index_t index_ptr);
+
+FLANN_EXPORT int flann_used_memory_double(flann_index_t index_ptr);
+
+FLANN_EXPORT int flann_used_memory_int(flann_index_t index_ptr);
+
+FLANN_EXPORT int flann_used_memory_byte(flann_index_t index_ptr);
+
+
+/**
+   Adds points to an index.
+
+   Params:
+    index_id The index that should be modified
+    dataset = pointer to a data set stored in row major order
+    rows = number of rows (features) in the dataset
+    cols = number of columns in the dataset (feature dimensionality)
+    rebuild_threadhold
+
+   Returns: void
+ */
+
+FLANN_EXPORT void flann_add_points(flann_index_t index_id, float* dataset,
+                                             int rows,
+                                             int rebuild_threshold);
+
+
+FLANN_EXPORT void flann_add_points_float(flann_index_t index_id, float* dataset,
+                                             int rows,
+                                             int rebuild_threshold);
+
+FLANN_EXPORT void flann_add_points_double(flann_index_t index_id, double* dataset,
+                                             int rows,
+                                             int rebuild_threshold);
+
+FLANN_EXPORT void flann_add_points_int(flann_index_t index_id, int* dataset,
+                                             int rows,
+                                             int rebuild_threshold);
+
+FLANN_EXPORT void flann_add_points_byte(flann_index_t index_id, unsigned char* dataset,
+                                             int rows,
+                                             int rebuild_threshold);
+
+
+/**
+    Removes a point from the index
+
+    Params:
+        index_id The index that should be modified
+        id = point id to be removed
+
+    Returns: void
+*/
+
+FLANN_EXPORT void flann_remove_point(flann_index_t index_ptr, int id_);
+
+FLANN_EXPORT void flann_remove_point_float(flann_index_t index_ptr, int id_);
+
+FLANN_EXPORT void flann_remove_point_double(flann_index_t index_ptr, int id_);
+
+FLANN_EXPORT void flann_remove_point_int(flann_index_t index_ptr, int id_);
+
+FLANN_EXPORT void flann_remove_point_byte(flann_index_t index_ptr, int id_);
+
+
+/**
  * Saves the index to a file. Only the index is saved into the file, the dataset corresponding to the index is not saved.
  *
  * @param index_id The index that should be saved
