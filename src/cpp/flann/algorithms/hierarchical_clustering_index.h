@@ -37,7 +37,10 @@
 #include <cassert>
 #include <limits>
 #include <cmath>
-#include <stdint.h>
+
+#ifndef SIZE_MAX
+#define SIZE_MAX ((size_t) -1)
+#endif
 
 #include "flann/general.h"
 #include "flann/algorithms/nn_index.h"
