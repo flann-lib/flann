@@ -156,6 +156,133 @@ FLANN_EXPORT flann_index_t flann_build_index_int(int* dataset,
                                                  struct FLANNParameters* flann_params);
 
 /**
+  Adds points to pre-built index.
+
+  Params:
+    index_ptr = pointer to index, must already be built
+    points = pointer to array of points
+    rows = number of points to add
+    columns = feature dimensionality
+    rebuild_threshold = reallocs index when it grows by factor of
+      `rebuild_threshold`. A smaller value results is more space efficient
+      but less computationally efficient. Must be greater than 1.
+
+  Returns: 0 if success otherwise -1
+**/
+FLANN_EXPORT int flann_add_points(flann_index_t index_ptr, float* points,
+                                  int rows, int columns,
+                                  float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_float(flann_index_t index_ptr, float* points,
+                                        int rows, int columns,
+                                        float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_double(flann_index_t index_ptr,
+                                         double* points, int rows, int columns,
+                                         float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_byte(flann_index_t index_ptr,
+                                       unsigned char* points, int rows,
+                                       int columns, float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_int(flann_index_t index_ptr, int* points,
+                                      int rows, int columns,
+                                      float rebuild_threshold);
+
+/**
+ * Removes a point from a pre-built index.
+ *
+ * index_ptr = pointer to pre-built index.
+ * point_id = index of datapoint to remove.
+*/
+FLANN_EXPORT int flann_remove_point(flann_index_t index_ptr,
+                                    unsigned int point_id);
+
+FLANN_EXPORT int flann_remove_point_float(flann_index_t index_ptr,
+                                          unsigned int point_id);
+
+FLANN_EXPORT int flann_remove_point_double(flann_index_t index_ptr,
+                                           unsigned int point_id);
+
+FLANN_EXPORT int flann_remove_point_byte(flann_index_t index_ptr,
+                                         unsigned int point_id);
+
+FLANN_EXPORT int flann_remove_point_int(flann_index_t index_ptr,
+                                        unsigned int point_id);
+
+/**
+ * Gets a point from a given index position.
+ *
+ * index_ptr = pointer to pre-built index.
+ * point_id = index of datapoint to get.
+ *
+ * Returns: pointer to datapoint or NULL on miss
+*/
+FLANN_EXPORT float* flann_get_point(flann_index_t index_ptr,
+                                    unsigned int point_id);
+
+FLANN_EXPORT float* flann_get_point_float(flann_index_t index_ptr,
+                                          unsigned int point_id);
+
+FLANN_EXPORT double* flann_get_point_double(flann_index_t index_ptr,
+                                            unsigned int point_id);
+
+FLANN_EXPORT unsigned char* flann_get_point_byte(flann_index_t index_ptr,
+                                                 unsigned int point_id);
+
+FLANN_EXPORT int* flann_get_point_int(flann_index_t index_ptr,
+                                      unsigned int point_id);
+
+/**
+ * Returns the number of datapoints stored in index.
+ *
+ * index_ptr = pointer to pre-built index.
+ *
+*/
+FLANN_EXPORT unsigned int flann_veclen(flann_index_t index_ptr);
+
+FLANN_EXPORT unsigned int flann_veclen_float(flann_index_t index_ptr);
+
+FLANN_EXPORT unsigned int flann_veclen_double(flann_index_t index_ptr);
+
+FLANN_EXPORT unsigned int flann_veclen_byte(flann_index_t index_ptr);
+
+FLANN_EXPORT unsigned int flann_veclen_int(flann_index_t index_ptr);
+
+/**
+ * Returns the dimensionality of datapoints stored in index.
+ *
+ * index_ptr = pointer to pre-built index.
+ *
+*/
+FLANN_EXPORT unsigned int flann_size(flann_index_t index_ptr);
+
+FLANN_EXPORT unsigned int flann_size_float(flann_index_t index_ptr);
+
+FLANN_EXPORT unsigned int flann_size_double(flann_index_t index_ptr);
+
+FLANN_EXPORT unsigned int flann_size_byte(flann_index_t index_ptr);
+
+FLANN_EXPORT unsigned int flann_size_int(flann_index_t index_ptr);
+
+/**
+ * Returns the number of bytes consumed by the index.
+ *
+ * index_ptr = pointer to pre-built index.
+ *
+*/
+FLANN_EXPORT int flann_used_memory(flann_index_t index_ptr);
+
+FLANN_EXPORT int flann_used_memory_float(flann_index_t index_ptr);
+
+FLANN_EXPORT int flann_used_memory_double(flann_index_t index_ptr);
+
+FLANN_EXPORT int flann_used_memory_byte(flann_index_t index_ptr);
+
+FLANN_EXPORT int flann_used_memory_int(flann_index_t index_ptr);
+
+
+/**
  * Saves the index to a file. Only the index is saved into the file, the dataset corresponding to the index is not saved.
  *
  * @param index_id The index that should be saved
