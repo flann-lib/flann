@@ -32,8 +32,11 @@
 #define FLANN_RANDOM_H
 
 #include <algorithm>
+#include <cassert>
 #include <cstdlib>
 #include <cstddef>
+#include <mutex>
+#include <random>
 #include <vector>
 
 #include "flann/general.h"
@@ -41,13 +44,36 @@
 namespace flann
 {
 
+typedef std::mt19937 UniformRandomNumberGenerator;
+
+/**
+ * Initializes and returns a singleton uniform random number generator.
+ */
+inline UniformRandomNumberGenerator& GetRandomNumberGenerator()
+{
+    static UniformRandomNumberGenerator generator;
+    return generator;
+}
+
+/**
+ * Returns a mutex that must be locked before using the generator returned by
+ * GetRandomNumberGenerator().
+ */
+inline std::mutex& GetRandomNumberGeneratorMutex()
+{
+    static std::mutex mutex;
+    return mutex;
+}
+
 /**
  * Seeds the random number generator
  *  @param seed Random seed
  */
 inline void seed_random(unsigned int seed)
 {
-    srand(seed);
+    std::lock_guard<std::mutex> guard(GetRandomNumberGeneratorMutex());
+    GetRandomNumberGenerator().seed(
+        static_cast<UniformRandomNumberGenerator::result_type>(seed));
 }
 
 /*
@@ -55,33 +81,31 @@ inline void seed_random(unsigned int seed)
  */
 /**
  * Generates a random double value.
- * @param high Upper limit
- * @param low Lower limit
+ * @param high Upper limit (inclusive)
+ * @param low Lower limit (inclusive)
  * @return Random double value
  */
 inline double rand_double(double high = 1.0, double low = 0)
 {
-    return low + ((high-low) * (std::rand() / (RAND_MAX + 1.0)));
+    assert(low <= high);
+    std::uniform_real_distribution<double> distribution(low, high);
+    std::lock_guard<std::mutex> guard(GetRandomNumberGeneratorMutex());
+    return distribution(GetRandomNumberGenerator());
 }
 
 /**
  * Generates a random integer value.
- * @param high Upper limit
- * @param low Lower limit
+ * @param high Upper limit (exclusive)
+ * @param low Lower limit (inclusive)
  * @return Random integer value
  */
 inline int rand_int(int high = RAND_MAX, int low = 0)
 {
-    return low + (int) ( double(high-low) * (std::rand() / (RAND_MAX + 1.0)));
+    assert(low < high);
+    std::uniform_int_distribution<int> distribution(low, high - 1);
+    std::lock_guard<std::mutex> guard(GetRandomNumberGeneratorMutex());
+    return distribution(GetRandomNumberGenerator());
 }
-
-
-class RandomGenerator
-{
-public:
-    ptrdiff_t operator() (ptrdiff_t i) { return rand_int(i); }
-};
-
 
 /**
  * Random number generator that returns a distinct number from
@@ -110,14 +134,14 @@ public:
      */
     void init(int n)
     {
-        static RandomGenerator generator;
         // create and initialize an array of size n
         vals_.resize(n);
         size_ = n;
         for (int i = 0; i < size_; ++i) vals_[i] = i;
 
         // shuffle the elements in the array
-        std::random_shuffle(vals_.begin(), vals_.end(), generator);
+        std::lock_guard<std::mutex> guard(GetRandomNumberGeneratorMutex());
+        std::shuffle(vals_.begin(), vals_.end(), GetRandomNumberGenerator());
 
         counter_ = 0;
     }
