@@ -108,6 +108,17 @@ inline int rand_int(int high = RAND_MAX, int low = 0)
 }
 
 /**
+ * Reorders the elements in the given range [first, last) such that all
+ * permutations of those elements are equally probable.
+ */
+template<typename RandomIt>
+inline void rand_shuffle(RandomIt first, RandomIt last)
+{
+    std::lock_guard<std::mutex> guard(GetRandomNumberGeneratorMutex());
+    std::shuffle(first, last, GetRandomNumberGenerator());
+}
+
+/**
  * Random number generator that returns a distinct number from
  * the [0,n) interval each time.
  */
@@ -140,8 +151,7 @@ public:
         for (int i = 0; i < size_; ++i) vals_[i] = i;
 
         // shuffle the elements in the array
-        std::lock_guard<std::mutex> guard(GetRandomNumberGeneratorMutex());
-        std::shuffle(vals_.begin(), vals_.end(), GetRandomNumberGenerator());
+        rand_shuffle(vals_.begin(), vals_.end());
 
         counter_ = 0;
     }
