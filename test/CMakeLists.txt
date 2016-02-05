@@ -19,6 +19,10 @@ if (PYTHON_EXECUTABLE)
     flann_download_test_data(brief100K.h5 e1e781c0955917bc2f0a27b6344c2342)
 endif()
 
+if (GTEST_FOUND)
+    include_directories(${GTEST_INCLUDE_DIRS})
+endif()
+
 if (GTEST_FOUND AND HDF5_FOUND)
     include_directories(${HDF5_INCLUDE_DIR})
 
