@@ -525,7 +525,7 @@ private:
 
         node->variance = variance;
         node->radius = radius;
-        delete node->pivot;
+        delete[] node->pivot;
         node->pivot = mean;
     }
 
