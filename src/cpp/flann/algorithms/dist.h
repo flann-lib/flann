@@ -108,14 +108,14 @@ struct L2_3D
     template <typename Iterator1, typename Iterator2>
     ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
     {
-        ResultType result = ResultType();        
+        ResultType result = ResultType();
         ResultType diff;
         diff = *a++ - *b++;
         result += diff*diff;
         diff = *a++ - *b++;
         result += diff*diff;
         diff = *a++ - *b++;
-        result += diff*diff;        
+        result += diff*diff;
         return result;
     }
 
@@ -477,6 +477,9 @@ struct HammingPopcnt
     ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
     {
         ResultType result = 0;
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+        typedef unsigned long long pop_t;
+#endif
 #if __GNUC__
 #if ANDROID && HAVE_NEON
         static uint64_t features = android_getCpuFeatures();
