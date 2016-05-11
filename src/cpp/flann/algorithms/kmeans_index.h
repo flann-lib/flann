@@ -416,6 +416,7 @@ private:
     		Index* obj = static_cast<Index*>(ar.getObject());
 
     		if (Archive::is_loading::value) {
+    			delete[] pivot;
     			pivot = new DistanceType[obj->veclen_];
     		}
     		ar & serialization::make_binary_object(pivot, obj->veclen_*sizeof(DistanceType));
@@ -524,6 +525,7 @@ private:
 
         node->variance = variance;
         node->radius = radius;
+        delete[] node->pivot;
         node->pivot = mean;
     }
 
