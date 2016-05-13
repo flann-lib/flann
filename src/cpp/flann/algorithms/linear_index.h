@@ -85,10 +85,10 @@ public:
     	return new LinearIndex(*this);
     }
 
-    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    void addPoints(const Matrix<ElementType>& points, std::vector<size_t> *ids, float rebuild_threshold = 2)
     {
         assert(points.cols==veclen_);
-        extendDataset(points);
+        extendDataset(points, ids);
     }
 
     flann_algorithm_t getType() const

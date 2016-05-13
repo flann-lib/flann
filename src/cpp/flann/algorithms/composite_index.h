@@ -166,10 +166,10 @@ public:
         kdtree_index_->buildIndex();
     }
     
-    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    void addPoints(const Matrix<ElementType>& points, std::vector<size_t> *ids, float rebuild_threshold = 2)
     {
-        kmeans_index_->addPoints(points, rebuild_threshold);
-        kdtree_index_->addPoints(points, rebuild_threshold);
+        kmeans_index_->addPoints(points, NULL, rebuild_threshold);
+        kdtree_index_->addPoints(points, ids, rebuild_threshold);
     }
 
     void removePoint(size_t index)

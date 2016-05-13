@@ -32,6 +32,7 @@
 #define FLANN_H_
 
 #include "defines.h"
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -163,6 +164,7 @@ FLANN_EXPORT flann_index_t flann_build_index_int(int* dataset,
     points = pointer to array of points
     rows = number of points to add
     columns = feature dimensionality
+    ids = output ids
     rebuild_threshold = reallocs index when it grows by factor of
       `rebuild_threshold`. A smaller value results is more space efficient
       but less computationally efficient. Must be greater than 1.
@@ -188,6 +190,36 @@ FLANN_EXPORT int flann_add_points_byte(flann_index_t index_ptr,
 FLANN_EXPORT int flann_add_points_int(flann_index_t index_ptr, int* points,
                                       int rows, int columns,
                                       float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_get_ids(
+        flann_index_t index_ptr,
+        float* points, int rows, int columns,
+        size_t* ids,
+        float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_float_get_ids(
+        flann_index_t index_ptr,
+        float* points, int rows, int columns,
+        size_t* ids,
+        float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_double_get_ids(
+        flann_index_t index_ptr,
+        double* points, int rows, int columns,
+        size_t* ids,
+        float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_byte_get_ids(
+        flann_index_t index_ptr,
+        unsigned char* points, int rows, int columns,
+        size_t* ids,
+        float rebuild_threshold);
+
+FLANN_EXPORT int flann_add_points_int_get_ids(
+        flann_index_t index_ptr,
+        int* points, int rows, int columns,
+        size_t* ids,
+        float rebuild_threshold);
 
 /**
  * Removes a point from a pre-built index.

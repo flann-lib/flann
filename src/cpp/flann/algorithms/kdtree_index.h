@@ -139,12 +139,12 @@ public:
 
     using BaseClass::buildIndex;
     
-    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    void addPoints(const Matrix<ElementType>& points, std::vector<size_t> *ids, float rebuild_threshold = 2)
     {
         assert(points.cols==veclen_);
 
         size_t old_size = size_;
-        extendDataset(points);
+        extendDataset(points, ids);
         
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
             buildIndex();
