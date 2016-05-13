@@ -17,12 +17,12 @@ set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC FLANN_
 if (BUILD_CUDA_LIB)
     SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-DFLANN_USE_CUDA")
     if(CMAKE_COMPILER_IS_GNUCC)
-		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC;-arch=sm_13" )
+		set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC;" )
         if (NVCC_COMPILER_BINDIR)
             set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--compiler-bindir=${NVCC_COMPILER_BINDIR}")
         endif()
     else()
-	    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-arch=sm_13" )
+	    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};" )
     endif()
     cuda_add_library(flann_cuda_s STATIC ${CU_SOURCES})
     set_property(TARGET flann_cuda_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
@@ -52,14 +52,14 @@ set_target_properties(flann_cpp PROPERTIES
    VERSION ${FLANN_VERSION}
    SOVERSION ${FLANN_SOVERSION}
    DEFINE_SYMBOL FLANN_EXPORTS
-) 
+)
 
 if (BUILD_CUDA_LIB)
     set_target_properties(flann_cuda PROPERTIES
        VERSION ${FLANN_VERSION}
        SOVERSION ${FLANN_SOVERSION}
        DEFINE_SYMBOL FLANN_EXPORTS
-    ) 
+    )
 endif()
 
 
@@ -98,7 +98,7 @@ if (BUILD_C_BINDINGS)
        VERSION ${FLANN_VERSION}
        SOVERSION ${FLANN_SOVERSION}
        DEFINE_SYMBOL FLANN_EXPORTS
-    ) 
+    )
 endif()
 
 if(WIN32)
@@ -117,7 +117,7 @@ install (
     LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
 )
- 
+
 if (BUILD_CUDA_LIB)
     install (
         TARGETS flann_cuda flann_cuda_s
