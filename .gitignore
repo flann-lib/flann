@@ -19,3 +19,17 @@ dist/
 flann.kdev4
 TODO
 
+CMakeCache.txt
+CMakeFiles
+*.vcxproj
+*.filters
+*.sln
+*.suo
+*.pdb
+Win32
+*.tlog
+cmake_install.cmake
+*.obj
+uninstall_target.cmake
+*.sdf
+*.opensdf
