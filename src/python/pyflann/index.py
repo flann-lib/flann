@@ -207,6 +207,12 @@ class FLANN(object):
             self.__curindex_data = None
             self.__curindex_type = None
 
+        if self.__curindex is None:
+            raise FLANNException(
+                ('Error loading the FLANN index with filename=%r.'
+                 ' This might be an Invalid Index with the wrong signature.'
+                 ' C++ may have thrown more errors') % (filename,))
+
         self.__curindex = flann.load_index[pts.dtype.type](
             c_char_p(to_bytes(filename)), pts, npts, dim)
         self.__curindex_data = pts
