@@ -130,7 +130,7 @@ public:
         leaf_max_size_ = get_param(index_params_,"leaf_max_size",100);
 
         initCenterChooser();
-        
+
         setDataset(inputData);
 
         chooseCenters_->setDataSize(veclen_);
@@ -203,7 +203,7 @@ public:
     {
         return pool_.usedMemory+pool_.wastedMemory+memoryCounter_;
     }
-    
+
     using BaseClass::buildIndex;
 
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
@@ -212,7 +212,7 @@ public:
         size_t old_size = size_;
 
         extendDataset(points);
-        
+
         if (rebuild_threshold>1 && size_at_build_*rebuild_threshold<size_) {
             buildIndex();
         }
@@ -221,7 +221,7 @@ public:
                 for (int j = 0; j < trees_; j++) {
                     addPointToTree(tree_roots_[j], old_size + i);
                 }
-            }            
+            }
         }
     }
 
@@ -319,8 +319,6 @@ protected:
             computeClustering(tree_roots_[i], &indices[0], size_);
         }
     }
-
-private:
 
     struct PointInfo
     {
@@ -618,11 +616,11 @@ private:
             findNN<with_removed>(node->childs[best_index],result,vec, checks, maxChecks, heap, checked);
         }
     }
-    
+
     void addPointToTree(NodePtr node, size_t index)
     {
         ElementType* point = points_[index];
-        
+
         if (node->childs.empty()) { // leaf node
         	PointInfo pointInfo;
         	pointInfo.point = point;
@@ -638,7 +636,7 @@ private:
                 computeClustering(node, &indices[0], indices.size());
             }
         }
-        else {            
+        else {
             // find the closest child
             int closest = 0;
             ElementType* center = node->childs[closest]->pivot;
@@ -652,7 +650,7 @@ private:
                 }
             }
             addPointToTree(node->childs[closest], index);
-        }                
+        }
     }
 
     void swap(HierarchicalClusteringIndex& other)
@@ -669,7 +667,7 @@ private:
     	std::swap(chooseCenters_, other.chooseCenters_);
     }
 
-private:
+protected:
 
     /**
      * The root nodes in the tree.
@@ -695,22 +693,22 @@ private:
      * Branching factor to use for clustering
      */
     int branching_;
-    
+
     /**
      * How many parallel trees to build
      */
     int trees_;
-    
+
     /**
      * Algorithm to use for choosing cluster centers
      */
     flann_centers_init_t centers_init_;
-    
+
     /**
      * Max size of leaf nodes
      */
     int leaf_max_size_;
-    
+
     /**
      * Algorithm used to choose initial centers
      */

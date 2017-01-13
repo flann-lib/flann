@@ -367,6 +367,18 @@ public:
     	return nnIndex_->radiusSearch(queries, indices, dists, radius, params);
     }
 
+    /**
+     *
+     */
+#ifdef FLANN_USE_OPENCL
+    void buildCLKnnSearch(size_t knn,
+                          const SearchParams& params,
+                          cl_command_queue cq = NULL)
+    {
+        return nnIndex_->buildCLKnnSearch(knn, params, cq);
+    }
+#endif /* FLANN_USE_OPENCL */
+
 private:
     IndexType* load_saved_index(const Matrix<ElementType>& dataset, const std::string& filename, Distance distance)
     {
