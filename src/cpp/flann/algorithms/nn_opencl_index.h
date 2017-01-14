@@ -490,6 +490,119 @@ protected:
     }
 
     /**
+     * Returns source code for the kernel. Code should be appropriate for the
+     * algorithm (hash vs tree) and contain the correct distance calculation.
+     * Caller compiles the string with the correct defines ("-D")
+     *
+     * Caller must call delete[] after use.
+     *
+     * @param  isLocal [description]
+     * @param  type    [description]
+     * @return         [description]
+     */
+    char *getCLSrc(bool isLocal, bool useTooFarSrc, flann_distance_t type) const
+    {
+        char *src = new char[100000];
+        const char *distSrc = NULL;
+
+        // Default to nothing is too far
+        const char *tooFarSrc =
+"int tooFar(__global ELEMENT_TYPE *nodePivots, __global DISTANCE_TYPE *nodeRadii,\n"
+           "int nodeId, __global ELEMENT_TYPE *vec, int *checks,\n"
+           "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
+"{\n"
+    "return false;\n"
+"}\n";
+
+        if (useTooFarSrc)
+            tooFarSrc =
+// Ignore those clusters that are too far away
+"int tooFar(__global ELEMENT_TYPE *nodePivots, __global DISTANCE_TYPE *nodeRadii,\n"
+           "int nodeId, __global ELEMENT_TYPE *vec, int *checks,\n"
+           "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
+"{\n"
+    "DISTANCE_TYPE bsq = vecDist(vec, nodePivots, nodeId*N_VECLEN);\n"
+    "DISTANCE_TYPE rsq = nodeRadii[nodeId];\n"
+    "DISTANCE_TYPE wsq = resultDist[min(N_RESULT, (*checks))-1];\n"
+    "DISTANCE_TYPE val = bsq-rsq-wsq;\n"
+    "return ((val > (DISTANCE_TYPE)0.0) && ((val*val-4*rsq*wsq) > (DISTANCE_TYPE)0.0));\n"
+"}\n";
+
+        if (isLocal)
+        {
+            switch(type)
+            {
+                case FLANN_DIST_L2:
+                    distSrc =
+// Compare the local query point against a global point and return the euclidian distance
+// between them.
+"DISTANCE_TYPE vecDistLoc (__local ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2)\n"
+"{\n"
+    "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0.0f;\n"
+    "for (int i = 0; i < N_VECLEN; i += 4) {\n"
+        // Use vector instructions because, why not? (And make better use of global latency.)
+        "DISTANCE_TYPE_VEC diff = vload4(0,v1+i) - vload4(0,v2+i+off2);\n"
+        "sum = mad(diff, diff, sum);\n"
+    "}\n"
+
+    // return the sum of all vector components
+    "return sum.s0+sum.s1+sum.s2+sum.s3;\n"
+"}\n";
+                    break;
+                case FLANN_DIST_L1:
+                case FLANN_DIST_MINKOWSKI:
+                case FLANN_DIST_MAX:
+                case FLANN_DIST_HIST_INTERSECT:
+                case FLANN_DIST_HELLINGER:
+                case FLANN_DIST_CHI_SQUARE:
+                case FLANN_DIST_KULLBACK_LEIBLER:
+                case FLANN_DIST_HAMMING:
+                case FLANN_DIST_HAMMING_LUT:
+                case FLANN_DIST_HAMMING_POPCNT:
+                case FLANN_DIST_L2_SIMPLE:
+                    distSrc = "vecDistLoc unimplemented for this distance measure!";
+                    break;
+            }
+            sprintf(src, "%s\n%s\n%s", queryTreeSrcLocal, distSrc, tooFarSrc);
+        }
+        else
+        {
+            switch(type)
+            {
+                case FLANN_DIST_L2:
+                    distSrc =
+// Calculates the square of the euclidian distance between two vectors
+"DISTANCE_TYPE vecDist (__global ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2)\n"
+"{\n"
+    "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0.0f;\n"
+    "for (int i = 0; i < N_VECLEN; i += 4) {\n"
+        // Vector instructions FTW!
+        "DISTANCE_TYPE_VEC diff = vload4(0,v1+i) - vload4(0,v2+i+off2);\n"
+        "sum = mad(diff, diff, sum);\n"
+    "}\n"
+    "return sum.s0+sum.s1+sum.s2+sum.s3;\n"
+"}\n";
+                    break;
+                case FLANN_DIST_L1:
+                case FLANN_DIST_MINKOWSKI:
+                case FLANN_DIST_MAX:
+                case FLANN_DIST_HIST_INTERSECT:
+                case FLANN_DIST_HELLINGER:
+                case FLANN_DIST_CHI_SQUARE:
+                case FLANN_DIST_KULLBACK_LEIBLER:
+                case FLANN_DIST_HAMMING:
+                case FLANN_DIST_HAMMING_LUT:
+                case FLANN_DIST_HAMMING_POPCNT:
+                case FLANN_DIST_L2_SIMPLE:
+                    distSrc = "vecDistLoc unimplemented for this distance measure!";
+                    break;
+            }
+            sprintf(src, "%s\n%s\n%s", queryTreeSrcGeneral, distSrc, tooFarSrc);
+        }
+        return src;
+    }
+
+    /**
      * Enable OpenCL with this queue
      */
     cl_command_queue cl_cmd_queue_;
@@ -507,7 +620,539 @@ protected:
     cl_kernel cl_knn_search_kern_;
 
     bool own_cq_;
+
+    static const char *queryTreeSrcGeneral;
+    static const char *queryTreeSrcLocal;
 };
+
+const char *OpenCLIndex::queryTreeSrcGeneral =
+"int findNN(__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
+           "__global DISTANCE_TYPE *nodeRadii,\n"
+           "__global DISTANCE_TYPE *nodeVariance, __global ELEMENT_TYPE *dataset,\n"
+           "int idx,\n"
+           "__global DISTANCE_TYPE *resultDist, __global int *resultId,\n"
+           "__global ELEMENT_TYPE *vec, int *checks,\n"
+           "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
+           "int *heapStart, int *heapEnd);\n"
+
+"int tooFar(__global ELEMENT_TYPE *nodePivots, __global DISTANCE_TYPE *nodeRadii,\n"
+           "int nodeId, __global ELEMENT_TYPE *vec, int *checks,\n"
+           "__global DISTANCE_TYPE *resultDist, __global int *resultId );\n"
+
+"int exploreNodeBranches (__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
+                         "__global DISTANCE_TYPE *nodeVariance,\n"
+                         "int nodeId,\n"
+                         "__global ELEMENT_TYPE *q,\n"
+                         "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
+                         "int *heapStart, int *heapEnd);\n"
+
+"DISTANCE_TYPE vecDist (__global ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off);\n"
+
+"void heapInsert(DISTANCE_TYPE nodeDist, int nodeId,\n"
+                "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
+                "int *heapStart, int *heapEnd);\n"
+
+"int heapPopMin(__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
+               "int *heapStart, int *heapEnd);\n"
+
+"void resultAddPoint(DISTANCE_TYPE rsDist, int rsId, int *checks,\n"
+                    "__global DISTANCE_TYPE *resultDist, __global int *resultId );\n"
+
+// Kernel intended for CPU operation. It plays a bit more fast and loose with branches, random
+// accesses to global memory, and amount of memory used. Operations are vectorized when
+// possible. The actual logic is very similar to the non-OpenCL code. One thread per query.
+"__kernel void findNeighbors (__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
+                             "__global DISTANCE_TYPE *nodeVariance, __global DISTANCE_TYPE *nodeRadii,\n"
+                             "__global ELEMENT_TYPE *dataset,\n"
+                             "__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
+                             "__global ELEMENT_TYPE *vecArr, int numQueries )\n"
+"{\n"
+    "int gid = get_global_id(0);\n"
+    // In case we are operating with a group size
+    "if (gid >= numQueries)\n"
+        "return;\n"
+
+    // Set pointers to global memory that are constant for this kernel
+    "__global ELEMENT_TYPE *vec = &vecArr[gid*N_VECLEN];\n"
+    "__global DISTANCE_TYPE *resultDist = &resultDistArr[gid*N_RESULT];\n"
+    "__global int *resultId = &resultIdArr[gid*N_RESULT];\n"
+
+    "__private DISTANCE_TYPE heapDist[N_HEAP];\n"
+    "__private int heapId[N_HEAP];\n"
+
+    // Set up initial variables so we have something to compare against (one less edge case)
+    "resultDist[0] = vecDist(vec, dataset, 0);\n"
+    "resultId[0] = 0;\n"
+    "int checks = 1;\n"
+    "int heapStart = 0;\n"
+    "int heapEnd = 0;\n"
+
+    // Find the first node to search starting from the root
+    "int nextNode = exploreNodeBranches(nodeIndexArr, nodePivots, nodeVariance,\n"
+                                       "0, vec, heapDist, heapId, &heapStart, &heapEnd);\n"
+
+    // Iterate through all suggested nodes until we're done or have nothing else to search
+    "do {\n"
+        // Find the next nearest neighbor
+        "nextNode = findNN(nodeIndexArr, nodePivots, nodeRadii, nodeVariance, dataset,\n"
+                          "nextNode, resultDist, resultId, vec,\n"
+                          "&checks, heapDist, heapId, &heapStart, &heapEnd);\n"
+        // If we've hit the end of this branch, pop the next one off the heap
+        "if (nextNode == -1)\n"
+            "nextNode = heapPopMin(heapDist, heapId, &heapStart, &heapEnd);\n"
+
+    "} while ((nextNode != -1) && (checks < MAX_CHECKS || checks < N_RESULT));\n"
+"}\n"
+
+// Kernel intended for finding the exact set of neighbors. As of writing this comment, it hasn't
+// been tested. Uses vector commands when possible, and likely optimized for CPU.
+"__kernel void findNeighborsExact (__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
+                                  "__global DISTANCE_TYPE *nodeRadii,\n"
+                                  "__global ELEMENT_TYPE *dataset,\n"
+                                  "__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
+                                  "__global ELEMENT_TYPE *vecArr, int numQueries )\n"
+"{\n"
+    "int gid = get_global_id(0);\n"
+    "if (gid >= numQueries)\n"
+        "return;\n"
+
+    "__global ELEMENT_TYPE *vec = &vecArr[gid*N_VECLEN];\n"
+
+    // Each search has its own result array
+    "__global DISTANCE_TYPE *resultDist = &resultDistArr[gid*N_RESULT];\n"
+    "__global int *resultId = &resultIdArr[gid*N_RESULT];\n"
+
+    // Add the first point now to remove the case of not having an
+    // existing point to compare against (less flow control overall)
+    "resultDist[0] = vecDist(vec, dataset, 0);\n"
+    "resultId[0] = 0;\n"
+    "int checks = 1;\n"
+
+    // Iterate through all nodes that reference leaves
+    "for (int nodeId = 0; nodeId < N_NODES; ++nodeId) {\n"
+        "int nodePtr = nodeIndexArr[nodeId];\n"
+
+        // Check that the current node references leaves and it's not too far away to be valid
+        "if (nodePtr < N_NODES ||\n"
+            "tooFar(nodePivots, nodeRadii, nodeId, vec, &checks, resultDist, resultId))\n"
+            "continue;\n"
+
+        // Iterate through leaves of this node
+        "int lastPtr = nodeIndexArr[nodePtr] + nodePtr;\n"
+        "do {\n"
+            "int datasetI = nodeIndexArr[++nodePtr];\n"
+            // Add them all. They will be sorted within the point adding code
+            "resultAddPoint(vecDist(vec, dataset, datasetI*N_VECLEN), datasetI,\n"
+                           "&checks, resultDist, resultId);\n"
+        "} while (nodePtr < lastPtr);\n"
+    "}\n"
+"}\n"
+
+// Finds the nearest neighbor from the given node
+"int findNN(__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
+           "__global DISTANCE_TYPE *nodeRadii,\n"
+           "__global DISTANCE_TYPE *nodeVariance, __global ELEMENT_TYPE *dataset,\n"
+           "int nodeId,\n"
+           "__global DISTANCE_TYPE *resultDist, __global int *resultId,\n"
+           "__global ELEMENT_TYPE *vec, int *checks,\n"
+           "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
+           "int *heapStart, int *heapEnd)\n"
+"{\n"
+    // Check if the point is too far to be useful
+    "if (tooFar(nodePivots, nodeRadii, nodeId, vec, checks, resultDist, resultId))\n"
+        "return -1;\n"
+    "int nodePtr = nodeIndexArr[nodeId];\n"
+
+    // Either the node references children or other nodes
+    "if (nodePtr >= N_NODES) {\n"
+        // Iterate through all child leaves
+        "int lastPtr = nodeIndexArr[nodePtr] + nodePtr;\n"
+        "do {\n"
+            "int datasetI = nodeIndexArr[++nodePtr];\n"
+
+            // (Attempt to) add to the result array
+            "resultAddPoint(vecDist(vec, dataset, datasetI*N_VECLEN), datasetI,\n"
+                           "checks, resultDist, resultId);\n"
+        "} while (lastPtr > nodePtr);\n"
+        "return -1;\n"
+    "} else {\n"
+        // If we're a parent node, find the closest child node
+        "return exploreNodeBranches(nodeIndexArr, nodePivots, nodeVariance,\n"
+                                     "nodePtr, vec, heapDist, heapId, heapStart, heapEnd);\n"
+    "}\n"
+"}\n"
+
+// Explore child nodes for the closest. Add the rest to the heap
+"int exploreNodeBranches (__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
+                         "__global DISTANCE_TYPE *nodeVariance,\n"
+                         "int nodePtr, __global ELEMENT_TYPE *q,\n"
+                         "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
+                         "int *heapStart, int *heapEnd )\n"
+"{\n"
+    "int bestI = 0;\n"
+    "DISTANCE_TYPE distArr[BRANCHING];\n"
+    "distArr[0] = vecDist(q, nodePivots, nodePtr*N_VECLEN);\n"
+
+    // Find the best branch to take
+    "for (int i = 1; i < BRANCHING; ++i) {\n"
+        "DISTANCE_TYPE d = distArr[i] = vecDist(q, nodePivots, (nodePtr+i)*N_VECLEN);\n"
+        "if (d < distArr[bestI])\n"
+            "bestI = i;\n"
+    "}\n"
+
+    // Add the remaining branches to the heap
+    "for (int i = 0; i < BRANCHING; ++i) {\n"
+        "if (i == bestI)\n"
+            "continue;\n"
+        "heapInsert(distArr[i]\n"
+"#ifdef CB_INDEX\n"
+                   "- CB_INDEX*nodeVariance[nodePtr+i]\n"
+"#endif\n"
+                   ", nodePtr+i, heapDist, heapId, heapStart, heapEnd);\n"
+    "}\n"
+
+    // Follow best branch for now...
+    "return nodePtr+bestI;\n"
+"}\n"
+
+// Adds a node to the heap array. The heap should be large enough that when it's full there
+// are enough leaves to perform the expected number of checks (MAX_CHECKS). If the heap is
+// full, the furthest distance is discarded.
+"void heapInsert(DISTANCE_TYPE nodeDist, int nodeId,\n"
+                "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
+                "int *heapStart, int *heapEnd )\n"
+"{\n"
+    // If not full, inc the number of elements in the array
+    "if ((*heapEnd) < N_HEAP)\n"
+        "++(*heapEnd);\n"
+    // Don't add nodes that are already worse than the worst one (if full)
+    "else if (nodeDist >= heapDist[N_HEAP-1])\n"
+        "return;\n"
+
+    // Move all larger distance nodes back
+    "int i = (*heapEnd)-1;\n"
+    "for (; i > (*heapStart)+3; i -= 4) {\n"
+        "DISTANCE_TYPE_VEC hd = vload4(0, heapDist+i-4);\n"
+        "if (any(islessequal(hd, nodeDist)))\n"
+            "break;\n"
+        "vstore4(hd, 0, heapDist+i-3);\n"
+        "vstore4(vload4(0, heapId+i-4), 0, heapId+i-3);\n"
+    "}\n"
+    "for (; i > (*heapStart) && nodeDist < heapDist[i-1]; --i) {\n"
+        "heapDist[i] = heapDist[i-1];\n"
+        "heapId[i] = heapId[i-1];\n"
+    "}\n"
+
+    // Insert new result
+    "heapDist[i] = nodeDist;\n"
+    "heapId[i] = nodeId;\n"
+"}\n"
+
+// Pop the minimum value off of the front of the heap
+"int heapPopMin(__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
+               "int *heapStart, int *heapEnd)\n"
+"{\n"
+    "if ((*heapStart) == (*heapEnd))\n"
+        "return -1;\n"
+
+    // Check if we should shift numbers back...
+    "if ((*heapStart) == 8) {\n"
+        "(*heapEnd) = (*heapEnd)-8;\n"
+        // Move one vector at a time
+        "int i = 0;\n"
+        "for (; i < (*heapEnd)-3; i += 4) {\n"
+            "vstore4(vload4(0, heapDist+i+8), 0, heapDist+i);\n"
+            "vstore4(vload4(0, heapId+i+8), 0, heapId+i);\n"
+        "}\n"
+        "for (; i < (*heapEnd); ++i) {\n"
+            "heapDist[i] = heapDist[i+8];\n"
+            "heapId[i] = heapId[i+8];\n"
+        "}\n"
+        "(*heapStart) = 0;\n"
+    "}\n"
+
+    "return heapId[(*heapStart)++];\n"
+"}\n"
+
+// Adds a point to the result array.
+// If it's full, the furthest result distance is discarded.
+"void resultAddPoint(DISTANCE_TYPE rsDist, int rsId, int *checks,\n"
+                    "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
+"{\n"
+    // Don't add results that are already worse than the worst one
+    "if ((*checks) < N_RESULT || rsDist < resultDist[N_RESULT-1]) {\n"
+        "int i = min((*checks), N_RESULT-1);\n"
+        // Move all larger distance results back
+        "for (; i > 0 && rsDist < resultDist[i-1]; --i) {\n"
+            "resultDist[i] = resultDist[i-1];\n"
+            "resultId[i] = resultId[i-1];\n"
+        "}\n"
+        "resultDist[i] = rsDist;\n"
+        "resultId[i] = rsId;\n"
+    "}\n"
+
+    // Inc the number of checks done. This is also the maximum number of elements in the array.
+    "++(*checks);\n"
+"}\n";
+
+// **************** Implementation that takes advantage of thread groups on GPUs ****************
+const char *OpenCLIndex::queryTreeSrcLocal =
+"void findLeaves(__global int *nodeIndex, __local ELEMENT_TYPE *query,\n"
+                "__global ELEMENT_TYPE *dataset, __local int *locDone, __local int *locPtr,\n"
+                "__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+
+"void findNodes(__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
+               "__global DISTANCE_TYPE *nodeVariance,\n"
+               "__local int *locDone, __local ELEMENT_TYPE *query,\n"
+               "__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+
+"void findNewNodeDist(__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
+                     "__global DISTANCE_TYPE *nodeVariance, __local ELEMENT_TYPE *vec,\n"
+                     "__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+
+"void sortHeap(__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+
+"void bitonicMerge(__local DISTANCE_TYPE *heapDist, __local int *heapId,\n"
+                  "int size, int dir);\n"
+
+"void checkDone(int privDone, __local int *locDone);\n"
+
+"void initLoc (__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+
+"void storeResult (__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
+                  "__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+
+"DISTANCE_TYPE vecDistLoc (__local ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2);\n"
+
+// Kernel for finding k-nearest-neighbors using thread groups and local memory. This makes it work
+// well for execution on GPU processors. Thus it has been optimized for fewer branches. There
+// is one query performed per thread group, each thread group is large enough to check pointers
+// from the first half of the heap, save the reults in the other half, and then sort them all for
+// the next pass. This algorithm uses an index of the same structure, but the logic is completely
+// different.
+"#pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable\n"
+"__kernel __attribute__((reqd_work_group_size(LOC_SIZE, 1, 1)))\n"
+"void findNeighborsLocal (__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
+                         "__global DISTANCE_TYPE *nodeVariance, __global DISTANCE_TYPE *nodeRadii,\n"
+                         "__global ELEMENT_TYPE *dataset,\n"
+                         "__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
+                         "__global ELEMENT_TYPE *queryArr, int numQueries )\n"
+"{\n"
+    // N_HEAP == get_local_size(0) *2 == (avg checks per node needed for MAX_CHECKS) *2
+    // == LOC_SIZE *2 >= N_RESULT *2 >= 32 (min GPU hardware thread group size, I think) *2
+    "__local int heapId[N_HEAP];\n"
+    "__local DISTANCE_TYPE heapDist[N_HEAP];\n"
+    "__local ELEMENT_TYPE query[N_VECLEN];\n"
+    "__local int locPtr;\n"
+    "__local int locDone;\n"
+
+    // All threads in a group preform (approx) MAX_CHECKS in parallel
+    // for one query (one query per thread group)
+    // Copy vec to __local space because all threads are using it.
+    "for (int i = get_local_id(0); i < N_VECLEN; i += LOC_SIZE)\n"
+        "query[i] = queryArr[i + get_group_id(0)*N_VECLEN];\n"
+
+    // Find the child nodes that are closest to the query point
+    "findNodes(nodeIndex, nodePivots, nodeVariance, &locDone, query, heapDist, heapId);\n"
+
+    // Go from leaf pointers in the heap to a sorted set of leaves
+    "findLeaves(nodeIndex, query, dataset, &locDone, &locPtr, heapDist, heapId);\n"
+
+    // After inserting, sorting, and checking leaves, the results are in the lower part of the heap
+    "storeResult(resultDistArr, resultIdArr, heapDist, heapId);\n"
+"}\n"
+
+// Start with the root node, search through all parent nodes in the lower half of the
+// heap and add their children to the top half of the heap. Then sort the heap by priority
+// (adjusted distance). After each pass, check if there are any parent nodes left in the bottom
+// half of the heap. (Otherwise they are all nodes pointing to groups of leaves.)
+"void findNodes(__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
+               "__global DISTANCE_TYPE *nodeVariance,\n"
+               "__local int *locDone, __local ELEMENT_TYPE *query,\n"
+               "__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"{\n"
+    "initLoc(heapDist, heapId);\n"
+
+    // Init the node query array with a pointer to root_'s children
+    "heapId[0] = 0;\n"
+    "barrier(CLK_LOCAL_MEM_FENCE);\n"
+
+    // Find the closest children to the root
+    "findNewNodeDist(nodeIndex, nodePivots, nodeVariance, query, heapDist, heapId);\n"
+
+    // Sort to mix the new nodes into the correct positions in the heap
+    "sortHeap(heapDist, heapId);\n"
+    "do {\n"
+        // Use the closest parent nodes to discover additional nodes
+        "findNewNodeDist(nodeIndex, nodePivots, nodeVariance, query, heapDist, heapId);\n"
+
+        // Init shared vars
+        "if (get_local_id(0) == 0) {\n"
+            // Set this as if it's our last pass, will be flipped back if not done
+            "(*locDone) = 1;\n"
+        "}\n"
+
+        // Sort to mix the new nodes into the correct positions in the heap
+        "sortHeap(heapDist, heapId);\n"
+
+        // While there is a pointer to a parent node in the heap, keep going
+        "checkDone((heapId[get_local_id(0)] >= N_NODES), locDone);\n"
+    "} while (!(*locDone));\n"
+"}\n"
+
+// The bottom half of the heap are pointers to groups of leaves. We have one thread per leaf
+// group, so store the pointer in private memory and fill the heap with candidate leaf points.
+// After each pass, sort the leaves. After all leaf groups are checked and sorted, we have
+// preformed approximately MAX_CHECKS and the bottom of the heap are the closest points.
+"void findLeaves(__global int *nodeIndex, __local ELEMENT_TYPE *query,\n"
+                "__global ELEMENT_TYPE *dataset, __local int *locDone, __local int *locPtr,\n"
+                "__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"{\n"
+    // Store pointer to list before init local mem
+    "int leafPtr = heapId[get_local_id(0)];\n"
+    "int lastPtr = nodeIndex[leafPtr] + leafPtr;\n"
+
+    // Reset heap
+    "initLoc(heapDist, heapId);\n"
+
+    // Fill the first half of the heap with leaves.
+    // 'Unroll' this ahead of the main loop to fill both halves of the heap before
+    // first sort, and because we don't really need to checkDone() so soon.
+    "int datasetI = nodeIndex[++leafPtr];\n"
+    "heapDist[get_local_id(0)] = vecDistLoc(query, dataset, datasetI*N_VECLEN);\n"
+    "heapId[get_local_id(0)] = datasetI;\n"
+
+    // Find the next dataset index to check
+    "heapId[LOC_SIZE + get_local_id(0)] = nodeIndex[++leafPtr];\n"
+    "do {\n"
+        // Set the leaf distances for the given IDs
+        "heapDist[LOC_SIZE + get_local_id(0)] = vecDistLoc(query, dataset, heapId[LOC_SIZE + get_local_id(0)]*N_VECLEN);\n"
+
+        // Sort heap to leave the closest distances in the bottom of the heap
+        "sortHeap(heapDist, heapId);\n"
+        // Init shared vars
+        "if (get_local_id(0) == 0) {\n"
+            // Pointer starts in the middle of the heap
+            "(*locPtr) = LOC_SIZE;\n"
+
+            // Assume we're done until proven otherwise
+            "(*locDone) = 1;\n"
+        "}\n"
+        "barrier(CLK_LOCAL_MEM_FENCE);\n"
+
+        // Find the next dataset index to check
+        "int i = 0;\n"
+        "while (leafPtr < lastPtr && (i = atomic_inc(locPtr)) < N_HEAP)\n"
+            "heapId[i] = nodeIndex[++leafPtr];\n"
+
+        // We're done if there's no more leaf indicies to search
+        "checkDone(i == 0, locDone);\n"
+    "} while (!(*locDone));\n"
+"}\n"
+
+// Find a new set of nodes given the parent nodes already in the heap.
+"void findNewNodeDist(__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
+                     "__global DISTANCE_TYPE *nodeVariance, __local ELEMENT_TYPE *vec,\n"
+                     "__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"{\n"
+    // Find the next valid node pointer
+    "unsigned int locId = get_local_id(0) / BRANCHING;\n"
+
+    // Skip ids marked as pointers to leaves
+    "while (locId < N_HEAP && heapId[locId] >= N_NODES)\n"
+        "locId += LOC_SIZE / BRANCHING;\n"
+
+    // Check if we were able to find a valid node ptr
+    // Go from pointer-in-heap to actual node ID
+    "int nodeId = (locId < N_HEAP) ? (heapId[locId] + get_local_id(0) % BRANCHING) : 0;\n"
+
+    // Ensure all node IDs are retrieved before adjusting the heap
+    "barrier(CLK_LOCAL_MEM_FENCE);\n"
+    "if (locId < N_HEAP) {\n"
+        // Invalidate this pointer if it's been used
+        "heapDist[locId] = MAX_DIST;\n"
+        "heapId[locId] = N_NODES;\n"
+
+        // Store adjusted distance to node and its pointer
+        "int i = LOC_SIZE + get_local_id(0);\n"
+        "heapDist[i] = vecDistLoc(vec, nodePivots, nodeId*N_VECLEN)\n"
+"#ifdef CB_INDEX\n"
+            " - CB_INDEX*nodeVariance[nodeId]\n"
+"#endif\n"
+            ";\n"
+        "heapId[i] = nodeIndex[nodeId];\n"
+    "}\n"
+"}\n"
+
+// Sort the local heap by ascending distance using a bitonic sort
+"void sortHeap(__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"{\n"
+    // Iterate from small sizes to N_HEAP
+    "for (int size = 2; size < N_HEAP; size <<= 1) {\n"
+        //Bitonic merge
+        "int ddd = (get_local_id(0) & (size / 2)) != 0;\n"
+        "bitonicMerge(heapDist, heapId, size, ddd);\n"
+    "}\n"
+    "bitonicMerge(heapDist, heapId, N_HEAP, 0);\n"
+    "barrier(CLK_LOCAL_MEM_FENCE);\n"
+"}\n"
+
+"void bitonicMerge(__local DISTANCE_TYPE *heapDist, __local int *heapId,\n"
+                  "int size, int dir)\n"
+"{\n"
+    "for (int stride = size / 2; stride > 0; stride >>= 1)\n"
+    "{\n"
+        "barrier(CLK_LOCAL_MEM_FENCE);\n"
+        "int pos = 2 * get_local_id(0) - (get_local_id(0) & (stride - 1));\n"
+        "DISTANCE_TYPE keyA = heapDist[pos];\n"
+        "DISTANCE_TYPE keyB = heapDist[pos + stride];\n"
+        // Swap items if out of order
+        "if ((keyA < keyB) == dir)\n"
+        "{\n"
+            "int valA = heapId[pos];\n"
+            "int valB = heapId[pos + stride];\n"
+            "heapDist[pos] = keyB;\n"
+            "heapDist[pos + stride] = keyA;\n"
+            "heapId[pos] = valB;\n"
+            "heapId[pos + stride] = valA;\n"
+        "}\n"
+    "}\n"
+"}\n"
+
+// Check if all threads are done (as signaled by the 'done' parameter)
+"void checkDone(int done, __local int *locDone)\n"
+"{\n"
+    // Assume all threads are done in local mem and the bit has already been set...
+    // Until proven otherwise by private mem
+    "if (!done)\n"
+        "(*locDone) = 0;\n"
+    "barrier(CLK_LOCAL_MEM_FENCE);\n"
+"}\n"
+
+// Init both halves of the local heap to be invalid (maximum distance and a node ID of a leaf node)
+"void initLoc (__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"{\n"
+    // Init our position
+    "heapDist[get_local_id(0)] = MAX_DIST;\n"
+    "heapId[get_local_id(0)] = N_NODES;\n"
+    "heapDist[get_local_id(0)+LOC_SIZE] = MAX_DIST;\n"
+    "heapId[get_local_id(0)+LOC_SIZE] = N_NODES;\n"
+"}\n"
+
+// Store the bottom points of the heap as results in global memory
+"void storeResult (__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
+                  "__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"{\n"
+    "__global DISTANCE_TYPE *resultDist = &resultDistArr[get_group_id(0)*N_RESULT];\n"
+    "__global int *resultId = &resultIdArr[get_group_id(0)*N_RESULT];\n"
+
+    // Copy from heap to global result mem
+    "for (int i = get_local_id(0); i < N_RESULT; i += LOC_SIZE) {\n"
+        "resultDist[i] = heapDist[i];\n"
+        "resultId[i] = heapId[i];\n"
+    "}\n"
+"}\n";
+
 }
 
 #endif /* FLANN_NN_OPENCL_INDEX_H_ */

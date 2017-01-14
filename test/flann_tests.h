@@ -149,6 +149,8 @@ protected:
 		index.buildIndex();
 		printf("done (%g seconds)\n", stop_timer());
 
+		setUpIndex(index, knn, search_params);
+
 		start_timer("Searching KNN...");
 		index.knnSearch(query, indices, dists, knn, search_params );
 		printf("done (%g seconds)\n", stop_timer());
@@ -164,6 +166,11 @@ protected:
 		printf("Precision: %g\n", precision);
 	}
 
+	template<typename Distance>
+	void setUpIndex(Index<Distance> index, size_t knn, const flann::SearchParams& search_params)
+	{
+		// NO-OP by default
+	}
 
 	template<typename Distance>
 	void TestSearch2(const flann::Matrix<typename Distance::ElementType>& data,

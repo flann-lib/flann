@@ -10,7 +10,7 @@ add_dependencies(test tests)
 
 set(EXECUTABLE_OUTPUT_PATH ${TEST_OUTPUT_PATH})
 
-if (PYTHON_EXECUTABLE) 
+if (PYTHON_EXECUTABLE)
     flann_download_test_data(sift10K.h5 0964a910946d2dd5fe28337507a8abc3)
     flann_download_test_data(sift10K_byte.h5 f835e0148df4618a81f67febfda2b4d0)
     flann_download_test_data(sift100K.h5 ae2b08f93f3d9f89f5d68566b0406102)
@@ -35,6 +35,12 @@ if (GTEST_FOUND AND HDF5_FOUND)
 
     flann_add_gtest(flann_kmeans_test flann_kmeans_test.cpp)
     target_link_libraries(flann_kmeans_test flann_cpp ${TEST_LIBRARIES})
+
+    if (BUILD_OpenCL_LIB)
+        flann_add_gtest(flann_kmeans_opencl_test flann_kmeans_opencl_test.cpp)
+        target_link_libraries(flann_kmeans_opencl_test flann_cpp ${TEST_LIBRARIES})
+        target_link_libraries(flann_kmeans_opencl_test ${OpenCL_LIBRARIES})
+    endif()
 
     flann_add_gtest(flann_kdtree_single_test flann_kdtree_single_test.cpp)
     target_link_libraries(flann_kdtree_single_test flann_cpp ${TEST_LIBRARIES})
@@ -66,7 +72,7 @@ endif()
 
 
 #---------- pyunit tests --------------
-if (BUILD_PYTHON_BINDINGS) 
+if (BUILD_PYTHON_BINDINGS)
     flann_add_pyunit(test_nn.py)
     flann_add_pyunit(test_nn_index.py)
     flann_add_pyunit(test_index_save.py)
