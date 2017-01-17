@@ -486,7 +486,10 @@ protected:
     inline void freeCLMem(cl_mem *toFree) const
     {
         if (*toFree) {
-            cl_int err = clReleaseMemObject(*toFree);
+#ifndef NDEBUG
+            cl_int err =
+#endif
+            clReleaseMemObject(*toFree);
             assert(err == CL_SUCCESS);
             (*toFree) = NULL;
         }

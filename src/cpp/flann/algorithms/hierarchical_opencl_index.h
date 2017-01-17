@@ -280,7 +280,10 @@ protected:
 
         std::string distTypeName = TypeInfo<DistanceType>::clName();
         std::string elmTypeName = TypeInfo<ElementType>::clName();
-        size_t distTypeSize = TypeInfo<DistanceType>::size();
+#ifndef NDEBUG
+        size_t distTypeSize =
+#endif
+        TypeInfo<DistanceType>::size();
 
         // Assume that the distance size is 4 because I think it's always float
         assert(distTypeSize == 4);

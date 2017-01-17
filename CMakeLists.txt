@@ -38,8 +38,8 @@ ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P
 
 if (NOT CMAKE_BUILD_TYPE)
     #set(CMAKE_BUILD_TYPE Release)
-    #set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
-    set(CMAKE_BUILD_TYPE Debug)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
+    #set(CMAKE_BUILD_TYPE Debug)
 endif()
 
 #set the default path for built executables to the "bin" directory
