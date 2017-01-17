@@ -124,7 +124,7 @@ public:
 
             // Make a default command queue
             cl_device_id device_id;
-            err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+            err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_ALL, 1, &device_id, NULL);
             assert(err == CL_SUCCESS);
             cl_context context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
             assert(err == CL_SUCCESS);
