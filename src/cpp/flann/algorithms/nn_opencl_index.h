@@ -37,6 +37,8 @@
 #endif
 
 #include <cassert>
+#include <limits.h>
+#include <float.h>
 
 namespace flann
 {
@@ -46,25 +48,27 @@ class TypeInfo {
 public:
     static std::string clName() { return "unknown"; }
     static size_t size() { return 0; }
+    static double max() { return 0; } \
 };
-#define TYPE_NAME_AND_SIZE(T, TN) template <> \
+#define TYPE_NAME_AND_SIZE(T, TN, TM) template <> \
 class TypeInfo<T> { \
 public: \
     static std::string clName() { return TN; } \
     static size_t size() { return sizeof(T); } \
+    static double max() { return TM; } \
 };
 
-TYPE_NAME_AND_SIZE(float, "float");
-TYPE_NAME_AND_SIZE(double, "double");
-TYPE_NAME_AND_SIZE(bool, "bool");
-TYPE_NAME_AND_SIZE(char, "char");
-TYPE_NAME_AND_SIZE(unsigned char, "uchar");
-TYPE_NAME_AND_SIZE(short, "short");
-TYPE_NAME_AND_SIZE(unsigned short, "ushort");
-TYPE_NAME_AND_SIZE(int, "int");
-TYPE_NAME_AND_SIZE(unsigned int, "uint");
-TYPE_NAME_AND_SIZE(long, "long");
-TYPE_NAME_AND_SIZE(unsigned long, "ulong");
+TYPE_NAME_AND_SIZE(float, "float", FLT_MAX);
+TYPE_NAME_AND_SIZE(double, "double", DBL_MAX);
+TYPE_NAME_AND_SIZE(bool, "bool", 1);
+TYPE_NAME_AND_SIZE(char, "char", CHAR_MAX);
+TYPE_NAME_AND_SIZE(unsigned char, "uchar", UCHAR_MAX);
+TYPE_NAME_AND_SIZE(short, "short", SHRT_MAX);
+TYPE_NAME_AND_SIZE(unsigned short, "ushort", USHRT_MAX);
+TYPE_NAME_AND_SIZE(int, "int", INT_MAX);
+TYPE_NAME_AND_SIZE(unsigned int, "uint", UINT_MAX);
+TYPE_NAME_AND_SIZE(long, "long", LONG_MAX);
+TYPE_NAME_AND_SIZE(unsigned long, "ulong", ULONG_MAX);
 #undef TYPE_NAME_AND_SIZE
 
 class OpenCLIndex
@@ -120,7 +124,7 @@ public:
 
             // Make a default command queue
             cl_device_id device_id;
-            err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_ALL, 1, &device_id, NULL);
+            err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
             assert(err == CL_SUCCESS);
             cl_context context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
             assert(err == CL_SUCCESS);
@@ -131,8 +135,7 @@ public:
         if (cl_cmd_queue_ != NULL && cl_cmd_queue_ != cq) {
             // Using a new command queue, reset everything!
             freeCLIndexMem();
-        } else if (cl_cmd_queue_ == cq &&
-                   cl_kern_knn_ == knn && cl_kern_max_checks_ == params.checks) {
+        } else if (cl_cmd_queue_ == cq && clParamsMatch(knn, params)) {
             return;
         }
 
@@ -490,6 +493,20 @@ protected:
     }
 
     /**
+     * Calculate the adjusted number of columns of in the knn result array. Make a size that
+     * works well with vector instructions.
+     *
+     * @param[in] knn The requested number of nearest neighbors to retrieve.
+     * @return The number of nearest neighbors to actually use.
+     */
+    int getCLknn(size_t knn) const
+    {
+        // Each full set of results is a multiple of four plus one result to be replaced
+        // when a new result is added
+        return 4*((knn+2)/4)+1;
+    }
+
+    /**
      * Returns source code for the kernel. Code should be appropriate for the
      * algorithm (hash vs tree) and contain the correct distance calculation.
      * Caller compiles the string with the correct defines ("-D")
@@ -500,7 +517,7 @@ protected:
      * @param  type    [description]
      * @return         [description]
      */
-    char *getCLSrc(bool isLocal, bool useTooFarSrc, flann_distance_t type) const
+    char *getCLSrc(bool isLocal, bool useTooFarSrc, const char *initStr, flann_distance_t type) const
     {
         char *src = new char[100000];
         const char *distSrc = NULL;
@@ -563,7 +580,7 @@ protected:
                     distSrc = "vecDistLoc unimplemented for this distance measure!";
                     break;
             }
-            sprintf(src, "%s\n%s\n%s", queryTreeSrcLocal, distSrc, tooFarSrc);
+            sprintf(src, "%s\n%s\n%s\n%s", queryTreeSrcLocal, distSrc, tooFarSrc, initStr);
         }
         else
         {
@@ -597,7 +614,7 @@ protected:
                     distSrc = "vecDistLoc unimplemented for this distance measure!";
                     break;
             }
-            sprintf(src, "%s\n%s\n%s", queryTreeSrcGeneral, distSrc, tooFarSrc);
+            sprintf(src, "%s\n%s\n%s\n%s", queryTreeSrcGeneral, distSrc, tooFarSrc, initStr);
         }
         return src;
     }
@@ -658,6 +675,9 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
 "void resultAddPoint(DISTANCE_TYPE rsDist, int rsId, int *checks,\n"
                     "__global DISTANCE_TYPE *resultDist, __global int *resultId );\n"
 
+"void initResult(__global ELEMENT_TYPE *vec, __global ELEMENT_TYPE *dataset,\n"
+                "__global DISTANCE_TYPE *resultDist, __global int *resultId );\n"
+
 // Kernel intended for CPU operation. It plays a bit more fast and loose with branches, random
 // accesses to global memory, and amount of memory used. Operations are vectorized when
 // possible. The actual logic is very similar to the non-OpenCL code. One thread per query.
@@ -681,8 +701,8 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
     "__private int heapId[N_HEAP];\n"
 
     // Set up initial variables so we have something to compare against (one less edge case)
-    "resultDist[0] = vecDist(vec, dataset, 0);\n"
-    "resultId[0] = 0;\n"
+    "initResult(vec, dataset, resultDist, resultId);\n"
+
     "int checks = 1;\n"
     "int heapStart = 0;\n"
     "int heapEnd = 0;\n"
@@ -724,8 +744,7 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
 
     // Add the first point now to remove the case of not having an
     // existing point to compare against (less flow control overall)
-    "resultDist[0] = vecDist(vec, dataset, 0);\n"
-    "resultId[0] = 0;\n"
+    "initResult(vec, dataset, resultDist, resultId);\n"
     "int checks = 1;\n"
 
     // Iterate through all nodes that reference leaves
@@ -924,6 +943,8 @@ const char *OpenCLIndex::queryTreeSrcLocal =
 
 "DISTANCE_TYPE vecDistLoc (__local ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2);\n"
 
+"void initHeap(__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+
 // Kernel for finding k-nearest-neighbors using thread groups and local memory. This makes it work
 // well for execution on GPU processors. Thus it has been optimized for fewer branches. There
 // is one query performed per thread group, each thread group is large enough to check pointers
@@ -974,7 +995,7 @@ const char *OpenCLIndex::queryTreeSrcLocal =
     "initLoc(heapDist, heapId);\n"
 
     // Init the node query array with a pointer to root_'s children
-    "heapId[0] = 0;\n"
+    "initHeap(heapDist, heapId);\n"
     "barrier(CLK_LOCAL_MEM_FENCE);\n"
 
     // Find the closest children to the root

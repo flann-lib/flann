@@ -323,7 +323,6 @@ public:
     	}
     	int count = 0;
 
-        clock_t start_time_ = clock();
     	if (use_heap) {
 #pragma omp parallel num_threads(params.cores)
     		{
@@ -359,7 +358,6 @@ public:
     			}
     		}
     	}
-        printf("time in sec: %f\n", double(clock()-start_time_)/CLOCKS_PER_SEC);
     	return count;
     }
 

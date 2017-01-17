@@ -81,15 +81,13 @@ public:
         const Matrix<ElementType>& inputData,
         const IndexParams& params = KMeansIndexParams(),
         Distance d = Distance())
-        : BaseClass(inputData, params, d)
+        : BaseClass(inputData, params, d), OpenCLIndex()
     {
         cl_node_index_arr_ = NULL;
         cl_node_pivots_ = NULL;
         cl_node_radii_ = NULL;
         cl_node_variance_ = NULL;
         cl_dataset_ = NULL;
-        this->cl_knn_search_kern_ = NULL;
-        this->cl_cmd_queue_ = NULL;
     }
 
     /**
@@ -251,13 +249,28 @@ protected:
         int heapSize = std::max(getAvgNodesNeeded(maxChecks), getCLknn(knn));
         size_t numThreads, locSize;
 
+        const char *initResultStr =
+"void initResult(__global ELEMENT_TYPE *vec, __global ELEMENT_TYPE *dataset,\n"
+                "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
+"{\n"
+    // Unsure how important this distance is
+    "resultDist[0] = vecDist(vec, dataset, 0);\n"
+    "resultId[0] = 0;\n"
+"}\n";
+
+        const char *initHeapStr =
+"void initHeap(__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"{\n"
+    "heapId[0] = 0;\n"
+"}\n";
+
         // See if we can use local thread groups to speed computation (GPU-likely optimization)
         this->getCLNumThreads(dev, 0, heapSize, &numThreads, &locSize);
 
         // Find the appropriate vars for the requested kernel
         if (maxChecks == FLANN_CHECKS_UNLIMITED) {
             prog_name = "findNeighborsExact";
-            program_src = getCLSrc(false, true, Distance::type());
+            program_src = getCLSrc(false, true, initResultStr, Distance::type());
         } else if (heapSize <= locSize) {
             prog_name = "findNeighborsLocal";
 
@@ -265,12 +278,12 @@ protected:
             heapSize = locSize*2;
 
             // Set the source to use the local thread group optimization
-            program_src = getCLSrc(true, false, Distance::type());
+            program_src = getCLSrc(true, false, initHeapStr, Distance::type());
         } else {
             prog_name = "findNeighbors";
 
             // Set source as vectorized CPU implementation
-            program_src = getCLSrc(false, true, Distance::type());
+            program_src = getCLSrc(false, true, initResultStr, Distance::type());
         }
 
         std::string distTypeName = TypeInfo<DistanceType>::clName();
@@ -343,8 +356,7 @@ protected:
     {
         // Unable to init inside of fxn due to `const`
         assert(this->cl_cmd_queue_);
-        assert(knn == this->cl_kern_knn_);
-        assert(params.checks == this->cl_kern_max_checks_);
+        assert(clParamsMatch(knn, params));
         cl_int err = CL_SUCCESS;
 
         // Get the context and device ID from the queue
@@ -413,7 +425,6 @@ protected:
     {
         return numQueries >= 128 && this->size_ > this->branching_ && clParamsMatch(knn, params);
     }
-
 
     /**
      * Traverse the node tree and figure out how many nodes we need to allocate
@@ -711,20 +722,6 @@ protected:
     {
         return maxChecks*(this->cl_num_nodes_-this->cl_num_parents_)/
                                     (this->cl_num_leaves_);
-    }
-
-    /**
-     * Calculate the adjusted number of columns of in the knn result array. Make a size that
-     * works well with vector instructions.
-     *
-     * @param[in] knn The requested number of nearest neighbors to retrieve.
-     * @return The number of nearest neighbors to actually use.
-     */
-    int getCLknn(size_t knn) const
-    {
-        // Each full set of results is a multiple of four plus one result to be replaced
-        // when a new result is added
-        return 4*((knn+2)/4)+1;
     }
 
     typedef typename BaseClass::Node* NodePtr;
