@@ -15,14 +15,6 @@ using namespace flann;
 class KMeansOpenCL_SIFT10K : public DatasetTestFixture<float, float> {
 protected:
 	KMeansOpenCL_SIFT10K() : DatasetTestFixture("sift10K.h5") {}
-
-	template<typename Distance>
-	void setUpIndex(Index<Distance> index, size_t knn, const flann::SearchParams& search_params)
-	{
-		start_timer("Set up OpenCL KNN...");
-    	index.buildCLKnnSearch(knn, search_params);
-		printf("done (%g seconds)\n", stop_timer());
-	}
 };
 
 
@@ -77,7 +69,7 @@ TEST_F(KMeansOpenCL_SIFT10K, TestCopy)
 
 TEST_F(KMeansOpenCL_SIFT10K, TestCopy2)
 {
-	TestCopy2<KMeansIndex<flann::L2<float> > >(data, flann::KMeansOpenCLIndexParams(7, 3, FLANN_CENTERS_RANDOM, 0.4),
+	TestCopy2<KMeansOpenCLIndex<flann::L2<float> > >(data, flann::KMeansOpenCLIndexParams(7, 3, FLANN_CENTERS_RANDOM, 0.4),
 			query, indices, dists, knn, flann::SearchParams(128), 0.75, gt_indices);
 }
 
@@ -148,7 +140,7 @@ protected:
 TEST_F(KMeansOpenCL_SIFT100K_byte, TestSearch)
 {
 	TestSearch<flann::L2<unsigned char> >(data, flann::KMeansOpenCLIndexParams(32, 11, FLANN_CENTERS_RANDOM, 0.4),
-			query, indices, dists, knn, flann::SearchParams(80), 0.75, gt_indices);
+			query, indices, dists, knn, flann::SearchParams(96), 0.75, gt_indices);
 }
 
 

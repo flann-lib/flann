@@ -45,14 +45,6 @@ protected:
 		indices = flann::Matrix<size_t>(new size_t[query.rows * k_nn_], query.rows, k_nn_);
 	}
 
-	template<typename Distance>
-	void setUpIndex(Index<Distance> index, size_t knn, const flann::SearchParams& search_params)
-	{
-		start_timer("Set up OpenCL KNN...");
-    	index.buildCLKnnSearch(knn, search_params);
-		printf("done (%g seconds)\n", stop_timer());
-	}
-
 	void TearDown()
 	{
 		delete[] data.ptr();

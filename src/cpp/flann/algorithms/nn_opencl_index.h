@@ -107,7 +107,13 @@ public:
             if (own_cq_)
                 clReleaseContext(context);
         }
+    }
 
+    void swap(OpenCLIndex& other)
+    {
+        std::swap(own_cq_, other.own_cq_);
+        std::swap(cl_knn_search_kern_, other.cl_knn_search_kern_);
+        std::swap(cl_cmd_queue_, other.cl_cmd_queue_);
     }
 
     /**
@@ -139,6 +145,7 @@ public:
             return;
         }
 
+
         cl_cmd_queue_ = cq;
 
         // Get the useful OpenCL environment info
@@ -154,7 +161,6 @@ public:
 
         // Update kernel if needed
         if (!cl_knn_search_kern_ || !clParamsMatch(knn, params)) {
-
             // Free old kernel first
             if (cl_knn_search_kern_)
                 clReleaseKernel(cl_knn_search_kern_);
@@ -526,13 +532,7 @@ protected:
         const char *distSrc = NULL;
 
         // Default to nothing is too far
-        const char *tooFarSrc =
-"int tooFar(__global ELEMENT_TYPE *nodePivots, __global DISTANCE_TYPE *nodeRadii,\n"
-           "int nodeId, __global ELEMENT_TYPE *vec, int *checks,\n"
-           "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
-"{\n"
-    "return false;\n"
-"}\n";
+        const char *tooFarSrc = "";
 
         if (useTooFarSrc)
             tooFarSrc =
@@ -561,8 +561,26 @@ protected:
     "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0.0f;\n"
     "for (int i = 0; i < N_VECLEN; i += 4) {\n"
         // Use vector instructions because, why not? (And make better use of global latency.)
-        "DISTANCE_TYPE_VEC diff = vload4(0,v1+i) - vload4(0,v2+i+off2);\n"
+        "DISTANCE_TYPE_VEC diff = CONVERT_DISTANCE_TYPE_VEC(vload4(0,v1+i)) - CONVERT_DISTANCE_TYPE_VEC(vload4(0,v2+i+off2));\n"
         "sum = mad(diff, diff, sum);\n"
+    "}\n"
+
+    // return the sum of all vector components
+    "return sum.s0+sum.s1+sum.s2+sum.s3;\n"
+"}\n";
+                    break;
+                case FLANN_DIST_HAMMING:
+                case FLANN_DIST_HAMMING_LUT:
+                case FLANN_DIST_HAMMING_POPCNT:
+                    distSrc =
+// Compare the local query point against a global point and return the euclidian distance
+// between them.
+"DISTANCE_TYPE vecDistLoc (__local ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2)\n"
+"{\n"
+    "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0;\n"
+    "for (int i = 0; i < (int)(N_VECLEN*sizeof(ELEMENT_TYPE)/sizeof(DISTANCE_TYPE)); i += 4) {\n"
+        // Use vector instructions because, why not? (And make better use of global latency.)
+        "sum += popcount(vload4(0,i+(__local DISTANCE_TYPE *)(v1)) ^ vload4(0,i+(__global DISTANCE_TYPE *)(v2+off2)));\n"
     "}\n"
 
     // return the sum of all vector components
@@ -576,9 +594,6 @@ protected:
                 case FLANN_DIST_HELLINGER:
                 case FLANN_DIST_CHI_SQUARE:
                 case FLANN_DIST_KULLBACK_LEIBLER:
-                case FLANN_DIST_HAMMING:
-                case FLANN_DIST_HAMMING_LUT:
-                case FLANN_DIST_HAMMING_POPCNT:
                 case FLANN_DIST_L2_SIMPLE:
                     distSrc = "vecDistLoc unimplemented for this distance measure!";
                     break;
@@ -597,10 +612,30 @@ protected:
     "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0.0f;\n"
     "for (int i = 0; i < N_VECLEN; i += 4) {\n"
         // Vector instructions FTW!
-        "DISTANCE_TYPE_VEC diff = vload4(0,v1+i) - vload4(0,v2+i+off2);\n"
+        "DISTANCE_TYPE_VEC diff = CONVERT_DISTANCE_TYPE_VEC(vload4(0,v1+i)) - CONVERT_DISTANCE_TYPE_VEC(vload4(0,v2+i+off2));\n"
         "sum = mad(diff, diff, sum);\n"
     "}\n"
     "return sum.s0+sum.s1+sum.s2+sum.s3;\n"
+"}\n";
+                    break;
+                case FLANN_DIST_HAMMING:
+                case FLANN_DIST_HAMMING_LUT:
+                case FLANN_DIST_HAMMING_POPCNT:
+                    distSrc =
+// Calculates the square of the euclidian distance between two vectors
+"DISTANCE_TYPE vecDist (__global ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2)\n"
+"{\n"
+    "DISTANCE_TYPE sum = (DISTANCE_TYPE)0;\n"
+//    "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0;\n"
+    "for (int i = 0; i < N_VECLEN; i++) {\n"
+        // Vector instructions FTW!
+        "sum += popcount(v1[i] ^ v2[i+off2]);\n"
+//    "for (int i = 0; i < (int)(N_VECLEN*sizeof(ELEMENT_TYPE)/sizeof(DISTANCE_TYPE)); i += 4) {\n"
+        // Vector instructions FTW!
+//        "sum += popcount(vload4(0,i+(__global DISTANCE_TYPE *)(v1)) ^ vload4(0,i+(__global DISTANCE_TYPE *)(v2+off2)));\n"
+    "}\n"
+//    "return sum.s0+sum.s1+sum.s2+sum.s3;\n"
+    "return sum;\n"
 "}\n";
                     break;
                 case FLANN_DIST_L1:
@@ -610,11 +645,8 @@ protected:
                 case FLANN_DIST_HELLINGER:
                 case FLANN_DIST_CHI_SQUARE:
                 case FLANN_DIST_KULLBACK_LEIBLER:
-                case FLANN_DIST_HAMMING:
-                case FLANN_DIST_HAMMING_LUT:
-                case FLANN_DIST_HAMMING_POPCNT:
                 case FLANN_DIST_L2_SIMPLE:
-                    distSrc = "vecDistLoc unimplemented for this distance measure!";
+                    distSrc = "vecDist unimplemented for this distance measure!";
                     break;
             }
             sprintf(src, "%s\n%s\n%s\n%s", queryTreeSrcGeneral, distSrc, tooFarSrc, initStr);
@@ -789,13 +821,13 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
     "if (nodePtr >= N_NODES) {\n"
         // Iterate through all child leaves
         "int lastPtr = nodeIndexArr[nodePtr] + nodePtr;\n"
-        "do {\n"
+        "while (lastPtr > nodePtr) {\n"
             "int datasetI = nodeIndexArr[++nodePtr];\n"
 
             // (Attempt to) add to the result array
             "resultAddPoint(vecDist(vec, dataset, datasetI*N_VECLEN), datasetI,\n"
                            "checks, resultDist, resultId);\n"
-        "} while (lastPtr > nodePtr);\n"
+        "};\n"
         "return -1;\n"
     "} else {\n"
         // If we're a parent node, find the closest child node
@@ -909,6 +941,7 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
             "resultDist[i] = resultDist[i-1];\n"
             "resultId[i] = resultId[i-1];\n"
         "}\n"
+
         "resultDist[i] = rsDist;\n"
         "resultId[i] = rsId;\n"
     "}\n"

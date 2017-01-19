@@ -79,7 +79,7 @@ public:
      */
     KMeansOpenCLIndex(
         const Matrix<ElementType>& inputData,
-        const IndexParams& params = KMeansIndexParams(),
+        const IndexParams& params = KMeansOpenCLIndexParams(),
         Distance d = Distance())
         : BaseClass(inputData, params, d), OpenCLIndex()
     {
@@ -90,6 +90,36 @@ public:
         cl_dataset_ = NULL;
     }
 
+    KMeansOpenCLIndex(const IndexParams& params = KMeansOpenCLIndexParams(), Distance d = Distance())
+        : BaseClass(params, d), OpenCLIndex()
+    {
+        cl_node_index_arr_ = NULL;
+        cl_node_pivots_ = NULL;
+        cl_node_radii_ = NULL;
+        cl_node_variance_ = NULL;
+        cl_dataset_ = NULL;
+    }
+
+    KMeansOpenCLIndex(const KMeansOpenCLIndex<Distance>& other) : BaseClass(other), OpenCLIndex()
+    {
+        cl_node_index_arr_ = NULL;
+        cl_node_pivots_ = NULL;
+        cl_node_radii_ = NULL;
+        cl_node_variance_ = NULL;
+        cl_dataset_ = NULL;
+    }
+
+    KMeansOpenCLIndex& operator=(KMeansOpenCLIndex other)
+    {
+        this->swap(other);
+        return *this;
+    }
+
+    BaseClass* clone() const
+    {
+        return new KMeansOpenCLIndex(*this);
+    }
+
     /**
      *
      */
@@ -98,6 +128,37 @@ public:
                           cl_command_queue cq = NULL)
     {
         OpenCLIndex::buildCLKnnSearch(knn, params, cq);
+    }
+
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        // Invalidate CL data structures
+        freeCLIndexMem();
+
+        BaseClass::addPoints(points, rebuild_threshold);
+    }
+
+    /**
+     * Remove point from the index
+     * @param index Index of point to be removed
+     */
+    virtual void removePoint(size_t id)
+    {
+        // Invalidate CL data structures
+        freeCLIndexMem();
+
+        BaseClass::removePoint(id);
+    }
+
+    void swap(KMeansOpenCLIndex& other)
+    {
+        std::swap(cl_node_index_arr_, other.cl_node_index_arr_);
+        std::swap(cl_node_pivots_, other.cl_node_pivots_);
+        std::swap(cl_node_radii_, other.cl_node_radii_);
+        std::swap(cl_node_variance_, other.cl_node_variance_);
+        std::swap(cl_dataset_, other.cl_dataset_);
+        OpenCLIndex::swap(other);
+        BaseClass::swap(other);
     }
 
 protected:
@@ -253,9 +314,8 @@ protected:
 "void initResult(__global ELEMENT_TYPE *vec, __global ELEMENT_TYPE *dataset,\n"
                 "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
 "{\n"
-    // Unsure how important this distance is
-    "resultDist[0] = vecDist(vec, dataset, 0);\n"
-    "resultId[0] = 0;\n"
+    "resultDist[0] = MAX_DIST;\n"
+    "resultId[0] = 1;\n"
 "}\n";
 
         const char *initHeapStr =
@@ -299,11 +359,13 @@ protected:
         // Compile in all invariants for better optimization opportunity and less complexity
         char *build_str = (char *)calloc(128000, sizeof(char));
         sprintf(build_str,  "-cl-fast-relaxed-math -Werror "
-                "-DDISTANCE_TYPE=%s -DELEMENT_TYPE=%s -DDISTANCE_TYPE_VEC=%s "
+                "-DDISTANCE_TYPE=%s -DELEMENT_TYPE=%s "
+                "-DDISTANCE_TYPE_VEC=%s -DCONVERT_DISTANCE_TYPE_VEC=%s "
                 "-DN_RESULT=%d -DN_HEAP=%d -DMAX_DIST=%15.15lf "
                 "-DN_VECLEN=%ld -DBRANCHING=%d -DCB_INDEX=%15.15lf "
                 "-DMAX_CHECKS=%d -DN_NODES=%d -DLOC_SIZE=%ld",
-                distTypeName.c_str(), elmTypeName.c_str(), (distTypeName + "4").c_str(),
+                distTypeName.c_str(), elmTypeName.c_str(),
+                (distTypeName + "4").c_str(), ("convert_" + distTypeName + "4").c_str(),
                 getCLknn(knn), heapSize, this->root_->radius,
                 4*((this->veclen_+3)/4), this->branching_, this->cb_index_,
                 maxChecks, this->cl_num_nodes_-1, locSize);
@@ -501,9 +563,9 @@ protected:
                 // Save pointer to the list of point indices
                 indexArrWork[thisNodeId] = (*nextPtr);
 
-                // Mark as the final element
-                indexArrWork[(*nextPtr)++] = node->size;
-                assert(node->size > 0);
+                // Where to mark the number of leaves?
+                int sizeIdx = (*nextPtr)++;
+                int actualSize = 0;
 
                 // Add point leaves to the index & dataset
                 for (int i=0; i < node->size; ++i) {
@@ -517,7 +579,12 @@ protected:
                     indexArrWork[(*nextPtr)++] = index;
                     assert(index < this->size_);
                     assert(index >= 0);
+                    actualSize++;
                 }
+
+                // Mark the actual length of the leaves, after removed
+                // indicies are removed.
+                indexArrWork[sizeIdx] = actualSize;
             }
         } else {
             for (int i = 0; i < this->branching_; ++i) {
@@ -699,9 +766,9 @@ protected:
         for (int r = 0; r < indices.rows; ++r) {
             for (int c = 0; c < knn; ++c) {
                 size_t idx = rsId[r*n_knn + c];
-                size_t id;
-                this->indices_to_ids(&idx, &id, 1);
-                indices[r][c] = id;
+                this->indices_to_ids(&idx, &idx, 1);
+
+                indices[r][c] = idx;
                 dists[r][c] = rsDist[r*n_knn + c];
                 assert(std::isfinite(dists[r][c]));
             }

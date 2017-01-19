@@ -86,6 +86,8 @@ public:
     {
         cl_node_index_arr_ = NULL;
         cl_node_pivots_ = NULL;
+        cl_node_radii_ = NULL;
+        cl_node_variance_ = NULL;
         cl_dataset_ = NULL;
     }
 
@@ -214,6 +216,12 @@ protected:
         clReleaseMemObject(index_arr_work_cl);
         clReleaseMemObject(node_pivots_work_cl);
         clReleaseMemObject(dataset_work_cl);
+
+        // Create dummy arrays for calculations that we won't be doing.
+        this->cl_node_radii_ = clCreateBuffer(context, CL_MEM_READ_ONLY, 256, NULL, &err);
+        assert(err == CL_SUCCESS);
+        this->cl_node_variance_ = clCreateBuffer(context, CL_MEM_READ_ONLY, 256, NULL, &err);
+        assert(err == CL_SUCCESS);
     }
 
     /**
@@ -316,6 +324,8 @@ protected:
     {
         this->freeCLMem(&(this->cl_node_index_arr_));
         this->freeCLMem(&(this->cl_node_pivots_));
+        this->freeCLMem(&(this->cl_node_radii_));
+        this->freeCLMem(&(this->cl_node_variance_));
         this->freeCLMem(&(this->cl_dataset_));
 
         // Assume any kernel is now invalid
@@ -622,15 +632,19 @@ protected:
         assert(err == CL_SUCCESS);
         err = clSetKernelArg(kern, 1, sizeof(cl_mem), &this->cl_node_pivots_);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 2, sizeof(cl_mem), &this->cl_dataset_);
+        err = clSetKernelArg(kern, 2, sizeof(cl_mem), &this->cl_node_variance_);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 3, sizeof(cl_mem), &resultDistArr);
+        err = clSetKernelArg(kern, 3, sizeof(cl_mem), &this->cl_node_radii_);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 4, sizeof(cl_mem), &resultIdArr);
+        err = clSetKernelArg(kern, 4, sizeof(cl_mem), &this->cl_dataset_);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 5, sizeof(cl_mem), &queryArr);
+        err = clSetKernelArg(kern, 5, sizeof(cl_mem), &resultDistArr);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 6, sizeof(int), &numQueries);
+        err = clSetKernelArg(kern, 6, sizeof(cl_mem), &resultIdArr);
+        assert(err == CL_SUCCESS);
+        err = clSetKernelArg(kern, 7, sizeof(cl_mem), &queryArr);
+        assert(err == CL_SUCCESS);
+        err = clSetKernelArg(kern, 8, sizeof(int), &numQueries);
         assert(err == CL_SUCCESS);
 
         return this->runKern(kern, numThreads, locSize);
@@ -671,9 +685,8 @@ protected:
         for (int r = 0; r < indices.rows; ++r) {
             for (int c = 0; c < knn; ++c) {
                 size_t idx = rsId[r*n_knn + c];
-                size_t id;
-                this->indices_to_ids(&idx, &id, 1);
-                indices[r][c] = id;
+                this->indices_to_ids(&idx, &idx, 1);
+                indices[r][c] = idx;
                 dists[r][c] = rsDist[r*n_knn + c];
                 assert(std::isfinite(dists[r][c]));
             }
@@ -713,6 +726,8 @@ protected:
      */
     cl_mem cl_node_index_arr_;
     cl_mem cl_node_pivots_;
+    cl_mem cl_node_radii_;
+    cl_mem cl_node_variance_;
     cl_mem cl_dataset_;
 };
 }

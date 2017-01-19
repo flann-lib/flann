@@ -102,6 +102,10 @@ const char* index_type_to_name(flann_algorithm_t index_type)
 #ifdef FLANN_USE_CUDA
 	case FLANN_INDEX_KDTREE_CUDA: return "kd-tree CUDA";
 #endif
+#ifdef FLANN_USE_OPENCL
+	case FLANN_INDEX_KMEANS_OPENCL: return "k-means OpenCL";
+	case FLANN_INDEX_HIERARCHICAL_OPENCL: return "hierarchical OpenCL";
+#endif
 	case FLANN_INDEX_SAVED: return "saved";
 	case FLANN_INDEX_AUTOTUNED: return "autotuned";
 	default: return "(unknown)";
@@ -149,7 +153,11 @@ protected:
 		index.buildIndex();
 		printf("done (%g seconds)\n", stop_timer());
 
-		setUpIndex(index, knn, search_params);
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		start_timer("Searching KNN...");
 		index.knnSearch(query, indices, dists, knn, search_params );
@@ -164,12 +172,6 @@ protected:
 		}
 		EXPECT_GE(precision, expected_precision);
 		printf("Precision: %g\n", precision);
-	}
-
-	template<typename Distance>
-	void setUpIndex(Index<Distance> index, size_t knn, const flann::SearchParams& search_params)
-	{
-		// NO-OP by default
 	}
 
 	template<typename Distance>
@@ -192,6 +194,12 @@ protected:
 		start_timer( message );
 		index.buildIndex(data);
 		printf("done (%g seconds)\n", stop_timer());
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		start_timer("Searching KNN...");
 		index.knnSearch(query, indices, dists, knn, search_params );
@@ -236,6 +244,12 @@ protected:
 		index.addPoints(data2);
 		printf("done (%g seconds)\n", stop_timer());
 
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
+
 		EXPECT_EQ(index.size(), data.rows);
 
 		start_timer("Searching KNN...");
@@ -262,6 +276,12 @@ protected:
 		index.save("test_saved_index.idx");
 		Index<Distance > index2(data, flann::SavedIndexParams("test_saved_index.idx"));
 		index2.buildIndex();
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index2.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		EXPECT_EQ(index2.size(), data.rows);
 
@@ -308,6 +328,12 @@ protected:
 		index.addPoints(data2);
 		printf("done (%g seconds)\n", stop_timer());
 
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
+
 		EXPECT_EQ(index.size(), data.rows);
 
 		start_timer("Searching KNN...");
@@ -334,6 +360,12 @@ protected:
 		index.save("test_saved_index.idx");
 		Index<Distance > index2(data, flann::SavedIndexParams("test_saved_index.idx"));
 		index2.buildIndex();
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index2.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		EXPECT_EQ(index2.size(), data.rows);
 
@@ -374,6 +406,12 @@ protected:
 		index.buildIndex();
 		printf("done (%g seconds)\n", stop_timer());
 
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
+
 		EXPECT_EQ(index.size(), data.rows);
 
 		start_timer("Searching KNN...");
@@ -396,6 +434,12 @@ protected:
 		printf("Loading index\n");
 		Index<Distance > index2(data, flann::SavedIndexParams("test_saved_index.idx"));
 		index2.buildIndex();
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index2.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		EXPECT_EQ(index2.size(), data.rows);
 
@@ -446,6 +490,12 @@ protected:
 		index.buildIndex();
 		printf("done (%g seconds)\n", stop_timer());
 
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
+
 		start_timer("Searching KNN...");
 		index.knnSearch(query, indices, dists, knn, search_params );
 		printf("done (%g seconds)\n", stop_timer());
@@ -462,6 +512,12 @@ protected:
 
 		// test copy constructor
 		Index<Distance> index2(index);
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index2.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		start_timer("Searching KNN...");
 		index2.knnSearch(query, indices, dists, knn, search_params );
@@ -480,6 +536,12 @@ protected:
 		// test assignment operator
 		Index<Distance > index3(data, index_params);
 		index3 = index;
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index3.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		start_timer("Searching KNN...");
 		index3.knnSearch(query, indices, dists, knn, search_params );
@@ -518,6 +580,12 @@ protected:
 		index.buildIndex();
 		printf("done (%g seconds)\n", stop_timer());
 
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
+
 		start_timer("Searching KNN...");
 		index.knnSearch(query, indices, dists, knn, search_params );
 		printf("done (%g seconds)\n", stop_timer());
@@ -534,6 +602,12 @@ protected:
 
 		// test copy constructor
 		Index index2(index);
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index2.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		start_timer("Searching KNN...");
 		index2.knnSearch(query, indices, dists, knn, search_params );
@@ -552,6 +626,12 @@ protected:
 		// test assignment operator
 		Index index3(data, index_params);
 		index3 = index;
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index3.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		start_timer("Searching KNN...");
 		index3.knnSearch(query, indices, dists, knn, search_params );
@@ -585,6 +665,12 @@ protected:
 		start_timer( message );
 		index.buildIndex();
 		printf("done (%g seconds)\n", stop_timer());
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		start_timer("Searching KNN before removing points...");
 		index.knnSearch(query, indices, dists, knn, search_params );
@@ -621,6 +707,12 @@ protected:
 			if (!removed.test(i)) ++new_size;
 		}
 
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
+
 		EXPECT_EQ(index.size(), new_size);
 
 		start_timer("Searching KNN after remove points...");
@@ -641,6 +733,12 @@ protected:
 		Index< Distance > index2(data, flann::SavedIndexParams("test_saved_index.idx"));
 		index2.buildIndex();
 
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index2.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
+
 		EXPECT_EQ(index2.size(), new_size);
 
 		flann::Matrix<size_t> indices2(new size_t[query.rows*knn], query.rows, knn);
@@ -660,6 +758,12 @@ protected:
 
 		// rebuild index
 		index.buildIndex();
+
+#ifdef FLANN_USE_OPENCL
+		start_timer("Set up OpenCL KNN...");
+    	index.buildCLKnnSearch(knn, search_params);
+		printf("done (%g seconds)\n", stop_timer());
+#endif
 
 		EXPECT_EQ(index.size(), new_size);
 
