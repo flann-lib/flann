@@ -34,6 +34,8 @@
 #include <vector>
 #include <set>
 
+#define GTEST_PRECISION 0.0004
+
 
 template<typename T>
 float compute_precision(const flann::Matrix<T>& match, const flann::Matrix<T>& indices)
@@ -226,7 +228,8 @@ protected:
 			const flann::SearchParams& search_params,
 			float expected_precision,
 			flann::Matrix<size_t>& gt_indices,
-			const flann::Matrix<typename Distance::ResultType>& gt_dists = flann::Matrix<typename Distance::ResultType>())
+			const flann::Matrix<typename Distance::ResultType>& gt_dists = flann::Matrix<typename Distance::ResultType>(),
+			bool retestDists = false)
 	{
 		flann::seed_random(0);
 		size_t size1 = data.rows/2-1;
@@ -293,7 +296,11 @@ protected:
 
 		for (size_t i=0;i<indices.rows;++i) {
 			for (size_t j=0;j<indices.cols;++j) {
-				EXPECT_EQ(indices[i][j], indices2[i][j]);
+				if (retestDists) {
+					EXPECT_NEAR(dists[i][j], dists2[i][j], 6);
+				} else {
+					EXPECT_EQ(indices[i][j], indices2[i][j]);
+				}
 			}
 		}
 		delete[] indices2.ptr();
@@ -310,7 +317,8 @@ protected:
 			const flann::SearchParams& search_params,
 			float expected_precision,
 			flann::Matrix<size_t>& gt_indices,
-			const flann::Matrix<typename Distance::ResultType>& gt_dists = flann::Matrix<typename Distance::ResultType>())
+			const flann::Matrix<typename Distance::ResultType>& gt_dists = flann::Matrix<typename Distance::ResultType>(),
+			bool retestDists = false)
 	{
 		flann::seed_random(0);
 		size_t size1 = data.rows/2+1;
@@ -377,7 +385,11 @@ protected:
 
 		for (size_t i=0;i<indices.rows;++i) {
 			for (size_t j=0;j<indices.cols;++j) {
-				EXPECT_EQ(indices[i][j], indices2[i][j]);
+				if (retestDists) {
+					EXPECT_NEAR(dists[i][j], dists2[i][j], 6);
+				} else {
+					EXPECT_EQ(indices[i][j], indices2[i][j]);
+				}
 			}
 		}
 		delete[] indices2.ptr();
@@ -395,7 +407,8 @@ protected:
 			const flann::SearchParams& search_params,
 			float expected_precision,
 			flann::Matrix<size_t>& gt_indices,
-			const flann::Matrix<typename Distance::ResultType>& gt_dists = flann::Matrix<typename Distance::ResultType>())
+			const flann::Matrix<typename Distance::ResultType>& gt_dists = flann::Matrix<typename Distance::ResultType>(),
+			bool retestDists = false)
 	{
 		flann::seed_random(0);
 		Index<Distance> index(data, index_params);
@@ -457,11 +470,15 @@ protected:
 			precision2 = computePrecisionDiscrete(gt_dists, dists2);
 		}
 		printf("Precision: %g\n", precision2);
-		EXPECT_EQ(precision, precision2);
+		EXPECT_NEAR(precision, precision2, GTEST_PRECISION);
 
 		for (size_t i=0;i<indices.rows;++i) {
 			for (size_t j=0;j<indices.cols;++j) {
-				EXPECT_EQ(indices[i][j], indices2[i][j]);
+				if (retestDists) {
+					EXPECT_NEAR(dists[i][j], dists2[i][j], 6);
+				} else {
+					EXPECT_EQ(indices[i][j], indices2[i][j]);
+				}
 			}
 		}
 		delete[] indices2.ptr();
@@ -531,7 +548,7 @@ protected:
 			precision2 = computePrecisionDiscrete(gt_dists, dists);
 		}
 		printf("Precision: %g\n", precision2);
-		EXPECT_EQ(precision, precision2);
+		EXPECT_NEAR(precision, precision2, GTEST_PRECISION);
 
 		// test assignment operator
 		Index<Distance > index3(data, index_params);
@@ -555,7 +572,7 @@ protected:
 			precision3 = computePrecisionDiscrete(gt_dists, dists);
 		}
 		printf("Precision: %g\n", precision3);
-		EXPECT_EQ(precision, precision3);
+		EXPECT_NEAR(precision, precision3, GTEST_PRECISION);
 	}
 
 
@@ -621,7 +638,7 @@ protected:
 			precision2 = computePrecisionDiscrete(gt_dists, dists);
 		}
 		printf("Precision: %g\n", precision2);
-		EXPECT_EQ(precision, precision2);
+		EXPECT_NEAR(precision, precision2, GTEST_PRECISION);
 
 		// test assignment operator
 		Index index3(data, index_params);
@@ -645,7 +662,7 @@ protected:
 			precision3 = computePrecisionDiscrete(gt_dists, dists);
 		}
 		printf("Precision: %g\n", precision3);
-		EXPECT_EQ(precision, precision3);
+		EXPECT_NEAR(precision, precision3, GTEST_PRECISION);
 	}
 
 	template<typename Distance>
@@ -655,7 +672,8 @@ protected:
 			flann::Matrix<size_t>& indices,
 			flann::Matrix<typename Distance::ResultType>& dists,
 			size_t knn,
-			const flann::SearchParams& search_params)
+			const flann::SearchParams& search_params,
+			bool retestDists = false)
 	{
 		flann::seed_random(0);
 		Index< Distance > index(data, index_params);
@@ -749,7 +767,11 @@ protected:
 
 		for (size_t i=0;i<indices.rows;++i) {
 			for (size_t j=0;j<indices.cols;++j) {
-				EXPECT_EQ(indices[i][j], indices2[i][j]);
+				if (retestDists) {
+					EXPECT_NEAR(dists[i][j], dists2[i][j], 6);
+				} else {
+					EXPECT_EQ(indices[i][j], indices2[i][j]);
+				}
 			}
 		}
 		delete[] indices2.ptr();

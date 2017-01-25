@@ -310,18 +310,18 @@ protected:
         int heapSize = std::max(getAvgNodesNeeded(maxChecks), getCLknn(knn));
         size_t numThreads, locSize;
 
-        const char *initResultStr =
-"void initResult(__global ELEMENT_TYPE *vec, __global ELEMENT_TYPE *dataset,\n"
-                "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
-"{\n"
-    "resultDist[0] = MAX_DIST;\n"
-    "resultId[0] = 1;\n"
-"}\n";
 
-        const char *initHeapStr =
-"void initHeap(__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+        const char *tooFarSrc =
+// Ignore those clusters that are too far away
+"int tooFar(__global ELEMENT_TYPE *nodePivots, __global DISTANCE_TYPE *nodeRadii,\n"
+           "int nodeId, __global ELEMENT_TYPE *vec, int *checks,\n"
+           "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
 "{\n"
-    "heapId[0] = 0;\n"
+    "DISTANCE_TYPE bsq = vecDist(vec, nodePivots, nodeId*N_VECLEN);\n"
+    "DISTANCE_TYPE rsq = nodeRadii[nodeId];\n"
+    "DISTANCE_TYPE wsq = resultDist[min(N_RESULT, (*checks))-1];\n"
+    "DISTANCE_TYPE val = bsq-rsq-wsq;\n"
+    "return ((val > (DISTANCE_TYPE)0.0) && ((val*val-4*rsq*wsq) > (DISTANCE_TYPE)0.0));\n"
 "}\n";
 
         // See if we can use local thread groups to speed computation (GPU-likely optimization)
@@ -330,7 +330,7 @@ protected:
         // Find the appropriate vars for the requested kernel
         if (maxChecks == FLANN_CHECKS_UNLIMITED) {
             prog_name = "findNeighborsExact";
-            program_src = getCLSrc(false, true, initResultStr, Distance::type());
+            program_src = getCLSrc(false, tooFarSrc, Distance::type());
         } else if (heapSize <= locSize) {
             prog_name = "findNeighborsLocal";
 
@@ -338,12 +338,12 @@ protected:
             heapSize = locSize*2;
 
             // Set the source to use the local thread group optimization
-            program_src = getCLSrc(true, false, initHeapStr, Distance::type());
+            program_src = getCLSrc(true, "", Distance::type());
         } else {
             prog_name = "findNeighbors";
 
             // Set source as vectorized CPU implementation
-            program_src = getCLSrc(false, true, initResultStr, Distance::type());
+            program_src = getCLSrc(false, tooFarSrc, Distance::type());
         }
 
         std::string distTypeName = TypeInfo<DistanceType>::clName();
@@ -359,7 +359,7 @@ protected:
         // Compile in all invariants for better optimization opportunity and less complexity
         char *build_str = (char *)calloc(128000, sizeof(char));
         sprintf(build_str,  "-cl-fast-relaxed-math -Werror "
-                "-DDISTANCE_TYPE=%s -DELEMENT_TYPE=%s "
+                "-DDISTANCE_TYPE=%s -DELEMENT_TYPE=%s -DN_TREES=1 "
                 "-DDISTANCE_TYPE_VEC=%s -DCONVERT_DISTANCE_TYPE_VEC=%s "
                 "-DN_RESULT=%d -DN_HEAP=%d -DMAX_DIST=%15.15lf "
                 "-DN_VECLEN=%ld -DBRANCHING=%d -DCB_INDEX=%15.15lf "
@@ -767,7 +767,6 @@ protected:
             for (int c = 0; c < knn; ++c) {
                 size_t idx = rsId[r*n_knn + c];
                 this->indices_to_ids(&idx, &idx, 1);
-
                 indices[r][c] = idx;
                 dists[r][c] = rsDist[r*n_knn + c];
                 assert(std::isfinite(dists[r][c]));

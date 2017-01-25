@@ -91,6 +91,36 @@ public:
         cl_dataset_ = NULL;
     }
 
+    HierarchicalClusteringOpenCLIndex(const IndexParams& params = HierarchicalClusteringOpenCLIndexParams(), Distance d = Distance())
+        : BaseClass(params, d), OpenCLIndex()
+    {
+        cl_node_index_arr_ = NULL;
+        cl_node_pivots_ = NULL;
+        cl_node_radii_ = NULL;
+        cl_node_variance_ = NULL;
+        cl_dataset_ = NULL;
+    }
+
+    HierarchicalClusteringOpenCLIndex(const HierarchicalClusteringOpenCLIndex<Distance>& other) : BaseClass(other), OpenCLIndex()
+    {
+        cl_node_index_arr_ = NULL;
+        cl_node_pivots_ = NULL;
+        cl_node_radii_ = NULL;
+        cl_node_variance_ = NULL;
+        cl_dataset_ = NULL;
+    }
+
+    HierarchicalClusteringOpenCLIndex& operator=(HierarchicalClusteringOpenCLIndex other)
+    {
+        this->swap(other);
+        return *this;
+    }
+
+    BaseClass* clone() const
+    {
+        return new HierarchicalClusteringOpenCLIndex(*this);
+    }
+
     /**
      *
      */
@@ -99,6 +129,37 @@ public:
                           cl_command_queue cq = NULL)
     {
         OpenCLIndex::buildCLKnnSearch(knn, params, cq);
+    }
+
+    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    {
+        // Invalidate CL data structures
+        freeCLIndexMem();
+
+        BaseClass::addPoints(points, rebuild_threshold);
+    }
+
+    /**
+     * Remove point from the index
+     * @param index Index of point to be removed
+     */
+    virtual void removePoint(size_t id)
+    {
+        // Invalidate CL data structures
+        freeCLIndexMem();
+
+        BaseClass::removePoint(id);
+    }
+
+    void swap(HierarchicalClusteringOpenCLIndex& other)
+    {
+        std::swap(cl_node_index_arr_, other.cl_node_index_arr_);
+        std::swap(cl_node_pivots_, other.cl_node_pivots_);
+        std::swap(cl_node_radii_, other.cl_node_radii_);
+        std::swap(cl_node_variance_, other.cl_node_variance_);
+        std::swap(cl_dataset_, other.cl_dataset_);
+        OpenCLIndex::swap(other);
+        BaseClass::swap(other);
     }
 
 protected:
@@ -130,10 +191,11 @@ protected:
                        &this->cl_num_parents_, &this->cl_num_leaves_,
                        1, &minDepth, &maxDepth);
 
+
         // Check that our assumptions about the structure of the tree is correct
-        assert(this->size_ == this->cl_num_leaves_);
-        assert(this->cl_num_nodes_ % this->branching_ == 1);
-        assert(this->cl_num_parents_*this->branching_ + 1 == this->cl_num_nodes_);
+        assert(this->size_*this->trees_ == this->cl_num_leaves_);
+        assert(this->cl_num_nodes_ % this->branching_ == this->trees_);
+        assert(this->cl_num_parents_*this->branching_ + this->trees_ == this->cl_num_nodes_);
         cl_command_queue cmd_queue = this->cl_cmd_queue_;
 
         // Allocate working vars
@@ -177,14 +239,14 @@ protected:
 
         // Copy data to working memory in a breadth-first search
         std::queue<NodePtr> nodeQueue;
-        int next_index = this->trees_;
+        int next_index = this->trees_*this->branching_;
 
         // Init with all roots
         for (int i = 0; i < this->trees_; i++)
             nodeQueue.push(this->tree_roots_[i]);
 
-        for (int i = -1; !nodeQueue.empty(); ++i) {
-            copyNodeData(nodeQueue.front(), i, &next_index, 0, &nodeQueue,
+        for (int i = -this->trees_; !nodeQueue.empty(); ++i) {
+            copyNodeData(nodeQueue.front(), i, &next_index, false, &nodeQueue,
                          index_arr_work, node_pivots_work );
             nodeQueue.pop();
         }
@@ -193,8 +255,8 @@ protected:
         for (int i = 0; i < this->trees_; i++)
             nodeQueue.push(this->tree_roots_[i]);
 
-        for (int i = -1; !nodeQueue.empty(); ++i) {
-            copyNodeData(nodeQueue.front(), i, &next_index, 1, &nodeQueue,
+        for (int i = -this->trees_; !nodeQueue.empty(); ++i) {
+            copyNodeData(nodeQueue.front(), i, &next_index, true, &nodeQueue,
                          index_arr_work, node_pivots_work );
             nodeQueue.pop();
         }
@@ -244,24 +306,12 @@ protected:
         int heapSize = std::max(getAvgNodesNeeded(maxChecks), getCLknn(knn));
         size_t numThreads, locSize;
 
-        const char *initResultStr =
-"void initResult(__global ELEMENT_TYPE *vec, __global ELEMENT_TYPE *dataset,\n"
-                "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
+        const char *tooFarSrc =
+"int tooFar(__global ELEMENT_TYPE *nodePivots, __global DISTANCE_TYPE *nodeRadii,\n"
+           "int nodeId, __global ELEMENT_TYPE *vec, int *checks,\n"
+           "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
 "{\n"
-    "for (int i = 0; i < N_TREES; i++) {\n"
-        // Unsure how important this distance is
-        "resultDist[i] = vecDist(vec, dataset, 0);\n"
-        "resultId[i] = i*BRANCHING;\n"
-    "}\n"
-"}\n";
-
-        const char *initHeapStr =
-"void initHeap(__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
-"{\n"
-    "for (int i = 0; i < N_TREES; i++) {\n"
-        "heapDist[i] = 0;\n"
-        "heapId[i] = i*BRANCHING;\n"
-    "}\n"
+    "return false;\n"
 "}\n";
 
         // See if we can use local thread groups to speed computation (GPU-likely optimization)
@@ -270,7 +320,7 @@ protected:
         // Find the appropriate vars for the requested kernel
         if (maxChecks == FLANN_CHECKS_UNLIMITED) {
             prog_name = "findNeighborsExact";
-            program_src = getCLSrc(false, true, initResultStr, Distance::type());
+            program_src = getCLSrc(false, tooFarSrc, Distance::type());
         } else if (heapSize <= locSize) {
             prog_name = "findNeighborsLocal";
 
@@ -278,12 +328,12 @@ protected:
             heapSize = locSize*2;
 
             // Set the source to use the local thread group optimization
-            program_src = getCLSrc(true, false, initHeapStr, Distance::type());
+            program_src = getCLSrc(true, "", Distance::type());
         } else {
             prog_name = "findNeighbors";
 
             // Set source as vectorized CPU implementation
-            program_src = getCLSrc(false, true, initResultStr, Distance::type());
+            program_src = getCLSrc(false, tooFarSrc, Distance::type());
         }
 
         std::string distTypeName = TypeInfo<DistanceType>::clName();
@@ -479,15 +529,17 @@ protected:
      * @param[out] nodePivotsWork Save the pivots for each node here.
      */
     void copyNodeData(struct BaseClass::Node* node, int thisNodeId, int *nextPtr,
-                      int saveLeaves, std::queue<struct BaseClass::Node*> *nodeQueue,
+                      bool saveLeaves, std::queue<struct BaseClass::Node*> *nodeQueue,
                       int *indexArrWork, ElementType *nodePivotsWork)
     {
         int n_veclen = 4*((this->veclen_+3)/4);
 
         // childNodePtr only valid if there are children nodes
-        int childNodePtr = 0;
+        int childNodePtr;
         if (thisNodeId >= 0) {
             childNodePtr = indexArrWork[thisNodeId];
+        } else {
+            childNodePtr = this->branching_*(thisNodeId+this->trees_);
         }
 
         if (node->childs.empty()) {
@@ -496,9 +548,9 @@ protected:
                 // Save pointer to the list of point indices
                 indexArrWork[thisNodeId] = (*nextPtr);
 
-                // Mark as the final element
-                indexArrWork[(*nextPtr)++] = node->points.size();
-                assert(node->points.size() > 0);
+                // Where to mark the number of leaves?
+                int sizeIdx = (*nextPtr)++;
+                int actualSize = 0;
 
                 // Add point leaves to the index & dataset
                 for (int i=0; i < node->points.size(); ++i) {
@@ -512,9 +564,17 @@ protected:
                     indexArrWork[(*nextPtr)++] = index;
                     assert(index < this->size_);
                     assert(index >= 0);
+                    actualSize++;
                 }
+
+                // Mark the actual length of the leaves, after removed
+                // indicies are removed.
+                indexArrWork[sizeIdx] = actualSize;
             }
         } else {
+            // Assume that the number of children is always equal to the
+            // branching factor
+            assert(node->childs.size() == this->branching_);
             for (int i = 0; i < this->branching_; ++i) {
                 NodePtr childNode = node->childs[i];
 
@@ -686,6 +746,7 @@ protected:
             for (int c = 0; c < knn; ++c) {
                 size_t idx = rsId[r*n_knn + c];
                 this->indices_to_ids(&idx, &idx, 1);
+
                 indices[r][c] = idx;
                 dists[r][c] = rsDist[r*n_knn + c];
                 assert(std::isfinite(dists[r][c]));
@@ -703,13 +764,35 @@ protected:
      * that the variables this->cl_num_nodes_, this->cl_num_parents_, and this->cl_num_leaves_
      * are valid.
      *
+     * The minimum value should be the number of nodes required to search
+     * all trees simultaneously.
+     *
      * @param[in] maxChecks Expected total checks to aim for.
      * @return Number of nodes needed (on average) to fill maxChecks.
      */
     int getAvgNodesNeeded(int maxChecks) const
     {
-        return maxChecks*(this->cl_num_nodes_-this->cl_num_parents_)/
+        // Average number of nodes needed to hit maxChecks on average.
+        int avgNodes = maxChecks*(this->cl_num_nodes_-this->cl_num_parents_)/
                                     (this->cl_num_leaves_);
+
+        // Minimum number of nodes to search all trees.
+        return std::max(avgNodes, this->trees_*this->branching_);
+    }
+
+    /**
+     * Calculate the adjusted number of columns of in the knn result array. Make a size that
+     * works well with vector instructions.
+     *
+     * Override the base class to make sure the number of columns never drops
+     * below the number of trees to ensure we have enough working space.
+     *
+     * @param[in] knn The requested number of nearest neighbors to retrieve.
+     * @return The number of nearest neighbors to actually use.
+     */
+    int getCLknn(size_t knn) const
+    {
+        return OpenCLIndex::getCLknn(std::max((size_t)this->trees_, (size_t)knn));
     }
 
     typedef typename BaseClass::Node* NodePtr;

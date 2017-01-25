@@ -73,25 +73,25 @@ TEST_F(HierarchicalOpenCLIndex_Brief100K, TestSearch2)
 TEST_F(HierarchicalOpenCLIndex_Brief100K, TestAddIncremental)
 {
 	TestAddIncremental<Distance>(data, flann::HierarchicalClusteringOpenCLIndexParams(),
-			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.87, gt_indices, gt_dists);
+			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.87, gt_indices, gt_dists, true);
 }
 
 TEST_F(HierarchicalOpenCLIndex_Brief100K, TestAddIncremental2)
 {
 	TestAddIncremental2<Distance>(data, flann::HierarchicalClusteringOpenCLIndexParams(),
-			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.87, gt_indices, gt_dists);
+			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.87, gt_indices, gt_dists, true);
 }
 
 TEST_F(HierarchicalOpenCLIndex_Brief100K, TestRemove)
 {
 	TestRemove<Distance>(data, flann::HierarchicalClusteringOpenCLIndexParams(),
-			query, indices, dists, k_nn_, flann::SearchParams(2000));
+			query, indices, dists, k_nn_, flann::SearchParams(2000), true);
 }
 
 TEST_F(HierarchicalOpenCLIndex_Brief100K, TestSave)
 {
 	TestSave<Distance>(data, flann::HierarchicalClusteringOpenCLIndexParams(),
-			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.87, gt_indices, gt_dists);
+			query, indices, dists, k_nn_, flann::SearchParams(2000), 0.87, gt_indices, gt_dists, true);
 }
 
 
