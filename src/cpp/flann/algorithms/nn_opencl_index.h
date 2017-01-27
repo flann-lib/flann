@@ -89,23 +89,19 @@ public:
             cl_knn_search_kern_ = NULL;
         }
 
-        if (cl_cmd_queue_)
+        if (cl_cmd_queue_ && own_cq_)
         {
             cl_context context = NULL;
-            if (own_cq_)
-            {
-                cl_int err = CL_SUCCESS;
-                // Get the context so we can release it later
-                err = clGetCommandQueueInfo(cl_cmd_queue_, CL_QUEUE_CONTEXT,
-                                            sizeof(context), &context, NULL);
-                assert(err == CL_SUCCESS);
-            }
+            cl_int err = CL_SUCCESS;
+            // Get the context so we can release it later
+            err = clGetCommandQueueInfo(cl_cmd_queue_, CL_QUEUE_CONTEXT,
+                                        sizeof(context), &context, NULL);
+            assert(err == CL_SUCCESS);
 
             clReleaseCommandQueue(cl_cmd_queue_);
             cl_cmd_queue_ = NULL;
 
-            if (own_cq_)
-                clReleaseContext(context);
+            clReleaseContext(context);
         }
     }
 
@@ -538,7 +534,7 @@ protected:
                     distSrc =
 // Compare the local query point against a global point and return the euclidian distance
 // between them.
-"DISTANCE_TYPE vecDistLoc (__local ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2)\n"
+"DISTANCE_TYPE vecDistLoc (const __local ELEMENT_TYPE *v1, const __global ELEMENT_TYPE *v2, const int off2)\n"
 "{\n"
     "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0.0f;\n"
     "for (int i = 0; i < N_VECLEN; i += 4) {\n"
@@ -557,7 +553,7 @@ protected:
                     distSrc =
 // Compare the local query point against a global point and return the euclidian distance
 // between them.
-"DISTANCE_TYPE vecDistLoc (__local ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2)\n"
+"DISTANCE_TYPE vecDistLoc (const __local ELEMENT_TYPE *v1, const __global ELEMENT_TYPE *v2, const int off2)\n"
 "{\n"
     "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0;\n"
     "for (int i = 0; i < (int)(N_VECLEN*sizeof(ELEMENT_TYPE)/sizeof(DISTANCE_TYPE)); i += 4) {\n"
@@ -589,7 +585,7 @@ protected:
                 case FLANN_DIST_L2:
                     distSrc =
 // Calculates the square of the euclidian distance between two vectors
-"DISTANCE_TYPE vecDist (__global ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2)\n"
+"DISTANCE_TYPE vecDist (const __global ELEMENT_TYPE *v1, const __global ELEMENT_TYPE *v2, const int off2)\n"
 "{\n"
     "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0.0f;\n"
     "for (int i = 0; i < N_VECLEN; i += 4) {\n"
@@ -605,7 +601,7 @@ protected:
                 case FLANN_DIST_HAMMING_POPCNT:
                     distSrc =
 // Calculates the square of the euclidian distance between two vectors
-"DISTANCE_TYPE vecDist (__global ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2)\n"
+"DISTANCE_TYPE vecDist (const __global ELEMENT_TYPE *v1, const __global ELEMENT_TYPE *v2, const int off2)\n"
 "{\n"
     "DISTANCE_TYPE_VEC sum = (DISTANCE_TYPE_VEC)0;\n"
     "for (int i = 0; i < (int)(N_VECLEN*sizeof(ELEMENT_TYPE)/sizeof(DISTANCE_TYPE)); i += 4) {\n"
@@ -656,27 +652,30 @@ protected:
 };
 
 const char *OpenCLIndex::queryTreeSrcGeneral =
-"int findNN(__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
-           "__global DISTANCE_TYPE *nodeRadii,\n"
-           "__global DISTANCE_TYPE *nodeVariance, __global ELEMENT_TYPE *dataset,\n"
-           "int idx,\n"
+"int findNN(const __global int *nodeIndexArr,\n"
+           "const __global ELEMENT_TYPE *nodePivots,\n"
+           "const __global DISTANCE_TYPE *nodeRadii,\n"
+           "const __global DISTANCE_TYPE *nodeVariance,\n"
+           "const __global ELEMENT_TYPE *dataset,\n"
+           "const int idx,\n"
            "__global DISTANCE_TYPE *resultDist, __global int *resultId,\n"
-           "__global ELEMENT_TYPE *vec, int *checks,\n"
+           "const __global ELEMENT_TYPE *vec, int *checks,\n"
            "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
-           "int *heapStart, int *heapEnd);\n"
+           "int *heapStart, int *heapEnd, const int nNodes);\n"
 
-"int tooFar(__global ELEMENT_TYPE *nodePivots, __global DISTANCE_TYPE *nodeRadii,\n"
-           "int nodeId, __global ELEMENT_TYPE *vec, int *checks,\n"
-           "__global DISTANCE_TYPE *resultDist, __global int *resultId );\n"
+"int tooFar(const __global ELEMENT_TYPE *nodePivots, const __global DISTANCE_TYPE *nodeRadii,\n"
+           "const int nodeId, const __global ELEMENT_TYPE *vec, const int *checks,\n"
+           "const __global DISTANCE_TYPE *resultDist, const __global int *resultId );\n"
 
-"int exploreNodeBranches (__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
-                         "__global DISTANCE_TYPE *nodeVariance,\n"
-                         "int nodeId,\n"
-                         "__global ELEMENT_TYPE *q,\n"
+"int exploreNodeBranches (const __global int *nodeIndexArr,\n"
+                         "const __global ELEMENT_TYPE *nodePivots,\n"
+                         "const __global DISTANCE_TYPE *nodeVariance,\n"
+                         "const int nodeId,\n"
+                         "const __global ELEMENT_TYPE *q,\n"
                          "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
                          "int *heapStart, int *heapEnd);\n"
 
-"DISTANCE_TYPE vecDist (__global ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off);\n"
+"DISTANCE_TYPE vecDist (const __global ELEMENT_TYPE *v1, const __global ELEMENT_TYPE *v2, const int off);\n"
 
 "void heapInsert(DISTANCE_TYPE nodeDist, int nodeId,\n"
                 "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
@@ -691,11 +690,15 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
 // Kernel intended for CPU operation. It plays a bit more fast and loose with branches, random
 // accesses to global memory, and amount of memory used. Operations are vectorized when
 // possible. The actual logic is very similar to the non-OpenCL code. One thread per query.
-"__kernel void findNeighbors (__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
-                             "__global DISTANCE_TYPE *nodeVariance, __global DISTANCE_TYPE *nodeRadii,\n"
-                             "__global ELEMENT_TYPE *dataset,\n"
+"__kernel void findNeighbors (const __global int *nodeIndexArr,\n"
+                             "const __global ELEMENT_TYPE *nodePivots,\n"
+                             "const __global DISTANCE_TYPE *nodeVariance,\n"
+                             "const __global DISTANCE_TYPE *nodeRadii,\n"
+                             "const __global ELEMENT_TYPE *dataset,\n"
                              "__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
-                             "__global ELEMENT_TYPE *vecArr, int numQueries )\n"
+                             "__global ELEMENT_TYPE *vecArr,\n"
+                             "const int numQueries,\n"
+                             "const int nNodes )\n"
 "{\n"
     "int gid = get_global_id(0);\n"
     // In case we are operating with a group size
@@ -727,7 +730,7 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
         // Find the next nearest neighbor
         "nextNode = findNN(nodeIndexArr, nodePivots, nodeRadii, nodeVariance, dataset,\n"
                           "nextNode, resultDist, resultId, vec,\n"
-                          "&checks, heapDist, heapId, &heapStart, &heapEnd);\n"
+                          "&checks, heapDist, heapId, &heapStart, &heapEnd, nNodes);\n"
 
         // If we've hit the end of this branch, pop the next one off the heap
         "if (nextNode == -1) {\n"
@@ -746,11 +749,14 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
 
 // Kernel intended for finding the exact set of neighbors. As of writing this comment, it hasn't
 // been tested. Uses vector commands when possible, and likely optimized for CPU.
-"__kernel void findNeighborsExact (__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
-                                  "__global DISTANCE_TYPE *nodeRadii,\n"
-                                  "__global ELEMENT_TYPE *dataset,\n"
-                                  "__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
-                                  "__global ELEMENT_TYPE *vecArr, int numQueries )\n"
+"__kernel void findNeighborsExact (const __global int *nodeIndexArr,\n"
+                                  "const __global ELEMENT_TYPE *nodePivots,\n"
+                                  "const __global DISTANCE_TYPE *nodeRadii,\n"
+                                  "const __global ELEMENT_TYPE *dataset,\n"
+                                  "__global DISTANCE_TYPE *resultDistArr,\n"
+                                  "__global int *resultIdArr,\n"
+                                  "__global ELEMENT_TYPE *vecArr,\n"
+                                  "const int numQueries, const int nNodes)\n"
 "{\n"
     "int gid = get_global_id(0);\n"
     "if (gid >= numQueries)\n"
@@ -769,11 +775,11 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
     "int checks = 1;\n"
 
     // Iterate through all nodes that reference leaves
-    "for (int nodeId = 0; nodeId < N_NODES; ++nodeId) {\n"
+    "for (int nodeId = 0; nodeId < nNodes; ++nodeId) {\n"
         "int nodePtr = nodeIndexArr[nodeId];\n"
 
         // Check that the current node references leaves and it's not too far away to be valid
-        "if (nodePtr < N_NODES ||\n"
+        "if (nodePtr < nNodes ||\n"
             "tooFar(nodePivots, nodeRadii, nodeId, vec, &checks, resultDist, resultId))\n"
             "continue;\n"
 
@@ -789,14 +795,16 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
 "}\n"
 
 // Finds the nearest neighbor from the given node
-"int findNN(__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
-           "__global DISTANCE_TYPE *nodeRadii,\n"
-           "__global DISTANCE_TYPE *nodeVariance, __global ELEMENT_TYPE *dataset,\n"
-           "int nodeId,\n"
+"int findNN(const __global int *nodeIndexArr,\n"
+           "const __global ELEMENT_TYPE *nodePivots,\n"
+           "const __global DISTANCE_TYPE *nodeRadii,\n"
+           "const __global DISTANCE_TYPE *nodeVariance,\n"
+           "const __global ELEMENT_TYPE *dataset,\n"
+           "const int nodeId,\n"
            "__global DISTANCE_TYPE *resultDist, __global int *resultId,\n"
-           "__global ELEMENT_TYPE *vec, int *checks,\n"
+           "const __global ELEMENT_TYPE *vec, int *checks,\n"
            "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
-           "int *heapStart, int *heapEnd)\n"
+           "int *heapStart, int *heapEnd, int nNodes)\n"
 "{\n"
     // Check if the point is too far to be useful
     "if (tooFar(nodePivots, nodeRadii, nodeId, vec, checks, resultDist, resultId))\n"
@@ -804,7 +812,7 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
     "int nodePtr = nodeIndexArr[nodeId];\n"
 
     // Either the node references children or other nodes
-    "if (nodePtr >= N_NODES) {\n"
+    "if (nodePtr >= nNodes) {\n"
         // Iterate through all child leaves
         "int lastPtr = nodeIndexArr[nodePtr] + nodePtr;\n"
         "while (lastPtr > nodePtr) {\n"
@@ -823,9 +831,10 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
 "}\n"
 
 // Explore child nodes for the closest. Add the rest to the heap
-"int exploreNodeBranches (__global int *nodeIndexArr, __global ELEMENT_TYPE *nodePivots,\n"
-                         "__global DISTANCE_TYPE *nodeVariance,\n"
-                         "int nodePtr, __global ELEMENT_TYPE *q,\n"
+"int exploreNodeBranches (const __global int *nodeIndexArr,\n"
+                         "const __global ELEMENT_TYPE *nodePivots,\n"
+                         "const __global DISTANCE_TYPE *nodeVariance,\n"
+                         "const int nodePtr, const __global ELEMENT_TYPE *q,\n"
                          "__private DISTANCE_TYPE *heapDist, __private int *heapId,\n"
                          "int *heapStart, int *heapEnd )\n"
 "{\n"
@@ -944,18 +953,24 @@ const char *OpenCLIndex::queryTreeSrcGeneral =
 
 // **************** Implementation that takes advantage of thread groups on GPUs ****************
 const char *OpenCLIndex::queryTreeSrcLocal =
-"void findLeaves(__global int *nodeIndex, __local ELEMENT_TYPE *query,\n"
-                "__global ELEMENT_TYPE *dataset, __local int *locDone, __local int *locPtr,\n"
-                "__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+"void findLeaves(const __global int *nodeIndex,\n"
+                "const __local ELEMENT_TYPE *query,\n"
+                "const __global ELEMENT_TYPE *dataset,\n"
+                "__local int *locDone, __local int *locPtr,\n"
+                "__local DISTANCE_TYPE *heapDist, __local int *heapId,\n"
+                "const int nNodes);\n"
 
-"void findNodes(__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
-               "__global DISTANCE_TYPE *nodeVariance,\n"
-               "__local int *locDone, __local ELEMENT_TYPE *query,\n"
-               "__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+"void findNodes(const __global int *nodeIndex,\n"
+               "const __global ELEMENT_TYPE *nodePivots,\n"
+               "const __global DISTANCE_TYPE *nodeVariance,\n"
+               "__local int *locDone, const __local ELEMENT_TYPE *query,\n"
+               "__local DISTANCE_TYPE *heapDist, __local int *heapId, const int nNodes);\n"
 
-"void findNewNodeDist(__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
-                     "__global DISTANCE_TYPE *nodeVariance, __local ELEMENT_TYPE *vec,\n"
-                     "__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+"void findNewNodeDist(const __global int *nodeIndex,\n"
+                     "const __global ELEMENT_TYPE *nodePivots,\n"
+                     "const __global DISTANCE_TYPE *nodeVariance,\n"
+                     "const __local ELEMENT_TYPE *vec,\n"
+                     "__local DISTANCE_TYPE *heapDist, __local int *heapId, const int nNodes);\n"
 
 "void sortHeap(__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
 
@@ -964,12 +979,14 @@ const char *OpenCLIndex::queryTreeSrcLocal =
 
 "void checkDone(int privDone, __local int *locDone);\n"
 
-"void initLoc (__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
+"void initLoc (__local DISTANCE_TYPE *heapDist, __local int *heapId, const int nNodes);\n"
 
 "void storeResult (__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
                   "__local DISTANCE_TYPE *heapDist, __local int *heapId);\n"
 
-"DISTANCE_TYPE vecDistLoc (__local ELEMENT_TYPE *v1, __global ELEMENT_TYPE *v2, int off2);\n"
+"DISTANCE_TYPE vecDistLoc (const __local ELEMENT_TYPE *v1,\n"
+                          "const __global ELEMENT_TYPE *v2,\n"
+                          "const int off2);\n"
 
 // Kernel for finding k-nearest-neighbors using thread groups and local memory. This makes it work
 // well for execution on GPU processors. Thus it has been optimized for fewer branches. There
@@ -979,11 +996,15 @@ const char *OpenCLIndex::queryTreeSrcLocal =
 // different.
 "#pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable\n"
 "__kernel __attribute__((reqd_work_group_size(LOC_SIZE, 1, 1)))\n"
-"void findNeighborsLocal (__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
-                         "__global DISTANCE_TYPE *nodeVariance, __global DISTANCE_TYPE *nodeRadii,\n"
-                         "__global ELEMENT_TYPE *dataset,\n"
-                         "__global DISTANCE_TYPE *resultDistArr, __global int *resultIdArr,\n"
-                         "__global ELEMENT_TYPE *queryArr, int numQueries )\n"
+"void findNeighborsLocal (const __global int *nodeIndex,\n"
+                         "const __global ELEMENT_TYPE *nodePivots,\n"
+                         "const __global DISTANCE_TYPE *nodeVariance,\n"
+                         "const __global DISTANCE_TYPE *nodeRadii,\n"
+                         "const __global ELEMENT_TYPE *dataset,\n"
+                         "__global DISTANCE_TYPE *resultDistArr,\n"
+                         "__global int *resultIdArr,\n"
+                         "const __global ELEMENT_TYPE *queryArr,\n"
+                         "const int numQueries, const int nNodes )\n"
 "{\n"
     // N_HEAP == get_local_size(0) *2 == (avg checks per node needed for MAX_CHECKS) *2
     // == LOC_SIZE *2 >= N_RESULT *2 >= 32 (min GPU hardware thread group size, I think) *2
@@ -1000,10 +1021,10 @@ const char *OpenCLIndex::queryTreeSrcLocal =
         "query[i] = queryArr[i + get_group_id(0)*N_VECLEN];\n"
 
     // Find the child nodes that are closest to the query point
-    "findNodes(nodeIndex, nodePivots, nodeVariance, &locDone, query, heapDist, heapId);\n"
+    "findNodes(nodeIndex, nodePivots, nodeVariance, &locDone, query, heapDist, heapId, nNodes);\n"
 
     // Go from leaf pointers in the heap to a sorted set of leaves
-    "findLeaves(nodeIndex, query, dataset, &locDone, &locPtr, heapDist, heapId);\n"
+    "findLeaves(nodeIndex, query, dataset, &locDone, &locPtr, heapDist, heapId, nNodes);\n"
 
     // After inserting, sorting, and checking leaves, the results are in the lower part of the heap
     "storeResult(resultDistArr, resultIdArr, heapDist, heapId);\n"
@@ -1013,12 +1034,13 @@ const char *OpenCLIndex::queryTreeSrcLocal =
 // heap and add their children to the top half of the heap. Then sort the heap by priority
 // (adjusted distance). After each pass, check if there are any parent nodes left in the bottom
 // half of the heap. (Otherwise they are all nodes pointing to groups of leaves.)
-"void findNodes(__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
-               "__global DISTANCE_TYPE *nodeVariance,\n"
-               "__local int *locDone, __local ELEMENT_TYPE *query,\n"
-               "__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"void findNodes(const __global int *nodeIndex,\n"
+               "const __global ELEMENT_TYPE *nodePivots,\n"
+               "const __global DISTANCE_TYPE *nodeVariance,\n"
+               "__local int *locDone, const __local ELEMENT_TYPE *query,\n"
+               "__local DISTANCE_TYPE *heapDist, __local int *heapId, const int nNodes)\n"
 "{\n"
-    "initLoc(heapDist, heapId);\n"
+    "initLoc(heapDist, heapId, nNodes);\n"
 
     // Init the node query array with a pointer to root_'s children
     "for (int i = 0; i < N_TREES; i++) {\n"
@@ -1028,13 +1050,13 @@ const char *OpenCLIndex::queryTreeSrcLocal =
     "barrier(CLK_LOCAL_MEM_FENCE);\n"
 
     // Find the closest children to the root
-    "findNewNodeDist(nodeIndex, nodePivots, nodeVariance, query, heapDist, heapId);\n"
+    "findNewNodeDist(nodeIndex, nodePivots, nodeVariance, query, heapDist, heapId, nNodes);\n"
 
     // Sort to mix the new nodes into the correct positions in the heap
     "sortHeap(heapDist, heapId);\n"
     "do {\n"
         // Use the closest parent nodes to discover additional nodes
-        "findNewNodeDist(nodeIndex, nodePivots, nodeVariance, query, heapDist, heapId);\n"
+        "findNewNodeDist(nodeIndex, nodePivots, nodeVariance, query, heapDist, heapId, nNodes);\n"
 
         // Init shared vars
         "if (get_local_id(0) == 0) {\n"
@@ -1046,7 +1068,7 @@ const char *OpenCLIndex::queryTreeSrcLocal =
         "sortHeap(heapDist, heapId);\n"
 
         // While there is a pointer to a parent node in the heap, keep going
-        "checkDone((heapId[get_local_id(0)] >= N_NODES), locDone);\n"
+        "checkDone((heapId[get_local_id(0)] >= nNodes), locDone);\n"
     "} while (!(*locDone));\n"
 "}\n"
 
@@ -1054,16 +1076,19 @@ const char *OpenCLIndex::queryTreeSrcLocal =
 // group, so store the pointer in private memory and fill the heap with candidate leaf points.
 // After each pass, sort the leaves. After all leaf groups are checked and sorted, we have
 // preformed approximately MAX_CHECKS and the bottom of the heap are the closest points.
-"void findLeaves(__global int *nodeIndex, __local ELEMENT_TYPE *query,\n"
-                "__global ELEMENT_TYPE *dataset, __local int *locDone, __local int *locPtr,\n"
-                "__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"void findLeaves(const __global int *nodeIndex,\n"
+                "const __local ELEMENT_TYPE *query,\n"
+                "const __global ELEMENT_TYPE *dataset,\n"
+                "__local int *locDone, __local int *locPtr,\n"
+                "__local DISTANCE_TYPE *heapDist, __local int *heapId,\n"
+                "const int nNodes)\n"
 "{\n"
     // Store pointer to list before init local mem
     "int leafPtr = heapId[get_local_id(0)];\n"
     "int lastPtr = nodeIndex[leafPtr] + leafPtr;\n"
 
     // Reset heap
-    "initLoc(heapDist, heapId);\n"
+    "initLoc(heapDist, heapId, nNodes);\n"
 
     // 'Unroll' this ahead of the main loop to fill both halves of the heap before
     // first sort, and because we don't really need to checkDone() so soon.
@@ -1108,15 +1133,17 @@ const char *OpenCLIndex::queryTreeSrcLocal =
 "}\n"
 
 // Find a new set of nodes given the parent nodes already in the heap.
-"void findNewNodeDist(__global int *nodeIndex, __global ELEMENT_TYPE *nodePivots,\n"
-                     "__global DISTANCE_TYPE *nodeVariance, __local ELEMENT_TYPE *vec,\n"
-                     "__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"void findNewNodeDist(const __global int *nodeIndex,\n"
+                     "const __global ELEMENT_TYPE *nodePivots,\n"
+                     "const __global DISTANCE_TYPE *nodeVariance,\n"
+                     "const __local ELEMENT_TYPE *vec,\n"
+                     "__local DISTANCE_TYPE *heapDist, __local int *heapId, const int nNodes)\n"
 "{\n"
     // Find the next valid node pointer
     "unsigned int locId = get_local_id(0) / BRANCHING;\n"
 
     // Skip ids marked as pointers to leaves
-    "while (locId < N_HEAP && heapId[locId] >= N_NODES)\n"
+    "while (locId < N_HEAP && heapId[locId] >= nNodes)\n"
         "locId += LOC_SIZE / BRANCHING;\n"
 
     // Check if we were able to find a valid node ptr
@@ -1128,7 +1155,7 @@ const char *OpenCLIndex::queryTreeSrcLocal =
     "if (locId < N_HEAP) {\n"
         // Invalidate this pointer if it's been used
         "heapDist[locId] = MAX_DIST;\n"
-        "heapId[locId] = N_NODES;\n"
+        "heapId[locId] = nNodes;\n"
 
         // Store adjusted distance to node and its pointer
         "int i = LOC_SIZE + get_local_id(0);\n"
@@ -1187,13 +1214,13 @@ const char *OpenCLIndex::queryTreeSrcLocal =
 "}\n"
 
 // Init both halves of the local heap to be invalid (maximum distance and a node ID of a leaf node)
-"void initLoc (__local DISTANCE_TYPE *heapDist, __local int *heapId)\n"
+"void initLoc (__local DISTANCE_TYPE *heapDist, __local int *heapId, const int nNodes)\n"
 "{\n"
     // Init our position
     "heapDist[get_local_id(0)] = MAX_DIST;\n"
-    "heapId[get_local_id(0)] = N_NODES;\n"
+    "heapId[get_local_id(0)] = nNodes;\n"
     "heapDist[get_local_id(0)+LOC_SIZE] = MAX_DIST;\n"
-    "heapId[get_local_id(0)+LOC_SIZE] = N_NODES;\n"
+    "heapId[get_local_id(0)+LOC_SIZE] = nNodes;\n"
 "}\n"
 
 // Store the bottom points of the heap as results in global memory

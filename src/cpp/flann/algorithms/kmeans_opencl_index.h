@@ -313,9 +313,10 @@ protected:
 
         const char *tooFarSrc =
 // Ignore those clusters that are too far away
-"int tooFar(__global ELEMENT_TYPE *nodePivots, __global DISTANCE_TYPE *nodeRadii,\n"
-           "int nodeId, __global ELEMENT_TYPE *vec, int *checks,\n"
-           "__global DISTANCE_TYPE *resultDist, __global int *resultId )\n"
+"int tooFar(const __global ELEMENT_TYPE *nodePivots,\n"
+           "const __global DISTANCE_TYPE *nodeRadii,\n"
+           "const int nodeId, const __global ELEMENT_TYPE *vec, const int *checks,\n"
+           "const __global DISTANCE_TYPE *resultDist, const __global int *resultId )\n"
 "{\n"
     "DISTANCE_TYPE bsq = vecDist(vec, nodePivots, nodeId*N_VECLEN);\n"
     "DISTANCE_TYPE rsq = nodeRadii[nodeId];\n"
@@ -363,12 +364,12 @@ protected:
                 "-DDISTANCE_TYPE_VEC=%s -DCONVERT_DISTANCE_TYPE_VEC=%s "
                 "-DN_RESULT=%d -DN_HEAP=%d -DMAX_DIST=%15.15lf "
                 "-DN_VECLEN=%ld -DBRANCHING=%d -DCB_INDEX=%15.15lf "
-                "-DMAX_CHECKS=%d -DN_NODES=%d -DLOC_SIZE=%ld",
+                "-DMAX_CHECKS=%d -DLOC_SIZE=%ld",
                 distTypeName.c_str(), elmTypeName.c_str(),
                 (distTypeName + "4").c_str(), ("convert_" + distTypeName + "4").c_str(),
                 getCLknn(knn), heapSize, this->root_->radius,
                 4*((this->veclen_+3)/4), this->branching_, this->cb_index_,
-                maxChecks, this->cl_num_nodes_-1, locSize);
+                maxChecks, locSize);
 
         kern = this->buildCLKernel(context, dev, program_src, prog_name, build_str);
         free(build_str);
@@ -708,6 +709,7 @@ protected:
                            cl_mem queryArr) const
     {
         cl_int err = CL_SUCCESS;
+        int nNodes = this->cl_num_nodes_-1;
 
         err = clSetKernelArg(kern, 0, sizeof(cl_mem), &this->cl_node_index_arr_);
         assert(err == CL_SUCCESS);
@@ -726,6 +728,8 @@ protected:
         err = clSetKernelArg(kern, 7, sizeof(cl_mem), &queryArr);
         assert(err == CL_SUCCESS);
         err = clSetKernelArg(kern, 8, sizeof(int), &numQueries);
+        assert(err == CL_SUCCESS);
+        err = clSetKernelArg(kern, 9, sizeof(int), &nNodes);
         assert(err == CL_SUCCESS);
 
         return this->runKern(kern, numThreads, locSize);
