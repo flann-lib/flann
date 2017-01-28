@@ -275,8 +275,11 @@ protected:
         assert(err == CL_SUCCESS);
 
         // Release working resources
+        clEnqueueUnmapMemObject(cmd_queue, index_arr_work_cl, index_arr_work, 0, NULL, NULL);
         clReleaseMemObject(index_arr_work_cl);
+        clEnqueueUnmapMemObject(cmd_queue, node_pivots_work_cl, node_pivots_work, 0, NULL, NULL);
         clReleaseMemObject(node_pivots_work_cl);
+        clEnqueueUnmapMemObject(cmd_queue, dataset_work_cl, dataset_work, 0, NULL, NULL);
         clReleaseMemObject(dataset_work_cl);
 
         // Create dummy arrays for calculations that we won't be doing.
@@ -297,13 +300,14 @@ protected:
      * @param[in] maxChecks The maximum check parameter to compile for.
      * @return The OpenCL kernel compiled for the given parameters and current tree structure.
      */
-    cl_kernel buildCLknnSearchKernel(cl_context context, cl_device_id dev, size_t knn, int maxChecks)
+    cl_kernel buildCLknnSearchKernel(
+        cl_context context, cl_device_id dev, size_t knn, int maxChecks, int *initHeapSize)
     {
         const char *prog_name;
         cl_kernel kern;
         char *program_src;
 
-        int heapSize = std::max(getAvgNodesNeeded(maxChecks), getCLknn(knn));
+        *initHeapSize = std::max(getAvgNodesNeeded(maxChecks), getCLknn(knn));
         size_t numThreads, locSize;
 
         const char *tooFarSrc =
@@ -315,7 +319,8 @@ protected:
 "}\n";
 
         // See if we can use local thread groups to speed computation (GPU-likely optimization)
-        this->getCLNumThreads(dev, 0, heapSize, &numThreads, &locSize);
+        this->getCLNumThreads(dev, 0, *initHeapSize, &numThreads, &locSize);
+        int heapSize = *initHeapSize;
 
         // Find the appropriate vars for the requested kernel
         if (maxChecks == FLANN_CHECKS_UNLIMITED) {
@@ -377,12 +382,6 @@ protected:
         this->freeCLMem(&(this->cl_node_radii_));
         this->freeCLMem(&(this->cl_node_variance_));
         this->freeCLMem(&(this->cl_dataset_));
-
-        // Assume any kernel is now invalid
-        if (this->cl_knn_search_kern_) {
-            clReleaseKernel(this->cl_knn_search_kern_);
-            this->cl_knn_search_kern_ = NULL;
-        }
     }
 
     void freeIndex()
@@ -424,9 +423,9 @@ protected:
 
         // Get the kernel
         cl_kernel kern = this->cl_knn_search_kern_;
+        int heapSize = this->cl_kern_heap_size_;
 
         // Figure out the threads per local group
-        int heapSize = std::max(getAvgNodesNeeded(params.checks), getCLknn(knn));
         size_t numThreads, locSize;
         this->getCLNumThreads(dev, queries.rows, heapSize, &numThreads, &locSize);
 
@@ -667,6 +666,7 @@ protected:
         assert(err == CL_SUCCESS);
 
         // Release the (pinned) working resources for the query memory
+        clEnqueueUnmapMemObject(cmd_queue, query_arr_work_cl, query_arr_work, 0, NULL, NULL);
         clReleaseMemObject(query_arr_work_cl);
     }
 

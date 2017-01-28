@@ -109,6 +109,7 @@ public:
     {
         std::swap(own_cq_, other.own_cq_);
         std::swap(cl_knn_search_kern_, other.cl_knn_search_kern_);
+        std::swap(cl_kern_heap_size_, other.cl_kern_heap_size_);
         std::swap(cl_cmd_queue_, other.cl_cmd_queue_);
     }
 
@@ -120,7 +121,7 @@ public:
                           cl_command_queue cq = NULL)
     {
         cl_int err = CL_SUCCESS;
-        if (!cq)
+        if (!cq && !cl_cmd_queue_)
         {
             own_cq_ = true;
 
@@ -134,21 +135,24 @@ public:
             assert(err == CL_SUCCESS);
         }
 
-        if (cl_cmd_queue_ != NULL && cl_cmd_queue_ != cq) {
+        if (cl_cmd_queue_ != NULL && cq != NULL && cl_cmd_queue_ != cq) {
             // Using a new command queue, reset everything!
             freeCLIndexMem();
-        } else if (cl_cmd_queue_ == cq && clParamsMatch(knn, params)) {
-            return;
+            if (cl_knn_search_kern_)
+                clReleaseKernel(cl_knn_search_kern_);
+            cl_cmd_queue_ = NULL;
         }
 
-        cl_cmd_queue_ = cq;
+        if (!cl_cmd_queue_)
+            cl_cmd_queue_ = cq;
 
         // Get the useful OpenCL environment info
         cl_context context;
-        err = clGetCommandQueueInfo(cq, CL_QUEUE_CONTEXT, sizeof(context), &context, NULL);
+        assert(cl_cmd_queue_);
+        err = clGetCommandQueueInfo(cl_cmd_queue_, CL_QUEUE_CONTEXT, sizeof(context), &context, NULL);
         assert(err == CL_SUCCESS);
         cl_device_id dev;
-        err = clGetCommandQueueInfo(cq, CL_QUEUE_DEVICE, sizeof(dev), &dev, NULL);
+        err = clGetCommandQueueInfo(cl_cmd_queue_, CL_QUEUE_DEVICE, sizeof(dev), &dev, NULL);
         assert(err == CL_SUCCESS);
 
         // Init the cl_mem index
@@ -161,7 +165,8 @@ public:
                 clReleaseKernel(cl_knn_search_kern_);
 
             // Build new one
-            cl_knn_search_kern_ = buildCLknnSearchKernel(context, dev, knn, params.checks);
+            cl_knn_search_kern_ = buildCLknnSearchKernel(
+                context, dev, knn, params.checks, &cl_kern_heap_size_);
             cl_kern_knn_ = knn;
             cl_kern_max_checks_ = params.checks;
         }
@@ -201,7 +206,7 @@ protected:
      * @return The compiled OpenCL kernel.
      */
     virtual cl_kernel buildCLknnSearchKernel(cl_context context, cl_device_id dev,
-                                             size_t knn, int maxChecks)
+                                             size_t knn, int maxChecks, int *heapSize)
     {
         // unimplemented in nn_index
         printf("in unimplemented buildCLknnSearchKernel()!\n");
@@ -639,6 +644,12 @@ protected:
      */
     int cl_kern_max_checks_;
     size_t cl_kern_knn_;
+
+    /**
+     * This needs to be known for the current compiled kernel so we have a
+     * local group size as was compiled for.
+     */
+    int cl_kern_heap_size_;
 
     /**
      * OpenCL kernels are saved here when compiled
