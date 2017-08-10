@@ -65,7 +65,9 @@ if (NOT BUILD_C_BINDINGS)
     set(BUILD_PYTHON_BINDINGS OFF)
     set(BUILD_MATLAB_BINDINGS OFF)
 endif()
-
+if (NOT EXISTS /usr/local/bin/mex)
+    set(BUILD_MATLAB_BINDINGS OFF)
+endif()
 
 # find python
 find_package(PythonInterp)
