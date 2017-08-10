@@ -67,7 +67,7 @@ namespace flann
         //{
 //            return cblas_ddot(size, (const double*)a, 1, (const double*)b, 1);
 //        }
-        ResultType operator()(double* const& a, double* const& b, size_t size, ResultType /*worst_dist*/ = -1) const
+        ResultType operator()(const double* a, const double* b, size_t size, ResultType /*worst_dist*/ = -1) const
         {
             return cblas_ddot(size, a, 1, b, 1);
         }
