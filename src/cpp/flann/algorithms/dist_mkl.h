@@ -62,10 +62,14 @@ namespace flann
         typedef double ElementType;
         typedef Accumulator<double>::Type ResultType;
 
-        template <typename Iterator1, typename Iterator2>
-        ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist = -1*/) const
+        //template <typename Iterator1, typename Iterator2>
+        //ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist = -1*/) const
+        //{
+//            return cblas_ddot(size, (const double*)a, 1, (const double*)b, 1);
+//        }
+        ResultType operator()(const double* a, const double* b, size_t size, ResultType /*worst_dist = -1*/) const
         {
-            return cblas_ddot(size, (const double*)a, 1, (const double*)b, 1);
+            return cblas_ddot(size, a, 1, b, 1);
         }
     };
     
