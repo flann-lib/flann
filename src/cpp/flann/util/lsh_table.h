@@ -362,13 +362,11 @@ inline LshTable<unsigned char>::LshTable(unsigned int feature_size, unsigned int
     mask_ = std::vector<size_t>((size_t)ceil((float)(feature_size * sizeof(char)) / (float)sizeof(size_t)), 0);
 
     // A bit brutal but fast to code
-    std::vector<size_t> indices(feature_size * CHAR_BIT);
-    for (size_t i = 0; i < feature_size * CHAR_BIT; ++i) indices[i] = i;
-    std::random_shuffle(indices.begin(), indices.end());
+    UniqueRandom indices(feature_size * CHAR_BIT);
 
     // Generate a random set of order of subsignature_size_ bits
     for (unsigned int i = 0; i < key_size_; ++i) {
-        size_t index = indices[i];
+        auto index = indices.next();
 
         // Set that bit in the mask
         size_t divisor = CHAR_BIT * sizeof(size_t);
