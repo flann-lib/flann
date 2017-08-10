@@ -28,7 +28,11 @@ float* read_points(const char* filename, int rows, int cols)
     
     for (i=0;i<rows;++i) {
         for (j=0;j<cols;++j) {
-            fscanf(fin,"%g ",p);
+            if (1 != fscanf(fin,"%g ",p))
+	    {
+		printf("Failed reading value from file at row = %d  column = %d\n",i,j);
+		exit(1);                
+	    }
             p++;
         }
     }
