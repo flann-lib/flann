@@ -60,7 +60,7 @@ namespace flann
         typedef bool is_kdtree_distance;
 
         typedef double ElementType;
-        typedef typename Accumulator<double>::Type ResultType;
+        typedef Accumulator<double>::Type ResultType;
 
         template <typename Iterator1, typename Iterator2>
         ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist = -1*/) const
@@ -75,7 +75,7 @@ namespace flann
         typedef bool is_kdtree_distance;
 
         typedef float ElementType;
-        typedef typename Accumulator<float>::Type ResultType;
+        typedef Accumulator<float>::Type ResultType;
 
         template <typename Iterator1, typename Iterator2>
         ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist = -1*/) const
