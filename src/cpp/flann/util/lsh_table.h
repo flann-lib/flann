@@ -366,7 +366,7 @@ inline LshTable<unsigned char>::LshTable(unsigned int feature_size, unsigned int
 
     // Generate a random set of order of subsignature_size_ bits
     for (unsigned int i = 0; i < key_size_; ++i) {
-        auto index = indices.next();
+        size_t index = indices.next();
 
         // Set that bit in the mask
         size_t divisor = CHAR_BIT * sizeof(size_t);
