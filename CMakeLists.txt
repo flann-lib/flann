@@ -155,6 +155,14 @@ else()
     add_definitions( "-Wall -Wno-unknown-pragmas -Wno-unused-function" )
 endif()
 
+# install and export variables
+set(config_install_dir "lib/cmake/${PROJECT_NAME}")
+set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(version_config "${generated_dir}/flann-config-version.cmake")
+set(project_config "${generated_dir}/flann-config.cmake")
+set(targets_export_name "flann-targets")
+set(namespace "flann::")
+
 add_subdirectory( cmake )
 add_subdirectory( src )
 if (BUILD_EXAMPLES)
@@ -166,6 +174,43 @@ endif (BUILD_TESTS)
 if (BUILD_DOC)
   add_subdirectory( doc )
 endif (BUILD_DOC)
+
+# CMake configuration file creation
+# Include module with fuction 'write_basic_package_version_file'
+include(CMakePackageConfigHelpers)
+
+# Configure 'flann-config-version.cmake'
+# Note: FLANN_VERSION is used as a VERSION
+write_basic_package_version_file(
+    "${version_config}"
+    VERSION ${FLANN_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Configure 'flann-config.cmake'
+# Use variables:
+#   * targets_export_name
+#   * PROJECT_NAME
+configure_package_config_file(
+    "cmake/Config.cmake.in"
+    "${project_config}"
+    INSTALL_DESTINATION "${config_install_dir}"
+)
+
+# Config
+#   * <prefix>/lib/cmake/flann/flann-config.cmake
+#   * <prefix>/lib/cmake/flann/flann-config-version.cmake
+install(
+    FILES "${project_config}" "${version_config}"
+    DESTINATION "${config_install_dir}"
+)
+# Config
+#   * <prefix>/lib/cmake/flann/flann-targets.cmake
+install(
+    EXPORT "${targets_export_name}"
+    NAMESPACE "${namespace}"
+    DESTINATION "${config_install_dir}"
+)
 
 
 # CPACK options
