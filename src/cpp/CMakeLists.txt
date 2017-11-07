@@ -42,6 +42,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
     endif()
 else()
     add_library(flann_cpp SHARED ${CPP_SOURCES})
+    # export lz4 headers, so that MSVC to creates flann_cpp.lib
+    set_target_properties(flann_cpp PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
     if (BUILD_CUDA_LIB)
 		cuda_add_library(flann_cuda SHARED ${CPP_SOURCES})
         set_property(TARGET flann_cpp PROPERTY COMPILE_DEFINITIONS FLANN_USE_CUDA)
@@ -113,6 +115,8 @@ endif(WIN32)
 
 install (
     TARGETS flann_cpp flann_cpp_s
+    EXPORT ${targets_export_name}
+    INCLUDES DESTINATION include
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
@@ -121,6 +125,8 @@ install (
 if (BUILD_CUDA_LIB)
     install (
         TARGETS flann_cuda flann_cuda_s
+        EXPORT ${targets_export_name}
+        INCLUDES DESTINATION include
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
         ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
@@ -130,6 +136,8 @@ endif()
 if (BUILD_C_BINDINGS)
     install (
         TARGETS flann flann_s
+        EXPORT ${targets_export_name}
+        INCLUDES DESTINATION include
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
         ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
