@@ -68,9 +68,11 @@ endif()
 
 
 # find python
+if (BUILD_PYTHON_BINDINGS)
 find_package(PythonInterp)
 if (NOT PYTHON_EXECUTABLE)
     set(BUILD_PYTHON_BINDINGS OFF)
+endif()
 endif()
 
 find_hdf5()
@@ -112,9 +114,11 @@ if (USE_MPI AND HDF5_IS_PARALLEL)
 endif()
 
 
-find_package(GTest) 
+if (BUILD_TESTS)
+find_package(GTest)
 if (NOT GTEST_FOUND)
 	message(WARNING "gtest library not found, some tests will not be run")
+endif()
 endif()
 
 
