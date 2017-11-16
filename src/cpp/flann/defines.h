@@ -29,7 +29,7 @@
 #ifndef FLANN_DEFINES_H_
 #define FLANN_DEFINES_H_
 
-#include "config.h"
+#include "flann/config.h"
 
 #include "flann/flann_export.h"
 
