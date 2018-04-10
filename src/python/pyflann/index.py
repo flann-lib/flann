@@ -228,12 +228,14 @@ class FLANN(object):
         pts = ensure_2d_array(pts,default_flags) 
         npts, dim = pts.shape
         flann.add_points[self.__curindex_type](self.__curindex, pts, npts, dim, rebuild_threshold)
+        self.__curindex_data = np.row_stack((self.__curindex_data,pts))
         
     def remove_point(self, idx):
         """
         Removes a point from a pre-built index.         
         """
         flann.remove_point[self.__curindex_type](self.__curindex, idx)
+        self.__curindex_data = np.delete(self.__curindex_data,idx,axis=0)
 
     def nn_index(self, qpts, num_neighbors=1, **kwargs):
         """
