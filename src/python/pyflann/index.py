@@ -212,6 +212,13 @@ class FLANN(object):
         self.__curindex_data = pts
         self.__curindex_type = pts.dtype.type
         
+        
+    def used_memory(self):
+        """
+        Returns the number of bytes consumed by the index.
+        """
+        return flann.used_memory[self.__curindex_type](self.__curindex)
+        
     def add_points(self, pts, rebuild_threshold=2.0):
         """
         Adds points to pre-built index.
