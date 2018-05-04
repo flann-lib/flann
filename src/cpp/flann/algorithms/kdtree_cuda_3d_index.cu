@@ -32,6 +32,7 @@
 #include <flann/util/cuda/result_set.h>
 // #define THRUST_DEBUG 1
 #include <cuda.h>
+#include <thrust/gather.h>
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <vector_types.h>
