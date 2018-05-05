@@ -256,6 +256,15 @@ flannlib.flann_load_index_%(C)s.argtypes = [
 flann.load_index[%(numpy)s] = flannlib.flann_load_index_%(C)s
 """)
 
+flann.used_memory = {}
+define_functions(r"""
+flannlib.flann_used_memory_%(C)s.restype = c_int
+flannlib.flann_used_memory_%(C)s.argtypes = [
+        FLANN_INDEX, # index_id
+]
+flann.used_memory[%(numpy)s] = flannlib.flann_used_memory_%(C)s
+""")
+
 flann.add_points = {}
 define_functions(r"""
 flannlib.flann_add_points_%(C)s.restype = None
