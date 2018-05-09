@@ -430,7 +430,7 @@ void KDTreeCuda3dIndex<Distance>::knnSearchGpu(const Matrix<ElementType>& querie
                                                                                       );
             }
         }
-        thrust::transform(id, id+knn*queries.rows, id, map_indices(thrust::raw_pointer_cast( &((*gpu_helper_->gpu_vind_))[0]) ));
+        thrust::transform(id, id+ostride*queries.rows, id, map_indices(thrust::raw_pointer_cast( &((*gpu_helper_->gpu_vind_))[0]) ));
     }
 }
 
