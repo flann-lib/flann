@@ -96,8 +96,8 @@ namespace flann
 // }
 namespace cuda
 {
-	// flann::cuda::device_vector_noinit is used to take place of flann::cuda::device_vector_noinit
-	// as flann::cuda::device_vector_noinit always uses default stream, and always contains a fill
+	// flann::cuda::device_vector_noinit is used to take place of thrust::device_vector
+	// as thrust::device_vector always uses default stream, and always contains a fill
 	template<typename T>
 	class device_vector_noinit
 	{
