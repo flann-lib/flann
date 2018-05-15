@@ -162,6 +162,7 @@ template<typename Distance>
 struct KDTreeCuda3dIndex<Distance>::GpuHelper
 {
 	cudaStream_t gpu_stream;
+	bool use_ext_stream;
     flann::cuda::device_vector_noinit< cuda::kd_tree_builder_detail::SplitInfo >* gpu_splits_;
     flann::cuda::device_vector_noinit< int >* gpu_parent_;
     flann::cuda::device_vector_noinit< int >* gpu_child1_;
@@ -169,9 +170,18 @@ struct KDTreeCuda3dIndex<Distance>::GpuHelper
     flann::cuda::device_vector_noinit< float4 >* gpu_aabb_max_;
     flann::cuda::device_vector_noinit<float4>* gpu_points_;
     flann::cuda::device_vector_noinit<int>* gpu_vind_;
-    GpuHelper() : gpu_splits_(0), gpu_parent_(0), gpu_child1_(0), gpu_aabb_min_(0), gpu_aabb_max_(0), gpu_points_(0), gpu_vind_(0)
+    GpuHelper(cudaStream_t s = (cudaStream_t)0) : gpu_splits_(0), gpu_parent_(0), gpu_child1_(0), gpu_aabb_min_(0), gpu_aabb_max_(0), gpu_points_(0), gpu_vind_(0)
 	{
-		cudaStreamCreate(&gpu_stream);
+		if (s == (cudaStream_t)0)
+		{
+			cudaStreamCreate(&gpu_stream);
+			use_ext_stream = false;
+		}
+		else
+		{
+			gpu_stream = s;
+			use_ext_stream = true;
+		}
     }
     ~GpuHelper()
     {
@@ -191,7 +201,8 @@ struct KDTreeCuda3dIndex<Distance>::GpuHelper
         delete gpu_points_;
         gpu_points_=0;
 
-		cudaStreamDestroy(gpu_stream);
+		if (use_ext_stream == false)
+			cudaStreamDestroy(gpu_stream);
     }
 };
 
@@ -735,8 +746,9 @@ void KDTreeCuda3dIndex<Distance>::uploadTreeToGpu()
     // (I would make this a (boost) static assertion, but so far flann seems to avoid boost
     //  assert( sizeof( KdTreeCudaPrivate::GpuNode)==sizeof( Node ) );
     delete gpu_helper_;
-    gpu_helper_ = new GpuHelper;
-    gpu_helper_->gpu_points_=new flann::cuda::device_vector_noinit<float4>(size_);
+	cudaStream_t s = get_param(index_params_, "gpu_stream", (cudaStream_t)0);
+	gpu_helper_ = new GpuHelper(s);
+	gpu_helper_->gpu_points_=new flann::cuda::device_vector_noinit<float4>(size_);
     flann::cuda::device_vector_noinit<float4> tmp(size_);
     if( get_param(index_params_,"input_is_gpu_float4",false) ) {
 		assert( dataset_.cols == 3 && dataset_.stride==4*sizeof(float));
