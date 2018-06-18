@@ -136,6 +136,12 @@ public:
             return vals_[counter_++];
         }
     }
+    const int* values() const {
+        return vals_.data();
+    }
+    int* values() {
+        return vals_.data();
+    }
 };
 
 }
