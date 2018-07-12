@@ -265,7 +265,7 @@ protected:
         /* Construct the randomized trees. */
         for (int i = 0; i < trees_; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
-            std::random_shuffle(ind.begin(), ind.end());
+            rand_shuffle(ind.begin(), ind.end());
             tree_roots_[i] = divideTree(&ind[0], int(size_) );
         }
         delete[] mean_;
