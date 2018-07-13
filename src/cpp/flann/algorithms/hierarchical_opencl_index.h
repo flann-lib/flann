@@ -82,7 +82,7 @@ public:
         const Matrix<ElementType>& inputData,
         const IndexParams& params = HierarchicalClusteringOpenCLIndexParams(),
         Distance d = Distance())
-        : BaseClass(inputData, params, d)
+        : BaseClass(inputData, params, d), OpenCLIndex()
     {
         cl_node_index_arr_ = NULL;
         cl_node_pivots_ = NULL;
@@ -101,7 +101,7 @@ public:
         cl_dataset_ = NULL;
     }
 
-    HierarchicalClusteringOpenCLIndex(const HierarchicalClusteringOpenCLIndex<Distance>& other) : BaseClass(other), OpenCLIndex()
+    HierarchicalClusteringOpenCLIndex(const HierarchicalClusteringIndex<Distance>& other) : BaseClass(other), OpenCLIndex()
     {
         cl_node_index_arr_ = NULL;
         cl_node_pivots_ = NULL;
@@ -191,8 +191,7 @@ protected:
                        &this->cl_num_parents_, &this->cl_num_leaves_,
                        1, &minDepth, &maxDepth);
 
-
-        // Check that our assumptions about the structure of the tree is correct
+        // Check that our assumptions about the structure of the tree
         assert(this->size_*this->trees_ == this->cl_num_leaves_);
         assert(this->cl_num_nodes_ % this->branching_ == this->trees_);
         assert(this->cl_num_parents_*this->branching_ + this->trees_ == this->cl_num_nodes_);
@@ -350,7 +349,7 @@ protected:
 
         // Assume that the distance size is 4 because I think it's always float
         assert(distTypeSize == 4);
-
+        
         // Compile in all invariants for better optimization opportunity and less complexity
         char *build_str = (char *)calloc(128000, sizeof(char));
         sprintf(build_str,  "-cl-fast-relaxed-math -Werror "
@@ -544,6 +543,8 @@ protected:
         if (node->childs.empty()) {
             // Wait until the end of the flattening before saving the leaves
             if (saveLeaves) {
+                assert(this->cl_num_nodes_-this->trees_ <= (*nextPtr));
+                
                 // Save pointer to the list of point indices
                 indexArrWork[thisNodeId] = (*nextPtr);
 
@@ -583,9 +584,13 @@ protected:
                 if (!saveLeaves) {
                     // Add the nodes to the index, pivots, radii, & variance
                     int childNodeId = childNodePtr+i;
+                    assert(childNodeId >= 0);
+                    assert(this->cl_num_nodes_ > childNodeId);
 
                     // Make pointers to additional parent nodes (because they're in the front of the index)
                     if (!(childNode->childs.empty())) {
+                        assert(this->cl_num_parents_*this->branching_ > (*nextPtr));
+                        
                         indexArrWork[childNodeId] = (*nextPtr);
                         (*nextPtr) += this->branching_;
                     }
@@ -687,7 +692,8 @@ protected:
                                  cl_mem queryArr) const
     {
         cl_int err = CL_SUCCESS;
-        int nNodes = this->cl_num_nodes_-1;
+        // The roots have no nodes pointing to them, to subtract the number of trees
+        int nNodes = this->cl_num_nodes_-this->trees_;
 
         err = clSetKernelArg(kern, 0, sizeof(cl_mem), &this->cl_node_index_arr_);
         assert(err == CL_SUCCESS);
@@ -705,12 +711,28 @@ protected:
         assert(err == CL_SUCCESS);
         err = clSetKernelArg(kern, 7, sizeof(cl_mem), &queryArr);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 8, sizeof(int), &numQueries);
+        err = clSetKernelArg(kern, 8, sizeof(int), &nNodes);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 9, sizeof(int), &nNodes);
-        assert(err == CL_SUCCESS);
+        
+        // Max work size is roughly 1.5 million threads
+        int maxCLSize = 5000000/locSize;
 
-        return this->runKern(kern, numThreads, locSize);
+        // Avoid the watchdog timer for long execution times by splitting the work
+        // into chunks of maxCLGroupSize chip matches. Each run should be less than 5 seconds.
+        for (int queryOff = 0; queryOff < numQueries; queryOff += maxCLSize)
+        {
+            int globalSize = std::min((numQueries-queryOff), maxCLSize) * locSize;
+
+            err = clSetKernelArg(kern, 9, sizeof(int), &globalSize);
+            assert(err == CL_SUCCESS);
+            err = clSetKernelArg(kern, 10, sizeof(int), &queryOff);
+            assert(err == CL_SUCCESS);
+
+            err = this->runKern(kern, globalSize, locSize);
+            assert(err == CL_SUCCESS);
+        }
+
+        return CL_SUCCESS;
     }
 
     /**
@@ -736,10 +758,12 @@ protected:
         int *rsId = (int *)malloc(sz_result_id);
         err = clEnqueueReadBuffer(this->cl_cmd_queue_, resultIdArr_cl, CL_FALSE, 0, sz_result_id,
                                   (void *)rsId, 0, NULL, NULL);
+
         assert(err == CL_SUCCESS);
         DistanceType *rsDist = (DistanceType *)malloc(sz_result_dist);
         err = clEnqueueReadBuffer(this->cl_cmd_queue_, resultDistArr_cl, CL_FALSE, 0, sz_result_dist,
                                   (void *)rsDist, 0, NULL, NULL);
+
         assert(err == CL_SUCCESS);
         err = clFinish(this->cl_cmd_queue_);
         assert(err == CL_SUCCESS);
@@ -748,6 +772,13 @@ protected:
         for (int r = 0; r < indices.rows; ++r) {
             for (int c = 0; c < knn; ++c) {
                 size_t idx = rsId[r*n_knn + c];
+                if (idx == INT_MAX)
+                {
+                    indices[r][c] = INT_MAX;
+                    dists[r][c] = TypeInfo<DistanceType>::max();
+                    continue;
+                }
+
                 this->indices_to_ids(&idx, &idx, 1);
 
                 indices[r][c] = idx;

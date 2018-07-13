@@ -375,7 +375,23 @@ public:
                           const SearchParams& params,
                           cl_command_queue cq = NULL)
     {
-        return nnIndex_->buildCLKnnSearch(knn, params, cq);
+        IndexType* nnIndexTmp = nnIndex_;
+        switch(nnIndex_->getType()){
+            case FLANN_INDEX_HIERARCHICAL:
+                nnIndex_ = new HierarchicalClusteringOpenCLIndex<Distance>(*(HierarchicalClusteringIndex<Distance>*)nnIndex_);
+                
+                // Delete the non-OpenCL version
+                delete nnIndexTmp;
+            case FLANN_INDEX_HIERARCHICAL_OPENCL:
+                return nnIndex_->buildCLKnnSearch(knn, params, cq);
+            case FLANN_INDEX_KMEANS:
+                nnIndex_ = new KMeansOpenCLIndex<Distance>(*(KMeansIndex<Distance>*)nnIndex_);
+                
+                // Delete the non-OpenCL version
+                delete nnIndexTmp;
+            case FLANN_INDEX_KMEANS_OPENCL:
+                return nnIndex_->buildCLKnnSearch(knn, params, cq);
+        }
     }
 #endif /* FLANN_USE_OPENCL */
 

@@ -100,7 +100,7 @@ public:
         cl_dataset_ = NULL;
     }
 
-    KMeansOpenCLIndex(const KMeansOpenCLIndex<Distance>& other) : BaseClass(other), OpenCLIndex()
+    KMeansOpenCLIndex(const KMeansIndex<Distance>& other) : BaseClass(other), OpenCLIndex()
     {
         cl_node_index_arr_ = NULL;
         cl_node_pivots_ = NULL;
@@ -728,12 +728,28 @@ protected:
         assert(err == CL_SUCCESS);
         err = clSetKernelArg(kern, 7, sizeof(cl_mem), &queryArr);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 8, sizeof(int), &numQueries);
+        err = clSetKernelArg(kern, 8, sizeof(int), &nNodes);
         assert(err == CL_SUCCESS);
-        err = clSetKernelArg(kern, 9, sizeof(int), &nNodes);
-        assert(err == CL_SUCCESS);
-
-        return this->runKern(kern, numThreads, locSize);
+        
+        // Max work size is roughly 1.5 million threads
+        int maxCLSize = 5000000/locSize;
+        
+        // Avoid the watchdog timer for long execution times by splitting the work
+        // into chunks of maxCLGroupSize chip matches. Each run should be less than 5 seconds.
+        for (int queryOff = 0; queryOff < numQueries; queryOff += maxCLSize)
+        {
+            int globalSize = std::min((numQueries-queryOff), maxCLSize) * locSize;
+            
+            err = clSetKernelArg(kern, 9, sizeof(int), &globalSize);
+            assert(err == CL_SUCCESS);
+            err = clSetKernelArg(kern, 10, sizeof(int), &queryOff);
+            assert(err == CL_SUCCESS);
+            
+            err = this->runKern(kern, globalSize, locSize);
+            assert(err == CL_SUCCESS);
+        }
+        
+        return CL_SUCCESS;
     }
 
     /**
