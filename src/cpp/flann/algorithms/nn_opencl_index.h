@@ -135,7 +135,11 @@ public:
             HandleFLANNErr(err);
             cl_context context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
             HandleFLANNErr(err);
+#ifdef CL_API_SUFFIX__VERSION_2_0
+            cq = clCreateCommandQueueWithProperties(context, device_id, NULL, &err);
+#else // CL_API_SUFFIX__VERSION_2_0
             cq = clCreateCommandQueue(context, device_id, 0, &err);
+#endif // CL_API_SUFFIX__VERSION_2_0
             HandleFLANNErr(err);
         }
 
