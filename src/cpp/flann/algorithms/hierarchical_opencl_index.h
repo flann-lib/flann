@@ -202,7 +202,7 @@ protected:
         int *index_arr_work;
         ElementType *node_pivots_work;
         ElementType *dataset_work;
-        int n_veclen = 4*((this->veclen_+3)/4);
+        unsigned int n_veclen = 4*((this->veclen_+3)/4);
 
         // Find the sizes of the blocks of memory are that we will be using
         size_t sz_index = sizeof(int)*(this->cl_num_parents_*this->branching_+this->cl_num_leaves_+
@@ -218,12 +218,12 @@ protected:
         this->allocCLDevPinnedWorkMem(context, sz_dataset, CL_MEM_READ_ONLY,
                                       &this->cl_dataset_, &dataset_work_cl, &dataset_work);
         err = clFinish(cmd_queue);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Copy dataset
-        for (int i = 0; i < this->size_; ++i) {
+        for (unsigned int i = 0; i < this->size_; ++i) {
             // Save point data (& pad with zeros for alignment & SIMD operations)
-            for (int v = 0; v < n_veclen; ++v)
+            for (unsigned int v = 0; v < n_veclen; ++v)
                 if (v < this->veclen_) {
                     assert(std::isfinite(this->points_[i][v]));
                     dataset_work[i*n_veclen+v] = this->points_[i][v];
@@ -234,7 +234,7 @@ protected:
         // Copy from host to device memory
         err = clEnqueueWriteBuffer(cmd_queue, this->cl_dataset_, CL_FALSE, 0,
                                    sz_dataset, (void*)dataset_work, 0, NULL, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Copy data to working memory in a breadth-first search
         std::queue<NodePtr> nodeQueue;
@@ -266,12 +266,12 @@ protected:
         // Copy from host to device memory
         err = clEnqueueWriteBuffer(cmd_queue, this->cl_node_index_arr_, CL_FALSE, 0,
                                    sz_index, (void*)index_arr_work, 0, NULL, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clEnqueueWriteBuffer(cmd_queue, this->cl_node_pivots_, CL_FALSE, 0,
                                    sz_pivots, (void*)node_pivots_work, 0, NULL, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clFinish(cmd_queue);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Release working resources
         clEnqueueUnmapMemObject(cmd_queue, index_arr_work_cl, index_arr_work, 0, NULL, NULL);
@@ -283,9 +283,9 @@ protected:
 
         // Create dummy arrays for calculations that we won't be doing.
         this->cl_node_radii_ = clCreateBuffer(context, CL_MEM_READ_ONLY, 256, NULL, &err);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         this->cl_node_variance_ = clCreateBuffer(context, CL_MEM_READ_ONLY, 256, NULL, &err);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
     }
 
     /**
@@ -319,7 +319,7 @@ protected:
 
         // See if we can use local thread groups to speed computation (GPU-likely optimization)
         this->getCLNumThreads(dev, 0, *initHeapSize, &numThreads, &locSize);
-        int heapSize = *initHeapSize;
+        unsigned int heapSize = *initHeapSize;
 
         // Find the appropriate vars for the requested kernel
         if (maxChecks == FLANN_CHECKS_UNLIMITED) {
@@ -414,15 +414,15 @@ protected:
         cl_context context;
         err = clGetCommandQueueInfo(this->cl_cmd_queue_, CL_QUEUE_CONTEXT,
                                     sizeof(context), &context, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         cl_device_id dev;
         err = clGetCommandQueueInfo(this->cl_cmd_queue_, CL_QUEUE_DEVICE,
                                     sizeof(dev), &dev, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Get the kernel
         cl_kernel kern = this->cl_knn_search_kern_;
-        int heapSize = this->cl_kern_heap_size_;
+        unsigned int heapSize = this->cl_kern_heap_size_;
 
         // Figure out the threads per local group
         size_t numThreads, locSize;
@@ -474,7 +474,7 @@ protected:
      */
     virtual int shouldCLKnnSearch(int numQueries, size_t knn, const SearchParams& params) const
     {
-        return numQueries >= 128 && this->size_ > this->branching_ && clParamsMatch(knn, params);
+        return numQueries >= 128 && ((int)this->size_) > this->branching_ && clParamsMatch(knn, params);
     }
 
     /**
@@ -530,7 +530,7 @@ protected:
                       bool saveLeaves, std::queue<struct BaseClass::Node*> *nodeQueue,
                       int *indexArrWork, ElementType *nodePivotsWork)
     {
-        int n_veclen = 4*((this->veclen_+3)/4);
+        unsigned int n_veclen = 4*((this->veclen_+3)/4);
 
         // childNodePtr only valid if there are children nodes
         int childNodePtr;
@@ -553,7 +553,7 @@ protected:
                 int actualSize = 0;
 
                 // Add point leaves to the index & dataset
-                for (int i=0; i < node->points.size(); ++i) {
+                for (unsigned int i = 0; i < node->points.size(); ++i) {
                     // Save point index
                     size_t index = node->points[i].index;
 
@@ -596,7 +596,7 @@ protected:
                     }
 
                     // Save pivot vector (& pad with zeros for alignment & SIMD operations)
-                    for (int v = 0; v < n_veclen; ++v)
+                    for (unsigned int v = 0; v < n_veclen; ++v)
                         if (v < this->veclen_) {
                             assert(std::isfinite(childNode->pivot[v]));
                             nodePivotsWork[n_veclen*childNodeId+v] = childNode->pivot[v];
@@ -627,7 +627,7 @@ protected:
 
         // The vector length is rounded up to the next multiple of 4
         // for alignment and SIMD operations
-        int n_veclen = 4*((this->veclen_+3)/4);
+        unsigned int n_veclen = 4*((this->veclen_+3)/4);
         int n_knn = getCLknn(knn);
 
         // How much memory will we need for the queries?
@@ -640,11 +640,11 @@ protected:
         this->allocCLDevPinnedWorkMem(context, sz_query, CL_MEM_READ_ONLY,
                                       queryArr, &query_arr_work_cl, &query_arr_work);
         err = clFinish(cmd_queue);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Copy queries into the working memory
-        for (int r = 0; r < queries.rows; r++)
-            for (int v = 0; v < n_veclen; v++)
+        for (unsigned int r = 0; r < queries.rows; r++)
+            for (unsigned int v = 0; v < n_veclen; v++)
                 // (& pad with zeros for alignment & SIMD operations)
                 if (v < this->veclen_) {
                     assert(std::isfinite(queries[r][v]));
@@ -655,20 +655,20 @@ protected:
         // Start query copy from host to device memory
         err = clEnqueueWriteBuffer(cmd_queue, *queryArr, CL_FALSE, 0,
                                    sz_query, (void*)query_arr_work, 0, NULL, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Alloc results arrays
         size_t sz_result_id = sizeof(int)*queries.rows*n_knn;
         size_t sz_result_dist = sizeof(DistanceType)*queries.rows*n_knn;
 
         (*resultIdArr) = clCreateBuffer(context, CL_MEM_READ_WRITE, sz_result_id, NULL, &err);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         (*resultDistArr) = clCreateBuffer(context, CL_MEM_READ_WRITE, sz_result_dist, NULL, &err);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Finish the query copy
         err = clFinish(cmd_queue);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Release the (pinned) working resources for the query memory
         clEnqueueUnmapMemObject(cmd_queue, query_arr_work_cl, query_arr_work, 0, NULL, NULL);
@@ -696,24 +696,24 @@ protected:
         int nNodes = this->cl_num_nodes_-this->trees_;
 
         err = clSetKernelArg(kern, 0, sizeof(cl_mem), &this->cl_node_index_arr_);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clSetKernelArg(kern, 1, sizeof(cl_mem), &this->cl_node_pivots_);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clSetKernelArg(kern, 2, sizeof(cl_mem), &this->cl_node_variance_);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clSetKernelArg(kern, 3, sizeof(cl_mem), &this->cl_node_radii_);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clSetKernelArg(kern, 4, sizeof(cl_mem), &this->cl_dataset_);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clSetKernelArg(kern, 5, sizeof(cl_mem), &resultDistArr);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clSetKernelArg(kern, 6, sizeof(cl_mem), &resultIdArr);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clSetKernelArg(kern, 7, sizeof(cl_mem), &queryArr);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clSetKernelArg(kern, 8, sizeof(int), &nNodes);
-        assert(err == CL_SUCCESS);
-        
+        HandleFLANNErr(err);
+
         // Max work size is roughly 1.5 million threads
         int maxCLSize = 5000000/locSize;
 
@@ -724,15 +724,15 @@ protected:
             int globalSize = std::min((numQueries-queryOff), maxCLSize) * locSize;
 
             err = clSetKernelArg(kern, 9, sizeof(int), &globalSize);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
             err = clSetKernelArg(kern, 10, sizeof(int), &queryOff);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
 
             err = this->runKern(kern, globalSize, locSize);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
         }
 
-        return CL_SUCCESS;
+        return err;
     }
 
     /**
@@ -759,18 +759,18 @@ protected:
         err = clEnqueueReadBuffer(this->cl_cmd_queue_, resultIdArr_cl, CL_FALSE, 0, sz_result_id,
                                   (void *)rsId, 0, NULL, NULL);
 
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         DistanceType *rsDist = (DistanceType *)malloc(sz_result_dist);
         err = clEnqueueReadBuffer(this->cl_cmd_queue_, resultDistArr_cl, CL_FALSE, 0, sz_result_dist,
                                   (void *)rsDist, 0, NULL, NULL);
 
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clFinish(this->cl_cmd_queue_);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Copy all results
-        for (int r = 0; r < indices.rows; ++r) {
-            for (int c = 0; c < knn; ++c) {
+        for (unsigned int r = 0; r < indices.rows; ++r) {
+            for (unsigned int c = 0; c < knn; ++c) {
                 size_t idx = rsId[r*n_knn + c];
                 if (idx == INT_MAX)
                 {

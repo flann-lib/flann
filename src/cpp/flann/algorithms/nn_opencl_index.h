@@ -71,6 +71,10 @@ TYPE_NAME_AND_SIZE(long, "long", LONG_MAX);
 TYPE_NAME_AND_SIZE(unsigned long, "ulong", ULONG_MAX);
 #undef TYPE_NAME_AND_SIZE
 
+#define HandleFLANNErr(err) if ((err) != CL_SUCCESS) { \
+    throw FLANNException("OpenCL error."); \
+}
+
 class OpenCLIndex
 {
 public:
@@ -96,7 +100,7 @@ public:
             // Get the context so we can release it later
             err = clGetCommandQueueInfo(cl_cmd_queue_, CL_QUEUE_CONTEXT,
                                         sizeof(context), &context, NULL);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
 
             clReleaseCommandQueue(cl_cmd_queue_);
             cl_cmd_queue_ = NULL;
@@ -128,11 +132,11 @@ public:
             // Make a default command queue
             cl_device_id device_id;
             err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_ALL, 1, &device_id, NULL);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
             cl_context context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
             cq = clCreateCommandQueue(context, device_id, 0, &err);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
         }
 
         if (cl_cmd_queue_ != NULL && cq != NULL && cl_cmd_queue_ != cq) {
@@ -150,10 +154,10 @@ public:
         cl_context context;
         assert(cl_cmd_queue_);
         err = clGetCommandQueueInfo(cl_cmd_queue_, CL_QUEUE_CONTEXT, sizeof(context), &context, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         cl_device_id dev;
         err = clGetCommandQueueInfo(cl_cmd_queue_, CL_QUEUE_DEVICE, sizeof(dev), &dev, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Init the cl_mem index
         initCLIndexMem(context);
@@ -241,19 +245,19 @@ protected:
         // Get the device type
         cl_device_type dev_type;
         err = clGetDeviceInfo(dev, CL_DEVICE_TYPE, sizeof(dev_type), &dev_type, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Get the maximum group size
         size_t max_work_group_size;
         err = clGetDeviceInfo(dev, CL_DEVICE_MAX_WORK_GROUP_SIZE,
                               sizeof(size_t), &max_work_group_size, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Maximum work group size per dimension
         size_t max_work_item_sizes[3];
         err = clGetDeviceInfo(dev, CL_DEVICE_MAX_WORK_ITEM_SIZES,
                               sizeof(max_work_item_sizes), &max_work_item_sizes, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         if (max_work_group_size < max_work_item_sizes[0])
             max_work_group_size = max_work_item_sizes[0];
@@ -344,7 +348,7 @@ protected:
                 printf("unrecognized: %d\n", err);
 
 	                err = clGetProgramBuildInfo(program, dev, CL_PROGRAM_BUILD_STATUS, 128000*sizeof(char), buffer, &len);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
 
             printf("Build Status:\n");
             if(buffer[0] == CL_BUILD_NONE)
@@ -376,10 +380,10 @@ protected:
         }
 
         kernel = clCreateKernel(program, progName, &err);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         err = clReleaseProgram(program);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         return kernel;
     }
@@ -424,13 +428,13 @@ protected:
             printf("CL_INVALID_PROGRAM_EXECUTABLE\n");
         else if (err == CL_INVALID_KERNEL)
             printf("CL_INVALID_KERNEL\n");
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         err = clFinish(cmd_queue);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         cl_command_queue_properties prop;
         err = clGetCommandQueueInfo(cmd_queue, CL_QUEUE_PROPERTIES, sizeof(prop), &prop, NULL);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
 
         // Conditional on profiling enabled in the queue
         if (prop & CL_QUEUE_PROFILING_ENABLE) {
@@ -438,13 +442,13 @@ protected:
 
             err = clGetEventProfilingInfo(ev, CL_PROFILING_COMMAND_START,
                                           sizeof(size_t), &start_time, NULL);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
             err = clGetEventProfilingInfo(ev, CL_PROFILING_COMMAND_END,
                                           sizeof(size_t), &end_time, NULL);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
 
             err = clReleaseEvent(ev);
-            assert(err == CL_SUCCESS);
+            HandleFLANNErr(err);
             double totTime = (end_time-start_time)/1000000000.0;
 
             printf("NNIndex OpenCL Total Kernel Time:%12.4f\n", totTime);
@@ -475,12 +479,12 @@ protected:
         assert((*clPtr) == NULL);
 
         (*clPtr) = clCreateBuffer(context, mem_flags, sz, NULL, &err);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         (*pinnedWorkCLPtr) = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sz, NULL, &err);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
         (*pinnedWorkPtr) = (CLAllocType *)clEnqueueMapBuffer(this->cl_cmd_queue_, (*pinnedWorkCLPtr), CL_FALSE,
                                                              CL_MAP_READ|CL_MAP_WRITE, 0, sz, 0, NULL, NULL, &err);
-        assert(err == CL_SUCCESS);
+        HandleFLANNErr(err);
     }
 
     /**
@@ -492,11 +496,8 @@ protected:
     inline void freeCLMem(cl_mem *toFree) const
     {
         if (*toFree) {
-#ifndef NDEBUG
-            cl_int err =
-#endif
-            clReleaseMemObject(*toFree);
-            assert(err == CL_SUCCESS);
+            cl_int err = clReleaseMemObject(*toFree);
+            HandleFLANNErr(err);
             (*toFree) = NULL;
         }
     }
