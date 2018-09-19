@@ -302,6 +302,9 @@ protected:
     cl_kernel buildCLknnSearchKernel(
         cl_context context, cl_device_id dev, size_t knn, int maxChecks, int *initHeapSize)
     {
+        assert(knn > 0);
+        assert(getCLknn(knn) > 0);
+        
         const char *prog_name;
         cl_kernel kern;
         char *program_src;
@@ -349,7 +352,7 @@ protected:
 
         // Assume that the distance size is 4 because I think it's always float
         assert(distTypeSize == 4);
-        
+
         // Compile in all invariants for better optimization opportunity and less complexity
         char *build_str = (char *)calloc(128000, sizeof(char));
         sprintf(build_str,  "-cl-fast-relaxed-math -Werror "
@@ -405,6 +408,10 @@ protected:
                      size_t knn,
                      const SearchParams& params ) const
     {
+        assert(queries.rows <= indices.rows);
+        assert(queries.rows <= dists.rows);
+        assert(knn > 0);
+
         // Unable to init inside of fxn due to `const`
         assert(this->cl_cmd_queue_);
         assert(clParamsMatch(knn, params));
@@ -474,6 +481,11 @@ protected:
      */
     virtual int shouldCLKnnSearch(int numQueries, size_t knn, const SearchParams& params) const
     {
+        // Make sure the tree is large enough for OpenCL to be useful
+        for (int i = 0; i < this->trees_; ++i)
+            if (this->tree_roots_[i]->childs.empty())
+                return false;
+        
         return numQueries >= 128 && ((int)this->size_) > this->branching_ && clParamsMatch(knn, params);
     }
 
@@ -660,6 +672,8 @@ protected:
         // Alloc results arrays
         size_t sz_result_id = sizeof(int)*queries.rows*n_knn;
         size_t sz_result_dist = sizeof(DistanceType)*queries.rows*n_knn;
+        assert(sz_result_id > 0);
+        assert(sz_result_dist > 0);
 
         (*resultIdArr) = clCreateBuffer(context, CL_MEM_READ_WRITE, sz_result_id, NULL, &err);
         HandleFLANNErr(err);
@@ -752,6 +766,8 @@ protected:
         int n_knn = getCLknn(knn);
         size_t sz_result_id = sizeof(int)*indices.rows*n_knn;
         size_t sz_result_dist = sizeof(DistanceType)*indices.rows*n_knn;
+        assert(sz_result_id > 0);
+        assert(sz_result_dist > 0);
 
         // Make a buffer for the output memory & copy it
         // FIXME: Said buffer should be pinned for best performance

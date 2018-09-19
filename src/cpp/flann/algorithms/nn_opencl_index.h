@@ -517,7 +517,7 @@ protected:
     {
         // Each full set of results is a multiple of four plus one result to be replaced
         // when a new result is added
-        return 4*((knn+2)/4)+1;
+        return 4*((knn+3)/4)+1;
     }
 
     /**
@@ -662,7 +662,7 @@ protected:
     "findNodes(nodeIndex, nodePivots, nodeVariance, &locDone, query, heapDist, heapId, nNodes);\n"
 
     // Go from leaf pointers in the heap to a sorted set of leaves
-   "findLeaves(nodeIndex, query, dataset, &locDone, &locPtr, heapDist, heapId, nNodes);\n"
+    "findLeaves(nodeIndex, query, dataset, &locDone, &locPtr, heapDist, heapId, nNodes);\n"
 
     // After inserting, sorting, and checking leaves, the results are in the lower part of the heap
     "storeResult(resultDistArr, resultIdArr, heapDist, heapId, queryOff);\n"
@@ -742,11 +742,15 @@ protected:
         "heapId[locI] = nodeIndex[++leafPtr];\n"
 
     "barrier(CLK_LOCAL_MEM_FENCE);\n"
-    "heapDist[get_local_id(0)] = vecDistLoc(query, dataset, heapId[get_local_id(0)]*N_VECLEN);\n"
+    // Note that the heapId may be uninitialized at this location if we're
+    // only decending one tree or it's a small/wide tree.
+    "if (heapId[get_local_id(0)] < INT_MAX)\n"
+        "heapDist[get_local_id(0)] = vecDistLoc(query, dataset, heapId[get_local_id(0)]*N_VECLEN);\n"
 
     "do {\n"
-        // Set the leaf distances for the given IDs
-        "heapDist[LOC_SIZE + get_local_id(0)] = vecDistLoc(query, dataset, heapId[LOC_SIZE + get_local_id(0)]*N_VECLEN);\n"
+        // Set the leaf distances for the given IDs.
+        "if (heapId[LOC_SIZE + get_local_id(0)] < INT_MAX)\n"
+            "heapDist[LOC_SIZE + get_local_id(0)] = vecDistLoc(query, dataset, heapId[LOC_SIZE + get_local_id(0)]*N_VECLEN);\n"
 
         // Sort heap to leave the closest distances in the bottom of the heap
         "sortHeap(heapDist, heapId);\n"
