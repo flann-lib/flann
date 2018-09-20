@@ -681,10 +681,8 @@ protected:
     "initLoc(heapDist, heapId, nNodes);\n"
 
     // Init the node query array with a pointer to root_'s children
-    "for (int i = 0; i < N_TREES; i++) {\n"
-        "heapDist[i] = MAX_DIST;\n"
+    "for (int i = 0; i < N_TREES; i++)\n"
         "heapId[i] = i*BRANCHING;\n"
-    "}\n"
     "barrier(CLK_LOCAL_MEM_FENCE);\n"
 
     // Find the closest children to the root
@@ -723,7 +721,7 @@ protected:
 "{\n"
     // Store pointer to list before init local mem
     "int leafPtr = heapId[get_local_id(0)];\n"
-    "int lastPtr = nodeIndex[leafPtr] + leafPtr;\n"
+    "int lastPtr = (leafPtr < INT_MAX) ? (nodeIndex[leafPtr] + leafPtr) : 0;\n"
 
     // Reset heap
     "initLoc(heapDist, heapId, nNodes);\n"

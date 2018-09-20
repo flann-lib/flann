@@ -571,6 +571,8 @@ protected:
         if (node->childs.empty()) {
             // Wait until the end of the flattening before saving the leaves
             if (saveLeaves) {
+                assert(this->cl_num_nodes_-1 <= (*nextPtr));
+
                 // Save pointer to the list of point indices
                 indexArrWork[thisNodeId] = (*nextPtr);
 
@@ -598,6 +600,9 @@ protected:
                 indexArrWork[sizeIdx] = actualSize;
             }
         } else {
+            // Assume that the number of children is always equal to the
+            // branching factor
+            assert(node->childs.size() == this->branching_);
             for (int i = 0; i < this->branching_; ++i) {
                 NodePtr childNode = node->childs[i];
 
@@ -607,6 +612,8 @@ protected:
                 if (!saveLeaves) {
                     // Add the nodes to the index, pivots, radii, & variance
                     int childNodeId = childNodePtr+i;
+                    assert(childNodeId >= 0);
+                    assert(this->cl_num_nodes_ > childNodeId);
 
                     // Make pointers to additional parent nodes (because they're in the front of the index)
                     if (!(childNode->childs.empty())) {
