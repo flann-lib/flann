@@ -198,7 +198,7 @@ protected:
         cl_command_queue cmd_queue = this->cl_cmd_queue_;
 
         // Allocate working vars
-        cl_mem index_arr_work_cl, node_pivots_work_cl, dataset_work_cl;
+        cl_mem index_arr_work_cl = NULL, node_pivots_work_cl = NULL, dataset_work_cl = NULL;
         int *index_arr_work;
         ElementType *node_pivots_work;
         ElementType *dataset_work;
@@ -274,12 +274,21 @@ protected:
         HandleFLANNErr(err);
 
         // Release working resources
-        clEnqueueUnmapMemObject(cmd_queue, index_arr_work_cl, index_arr_work, 0, NULL, NULL);
-        clReleaseMemObject(index_arr_work_cl);
-        clEnqueueUnmapMemObject(cmd_queue, node_pivots_work_cl, node_pivots_work, 0, NULL, NULL);
-        clReleaseMemObject(node_pivots_work_cl);
-        clEnqueueUnmapMemObject(cmd_queue, dataset_work_cl, dataset_work, 0, NULL, NULL);
-        clReleaseMemObject(dataset_work_cl);
+        err = clEnqueueUnmapMemObject(cmd_queue, index_arr_work_cl, index_arr_work, 0, NULL, NULL);
+        HandleFLANNErr(err);
+        err = clEnqueueUnmapMemObject(cmd_queue, node_pivots_work_cl, node_pivots_work, 0, NULL, NULL);
+        HandleFLANNErr(err);
+        err = clEnqueueUnmapMemObject(cmd_queue, dataset_work_cl, dataset_work, 0, NULL, NULL);
+        HandleFLANNErr(err);
+        err = clFinish(cmd_queue);
+        HandleFLANNErr(err);
+
+        err = clReleaseMemObject(index_arr_work_cl);
+        HandleFLANNErr(err);
+        err = clReleaseMemObject(node_pivots_work_cl);
+        HandleFLANNErr(err);
+        err = clReleaseMemObject(dataset_work_cl);
+        HandleFLANNErr(err);
 
         // Create dummy arrays for calculations that we won't be doing.
         this->cl_node_radii_ = clCreateBuffer(context, CL_MEM_READ_ONLY, 256, NULL, &err);
@@ -437,7 +446,7 @@ protected:
 
         if (heapSize > locSize) {
             numThreads = numThreads/locSize;
-            locSize = 0;
+            locSize = 1;
         }
 
         // Get the query & temp device memory
@@ -556,13 +565,15 @@ protected:
             // Wait until the end of the flattening before saving the leaves
             if (saveLeaves) {
                 assert(this->cl_num_nodes_-this->trees_ <= (*nextPtr));
-                
+                assert(thisNodeId >= 0);
+
                 // Save pointer to the list of point indices
                 indexArrWork[thisNodeId] = (*nextPtr);
 
                 // Where to mark the number of leaves?
                 int sizeIdx = (*nextPtr)++;
                 int actualSize = 0;
+                assert(sizeIdx >= 0);
 
                 // Add point leaves to the index & dataset
                 for (unsigned int i = 0; i < node->points.size(); ++i) {

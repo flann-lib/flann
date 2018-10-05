@@ -195,8 +195,8 @@ protected:
         cl_command_queue cmd_queue = this->cl_cmd_queue_;
 
         // Allocate working vars
-        cl_mem index_arr_work_cl, node_pivots_work_cl, node_radii_work_cl,
-        node_variance_work_cl, dataset_work_cl;
+        cl_mem index_arr_work_cl = NULL, node_pivots_work_cl = NULL, node_radii_work_cl = NULL,
+        node_variance_work_cl = NULL, dataset_work_cl = NULL;
         int *index_arr_work;
         ElementType *node_pivots_work;
         DistanceType *node_radii_work;
@@ -283,16 +283,29 @@ protected:
         HandleFLANNErr(err);
 
         // Release working resources
-        clEnqueueUnmapMemObject(cmd_queue, index_arr_work_cl, index_arr_work, 0, NULL, NULL);
-        clReleaseMemObject(index_arr_work_cl);
-        clEnqueueUnmapMemObject(cmd_queue, node_pivots_work_cl, node_pivots_work, 0, NULL, NULL);
-        clReleaseMemObject(node_pivots_work_cl);
-        clEnqueueUnmapMemObject(cmd_queue, node_radii_work_cl, node_radii_work, 0, NULL, NULL);
-        clReleaseMemObject(node_radii_work_cl);
-        clEnqueueUnmapMemObject(cmd_queue, node_variance_work_cl, node_variance_work, 0, NULL, NULL);
-        clReleaseMemObject(node_variance_work_cl);
-        clEnqueueUnmapMemObject(cmd_queue, dataset_work_cl, dataset_work, 0, NULL, NULL);
-        clReleaseMemObject(dataset_work_cl);
+        err = clEnqueueUnmapMemObject(cmd_queue, index_arr_work_cl, index_arr_work, 0, NULL, NULL);
+        HandleFLANNErr(err);
+        err = clEnqueueUnmapMemObject(cmd_queue, node_pivots_work_cl, node_pivots_work, 0, NULL, NULL);
+        HandleFLANNErr(err);
+        err = clEnqueueUnmapMemObject(cmd_queue, node_radii_work_cl, node_radii_work, 0, NULL, NULL);
+        HandleFLANNErr(err);
+        err = clEnqueueUnmapMemObject(cmd_queue, node_variance_work_cl, node_variance_work, 0, NULL, NULL);
+        HandleFLANNErr(err);
+        err = clEnqueueUnmapMemObject(cmd_queue, dataset_work_cl, dataset_work, 0, NULL, NULL);
+        HandleFLANNErr(err);
+        err = clFinish(cmd_queue);
+        HandleFLANNErr(err);
+
+        err = clReleaseMemObject(index_arr_work_cl);
+        HandleFLANNErr(err);
+        err = clReleaseMemObject(node_pivots_work_cl);
+        HandleFLANNErr(err);
+        err = clReleaseMemObject(node_radii_work_cl);
+        HandleFLANNErr(err);
+        err = clReleaseMemObject(node_variance_work_cl);
+        HandleFLANNErr(err);
+        err = clReleaseMemObject(dataset_work_cl);
+        HandleFLANNErr(err);
     }
 
     /**
@@ -572,6 +585,7 @@ protected:
             // Wait until the end of the flattening before saving the leaves
             if (saveLeaves) {
                 assert(this->cl_num_nodes_-1 <= (*nextPtr));
+                assert(thisNodeId >= 0);
 
                 // Save pointer to the list of point indices
                 indexArrWork[thisNodeId] = (*nextPtr);
@@ -579,6 +593,7 @@ protected:
                 // Where to mark the number of leaves?
                 int sizeIdx = (*nextPtr)++;
                 int actualSize = 0;
+                assert(sizeIdx >= 0);
 
                 // Add point leaves to the index & dataset
                 for (int i=0; i < node->size; ++i) {

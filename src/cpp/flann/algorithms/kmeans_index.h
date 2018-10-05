@@ -474,7 +474,7 @@ protected:
     	dst->size = src->size;
 
     	if (src->childs.size()==0) {
-    		dst->points = src->points;
+            dst->points = src->points;
             for (size_t i=0;i<src->points.size();++i) {
                 dst->points[i].point = points_[dst->points[i].index];
             }
