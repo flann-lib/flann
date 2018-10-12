@@ -187,6 +187,9 @@ protected:
 
         countNodes(this->root_, &this->cl_num_nodes_, &this->cl_num_parents_, &this->cl_num_leaves_,
                    1, &minDepth, &maxDepth);
+        
+        if (this->cl_num_parents_ <= 0)
+            return;
 
         // Check that our assumptions about the structure of the tree is correct
         assert(this->size_ == this->cl_num_leaves_);
@@ -206,7 +209,7 @@ protected:
 
         // Find the sizes of the blocks of memory are that we will be using
         size_t sz_index = sizeof(int)*(this->cl_num_parents_*this->branching_+this->cl_num_leaves_+
-                                       this->cl_num_nodes_-this->cl_num_parents_);
+                                       this->cl_num_nodes_-this->cl_num_parents_ + 1);
         size_t sz_pivots = sizeof(ElementType)*this->cl_num_nodes_*n_veclen;
         size_t sz_radii = sizeof(DistanceType)*this->cl_num_nodes_;
         size_t sz_variance = sizeof(DistanceType)*this->cl_num_nodes_;
@@ -509,7 +512,7 @@ protected:
     virtual int shouldCLKnnSearch(int numQueries, size_t knn, const SearchParams& params) const
     {
         // Make sure the tree is large enough for OpenCL to be useful
-        if (this->root_->childs.empty())
+        if (this->cl_num_parents_ <= 0)
             return false;
 
         return numQueries >= 128 && ((int)this->size_) > this->branching_ && clParamsMatch(knn, params);

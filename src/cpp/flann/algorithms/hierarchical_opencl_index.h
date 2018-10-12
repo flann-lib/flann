@@ -185,6 +185,11 @@ protected:
         int maxDepth = 0;
         int minDepth = 9999;
 
+        // Are the trees too small?
+        for (int i = 0; i < this->trees_; ++i)
+            if (this->tree_roots_[i]->childs.empty())
+                return;
+
         // Count nodes in all trees
         for (int i = 0; i < this->trees_; i++)
             countNodes(this->tree_roots_[i], &this->cl_num_nodes_,
@@ -206,7 +211,7 @@ protected:
 
         // Find the sizes of the blocks of memory are that we will be using
         size_t sz_index = sizeof(int)*(this->cl_num_parents_*this->branching_+this->cl_num_leaves_+
-                                       this->cl_num_nodes_-this->cl_num_parents_);
+                                       this->cl_num_nodes_-this->cl_num_parents_ + 1);
         size_t sz_pivots = sizeof(ElementType)*this->cl_num_nodes_*n_veclen;
         size_t sz_dataset = sizeof(ElementType)*this->size_*n_veclen;
 
@@ -491,10 +496,9 @@ protected:
     virtual int shouldCLKnnSearch(int numQueries, size_t knn, const SearchParams& params) const
     {
         // Make sure the tree is large enough for OpenCL to be useful
-        for (int i = 0; i < this->trees_; ++i)
-            if (this->tree_roots_[i]->childs.empty())
-                return false;
-        
+        if (this->cl_num_parents_ < this->trees_)
+            return false;
+
         return numQueries >= 128 && ((int)this->size_) > this->branching_ && clParamsMatch(knn, params);
     }
 
