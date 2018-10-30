@@ -768,8 +768,8 @@ protected:
         err = clSetKernelArg(kern, 8, sizeof(int), &nNodes);
         HandleFLANNErr(err);
 
-        // Max work size is roughly 1.5 million threads
-        int maxCLSize = 5000000/locSize;
+        // Max work size is roughly 15 million threads
+        int maxCLSize = 50000000/locSize;
         
         // Avoid the watchdog timer for long execution times by splitting the work
         // into chunks of maxCLGroupSize chip matches. Each run should be less than 5 seconds.
