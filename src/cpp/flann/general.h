@@ -31,7 +31,7 @@
 #ifndef FLANN_GENERAL_H_
 #define FLANN_GENERAL_H_
 
-#include "defines.h"
+#include "flann/defines.h"
 #include <stdexcept>
 #include <cassert>
 #include <limits.h>

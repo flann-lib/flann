@@ -29,36 +29,9 @@
 #ifndef FLANN_DEFINES_H_
 #define FLANN_DEFINES_H_
 
-#include "config.h"
+#include "flann/config.h"
 
-#ifdef FLANN_EXPORT
-#undef FLANN_EXPORT
-#endif
-#ifdef WIN32
-/* win32 dll export/import directives */
- #ifdef FLANN_EXPORTS
-  #define FLANN_EXPORT __declspec(dllexport)
- #elif defined(FLANN_STATIC)
-  #define FLANN_EXPORT
- #else
-  #define FLANN_EXPORT __declspec(dllimport)
- #endif
-#else
-/* unix needs nothing */
- #define FLANN_EXPORT
-#endif
-
-#ifdef FLANN_DEPRECATED
-#undef FLANN_DEPRECATED
-#endif
-#ifdef __GNUC__
-#define FLANN_DEPRECATED __attribute__ ((deprecated))
-#elif defined(_MSC_VER)
-#define FLANN_DEPRECATED __declspec(deprecated)
-#else
-#pragma message("WARNING: You need to implement FLANN_DEPRECATED for this compiler")
-#define FLANN_DEPRECATED
-#endif
+#include "flann/flann_export.h"
 
 #undef FLANN_PLATFORM_64_BIT
 #undef FLANN_PLATFORM_32_BIT
