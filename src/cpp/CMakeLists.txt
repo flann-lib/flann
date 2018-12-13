@@ -8,10 +8,13 @@ file(GLOB_RECURSE C_SOURCES flann.cpp lz4.c lz4hc.c)
 file(GLOB_RECURSE CPP_SOURCES flann_cpp.cpp lz4.c lz4hc.c)
 file(GLOB_RECURSE CU_SOURCES *.cu)
 
-add_library(flann_cpp_s STATIC ${CPP_SOURCES})
+add_library(flann_cpp_o OBJECT ${CPP_SOURCES})
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set_target_properties(flann_cpp_s PROPERTIES COMPILE_FLAGS -fPIC)
+    set_target_properties(flann_cpp_o PROPERTIES COMPILE_FLAGS -fPIC)
 endif()
+
+add_library(flann_cpp_s STATIC $<TARGET_OBJECTS:flann_cpp_o>)
+
 set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC FLANN_USE_CUDA)
 
 if (BUILD_CUDA_LIB)
@@ -24,30 +27,22 @@ if (BUILD_CUDA_LIB)
     else()
 	    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};" )
     endif()
-    cuda_add_library(flann_cuda_s STATIC ${CU_SOURCES})
+    cuda_add_library(flann_cuda_o OBJECT ${CU_SOURCES})
+    cuda_add_library(flann_cuda_s STATIC $<TARGET_OBJECTS:flann_cuda_o>)
     set_property(TARGET flann_cuda_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
-    add_library(flann_cpp SHARED "")
-    set_target_properties(flann_cpp PROPERTIES LINKER_LANGUAGE CXX)
-    target_link_libraries(flann_cpp -Wl,-whole-archive flann_cpp_s -Wl,-no-whole-archive)
+add_library(flann_cpp SHARED $<TARGET_OBJECTS:flann_cpp_o>)
 
-    if (BUILD_CUDA_LIB)
-	    cuda_add_library(flann_cuda SHARED "")
-        set_target_properties(flann_cuda PROPERTIES LINKER_LANGUAGE CXX)
-        target_link_libraries(flann_cuda -Wl,-whole-archive flann_cuda_s -Wl,-no-whole-archive)
-        set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_USE_CUDA)
-    # 	target_link_libraries(flann_cuda cudpp_x86_64)
-    endif()
-else()
-    add_library(flann_cpp SHARED ${CPP_SOURCES})
+if (BUILD_CUDA_LIB)
+    cuda_add_library(flann_cuda SHARED $<TARGET_OBJECTS:flann_cuda_o>)
+    set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_USE_CUDA)
+# 	target_link_libraries(flann_cuda cudpp_x86_64)
+endif()
+
+if(MSVC)
     # export lz4 headers, so that MSVC to creates flann_cpp.lib
     set_target_properties(flann_cpp PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
-    if (BUILD_CUDA_LIB)
-		cuda_add_library(flann_cuda SHARED ${CPP_SOURCES})
-        set_property(TARGET flann_cpp PROPERTY COMPILE_DEFINITIONS FLANN_USE_CUDA)
-    endif()
 endif()
 
 set_target_properties(flann_cpp PROPERTIES
@@ -78,22 +73,18 @@ endif()
 
 
 if (BUILD_C_BINDINGS)
-    add_library(flann_s STATIC ${C_SOURCES})
+    add_library(flann_o OBJECT ${C_SOURCES})
     if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-        set_target_properties(flann_s PROPERTIES COMPILE_FLAGS -fPIC)
+        set_target_properties(flann_o PROPERTIES COMPILE_FLAGS -fPIC)
     endif()
+    add_library(flann_s STATIC $<TARGET_OBJECTS:flann_o>)
+
     set_property(TARGET flann_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
-        add_library(flann SHARED "")
-        set_target_properties(flann PROPERTIES LINKER_LANGUAGE CXX)
-        target_link_libraries(flann -Wl,-whole-archive flann_s -Wl,-no-whole-archive)
-    else()
-        add_library(flann SHARED ${C_SOURCES})
+    add_library(flann SHARED $<TARGET_OBJECTS:flann_o>)
 
-        if(MINGW AND OPENMP_FOUND)
-          target_link_libraries(flann gomp)
-        endif()
+    if(MINGW AND OPENMP_FOUND)
+      target_link_libraries(flann gomp)
     endif()
 
     set_target_properties(flann PROPERTIES
