@@ -1,5 +1,6 @@
 add_custom_target(examples ALL)
 
+link_directories(${LZ4_LIBRARY_DIRS})
 
 if (BUILD_C_BINDINGS)
     add_executable(flann_example_c flann_example.c)
@@ -17,6 +18,7 @@ if (HDF5_FOUND)
     add_executable(flann_example_cpp flann_example.cpp)
     target_link_libraries(flann_example_cpp -Wl,--push-state,--no-as-needed ${LZ4_LIBRARIES} -Wl,--pop-state)
     target_link_libraries(flann_example_cpp ${HDF5_LIBRARIES} flann_cpp)
+    target_include_directories(flann_example_cpp PUBLIC ${LZ4_INCLUDE_DIRS})
     if (HDF5_IS_PARALLEL)
         target_link_libraries(flann_example_cpp ${MPI_LIBRARIES})
     endif()
