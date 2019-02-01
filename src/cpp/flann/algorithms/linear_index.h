@@ -114,6 +114,7 @@ public:
     	}
     }
 
+#ifdef FLANN_SERIALIZATION_LZ4
     void saveIndex(FILE* stream)
     {
     	serialization::SaveArchive sa(stream);
@@ -125,6 +126,7 @@ public:
     	serialization::LoadArchive la(stream);
     	la & *this;
     }
+#endif
 
     void findNeighbors(ResultSet<DistanceType>& resultSet, const ElementType* vec, const SearchParams& /*searchParams*/) const
     {

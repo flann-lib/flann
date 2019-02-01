@@ -206,6 +206,7 @@ public:
     	}
     }
 
+#ifdef FLANN_SERIALIZATION_LZ4
     void saveIndex(FILE* stream)
     {
         {
@@ -228,6 +229,7 @@ public:
         bestIndex_ = create_index_by_type<Distance>((flann_algorithm_t)index_type, dataset_, params, distance_);
         bestIndex_->loadIndex(stream);
     }
+#endif
 
     int knnSearch(const Matrix<ElementType>& queries,
             Matrix<size_t>& indices,

@@ -6,9 +6,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <stdio.h>
+#ifdef FLANN_SERIALIZATION_LZ4
 #include <lz4.h>
 #include <lz4hc.h>
-
+#endif
 
 namespace flann
 {
@@ -370,6 +371,8 @@ public:
 //        std::cout << "<binary object>" << std::endl;
 //    }
 //};
+
+#ifdef FLANN_SERIALIZATION_LZ4
     
 #define BLOCK_BYTES (1024 * 64)
 
@@ -807,6 +810,7 @@ public:
         ptr_ += size;
     }
 };
+#endif
 
 } // namespace serialization
 } // namespace flann

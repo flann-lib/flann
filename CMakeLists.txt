@@ -56,6 +56,7 @@ option(BUILD_CUDA_LIB "Build CUDA library" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_TESTS "Build tests" ON)
 option(BUILD_DOC "Build documentation" ON)
+option(BUILD_WITH_LZ4 "Build with lz4 support" OFF)
 option(USE_OPENMP "Use OpenMP multi-threading" ON)
 option(USE_MPI "Use MPI" OFF)
 
@@ -146,8 +147,11 @@ if (BUILD_CUDA_LIB)
     endif(CUDA_FOUND)
 endif(BUILD_CUDA_LIB)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LZ4 REQUIRED liblz4)
+if (BUILD_WITH_LZ4)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LZ4 REQUIRED liblz4)
+	add_definitions("-DFLANN_SERIALIZATION_LZ4")
+endif(BUILD_WITH_LZ4)
 
 #set the C/C++ include path to the "include" directory
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/cpp)
