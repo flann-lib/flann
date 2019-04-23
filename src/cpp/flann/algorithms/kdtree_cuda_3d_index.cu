@@ -733,7 +733,7 @@ void KDTreeCuda3dIndex<Distance>::uploadTreeToGpu()
     if( get_param(index_params_,"input_is_gpu_float4",false) ) {
 		assert( dataset_.cols == 3 && dataset_.stride==4*sizeof(float));
         thrust::copy( thrust::device_pointer_cast((float4*)dataset_.ptr()),thrust::device_pointer_cast((float4*)(dataset_.ptr()))+size_,tmp.begin());
-        
+        cudaMemset2D(reinterpret_cast<float*>(thrust::raw_pointer_cast(&tmp[0]))+3,sizeof(float4),0,sizeof(float),size_);
     }
     else {
         // k is limited to 4 -> use 128bit-alignment regardless of dimensionality
