@@ -226,10 +226,14 @@ protected:
 		index.buildIndex();
 		EXPECT_EQ(index.size(), data1.rows);
 
-		index.addPoints(data2);
+		std::vector<size_t> ids;
+		index.addPoints(data2, ids);
 		printf("done (%g seconds)\n", stop_timer());
 
 		EXPECT_EQ(index.size(), data.rows);
+		for (size_t i = 0; i < size2; i++) {
+			EXPECT_EQ(ids[i], i+size1);
+		}
 
 		start_timer("Searching KNN...");
 		index.knnSearch(query, indices, dists, knn, search_params);
@@ -298,10 +302,14 @@ protected:
 		index.buildIndex();
 		EXPECT_EQ(index.size(), data1.rows);
 
-		index.addPoints(data2);
+		std::vector<size_t> ids;
+		index.addPoints(data2, ids);
 		printf("done (%g seconds)\n", stop_timer());
 
 		EXPECT_EQ(index.size(), data.rows);
+		for (size_t i = 0; i < size2; i++) {
+			EXPECT_EQ(ids[i], i+size1);
+		}
 
 		start_timer("Searching KNN...");
 		index.knnSearch(query, indices, dists, knn, search_params);

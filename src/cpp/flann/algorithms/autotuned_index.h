@@ -130,7 +130,8 @@ public:
     }
 
     /**
-     *          Method responsible with building the index.
+     * Method responsible with building the index. Note that IDs previously
+     * assigned to points are reset in the autotuned index
      */
     void buildIndex()
     {
@@ -161,10 +162,10 @@ public:
     }
 
 
-    void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    void addPoints(const Matrix<ElementType>& points, std::vector<size_t> *ids, float rebuild_threshold = 2)
     {
         if (bestIndex_) {
-            bestIndex_->addPoints(points, rebuild_threshold);
+            bestIndex_->addPoints(points, ids, rebuild_threshold);
         }
     }
     

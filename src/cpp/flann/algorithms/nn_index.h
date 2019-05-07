@@ -144,12 +144,14 @@ public:
         this->buildIndex();
     }
 
-	/**
-	 * @brief Incrementally add points to the index.
-	 * @param points Matrix with points to be added
-	 * @param rebuild_threshold
-	 */
-    virtual void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
+    /**
+     * @brief Incrementally add points to the index, returning the resulting
+     * point IDs
+     * @param points Matrix with points to be added
+     * @param ids output vector of point IDs, ignored if NULL
+     * @param rebuild_threshold
+     */
+    virtual void addPoints(const Matrix<ElementType>& points, std::vector<size_t> *ids, float rebuild_threshold = 2)
     {
         throw FLANNException("Functionality not supported by this index");
     }
@@ -760,12 +762,17 @@ protected:
     	}
     }
 
-    void extendDataset(const Matrix<ElementType>& new_points)
+    void extendDataset(const Matrix<ElementType>& new_points, std::vector<size_t> *ids)
     {
     	size_t new_size = size_ + new_points.rows;
+    	size_t start_id;
     	if (removed_) {
     		removed_points_.resize(new_size);
     		ids_.resize(new_size);
+    		start_id = last_id_;
+    	}
+    	else {
+    		start_id = size_;
     	}
     	points_.resize(new_size);
     	for (size_t i=size_;i<new_size;++i) {
@@ -775,6 +782,12 @@ protected:
     			removed_points_.reset(i);
     		}
     	}
+    	if (ids != NULL) {
+    		ids->resize(new_points.rows);
+    		for (size_t i = 0; i < new_points.rows; i++) {
+    			(*ids)[i] = start_id++;
+    		}
+   		}
     	size_ = new_size;
     }
 

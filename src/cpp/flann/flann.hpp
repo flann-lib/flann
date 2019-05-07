@@ -148,7 +148,12 @@ public:
 
     void addPoints(const Matrix<ElementType>& points, float rebuild_threshold = 2)
     {
-        nnIndex_->addPoints(points, rebuild_threshold);
+        nnIndex_->addPoints(points, NULL, rebuild_threshold);
+    }
+
+    void addPoints(const Matrix<ElementType>& points, std::vector<size_t> &ids, float rebuild_threshold = 2)
+    {
+        nnIndex_->addPoints(points, &ids, rebuild_threshold);
     }
 
     /**

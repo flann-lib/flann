@@ -291,6 +291,7 @@ flann_index_t flann_build_index_int(int* dataset, int rows, int cols, float* spe
 template <typename Distance>
 int __flann_add_points(flann_index_t index_ptr,
                  typename Distance::ElementType* points, int rows, int columns,
+                 size_t* ids,
                  float rebuild_threshold) {
     typedef typename Distance::ElementType ElementType;
     try {
@@ -298,8 +299,16 @@ int __flann_add_points(flann_index_t index_ptr,
             throw FLANNException("Invalid index");
         }
         Index<Distance>* index = (Index<Distance>*)index_ptr;
-        index->addPoints(Matrix<ElementType>(points, rows, columns),
-                         rebuild_threshold);
+        if (ids == NULL) {
+            index->addPoints(Matrix<ElementType>(points, rows, columns),
+                    rebuild_threshold);
+        }
+        else {
+            std::vector<size_t> idvec;
+            index->addPoints(Matrix<ElementType>(points, rows, columns),
+                    idvec, rebuild_threshold);
+            std::copy(idvec.begin(), idvec.end(), ids);
+        }
         return 0;
     }
     catch (std::runtime_error& e) {
@@ -311,27 +320,27 @@ int __flann_add_points(flann_index_t index_ptr,
 
 template <typename T>
 int _flann_add_points(flann_index_t index_ptr, T* points, int rows, int columns,
-                float rebuild_threshold) {
+                size_t* ids, float rebuild_threshold) {
     if (flann_distance_type==FLANN_DIST_EUCLIDEAN) {
-        return __flann_add_points<L2<T> >(index_ptr, points, rows, columns, rebuild_threshold);
+        return __flann_add_points<L2<T> >(index_ptr, points, rows, columns, ids, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_MANHATTAN) {
-        return __flann_add_points<L1<T> >(index_ptr, points, rows, columns, rebuild_threshold);
+        return __flann_add_points<L1<T> >(index_ptr, points, rows, columns, ids, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_MINKOWSKI) {
-        return __flann_add_points<MinkowskiDistance<T> >(index_ptr, points, rows, columns, rebuild_threshold);
+        return __flann_add_points<MinkowskiDistance<T> >(index_ptr, points, rows, columns, ids, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_HIST_INTERSECT) {
-        return __flann_add_points<HistIntersectionDistance<T> >(index_ptr, points, rows, columns, rebuild_threshold);
+        return __flann_add_points<HistIntersectionDistance<T> >(index_ptr, points, rows, columns, ids, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_HELLINGER) {
-        return __flann_add_points<HellingerDistance<T> >(index_ptr, points, rows, columns, rebuild_threshold);
+        return __flann_add_points<HellingerDistance<T> >(index_ptr, points, rows, columns, ids, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_CHI_SQUARE) {
-        return __flann_add_points<ChiSquareDistance<T> >(index_ptr, points, rows, columns, rebuild_threshold);
+        return __flann_add_points<ChiSquareDistance<T> >(index_ptr, points, rows, columns, ids, rebuild_threshold);
     }
     else if (flann_distance_type==FLANN_DIST_KULLBACK_LEIBLER) {
-        return __flann_add_points<KL_Divergence<T> >(index_ptr, points, rows, columns, rebuild_threshold);
+        return __flann_add_points<KL_Divergence<T> >(index_ptr, points, rows, columns, ids, rebuild_threshold);
     }
     else {
         Logger::error( "Distance type unsupported in the C bindings, use the C++ bindings instead\n");
@@ -341,27 +350,52 @@ int _flann_add_points(flann_index_t index_ptr, T* points, int rows, int columns,
 
 int flann_add_points(flann_index_t index_ptr, float* points, int rows, int columns, float rebuild_threshold)
 {
-    return _flann_add_points<float>(index_ptr, points, rows, columns, rebuild_threshold);
+    return _flann_add_points<float>(index_ptr, points, rows, columns, NULL, rebuild_threshold);
 }
 
 int flann_add_points_float(flann_index_t index_ptr, float* points, int rows, int columns, float rebuild_threshold)
 {
-    return _flann_add_points<float>(index_ptr, points, rows, columns, rebuild_threshold);
+    return _flann_add_points<float>(index_ptr, points, rows, columns, NULL, rebuild_threshold);
 }
 
 int flann_add_points_double(flann_index_t index_ptr, double* points, int rows, int columns, float rebuild_threshold)
 {
-    return _flann_add_points<double>(index_ptr, points, rows, columns, rebuild_threshold);
+    return _flann_add_points<double>(index_ptr, points, rows, columns, NULL, rebuild_threshold);
 }
 
 int flann_add_points_byte(flann_index_t index_ptr, unsigned char* points, int rows, int columns, float rebuild_threshold)
 {
-    return _flann_add_points<unsigned char>(index_ptr, points, rows, columns, rebuild_threshold);
+    return _flann_add_points<unsigned char>(index_ptr, points, rows, columns, NULL, rebuild_threshold);
 }
 
 int flann_add_points_int(flann_index_t index_ptr, int* points, int rows, int columns, float rebuild_threshold)
 {
-    return _flann_add_points<int>(index_ptr, points, rows, columns, rebuild_threshold);
+    return _flann_add_points<int>(index_ptr, points, rows, columns, NULL, rebuild_threshold);
+}
+
+int flann_add_points_get_ids(flann_index_t index_ptr, float* points, int rows, int columns, size_t* ids, float rebuild_threshold)
+{
+    return _flann_add_points<float>(index_ptr, points, rows, columns, ids, rebuild_threshold);
+}
+
+int flann_add_points_get_ids_float(flann_index_t index_ptr, float* points, int rows, int columns, size_t* ids, float rebuild_threshold)
+{
+    return _flann_add_points<float>(index_ptr, points, rows, columns, ids, rebuild_threshold);
+}
+
+int flann_add_points_get_ids_double(flann_index_t index_ptr, double* points, int rows, int columns, size_t* ids, float rebuild_threshold)
+{
+    return _flann_add_points<double>(index_ptr, points, rows, columns, ids, rebuild_threshold);
+}
+
+int flann_add_points_get_ids_byte(flann_index_t index_ptr, unsigned char* points, int rows, int columns, size_t* ids, float rebuild_threshold)
+{
+    return _flann_add_points<unsigned char>(index_ptr, points, rows, columns, ids, rebuild_threshold);
+}
+
+int flann_add_points_get_ids_int(flann_index_t index_ptr, int* points, int rows, int columns, size_t* ids, float rebuild_threshold)
+{
+    return _flann_add_points<int>(index_ptr, points, rows, columns, ids, rebuild_threshold);
 }
 
 template <typename Distance>
