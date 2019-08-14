@@ -58,6 +58,7 @@ inline void log_verbosity(int level)
     }
 }
 
+#ifdef FLANN_SERIALIZATION_LZ4
 /**
  * (Deprecated) Index parameters for creating a saved index.
  */
@@ -69,7 +70,7 @@ struct SavedIndexParams : public IndexParams
         (*this)["filename"] = filename;
     }
 };
-
+#endif
 
 
 template<typename Distance>
@@ -87,14 +88,18 @@ public:
         loaded_ = false;
 
         Matrix<ElementType> features;
+#ifdef FLANN_SERIALIZATION_LZ4
         if (index_type == FLANN_INDEX_SAVED) {
             nnIndex_ = load_saved_index(features, get_param<std::string>(params,"filename"), distance);
             loaded_ = true;
         }
         else {
         	flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
+#endif
             nnIndex_ = create_index_by_type<Distance>(index_type, features, params, distance);
+#ifdef FLANN_SERIALIZATION_LZ4
         }
+#endif
     }
 
 
@@ -104,14 +109,18 @@ public:
         flann_algorithm_t index_type = get_param<flann_algorithm_t>(params,"algorithm");
         loaded_ = false;
 
+#ifdef FLANN_SERIALIZATION_LZ4
         if (index_type == FLANN_INDEX_SAVED) {
             nnIndex_ = load_saved_index(features, get_param<std::string>(params,"filename"), distance);
             loaded_ = true;
         }
         else {
         	flann_algorithm_t index_type = get_param<flann_algorithm_t>(params, "algorithm");
+#endif
             nnIndex_ = create_index_by_type<Distance>(index_type, features, params, distance);
+#ifdef FLANN_SERIALIZATION_LZ4
         }
+#endif
     }
 
 
@@ -170,6 +179,7 @@ public:
     	return nnIndex_->getPoint(point_id);
     }
 
+#ifdef FLANN_SERIALIZATION_LZ4
     /**
      * Save index to file
      * @param filename
@@ -183,6 +193,7 @@ public:
         nnIndex_->saveIndex(fout);
         fclose(fout);
     }
+#endif
 
     /**
      * \returns number of features in this index.
@@ -368,6 +379,7 @@ public:
     }
 
 private:
+#ifdef FLANN_SERIALIZATION_LZ4
     IndexType* load_saved_index(const Matrix<ElementType>& dataset, const std::string& filename, Distance distance)
     {
         FILE* fin = fopen(filename.c_str(), "rb");
@@ -388,6 +400,7 @@ private:
 
         return nnIndex;
     }
+#endif
 
     void swap( Index& other)
     {

@@ -714,6 +714,7 @@ int flann_used_memory_int(flann_index_t index_ptr)
     return _flann_used_memory<int>(index_ptr);
 }
 
+#ifdef FLANN_SERIALIZATION_LZ4
 template<typename Distance>
 int __flann_save_index(flann_index_t index_ptr, char* filename)
 {
@@ -788,7 +789,6 @@ int flann_save_index_int(flann_index_t index_ptr, char* filename)
     return _flann_save_index<int>(index_ptr, filename);
 }
 
-
 template<typename Distance>
 flann_index_t __flann_load_index(char* filename, typename Distance::ElementType* dataset, int rows, int cols,
                                  Distance d = Distance())
@@ -858,7 +858,7 @@ flann_index_t flann_load_index_int(char* filename, int* dataset, int rows, int c
 {
     return _flann_load_index<int>(filename, dataset, rows, cols);
 }
-
+#endif
 
 
 template<typename Distance>

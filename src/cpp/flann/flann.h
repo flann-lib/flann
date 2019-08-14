@@ -282,6 +282,7 @@ FLANN_EXPORT int flann_used_memory_byte(flann_index_t index_ptr);
 FLANN_EXPORT int flann_used_memory_int(flann_index_t index_ptr);
 
 
+#ifdef FLANN_SERIALIZATION_LZ4
 /**
  * Saves the index to a file. Only the index is saved into the file, the dataset corresponding to the index is not saved.
  *
@@ -337,6 +338,7 @@ FLANN_EXPORT flann_index_t flann_load_index_int(char* filename,
                                                 int* dataset,
                                                 int rows,
                                                 int cols);
+#endif
 
 
 /**
