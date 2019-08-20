@@ -188,6 +188,18 @@ def load_flann_library():
 
     return None
 
+
+# TODO: improve logic
+# Ensure cmake/skbuild puts the lib in the python module dir
+# from pkg_resources import Requirement
+# from pkg_resources import resource_filename
+# import xdev
+# xdev.embed()
+# req = Requirement.parse("pyflann")
+# data = resource_filename(req, 'pyflann/data')
+# import os
+# os.listdir(data)
+
 flannlib = load_flann_library()
 if flannlib is None:
     raise ImportError('Cannot load dynamic library. Did you compile FLANN?')
@@ -268,7 +280,7 @@ flann.used_memory[%(numpy)s] = flannlib.flann_used_memory_%(C)s
 flann.add_points = {}
 define_functions(r"""
 flannlib.flann_add_points_%(C)s.restype = None
-flannlib.flann_add_points_%(C)s.argtypes = [ 
+flannlib.flann_add_points_%(C)s.argtypes = [
         FLANN_INDEX, # index_id
         ndpointer(%(numpy)s, ndim = 2, flags='aligned, c_contiguous'), # dataset
         c_int, # rows
@@ -281,7 +293,7 @@ flann.add_points[%(numpy)s] = flannlib.flann_add_points_%(C)s
 flann.remove_point = {}
 define_functions(r"""
 flannlib.flann_remove_point_%(C)s.restype = None
-flannlib.flann_remove_point_%(C)s.argtypes = [ 
+flannlib.flann_remove_point_%(C)s.argtypes = [
         FLANN_INDEX, # index_id
         c_uint, # point_id
 ]

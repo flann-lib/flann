@@ -149,6 +149,7 @@ if (BUILD_CUDA_LIB)
 endif()
 
 if (BUILD_C_BINDINGS)
+      message(STATUS "FLANN_LIB_INSTALL_DIR = ${FLANN_LIB_INSTALL_DIR}")
     install (
         TARGETS flann flann_s
         EXPORT ${targets_export_name}

@@ -158,6 +158,12 @@ try:
     class EmptyListWithLength(list):
         def __len__(self):
             return 1
+
+        def __repr__(self):
+            return 'EmptyListWithLength()'
+
+        def __str__(self):
+            return 'EmptyListWithLength()'
 except Exception:
     raise RuntimeError('FAILED TO ADD BUILD CONSTRUCTS')
 

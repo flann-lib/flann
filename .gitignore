@@ -19,3 +19,5 @@ dist/
 flann.kdev4
 TODO
 _skbuild
+cmake-builds
+pyflann.egg-info

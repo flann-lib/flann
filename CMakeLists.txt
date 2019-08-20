@@ -1,14 +1,17 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.13.0)
+set (CMAKE_CXX_STANDARD 11)
+
 
 if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
 
-project(flann)
+#project(flann)
+project(flann LANGUAGES C CXX)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
-set(FLANN_VERSION 1.9.1)
+set(FLANN_VERSION 1.10.0)
 DISSECT_VERSION()
 GET_OS_INFO()
 
@@ -50,7 +53,8 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
 option(BUILD_C_BINDINGS "Build C bindings" ON)
-option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
+# Replaced by skbuild
+#option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
 option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" ON)
 option(BUILD_CUDA_LIB "Build CUDA library" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
@@ -62,18 +66,17 @@ option(USE_MPI "Use MPI" OFF)
 set(NVCC_COMPILER_BINDIR "" CACHE PATH  "Directory where nvcc should look for C++ compiler. This is passed to nvcc through the --compiler-bindir option.")
 
 if (NOT BUILD_C_BINDINGS)
-    set(BUILD_PYTHON_BINDINGS OFF)
     set(BUILD_MATLAB_BINDINGS OFF)
 endif()
 
 
 # find python
-if (BUILD_PYTHON_BINDINGS)
-find_package(PythonInterp)
-if (NOT PYTHON_EXECUTABLE)
-    set(BUILD_PYTHON_BINDINGS OFF)
-endif()
-endif()
+#if (BUILD_PYTHON_BINDINGS)
+#find_package(PythonInterp)
+#if (NOT PYTHON_EXECUTABLE)
+#    set(BUILD_PYTHON_BINDINGS OFF)
+#endif()
+#endif()
 
 find_hdf5()
 if (NOT HDF5_FOUND)
@@ -263,7 +266,7 @@ message(STATUS "Building C bindings: ${BUILD_C_BINDINGS}")
 message(STATUS "Building examples: ${BUILD_EXAMPLES}")
 message(STATUS "Building tests: ${BUILD_TESTS}")
 message(STATUS "Building documentation: ${BUILD_DOC}")
-message(STATUS "Building python bindings: ${BUILD_PYTHON_BINDINGS}")
+#message(STATUS "Building python bindings: ${BUILD_PYTHON_BINDINGS}")
 message(STATUS "Building matlab bindings: ${BUILD_MATLAB_BINDINGS}")
 message(STATUS "Building CUDA library: ${BUILD_CUDA_LIB}")
 message(STATUS "Using OpenMP support: ${USE_OPENMP}")
