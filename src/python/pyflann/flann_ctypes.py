@@ -190,6 +190,7 @@ def load_flann_library():
 
 
 # TODO: improve logic
+# Ensure cmake/skbuild puts the lib in the python module dir
 # from pkg_resources import Requirement
 # from pkg_resources import resource_filename
 # import xdev
