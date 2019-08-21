@@ -10,6 +10,7 @@ import os
 import skbuild_template  # TODO: integrate into skbuild
 import skbuild as skb
 import ubelt as ub
+from os.path import join
 
 
 NAME = 'pyflann'
@@ -18,7 +19,7 @@ AUTHOR_EMAIL = 'mariusm@cs.ubc.ca'
 URL = 'http://www.cs.ubc.ca/~mariusm/flann/'
 LICENSE = 'BSD'
 DESCRIPTION = 'FLANN - Fast Library for Approximate Nearest Neighbors'
-VERSION = '1.10.0'
+VERSION = '1.10.0'  # TODO: parse
 PYTHON_SRC = 'src/python'
 
 
@@ -41,17 +42,22 @@ KWARGS = ub.odict(
         'runtime': skb.utils.parse_requirements('requirements/runtime.txt'),
     },
     include_package_data=True,
-    package_dir={NAME: PYTHON_SRC},
+    # package_dir={
+    #     # '': PYTHON_SRC,
+    #     # NAME: join(PYTHON_SRC, NAME),
+    # },
     platforms=[
         'Linux',
         'Max OS-X',
         'Unix',
-        # 'Windows',  # Not tested yet
+        'Windows',
     ],
     package_data={
         NAME: (
             ['*{}'.format(skb.utils.get_lib_ext())] +
-            ['lib/*{}'.format(skb.utils.get_lib_ext())] +
+            ['lib.*{}'.format(skb.utils.get_lib_ext())] +
+            ['*{}*'.format(skb.utils.get_lib_ext())] +
+            ['lib.*{}*'.format(skb.utils.get_lib_ext())] +
             (['Release\\*.dll'] if os.name == 'nt' else []) +
             (['lib/Release\\*.dll'] if os.name == 'nt' else [])
         ),

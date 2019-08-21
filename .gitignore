@@ -20,4 +20,4 @@ flann.kdev4
 TODO
 _skbuild
 cmake-builds
-src/python/flann.egg-info
+pyflann.egg-info
