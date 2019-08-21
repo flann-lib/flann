@@ -41,7 +41,7 @@ KWARGS = ub.odict(
         'runtime': skb.utils.parse_requirements('requirements/runtime.txt'),
     },
     include_package_data=True,
-    package_dir={'': PYTHON_SRC},
+    package_dir={NAME: PYTHON_SRC},
     platforms=[
         'Linux',
         'Max OS-X',
@@ -51,7 +51,9 @@ KWARGS = ub.odict(
     package_data={
         NAME: (
             ['*{}'.format(skb.utils.get_lib_ext())] +
-            (['Release\\*.dll'] if os.name == 'nt' else [])
+            ['lib/*{}'.format(skb.utils.get_lib_ext())] +
+            (['Release\\*.dll'] if os.name == 'nt' else []) +
+            (['lib/Release\\*.dll'] if os.name == 'nt' else [])
         ),
     },
     # packages=['pyflann', 'pyflann.lib'],
