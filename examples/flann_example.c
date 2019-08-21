@@ -18,23 +18,26 @@ float* read_points(const char* filename, int rows, int cols)
         printf("Cannot open input file.\n");
         exit(1);
     }
-    
+
     data = (float*) malloc(rows*cols*sizeof(float));
     if (!data) {
         printf("Cannot allocate memory.\n");
         exit(1);
     }
     p = data;
-    
+
     for (i=0;i<rows;++i) {
         for (j=0;j<cols;++j) {
-            fscanf(fin,"%g ",p);
+            int worked = fscanf(fin,"%g ",p);
+            if (worked <= 0){
+                printf("fscanf failed in flann_example.c");
+            }
             p++;
         }
     }
-    
+
     fclose(fin);
-    
+
     return data;
 }
 
@@ -49,7 +52,7 @@ void write_results(const char* filename, int *data, int rows, int cols)
         printf("Cannot open output file.\n");
         exit(1);
     }
-    
+
     p = data;
     for (i=0;i<rows;++i) {
         for (j=0;j<cols;++j) {
@@ -87,28 +90,28 @@ int main(int argc, char** argv)
     dataset = read_points("dataset.dat", rows, cols);
     printf("Reading test data file.\n");
     testset = read_points("testset.dat", tcount, cols);
-    
+
     nn = 3;
     result = (int*) malloc(tcount*nn*sizeof(int));
     dists = (float*) malloc(tcount*nn*sizeof(float));
-    
+
     p = DEFAULT_FLANN_PARAMETERS;
     p.algorithm = FLANN_INDEX_KDTREE;
     p.trees = 8;
     p.log_level = FLANN_LOG_INFO;
 	p.checks = 64;
-    
+
     printf("Computing index.\n");
     index_id = flann_build_index(dataset, rows, cols, &speedup, &p);
     flann_find_nearest_neighbors_index(index_id, testset, tcount, result, dists, nn, &p);
-    
+
     write_results("results.dat",result, tcount, nn);
-    
+
     flann_free_index(index_id, &p);
     free(dataset);
     free(testset);
     free(result);
     free(dists);
-    
+
     return 0;
 }

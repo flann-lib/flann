@@ -1,4 +1,6 @@
 #!/usr/bin/env python2
+"""
+"""
 
 from distutils.core import setup
 from os.path import exists, abspath, dirname, join
