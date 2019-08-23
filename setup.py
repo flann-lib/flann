@@ -3,11 +3,11 @@
     python -c "import setup, ubelt; print(ubelt.repr2(setup.KWARGS))"
 """
 from __future__ import absolute_import, division, print_function
+from collections import OrderedDict
 import os
-import skbuild_template  # TODO: integrate into skbuild
+import skbuild_template  # TODO: integrate into skbuild  # NOQA
 import skbuild as skb
 import ubelt as ub
-from os.path import join
 
 
 NAME = 'pyflann'
@@ -17,10 +17,9 @@ URL = 'http://www.cs.ubc.ca/~mariusm/flann/'
 LICENSE = 'BSD'
 DESCRIPTION = 'FLANN - Fast Library for Approximate Nearest Neighbors'
 VERSION = '1.10.0'  # TODO: parse
-PYTHON_SRC = 'src/python'
 
 
-KWARGS = ub.odict(
+KWARGS = OrderedDict(
     name=NAME,
     version=VERSION,
     author=', '.join(AUTHORS[0:1]),
@@ -40,10 +39,8 @@ KWARGS = ub.odict(
     },
     include_package_data=True,
     package_dir={
-        '': PYTHON_SRC,
-        NAME: join(PYTHON_SRC, NAME),
-        'lib': 'lib',  # hack
-        # NAME: join(PYTHON_SRC, NAME),
+        'pyflann': 'src/python/pyflann',
+        # 'lib': 'lib',  # hack
     },
     package_data={
         NAME: (
