@@ -116,6 +116,17 @@ if (BUILD_C_BINDINGS)
        SOVERSION ${FLANN_SOVERSION}
        DEFINE_SYMBOL FLANN_EXPORTS
     )
+
+    if (BUILD_PYTHON_BINDINGS)
+        message(STATUS "USING SKBUILD? = ${SKBUILD}")
+        if(SKBUILD)
+            # References:
+            # https://scikit-build.readthedocs.io/en/latest/cmake-modules/PythonExtensions.html
+            python_extension_module(flann)
+            #LINKED_MODULES_VAR linked_module_list
+            #FORWARD_DECL_MODULES_VAR fdecl_module_list)
+        endif()
+    endif()
 endif()
 
 if(WIN32)
