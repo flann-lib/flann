@@ -136,17 +136,15 @@ def parse_authors():
     CommandLine:
         python -c "import skbuild_template; print(skbuild_template.parse_authors())"
     """
+    import subprocess
     try:
-        import ubelt as ub
-        info = ub.cmd('git shortlog -s')
-        if info['ret'] != 0:
-            print('info = {!r}'.format(info))
-            raise Exception
+        out = subprocess.check_output(['git', 'shortlog', '-s'],
+                                      universal_newlines=True)
     except Exception as ex:
         print('ex = {!r}'.format(ex))
         return []
     else:
-        striped_lines = (l.strip() for l in info['out'].split('\n'))
+        striped_lines = (l.strip() for l in out.split('\n'))
         freq_authors = [line.split(None, 1) for line in striped_lines if line]
         freq_authors = sorted((int(f), a) for f, a in freq_authors)[::-1]
         # keep authors with uppercase letters
