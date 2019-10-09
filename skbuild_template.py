@@ -11,9 +11,12 @@ import skbuild as skb
 import sys
 
 
-def parse_long_description():
+def parse_long_description(fpath='README.rst'):
+    """
+    Better than using open.read directly for source installs work
+    """
     # ONLY WORKS IN A SPECIFIC DIRECTORY
-    candidates = ['README.rst']
+    candidates = [fpath]
     for fpath in candidates:
         if exists(fpath):
             return open(fpath, 'r').read()
@@ -188,33 +191,6 @@ skb.utils.EmptyListWithLength = EmptyListWithLength
 skb.utils.get_lib_ext = get_lib_ext
 skb.utils.parse_long_description = parse_long_description
 
-_ = skb.utils.CLASSIFIER_STATUS_OPTIONS = {
-    '1': 'Development Status :: 1 - Planning',
-    '2': 'Development Status :: 2 - Pre-Alpha',
-    '3': 'Development Status :: 3 - Alpha',
-    '4': 'Development Status :: 4 - Beta',
-    '5': 'Development Status :: 5 - Production/Stable',
-    '6': 'Development Status :: 6 - Mature',
-    '7': 'Development Status :: 7 - Inactive',
-}
-_.update({
-    'planning': _['1'],
-    'pre-alpha': _['2'],
-    'alpha': _['3'],
-    'beta': _['4'],
-    'stable': _['5'],
-    'mature': _['6'],
-    'inactive': _['7'],
-})
-
-# https://pypi.python.org/pypi?%3Aaction=list_classifiers
-_ = skb.utils.CLASSIFIER_LICENSE_OPTIONS = {
-    'apache': 'License :: OSI Approved :: Apache Software License',
-    'bsd': 'License :: OSI Approved :: BSD License',
-    'lgpl': 'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
-    'gpl': 'License :: OSI Approved :: GNU General Public License (GPL)',
-}
-del _
 
 
 TEMPLATE = r"""
@@ -237,7 +213,7 @@ KWARGS = dict(
     author=', '.join(AUTHORS),
     author_email=AUTHOR_EMAIL,
     description=DESCRIPTION,
-    long_description=skb.parse_long_description(),
+    long_description=skb.parse_long_description('README.rst'),
     long_description_content_type='text/x-rst',
     url=URL,
     license=LICENCE,

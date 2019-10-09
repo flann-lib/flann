@@ -53,7 +53,8 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
 option(BUILD_C_BINDINGS "Build C bindings" ON)
-option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
+# Replaced by skbuild
+#option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
 option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" ON)
 option(BUILD_CUDA_LIB "Build CUDA library" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
@@ -70,6 +71,7 @@ endif()
 
 
 # find python
+<<<<<<< HEAD
 #if (BUILD_PYTHON_BINDINGS)
 #    if(SKBUILD)
 #        # Includes scikit-build python_extension_module command
@@ -82,6 +84,21 @@ endif()
 #    set(BUILD_PYTHON_BINDINGS OFF)
 #endif()
 #endif()
+||||||| merged common ancestors
+if (BUILD_PYTHON_BINDINGS)
+find_package(PythonInterp)
+if (NOT PYTHON_EXECUTABLE)
+    set(BUILD_PYTHON_BINDINGS OFF)
+endif()
+endif()
+=======
+#if (BUILD_PYTHON_BINDINGS)
+#find_package(PythonInterp)
+#if (NOT PYTHON_EXECUTABLE)
+#    set(BUILD_PYTHON_BINDINGS OFF)
+#endif()
+#endif()
+>>>>>>> a8e9f53040f7f01d3e915e4c9669c47428bee1fb
 
 find_hdf5()
 if (NOT HDF5_FOUND)
@@ -271,7 +288,7 @@ message(STATUS "Building C bindings: ${BUILD_C_BINDINGS}")
 message(STATUS "Building examples: ${BUILD_EXAMPLES}")
 message(STATUS "Building tests: ${BUILD_TESTS}")
 message(STATUS "Building documentation: ${BUILD_DOC}")
-message(STATUS "Building python bindings: ${BUILD_PYTHON_BINDINGS}")
+#message(STATUS "Building python bindings: ${BUILD_PYTHON_BINDINGS}")
 message(STATUS "Building matlab bindings: ${BUILD_MATLAB_BINDINGS}")
 message(STATUS "Building CUDA library: ${BUILD_CUDA_LIB}")
 message(STATUS "Using OpenMP support: ${USE_OPENMP}")
