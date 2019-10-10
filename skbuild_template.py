@@ -182,7 +182,7 @@ def get_lib_ext():
 
 
 # TODO: Push for merger of PR adding templatable utilities to skb.utils
-from setuptools import find_packages
+from setuptools import find_packages  # NOQA
 skb.utils.find_packages = find_packages
 skb.utils.parse_authors = parse_authors
 skb.utils.parse_version = parse_version
@@ -190,7 +190,6 @@ skb.utils.parse_requirements = parse_requirements
 skb.utils.EmptyListWithLength = EmptyListWithLength
 skb.utils.get_lib_ext = get_lib_ext
 skb.utils.parse_long_description = parse_long_description
-
 
 
 TEMPLATE = r"""
