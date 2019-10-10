@@ -8,6 +8,7 @@ but, lets say, there's still a lot of room for improvement.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import skbuild as skb
+from os.path import dirname, join, exists
 import sys
 
 
@@ -30,7 +31,6 @@ def parse_version(package):
     CommandLine:
         python -c "import setup; print(setup.parse_version('vtool'))"
     """
-    from os.path import dirname, join, exists
     import ast
 
     # Check if the package is a single-file or multi-file package
