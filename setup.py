@@ -6,15 +6,12 @@ from os.path import exists
 from collections import OrderedDict
 
 
-def parse_long_description(fpath='README.rst'):
+def parse_long_description(fpath='README.md'):
     """
-    Better than using open.read directly for source installs work
+    Reads README text, but doesn't break if README does not exist.
     """
-    # ONLY WORKS IN A SPECIFIC DIRECTORY
-    candidates = [fpath]
-    for fpath in candidates:
-        if exists(fpath):
-            return open(fpath, 'r').read()
+    if exists(fpath):
+        return open(fpath, 'r').read()
     return ''
 
 
@@ -84,32 +81,6 @@ def parse_requirements(fname='requirements.txt'):
     return packages
 
 
-def parse_authors():
-    """
-    Parse the git authors of a repo
-
-    Returns:
-        List[str]: list of authors
-
-    CommandLine:
-        python -c "import setup; print(setup.parse_authors())"
-    """
-    import subprocess
-    try:
-        output = subprocess.check_output(['git', 'shortlog', '-s'],
-                                         universal_newlines=True)
-    except Exception as ex:
-        print('ex = {!r}'.format(ex))
-        return []
-    else:
-        striped_lines = (l.strip() for l in output.split('\n'))
-        freq_authors = [line.split(None, 1) for line in striped_lines if line]
-        freq_authors = sorted((int(f), a) for f, a in freq_authors)[::-1]
-        # keep authors with uppercase letters
-        authors = [a for f, a in freq_authors if a.lower() != a]
-        return authors
-
-
 try:
     class EmptyListWithLength(list):
         def __len__(self):
@@ -124,23 +95,9 @@ except Exception:
     raise RuntimeError('FAILED TO ADD BUILD CONSTRUCTS')
 
 
-def get_lib_ext():
-    if sys.platform.startswith('win32'):
-        ext = '.dll'
-    elif sys.platform.startswith('darwin'):
-        ext = '.dylib'
-    elif sys.platform.startswith('linux'):
-        ext = '.so'
-    else:
-        raise Exception('Unknown operating system: %s' % sys.platform)
-    return ext
-
-GIT_AUTHORS = parse_authors()
-
-
 NAME = 'pyflann'
-VERSION = '1.10.0'  # TODO: parse
-AUTHORS = ['Marius Muja'] + GIT_AUTHORS
+VERSION = '1.10.0'  # TODO: parse and check that the lib version matches
+AUTHORS = ['Marius Muja']
 AUTHOR_EMAIL = 'mariusm@cs.ubc.ca'
 URL = 'http://www.cs.ubc.ca/~mariusm/flann/'
 LICENSE = 'BSD'
@@ -150,7 +107,7 @@ DESCRIPTION = 'FLANN - Fast Library for Approximate Nearest Neighbors'
 KWARGS = OrderedDict(
     name=NAME,
     version=VERSION,
-    author=', '.join(AUTHORS[0:1]),
+    author=', '.join(AUTHORS),
     author_email=AUTHOR_EMAIL,
     description=DESCRIPTION,
     long_description=parse_long_description('README.md'),
