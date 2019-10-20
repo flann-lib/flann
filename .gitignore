@@ -18,4 +18,5 @@ build_win
 dist/
 flann.kdev4
 TODO
-
+_skbuild
+pyflann.egg-info

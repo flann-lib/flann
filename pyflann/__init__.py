@@ -29,3 +29,4 @@
 #sys.path.insert(0, os.path.split(__file__)[0]) # make python3 happy
 
 from pyflann.index import *
+__version__ = '1.10.0'
