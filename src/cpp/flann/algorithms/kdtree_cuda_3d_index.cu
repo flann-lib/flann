@@ -42,6 +42,7 @@
 #include <flann/util/cuda/heap.h>
 #include <thrust/scan.h>
 #include <thrust/count.h>
+#include <thrust/gather.h>
 #include <flann/algorithms/kdtree_cuda_builder.h>
 #include <vector_types.h>
 namespace flann
