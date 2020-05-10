@@ -235,7 +235,7 @@ public:
     size_t getKey(const ElementType* /*feature*/) const
     {
         std::cerr << "LSH is not implemented for that type" << std::endl;
-        return -1;
+        return static_cast<size_t>(-1);
     }
 
     /** Get statistics about the table
