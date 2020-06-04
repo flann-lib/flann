@@ -107,49 +107,49 @@ if (BUILD_C_BINDINGS)
     )
 endif()
 
-if(WIN32)
-if (BUILD_C_BINDINGS AND BUILD_MATLAB_BINDINGS)
-    install (
-        TARGETS flann
-        RUNTIME DESTINATION share/flann/matlab
-    )
-endif()
-endif(WIN32)
+# if(WIN32)
+# if (BUILD_C_BINDINGS AND BUILD_MATLAB_BINDINGS)
+    # install (
+        # TARGETS flann
+        # RUNTIME DESTINATION share/flann/matlab
+    # )
+# endif()
+# endif(WIN32)
 
 
-install (
-    TARGETS flann_cpp flann_cpp_s
-    EXPORT ${targets_export_name}
-    INCLUDES DESTINATION include
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
-    ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
-)
+# install (
+    # TARGETS flann_cpp flann_cpp_s
+    # EXPORT ${targets_export_name}
+    # INCLUDES DESTINATION include
+    # RUNTIME DESTINATION bin
+    # LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
+    # ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
+# )
 
-if (BUILD_CUDA_LIB)
-    install (
-        TARGETS flann_cuda flann_cuda_s
-        EXPORT ${targets_export_name}
-        INCLUDES DESTINATION include
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
-        ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
-    )
-endif()
+# if (BUILD_CUDA_LIB)
+    # install (
+        # TARGETS flann_cuda flann_cuda_s
+        # EXPORT ${targets_export_name}
+        # INCLUDES DESTINATION include
+        # RUNTIME DESTINATION bin
+        # LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
+        # ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
+    # )
+# endif()
 
-if (BUILD_C_BINDINGS)
-    install (
-        TARGETS flann flann_s
-        EXPORT ${targets_export_name}
-        INCLUDES DESTINATION include
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
-        ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
-    )
-endif()
+# if (BUILD_C_BINDINGS)
+    # install (
+        # TARGETS flann flann_s
+        # EXPORT ${targets_export_name}
+        # INCLUDES DESTINATION include
+        # RUNTIME DESTINATION bin
+        # LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
+        # ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
+    # )
+# endif()
 
-install (
-    DIRECTORY flann
-    DESTINATION include
-    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-)
+# install (
+    # DIRECTORY flann
+    # DESTINATION include
+    # FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+# )
