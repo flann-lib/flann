@@ -154,6 +154,7 @@ public:
     	return dataset_[id];
     }
 
+#ifdef FLANN_SERIALIZATION_LZ4
     void saveIndex(FILE* stream)
     {
         throw FLANNException( "Index saving not implemented!" );
@@ -165,6 +166,7 @@ public:
     {
         throw FLANNException( "Index loading not implemented!" );
     }
+#endif
 
     size_t veclen() const
     {
