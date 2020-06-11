@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 if(COMMAND cmake_policy)
-    cmake_policy(SET CMP0003 NEW)
+    cmake_policy(SET CMP0042 NEW)
 endif(COMMAND cmake_policy)
 
 project(flann)
@@ -37,8 +37,8 @@ ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 
 if (NOT CMAKE_BUILD_TYPE)
-    #set(CMAKE_BUILD_TYPE Release)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
+    set(CMAKE_BUILD_TYPE Release)
+    #set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
     #set(CMAKE_BUILD_TYPE Debug)
 endif()
 
@@ -50,13 +50,13 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
 
 option(BUILD_C_BINDINGS "Build C bindings" ON)
-option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
-option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" ON)
+option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" OFF)
 option(BUILD_CUDA_LIB "Build CUDA library" OFF)
-option(BUILD_EXAMPLES "Build examples" ON)
-option(BUILD_TESTS "Build tests" ON)
-option(BUILD_DOC "Build documentation" ON)
-option(USE_OPENMP "Use OpenMP multi-threading" ON)
+option(BUILD_EXAMPLES "Build examples" OFF)
+option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_DOC "Build documentation" OFF)
+option(USE_OPENMP "Use OpenMP multi-threading" OFF)
 option(USE_MPI "Use MPI" OFF)
 
 set(NVCC_COMPILER_BINDIR "" CACHE PATH  "Directory where nvcc should look for C++ compiler. This is passed to nvcc through the --compiler-bindir option.")
