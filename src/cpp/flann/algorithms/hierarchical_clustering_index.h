@@ -444,7 +444,7 @@ private:
     {
     	dst = new(pool_) Node();
     	dst->pivot_index = src->pivot_index;
-    	dst->pivot = points_[dst->pivot_index];
+    	dst->pivot = dst->pivot_index == SIZE_MAX ? NULL : points_[dst->pivot_index];
 
     	if (src->childs.size()==0) {
     		dst->points = src->points;
