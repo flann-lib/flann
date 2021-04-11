@@ -56,7 +56,7 @@ macro(flann_add_gtest exe)
                     DEPENDS ${exe}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
                     VERBATIM
-                    COMMENT "Runnint gtest test(s) ${exe}")
+                    COMMENT "Running gtest test(s) ${exe}")
     # add dependency to 'test' target
     add_dependencies(flann_gtest test_${_testname})
 endmacro(flann_add_gtest)
@@ -76,7 +76,7 @@ macro(flann_add_cuda_gtest exe)
                     DEPENDS ${exe}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
                     VERBATIM
-                    COMMENT "Runnint gtest test(s) ${exe}")
+                    COMMENT "Running gtest test(s) ${exe}")
     # add dependency to 'test' target
     add_dependencies(test test_${_testname})
 endmacro(flann_add_cuda_gtest)
