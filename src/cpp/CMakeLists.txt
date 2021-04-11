@@ -46,7 +46,7 @@ else()
     # export lz4 headers, so that MSVC to creates flann_cpp.lib
     set_target_properties(flann_cpp PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
     if (BUILD_CUDA_LIB)
-		cuda_add_library(flann_cuda SHARED ${CPP_SOURCES})
+	cuda_add_library(flann_cuda SHARED ${CU_SOURCES})
         set_property(TARGET flann_cpp PROPERTY COMPILE_DEFINITIONS FLANN_USE_CUDA)
     endif()
 endif()
