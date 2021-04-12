@@ -1,4 +1,5 @@
 Current
+        * Out of bounds check (modified PR #455 @legrosbuffle)
         * Fixed MacOS build (PR #470 @johnhe4, modified for linux)
 
 Version 1.9.2
