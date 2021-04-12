@@ -1,4 +1,5 @@
 Current
+        * Removed redundant assignment (issue #422 @fluber)
         * Removed unnecessary null checks before delete (issue #420 @elfring)
         * Reverted PR #424 due to lack of portability
         * fscanf fix (PR #467 @rdelfin)
