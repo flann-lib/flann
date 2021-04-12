@@ -1,4 +1,5 @@
 Current
+        * fscanf fix (PR #467 @rdelfin)
         * Out of bounds check (modified PR #455 @legrosbuffle)
         * Fixed MacOS build (PR #470 @johnhe4, modified for linux)
 
