@@ -1,6 +1,8 @@
 Current
+        * Removed unnecessary null checks before delete (issue #420 @elfring)
+        * Reverted PR #424 due to lack of portability
         * fscanf fix (PR #467 @rdelfin)
-        * Out of bounds check (modified PR #455 @legrosbuffle)
+        * Out of bounds check (modified PR #455 @legrosbuffle, also included in PR #319 @seth-planet)
         * Fixed MacOS build (PR #470 @johnhe4, modified for linux)
 
 Version 1.9.2

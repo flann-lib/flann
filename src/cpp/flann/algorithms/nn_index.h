@@ -111,9 +111,7 @@ public:
 
 	virtual ~NNIndex()
 	{
-		if (data_ptr_) {
-			delete[] data_ptr_;
-		}
+		delete[] data_ptr_;
 	}
 
 
@@ -266,9 +264,7 @@ public:
 
     	if (save_dataset) {
     		if (Archive::is_loading::value) {
-    			if (data_ptr_) {
-    				delete[] data_ptr_;
-    			}
+    			delete[] data_ptr_;
     			data_ptr_ = new ElementType[size_*veclen_];
     			points_.resize(size_);
         		for (size_t i=0;i<size_;++i) {
