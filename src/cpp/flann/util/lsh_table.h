@@ -364,7 +364,8 @@ inline LshTable<unsigned char>::LshTable(unsigned int feature_size, unsigned int
     // A bit brutal but fast to code
     std::vector<size_t> indices(feature_size * CHAR_BIT);
     for (size_t i = 0; i < feature_size * CHAR_BIT; ++i) indices[i] = i;
-    static std::mt19937 g((std::random_device())());
+    std::random_device rd;
+    std::mt19937 g(rd());
     std::shuffle(indices.begin(), indices.end(),g);
 
     // Generate a random set of order of subsignature_size_ bits
