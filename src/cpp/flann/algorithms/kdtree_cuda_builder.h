@@ -404,7 +404,7 @@ public:
     CudaKdTreeBuilder( const thrust::device_vector<float4>& points, int max_leaf_size ) : /*out_of_space_(1,0),node_count_(1,1),*/ max_leaf_size_(max_leaf_size)
     {
         points_=&points;
-        int prealloc = points.size()/max_leaf_size_*16;
+        int prealloc = max((int)points.size()/max_leaf_size_*16, 1);
         allocation_info_.resize(3);
         allocation_info_[NodeCount]=1;
         allocation_info_[NodesAllocated]=prealloc;
