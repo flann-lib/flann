@@ -1,3 +1,6 @@
+Current
+        * Fixed MacOS build (PR #470 @johnhe4, modified for linux)
+
 Version 1.9.2
 	* Fixed build system with dummy.c hack (PR #457 @pemmanuelviel)
 	* Fixed misleading indentation in util/any.h (PR #365 @psteinb, also PR #428, #430, #459)
