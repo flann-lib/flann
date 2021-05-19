@@ -42,6 +42,8 @@
 #include <flann/util/cuda/heap.h>
 #include <thrust/scan.h>
 #include <thrust/count.h>
+#include <thrust/device_malloc.h>
+#include <thrust/device_free.h>
 #include <flann/algorithms/kdtree_cuda_builder.h>
 #include <vector_types.h>
 namespace flann
