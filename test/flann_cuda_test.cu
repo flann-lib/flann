@@ -114,7 +114,7 @@ protected:
         fflush(stdout);
         flann::load_from_file(data, "cloud.h5","dataset");
         flann::load_from_file(query,"cloud.h5","query");
-        flann::load_from_file(match,"cloud.h5","indices");
+        flann::load_from_file(match,"cloud.h5","match");
 
         dists = flann::Matrix<float>(new float[query.rows*5], query.rows, 5);
         indices = flann::Matrix<int>(new int[query.rows*5], query.rows, 5);
