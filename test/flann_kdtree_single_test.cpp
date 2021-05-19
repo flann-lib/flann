@@ -10,7 +10,7 @@ using namespace flann;
 
 class KDTreeSingle :public DatasetTestFixture<float, float> {
 protected:
-	KDTreeSingle() : DatasetTestFixture("cloud.h5") {}
+	KDTreeSingle() : DatasetTestFixture("../datasets/cloud.h5") {}
 };
 
 TEST_F(KDTreeSingle, TestSearch)
@@ -29,7 +29,7 @@ TEST_F(KDTreeSingle, TestSearch2)
 TEST_F(KDTreeSingle, TestSearchPadded)
 {
     flann::Matrix<float> data_padded;
-    flann::load_from_file(data_padded, "cloud.h5", "dataset_padded");
+    flann::load_from_file(data_padded, "../datasets/cloud.h5", "dataset_padded");
     flann::Matrix<float> data2(data_padded.ptr(), data_padded.rows, 3, data_padded.cols*sizeof(float));
 
 	TestSearch<L2_Simple<float> >(data2, flann::KDTreeSingleIndexParams(12, false),
