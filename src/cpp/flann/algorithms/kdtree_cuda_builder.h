@@ -806,7 +806,7 @@ protected:
         s.left=0;
         s.right=0;
         splits_->append(thrust::cuda::par.on(gpu_stream), add, s);
-        float4 f;
+        float4 f=make_float4(0.0f, 0.0f, 0.0f, 0.0f);
         aabb_min_->append(thrust::cuda::par.on(gpu_stream), add, f);
         aabb_max_->append(thrust::cuda::par.on(gpu_stream), add, f);
     }
