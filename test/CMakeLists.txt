@@ -75,9 +75,9 @@ if (BUILD_PYTHON_BINDINGS)
 endif()
 
 #---------- ruby spec ----------------
-if (BUILD_C_BINDINGS)
-    add_custom_target(flann_ruby_spec
-                    COMMAND bundle exec rake spec
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/ruby)
-    add_dependencies(test flann_ruby_spec)
-endif()
+#if (BUILD_C_BINDINGS)
+#    add_custom_target(flann_ruby_spec
+#                    COMMAND bundle exec rake spec
+#                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/ruby)
+#    add_dependencies(test flann_ruby_spec)
+#endif()
