@@ -13,7 +13,7 @@ using namespace flann;
  */
 class KDTree_SIFT10K : public DatasetTestFixture<float, float> {
 protected:
-	KDTree_SIFT10K() : DatasetTestFixture("sift10K.h5") {}
+	KDTree_SIFT10K() : DatasetTestFixture("../datasets/sift10K.h5") {}
 };
 
 TEST_F(KDTree_SIFT10K, TestSearch)
@@ -72,7 +72,7 @@ TEST_F(KDTree_SIFT10K, TestCopy2)
  */
 class KDTree_SIFT100K : public DatasetTestFixture<float, float> {
 protected:
-	KDTree_SIFT100K() : DatasetTestFixture("sift100K.h5") {}
+	KDTree_SIFT100K() : DatasetTestFixture("../datasets/sift100K.h5") {}
 };
 
 
@@ -110,7 +110,7 @@ TEST_F(KDTree_SIFT100K, TestRemove)
  */
 class KDTree_SIFT10K_byte : public DatasetTestFixture<unsigned char, float> {
 protected:
-	KDTree_SIFT10K_byte() : DatasetTestFixture("sift10K_byte.h5") {}
+	KDTree_SIFT10K_byte() : DatasetTestFixture("../datasets/sift10K_byte.h5") {}
 };
 
 
@@ -123,7 +123,7 @@ TEST_F(KDTree_SIFT10K_byte, TestSearch)
 
 class KDTree_SIFT100K_byte : public DatasetTestFixture<unsigned char, float> {
 protected:
-	KDTree_SIFT100K_byte() : DatasetTestFixture("sift100K_byte.h5") {}
+	KDTree_SIFT100K_byte() : DatasetTestFixture("../datasets/sift100K_byte.h5") {}
 };
 
 

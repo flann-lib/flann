@@ -27,9 +27,9 @@ protected:
         indices = flann::Matrix<size_t>(new size_t[1000*5], 1000, 5);
         printf("Reading test data...");
         fflush(stdout);
-        flann::load_from_file(data, "sift100K.h5","dataset");
-        flann::load_from_file(query,"sift100K.h5","query");
-        flann::load_from_file(match,"sift100K.h5","match");
+        flann::load_from_file(data, "../datasets/sift100K.h5","dataset");
+        flann::load_from_file(query,"../datasets/sift100K.h5","query");
+        flann::load_from_file(match,"../datasets/sift100K.h5","match");
         printf("done\n");
     }
 

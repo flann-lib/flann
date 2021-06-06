@@ -13,7 +13,7 @@ using namespace flann;
  */
 class Linear_SIFT10K : public DatasetTestFixture<float, float> {
 protected:
-	Linear_SIFT10K() : DatasetTestFixture("sift10K.h5") {}
+	Linear_SIFT10K() : DatasetTestFixture("../datasets/sift10K.h5") {}
 };
 
 
@@ -61,7 +61,7 @@ TEST_F(Linear_SIFT10K, TestCopy2)
  */
 class Linear_SIFT100K :  public DatasetTestFixture<float, float> {
 protected:
-	Linear_SIFT100K() : DatasetTestFixture("sift100K.h5") {}
+	Linear_SIFT100K() : DatasetTestFixture("../datasets/sift100K.h5") {}
 };
 
 
@@ -77,7 +77,7 @@ TEST_F(Linear_SIFT100K, TestSearch)
  */
 class Linear_SIFT10K_byte : public DatasetTestFixture<unsigned char, float> {
 protected:
-	Linear_SIFT10K_byte() : DatasetTestFixture("sift10K_byte.h5") {}
+	Linear_SIFT10K_byte() : DatasetTestFixture("../datasets/sift10K_byte.h5") {}
 };
 
 
@@ -93,7 +93,7 @@ TEST_F(Linear_SIFT10K_byte, Linear)
 
 class Linear_SIFT100K_byte : public DatasetTestFixture<unsigned char, float> {
 protected:
-	Linear_SIFT100K_byte() : DatasetTestFixture("sift100K_byte.h5") {}
+	Linear_SIFT100K_byte() : DatasetTestFixture("../datasets/sift100K_byte.h5") {}
 };
 
 

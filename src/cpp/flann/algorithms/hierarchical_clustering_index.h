@@ -381,7 +381,7 @@ private:
         	for(size_t i=0; i<childs.size(); i++){
         		childs[i]->~Node();
 				pivot = NULL;
-				pivot_index = -1;
+				pivot_index = SIZE_MAX;
         	}
         };
 

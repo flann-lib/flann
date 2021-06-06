@@ -723,7 +723,7 @@ class LoadArchive : public InputArchive<LoadArchive>
         // If not v1.0 format hack...
         if (buffer_blocks_ != NULL) {
             // Read the last '0' in the file
-            size_t zero = -1;
+            size_t zero = 1;
             if (fread(&zero, sizeof(zero), 1, stream_) != 1) {
                 throw FLANNException("Invalid index file, cannot read from disk (end)");
             }
