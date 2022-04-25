@@ -2,7 +2,7 @@ name: CMake_build & release
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master,dev_CICD_for1.8.5 ]
   pull_request:
     branches: [ master ]
 
