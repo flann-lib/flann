@@ -1,0 +1,231 @@
+name: CMake_build & release
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE:   Release
+  
+jobs:
+  # ---[ WINDOWS DEPENDENCIES ]---
+  # --  Pkg-Config  --
+  win_dependency-Pkg-Config:
+    runs-on: windows-latest
+    outputs:
+      cache-key: ${{ runner.os }}-gvs-${{ steps.gvsbuild-ver.outputs.sha_short }}
+    steps:
+    - name: retrieve current commit sha
+      id: gvsbuild-ver
+      run: |
+        $GVSBUILD_SHA=& git ls-remote https://github.com/wingtk/gvsbuild HEAD
+        $GVSBUILD_SHA=$GVSBUILD_SHA.split()
+        $GVSBUILD_SHA_SHORT=$GVSBUILD_SHA[0].Substring(0,6)
+        echo "::set-output name=sha_short::$GVSBUILD_SHA_SHORT"
+
+    - name: cache gvsbuild
+      id: cache-gvsbuild
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/gtk 
+        key: ${{ runner.os }}-gvs-${{ steps.gvsbuild-ver.outputs.sha_short }}
+
+    - name: checkout gvsbuild
+      if: steps.cache-gvsbuild.outputs.cache-hit != 'true'
+      uses: actions/checkout@v3
+      with:
+        repository: wingtk/gvsbuild
+        path: gvsbuild
+
+    - name: build gvsbuild
+      if: steps.cache-gvsbuild.outputs.cache-hit != 'true'
+      # builds GTK, which contains required dependencies pkg-config and lz4
+      working-directory: ${{github.workspace}}/gvsbuild
+      run: |
+        python ./build.py build --build-dir="${{github.workspace}}\\gtk" -p=x64 pkg-config lz4
+
+
+  # --  GTest  --
+  win_dependency-GTest:
+    runs-on: windows-latest
+    outputs:
+      cache-key: ${{ runner.os }}-GTest-${{ steps.gtest-ver.outputs.sha_short }}
+    steps:
+    - name: retrieve current commit sha
+      id: gtest-ver
+      run: |
+        $GTEST_SHA=& git ls-remote https://github.com/google/googletest HEAD
+        $GTEST_SHA=$GTEST_SHA.split()
+        $GTEST_SHA_SHORT=$GTEST_SHA[0].Substring(0,6)
+        echo "::set-output name=sha_short::$GTEST_SHA_SHORT"
+
+    - name: cache GTest
+      id: cache-gtest
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/GTest
+        key: ${{ runner.os }}-GTest-${{ steps.gtest-ver.outputs.sha_short }}
+
+    - name: checkout GTest
+      if: steps.cache-gtest.outputs.cache-hit != 'true'
+      uses: actions/checkout@v3
+      with:
+        repository: google/googletest
+        path: googletest
+
+    - name: build GTest
+      # builds and installs the most recent version of the google test
+      #        git clone https://github.com/google/googletest.git
+      if: steps.cache-gtest.outputs.cache-hit != 'true'
+      working-directory: ${{github.workspace}}/googletest
+      run: |
+        tree .
+        mkdir -F ./build && cd ./build
+        cmake .. --install-prefix=${{github.workspace}}/GTest
+        cmake --build . --config Release
+        cmake --install .
+        tree ${{github.workspace}}
+
+  # --  HDF5  --
+  win_dependency-HDF5:
+    runs-on: windows-latest
+    outputs:
+      cache-key: ${{ runner.os }}-HDF5-${{ steps.hdf5-ver.outputs.sha_short }}
+    steps:
+    - name: retrieve current commit sha
+      id: hdf5-ver
+      run: |
+        $HDF5_SHA=& git ls-remote https://github.com/HDFGroup/hdf5 HEAD
+        $HDF5_SHA=$HDF5_SHA.split()
+        $HDF5_SHA_SHORT=$HDF5_SHA[0].Substring(0,6)
+        echo "::set-output name=sha_short::$HDF5_SHA_SHORT"
+
+    - name: cache HDF5
+      id: cache-hdf5
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/HDF5
+        key: ${{ runner.os }}-HDF5-${{ steps.hdf5-ver.outputs.sha_short }}
+
+    - name: checkout HDF5
+      if: steps.cache-hdf5.outputs.cache-hit != 'true'
+      uses: actions/checkout@v3
+      with:
+        repository: HDFGroup/hdf5
+        path: HDF5_
+
+    - name: build HDF5
+      # builds and installs the most recent version of the google test
+      #        git clone https://github.com/google/googletest.git
+      if: steps.cache-hdf5.outputs.cache-hit != 'true'
+      working-directory: ${{github.workspace}}/HDF5_
+      run: |
+        tree .
+        mkdir -F ./build && cd ./build
+        cmake .. --install-prefix=${{github.workspace}}/HDF5
+        cmake --build . --config Release
+        cmake --install .
+        tree ${{github.workspace}}
+
+  # ---[ WINDOWS BUILD ]---
+  build-windows:
+  # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
+  # You can convert this to a matrix build if you need cross-platform coverage.
+  # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: windows-latest
+    needs: 
+      - win_dependency-Pkg-Config
+      - win_dependency-GTest
+      - win_dependency-HDF5
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v3
+
+    # restore all cached dependencies
+    - name: restore cache gvsbuild
+      id: cache-gvsbuild
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/gtk
+        key: ${{ needs.win_dependency-Pkg-Config.outputs.cache-key }}
+
+    - name: restore cache GTest
+      id: cache-gtest
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/GTest
+        key: ${{ needs.win_dependency-GTest.outputs.cache-key }}
+
+    - name: restore cache HDF5
+      id: cache-hdf5
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/HDF5
+        key: ${{ needs.win_dependency-HDF5.outputs.cache-key }}
+
+    - name: Configure CMake for building FLANN
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: |
+        mkdir -F ./build && cd build
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPKG_CONFIG_EXECUTABLE="${{github.workspace}}/gtk/gtk/x64/release/bin/pkg-config.exe" -DPKG_CONFIG_ROOT="${{github.workspace}}/gtk/gtk/x64/release/bin" -DGTEST_ROOT="${{github.workspace}}/GTest" -DHDF5_ROOT="${{github.workspace}}/HDF5" --install-prefix=$pwd/../out_aftifacts
+        cmake -L ..
+
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      run: cmake --build . --config ${{env.BUILD_TYPE}} 
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      # Execute tests defined by the CMake configuration.  
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: ctest -C ${{env.BUILD_TYPE}}
+      
+    - name: Install & zip artifacts
+      working-directory: ${{github.workspace}}/build
+      run: |
+        cmake --install .
+        cd ../out_aftifacts
+        tar -cvf ../flann_x64_${{github.sha}}.tar.gz *  
+      
+    - name: upload-artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: flann_x64_${{github.sha}}
+        path: ${{github.workspace}}/flann_x64_${{github.sha}}.tar.gz
+  
+  # ---[ PUBLISH RELEASES ]---
+  publish-release:
+    runs-on: windows-latest
+    needs: build-windows
+    steps:
+      - name: download compiled artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: flann_x64_${{github.sha}}
+          
+      - name: create new release draft
+        id: create_new_release
+        uses: actions/create-release@v1
+        with:
+          draft:      true
+          prerelease: false
+          release_name:  ${{github.sha}}
+          tag_name: ${{ github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+            
+      - name: upload windows artifact
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_new_release.outputs.upload_url }}
+          asset_path: flann_x64_${{github.sha}}.tar.gz
+          asset_name: flann_x64_${{github.sha}}.tar.gz
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
