@@ -87,7 +87,7 @@ public:
      *          params = parameters passed to the kdtree algorithm
      */
     KDTreeCuda3dIndex(const Matrix<ElementType>& inputData, const IndexParams& params = KDTreeCuda3dIndexParams(),
-                      Distance d = Distance() ) : BaseClass(params,d), dataset_(inputData), leaf_count_(0), visited_leafs(0), node_count_(0), current_node_count_(0)
+                      Distance d = Distance() ) : BaseClass(params,d), visited_leafs(0), dataset_(inputData), leaf_count_(0), node_count_(0), current_node_count_(0)
     {
         size_ = dataset_.rows;
         dim_ = dataset_.cols;

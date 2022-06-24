@@ -8,6 +8,6 @@ Name: @PROJECT_NAME@
 Description: @PKG_DESC@
 Version: @FLANN_VERSION@
 Requires: @PKG_EXTERNAL_DEPS@
-Libs: -L${libdir} -lflann -lflann_cpp
+Libs: -L${libdir} @LZ4_STATIC_LDFLAGS@ -lflann -lflann_cpp
 Cflags: -I${includedir}
 

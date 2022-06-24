@@ -68,9 +68,9 @@ protected:
 
         printf("Reading test data...");
         fflush(stdout);
-        flann::load_from_file(data_, "cloud.h5","dataset");
-        flann::load_from_file(query_,"cloud.h5","query");
-        flann::load_from_file(match_,"cloud.h5","match");
+        flann::load_from_file(data_, "../datasets/cloud.h5","dataset");
+        flann::load_from_file(query_,"../datasets/cloud.h5","query");
+        flann::load_from_file(match_,"../datasets/cloud.h5","match");
 
         dists_ = flann::Matrix<float>(new float[query_.rows*knn_], query_.rows, knn_);
         indices_ = flann::Matrix<size_t>(new size_t[query_.rows*knn_], query_.rows, knn_);
@@ -155,8 +155,8 @@ protected:
 
         printf("Reading test data...");
         fflush(stdout);
-        flann::load_from_file(data_, "cloud.h5","dataset");
-        flann::load_from_file(query_,"cloud.h5","query");
+        flann::load_from_file(data_, "../datasets/cloud.h5","dataset");
+        flann::load_from_file(query_,"../datasets/cloud.h5","query");
 
         dists_single_ = flann::Matrix<float>(new float[query_.rows*knn_], query_.rows, knn_);
         indices_single_ = flann::Matrix<size_t>(new size_t[query_.rows*knn_], query_.rows, knn_);
@@ -229,8 +229,8 @@ protected:
 
         printf("Reading test data...");
         fflush(stdout);
-        flann::load_from_file(data_, "cloud.h5","dataset");
-        flann::load_from_file(query_,"cloud.h5","query");
+        flann::load_from_file(data_, "../datasets/cloud.h5","dataset");
+        flann::load_from_file(query_,"../datasets/cloud.h5","query");
 
         int reserve_size = data_.rows / 1000;
 

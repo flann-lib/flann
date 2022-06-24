@@ -28,8 +28,8 @@ protected:
 		k_nn_ = 3;
 		printf("Reading test data...");
 		fflush(stdout);
-		flann::load_from_file(data, "brief100K.h5", "dataset");
-		flann::load_from_file(query, "brief100K.h5", "query");
+		flann::load_from_file(data, "../datasets/brief100K.h5", "dataset");
+		flann::load_from_file(query, "../datasets/brief100K.h5", "query");
 		printf("done\n");
 
 		flann::Index<Distance> index(data, flann::LinearIndexParams());

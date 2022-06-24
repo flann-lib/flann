@@ -56,7 +56,7 @@ macro(flann_add_gtest exe)
                     DEPENDS ${exe}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
                     VERBATIM
-                    COMMENT "Runnint gtest test(s) ${exe}")
+                    COMMENT "Running gtest test(s) ${exe}")
     # add dependency to 'test' target
     add_dependencies(flann_gtest test_${_testname})
 endmacro(flann_add_gtest)
@@ -76,7 +76,7 @@ macro(flann_add_cuda_gtest exe)
                     DEPENDS ${exe}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
                     VERBATIM
-                    COMMENT "Runnint gtest test(s) ${exe}")
+                    COMMENT "Running gtest test(s) ${exe}")
     # add dependency to 'test' target
     add_dependencies(test test_${_testname})
 endmacro(flann_add_cuda_gtest)
@@ -101,17 +101,3 @@ macro(flann_add_pyunit file)
     add_dependencies(pyunit_${_testname} flann)
     add_dependencies(test pyunit_${_testname})
 endmacro(flann_add_pyunit)
-
-
-
-macro(flann_download_test_data _name _md5)
-    string(REPLACE "/" "_" _dataset_name dataset_${_name})
-    
-    add_custom_target(${_dataset_name}
-        COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/bin/download_checkmd5.py http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/${_name} ${TEST_OUTPUT_PATH}/${_name} ${_md5}
-        VERBATIM)
-
-    # Also make sure that downloads are done before we run any tests
-    add_dependencies(tests ${_dataset_name})
-
-endmacro(flann_download_test_data)

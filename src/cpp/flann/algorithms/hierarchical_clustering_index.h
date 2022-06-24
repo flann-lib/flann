@@ -364,11 +364,14 @@ private:
          * Node points (only for terminal nodes)
          */
         std::vector<PointInfo> points;
-
-		Node(){
-			pivot = NULL;
-			pivot_index = SIZE_MAX;
-		}
+        /**
+         * constructor
+         */
+	Node()
+        {
+		pivot = NULL;
+		pivot_index = SIZE_MAX;
+	}
         /**
          * destructor
          * calling Node destructor explicitly
@@ -378,7 +381,7 @@ private:
         	for(size_t i=0; i<childs.size(); i++){
         		childs[i]->~Node();
 				pivot = NULL;
-				pivot_index = -1;
+				pivot_index = SIZE_MAX;
         	}
         };
 
@@ -444,7 +447,9 @@ private:
     {
     	dst = new(pool_) Node();
     	dst->pivot_index = src->pivot_index;
-    	dst->pivot = points_[dst->pivot_index];
+
+        if(dst->pivot_index != SIZE_MAX)
+    	        dst->pivot = points_[dst->pivot_index];
 
     	if (src->childs.size()==0) {
     		dst->points = src->points;

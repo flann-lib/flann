@@ -28,8 +28,10 @@ float* read_points(const char* filename, int rows, int cols)
     
     for (i=0;i<rows;++i) {
         for (j=0;j<cols;++j) {
-            fscanf(fin,"%g ",p);
-            p++;
+            if(fscanf(fin,"%g ",p) != 1) {
+	    	printf("Input file is incorrectly formatted.\n");
+		exit(1);
+	    }
         }
     }
     
