@@ -211,38 +211,6 @@ class FLANN(object):
             c_char_p(to_bytes(filename)), pts, npts, dim)
         self.__curindex_data = pts
         self.__curindex_type = pts.dtype.type
-        
-        
-    def used_memory(self):
-        """
-        Returns the number of bytes consumed by the index.
-        """
-        return flann.used_memory[self.__curindex_type](self.__curindex)
-        
-    def add_points(self, pts, rebuild_threshold=2.0):
-        """
-        Adds points to pre-built index.
-
-        Params:
-            pts: 2D numpy array of points.\n
-            rebuild_threshold: reallocs index when it grows by factor of \
-                `rebuild_threshold`. A smaller value results is more space \
-                efficient but less computationally efficient. Must be greater \
-                than 1.           
-        """
-        if not pts.dtype.type in allowed_types:
-            raise FLANNException("Cannot handle type: %s"%pts.dtype)
-        pts = ensure_2d_array(pts,default_flags) 
-        npts, dim = pts.shape
-        flann.add_points[self.__curindex_type](self.__curindex, pts, npts, dim, rebuild_threshold)
-        self.__curindex_data = np.row_stack((self.__curindex_data,pts))
-        
-    def remove_point(self, idx):
-        """
-        Removes a point from a pre-built index.         
-        """
-        flann.remove_point[self.__curindex_type](self.__curindex, idx)
-        self.__curindex_data = np.delete(self.__curindex_data,idx,axis=0)
 
     def nn_index(self, qpts, num_neighbors=1, **kwargs):
         """

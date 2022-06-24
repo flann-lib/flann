@@ -39,7 +39,6 @@
 #include <iostream>
 #include <iomanip>
 #include <limits.h>
-#include <random>
 // TODO as soon as we use C++0x, use the code in USE_UNORDERED_MAP
 #if USE_UNORDERED_MAP
 #include <unordered_map>
@@ -235,7 +234,8 @@ public:
     size_t getKey(const ElementType* /*feature*/) const
     {
         std::cerr << "LSH is not implemented for that type" << std::endl;
-        return -1;
+        throw;
+        return 1;
     }
 
     /** Get statistics about the table
@@ -364,9 +364,7 @@ inline LshTable<unsigned char>::LshTable(unsigned int feature_size, unsigned int
     // A bit brutal but fast to code
     std::vector<size_t> indices(feature_size * CHAR_BIT);
     for (size_t i = 0; i < feature_size * CHAR_BIT; ++i) indices[i] = i;
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(indices.begin(), indices.end(),g);
+    std::random_shuffle(indices.begin(), indices.end());
 
     // Generate a random set of order of subsignature_size_ bits
     for (unsigned int i = 0; i < key_size_; ++i) {

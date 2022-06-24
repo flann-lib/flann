@@ -68,11 +68,9 @@ endif()
 
 
 # find python
-if (BUILD_PYTHON_BINDINGS)
 find_package(PythonInterp)
 if (NOT PYTHON_EXECUTABLE)
     set(BUILD_PYTHON_BINDINGS OFF)
-endif()
 endif()
 
 find_hdf5()
@@ -114,11 +112,9 @@ if (USE_MPI AND HDF5_IS_PARALLEL)
 endif()
 
 
-if (BUILD_TESTS)
-find_package(GTest)
+find_package(GTest) 
 if (NOT GTEST_FOUND)
 	message(WARNING "gtest library not found, some tests will not be run")
-endif()
 endif()
 
 
@@ -146,9 +142,6 @@ if (BUILD_CUDA_LIB)
     endif(CUDA_FOUND)
 endif(BUILD_CUDA_LIB)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LZ4 REQUIRED liblz4)
-
 #set the C/C++ include path to the "include" directory
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/cpp)
 
@@ -162,14 +155,6 @@ else()
     add_definitions( "-Wall -Wno-unknown-pragmas -Wno-unused-function" )
 endif()
 
-# install and export variables
-set(config_install_dir "lib/cmake/${PROJECT_NAME}")
-set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
-set(version_config "${generated_dir}/flann-config-version.cmake")
-set(project_config "${generated_dir}/flann-config.cmake")
-set(targets_export_name "flann-targets")
-set(namespace "flann::")
-
 add_subdirectory( cmake )
 add_subdirectory( src )
 if (BUILD_EXAMPLES)
@@ -181,43 +166,6 @@ endif (BUILD_TESTS)
 if (BUILD_DOC)
   add_subdirectory( doc )
 endif (BUILD_DOC)
-
-# CMake configuration file creation
-# Include module with fuction 'write_basic_package_version_file'
-include(CMakePackageConfigHelpers)
-
-# Configure 'flann-config-version.cmake'
-# Note: FLANN_VERSION is used as a VERSION
-write_basic_package_version_file(
-    "${version_config}"
-    VERSION ${FLANN_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
-# Configure 'flann-config.cmake'
-# Use variables:
-#   * targets_export_name
-#   * PROJECT_NAME
-configure_package_config_file(
-    "cmake/Config.cmake.in"
-    "${project_config}"
-    INSTALL_DESTINATION "${config_install_dir}"
-)
-
-# Config
-#   * <prefix>/lib/cmake/flann/flann-config.cmake
-#   * <prefix>/lib/cmake/flann/flann-config-version.cmake
-install(
-    FILES "${project_config}" "${version_config}"
-    DESTINATION "${config_install_dir}"
-)
-# Config
-#   * <prefix>/lib/cmake/flann/flann-targets.cmake
-install(
-    EXPORT "${targets_export_name}"
-    NAMESPACE "${namespace}"
-    DESTINATION "${config_install_dir}"
-)
 
 
 # CPACK options
@@ -243,7 +191,7 @@ find_program(PACKAGE_MAKER_PROGRAM PackageMaker
 if(EXISTS ${PACKAGE_MAKER_PROGRAM})
   list(APPEND CPACK_GENERATOR "PackageMaker")
 endif(EXISTS ${PACKAGE_MAKER_PROGRAM})
-
+ 
 set(CPACK_GENERATOR "${CPACK_GENERATOR}")
 set(CPACK_MONOLITHIC_INSTALL 1)
 set(CPACK_SET_DESTDIR ON)
