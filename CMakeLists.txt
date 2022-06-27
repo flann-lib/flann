@@ -8,7 +8,7 @@ project(flann)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
-set(FLANN_VERSION 1.9.1)
+set(FLANN_VERSION 1.9.2)
 DISSECT_VERSION()
 GET_OS_INFO()
 
@@ -148,6 +148,7 @@ endif(BUILD_CUDA_LIB)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LZ4 REQUIRED liblz4)
+include_directories(${LZ4_INCLUDE_DIRS})
 
 #set the C/C++ include path to the "include" directory
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/cpp)

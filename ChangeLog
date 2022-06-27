@@ -1,3 +1,25 @@
+Version 1.9.2
+        * Removed redundant assignment (issue #422 @fluber)
+        * Removed unnecessary null checks before delete (issue #420 @elfring)
+        * Reverted PR #424 due to lack of portability
+        * fscanf fix (PR #467 @rdelfin)
+        * Out of bounds check (modified PR #455 @legrosbuffle, also included in PR #319 @seth-planet)
+        * Fixed MacOS build (PR #470 @johnhe4, modified for linux)
+	* Fixed build system with dummy.c hack (PR #457 @pemmanuelviel)
+	* Fixed misleading indentation in util/any.h (PR #365 @psteinb, also PR #428, #430, #459)
+	* Included datasets in repo
+	* Correct typo in definition (PR #419 @SergioRAgostinho)
+        * Fix typos (PR #279 @gadomski)
+	* CMakefile CUDA sources fix (PR #458 @pemmanuelviel)
+	* Documentation fix (PR #456 @pemmanuelviel)
+	* Scoping issue fix (PR #405 @greenbrettmichael, also PR #469, issue #386)
+	* Documentation fixes (PR #460 @pemmanuelviel)
+	* Changed return value (PR #461 @pemmanuelviel)
+	* Fixed CUDA crash - guarantee prealloc > 0 (PR #437 @neka-rat)
+	* Fixed wrong variable use (PR #433 @XinyiYS)
+	* Fixed RNG initialization (PR #424 @SiddhantRanade)
+	* Updated link to PDF (PR #474 @kleinma)
+
 Version 1.6.11
 	* bug fixes
 

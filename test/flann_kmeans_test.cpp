@@ -13,7 +13,7 @@ using namespace flann;
  */
 class KMeans_SIFT10K : public DatasetTestFixture<float, float> {
 protected:
-	KMeans_SIFT10K() : DatasetTestFixture("sift10K.h5") {}
+	KMeans_SIFT10K() : DatasetTestFixture("../datasets/sift10K.h5") {}
 };
 
 
@@ -77,7 +77,7 @@ TEST_F(KMeans_SIFT10K, TestCopy2)
  */
 class KMeans_SIFT100K : public DatasetTestFixture<float, float> {
 protected:
-	KMeans_SIFT100K() : DatasetTestFixture("sift100K.h5") {}
+	KMeans_SIFT100K() : DatasetTestFixture("../datasets/sift100K.h5") {}
 };
 
 
@@ -120,7 +120,7 @@ TEST_F(KMeans_SIFT100K, TestSave)
  */
 class KMeans_SIFT10K_byte :  public DatasetTestFixture<unsigned char, float> {
 protected:
-	KMeans_SIFT10K_byte() : DatasetTestFixture("sift10K_byte.h5") {}
+	KMeans_SIFT10K_byte() : DatasetTestFixture("../datasets/sift10K_byte.h5") {}
 };
 
 TEST_F(KMeans_SIFT10K_byte, TestSearch)
@@ -133,7 +133,7 @@ TEST_F(KMeans_SIFT10K_byte, TestSearch)
 
 class KMeans_SIFT100K_byte : public DatasetTestFixture<unsigned char, float> {
 protected:
-	KMeans_SIFT100K_byte() : DatasetTestFixture("sift100K_byte.h5") {}
+	KMeans_SIFT100K_byte() : DatasetTestFixture("../datasets/sift100K_byte.h5") {}
 };
 
 TEST_F(KMeans_SIFT100K_byte, TestSearch)
