@@ -13,7 +13,18 @@ target_link_libraries(flann_cpp_s PUBLIC ${LZ4_LINK_LIBRARIES})
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     set_target_properties(flann_cpp_s PROPERTIES COMPILE_FLAGS -fPIC)
 endif()
-set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC FLANN_USE_CUDA)
+if (CMAKE_BUILD_STATIC_LIBS)
+    list(APPEND flann_install_targets flann_cpp_s)
+else()
+    set_target_properties(flann_cpp_s PROPERTIES EXCLUDE_FROM_ALL true)
+endif()
+
+add_library(flann_cpp SHARED ${CPP_SOURCES})
+target_link_libraries(flann_cpp ${LZ4_LINK_LIBRARIES})
+# export lz4 headers, so that MSVC to creates flann_cpp.lib
+set_target_properties(flann_cpp PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
+
+set(flann_install_targets flann_cpp)
 
 if (BUILD_CUDA_LIB)
     SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-DFLANN_USE_CUDA;-Xcudafe \"--diag_suppress=partial_override\" ;-gencode=arch=compute_52,code=\"sm_52,compute_52\";-gencode=arch=compute_61,code=\"sm_61,compute_61\"")
@@ -27,29 +38,18 @@ if (BUILD_CUDA_LIB)
     endif()
     cuda_add_library(flann_cuda_s STATIC ${CU_SOURCES})
     set_property(TARGET flann_cuda_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
-endif()
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
-    add_library(flann_cpp SHARED dummy.c)
-    set_target_properties(flann_cpp PROPERTIES LINKER_LANGUAGE CXX)
-    target_link_libraries(flann_cpp -Wl,-whole-archive flann_cpp_s -Wl,-no-whole-archive)
-    target_link_libraries(flann_cpp PUBLIC ${LZ4_LINK_LIBRARIES})
-
-    if (BUILD_CUDA_LIB)
-	cuda_add_library(flann_cuda SHARED dummy.c)
-        set_target_properties(flann_cuda PROPERTIES LINKER_LANGUAGE CXX)
-        target_link_libraries(flann_cuda -Wl,-whole-archive flann_cuda_s -Wl,-no-whole-archive)
-        set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_USE_CUDA)
+    if (CMAKE_BUILD_STATIC_LIBS)
+        list(APPEND flann_install_targets flann_cuda_s)
+    else()
+        set_target_properties(flann_cuda_s PROPERTIES EXCLUDE_FROM_ALL true)
     endif()
+
+    cuda_add_library(flann_cuda SHARED ${CU_SOURCES})
+    list(APPEND flann_install_targets flann_cuda)
+    set_property(TARGET flann_cpp PROPERTY COMPILE_DEFINITIONS FLANN_USE_CUDA)
+    set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC FLANN_USE_CUDA)
 else()
-    add_library(flann_cpp SHARED ${CPP_SOURCES})
-    target_link_libraries(flann_cpp PUBLIC ${LZ4_LINK_LIBRARIES})
-    # export lz4 headers, so that MSVC to creates flann_cpp.lib
-    set_target_properties(flann_cpp PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
-    if (BUILD_CUDA_LIB)
-	cuda_add_library(flann_cuda SHARED ${CU_SOURCES})
-        set_property(TARGET flann_cpp PROPERTY COMPILE_DEFINITIONS FLANN_USE_CUDA)
-    endif()
+    set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 endif()
 
 set_target_properties(flann_cpp PROPERTIES
@@ -86,19 +86,18 @@ if (BUILD_C_BINDINGS)
         set_target_properties(flann_s PROPERTIES COMPILE_FLAGS -fPIC)
     endif()
     set_property(TARGET flann_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
-        add_library(flann SHARED dummy.c)
-        set_target_properties(flann PROPERTIES LINKER_LANGUAGE CXX)
-        target_link_libraries(flann -Wl,-whole-archive flann_s -Wl,-no-whole-archive)
-        target_link_libraries(flann PUBLIC ${LZ4_LINK_LIBRARIES})
+    if (CMAKE_BUILD_STATIC_LIBS)
+        list(APPEND flann_install_targets flann_s)
     else()
-        add_library(flann SHARED ${C_SOURCES})
-        target_link_libraries(flann PUBLIC ${LZ4_LINK_LIBRARIES})
+        set_target_properties(flann_s PROPERTIES EXCLUDE_FROM_ALL true)
+    endif()
 
-        if(MINGW AND OPENMP_FOUND)
-          target_link_libraries(flann gomp)
-        endif()
+    add_library(flann SHARED ${C_SOURCES})
+    target_link_libraries(flann ${LZ4_LINK_LIBRARIES})
+    list(APPEND flann_install_targets flann)
+
+    if(MINGW AND OPENMP_FOUND)
+        target_link_libraries(flann gomp)
     endif()
 
     set_target_properties(flann PROPERTIES
@@ -119,7 +118,7 @@ endif(WIN32)
 
 
 install (
-    TARGETS flann_cpp flann_cpp_s
+    TARGETS ${flann_install_targets}
     EXPORT ${targets_export_name}
     INCLUDES DESTINATION include
     RUNTIME DESTINATION bin
@@ -127,27 +126,6 @@ install (
     ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
 )
 
-if (BUILD_CUDA_LIB)
-    install (
-        TARGETS flann_cuda flann_cuda_s
-        EXPORT ${targets_export_name}
-        INCLUDES DESTINATION include
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
-        ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
-    )
-endif()
-
-if (BUILD_C_BINDINGS)
-    install (
-        TARGETS flann flann_s
-        EXPORT ${targets_export_name}
-        INCLUDES DESTINATION include
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
-        ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
-    )
-endif()
 
 install (
     DIRECTORY flann
