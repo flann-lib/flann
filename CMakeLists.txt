@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.12)
 
 if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)
@@ -11,6 +11,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
 set(FLANN_VERSION 1.9.2)
 DISSECT_VERSION()
 GET_OS_INFO()
+ENABLE_TESTING()
 
 
 # detect if using the Clang compiler
@@ -115,10 +116,10 @@ endif()
 
 
 if (BUILD_TESTS)
-find_package(GTest)
-if (NOT GTEST_FOUND)
-	message(WARNING "gtest library not found, some tests will not be run")
-endif()
+# find_package(GTest)
+# if (NOT GTEST_FOUND)
+# 	message(WARNING "gtest library not found, some tests will not be run")
+# endif()
 endif()
 
 
