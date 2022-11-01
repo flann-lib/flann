@@ -906,6 +906,7 @@ public:
     /** Constructor
      * @param radius the maximum distance of a neighbor
      * @param capacity the number of neighbors to store at max
+     * @param radius the maximum distance of a neighbor
      */
     KNNRadiusUniqueResultSet(DistanceType radius, size_t capacity) : KNNUniqueResultSet<DistanceType>(capacity)
     {
