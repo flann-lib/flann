@@ -41,44 +41,66 @@ macro(find_hdf5)
 endmacro(find_hdf5)
 
 
-macro(flann_add_gtest exe)
+# Enable ExternalProject CMake module
+include(ExternalProject)
+
+# Add gtest
+ExternalProject_Add(
+    googletest
+    PREFIX ${CMAKE_BINARY_DIR}/googletest
+    URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip
+    URL_MD5 2648d4138129812611cf6b6b4b497a3b
+    TIMEOUT 10
+    # Force separate output paths for debug and release builds to allow easy
+    # identification of correct lib in subsequent TARGET_LINK_LIBRARIES commands
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    # Disable install step
+    INSTALL_COMMAND ""
+    # Disable update step
+    UPDATE_COMMAND ""
+    # Wrap download, configure and build steps in a script to log output
+    LOG_DOWNLOAD ON
+    LOG_CONFIGURE ON
+    LOG_BUILD ON)
+set_target_properties(googletest PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+ExternalProject_Get_Property(googletest source_dir)
+set(googletest_INCLUDE_DIRS ${source_dir}/googletest/include)
+ExternalProject_Get_Property(googletest binary_dir)
+set(googletest_LIBRARIES ${binary_dir}/lib/libgtest.a)
+include_directories(${googletest_INCLUDE_DIRS})
+
+
+macro(flann_add_gtest exe src)
     # add build target
-    add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
-    target_link_libraries(${exe} ${GTEST_LIBRARIES})
+    add_executable(${exe} EXCLUDE_FROM_ALL ${src})
+    target_link_libraries(${exe} ${googletest_LIBRARIES} ${ARGN})
     # add dependency to 'tests' target
+    add_dependencies(${exe} googletest)
     add_dependencies(flann_gtests ${exe})
 
     # add target for running test
     string(REPLACE "/" "_" _testname ${exe})
-    add_custom_target(test_${_testname}
-                    COMMAND ${exe}
-                    ARGS --gtest_print_time
-                    DEPENDS ${exe}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
-                    VERBATIM
-                    COMMENT "Runnint gtest test(s) ${exe}")
-    # add dependency to 'test' target
-    add_dependencies(flann_gtest test_${_testname})
+    add_test(
+        NAME test_${_testname}
+        COMMAND ${exe} --gtest_print_time
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
+    )
 endmacro(flann_add_gtest)
 
-macro(flann_add_cuda_gtest exe)
+macro(flann_add_cuda_gtest exe src)
     # add build target
-    cuda_add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
-    target_link_libraries(${exe} ${GTEST_LIBRARIES})
-    # add dependency to 'tests' target
-    add_dependencies(tests ${exe})
+    cuda_add_executable(${exe} EXCLUDE_FROM_ALL ${src})
+    target_link_libraries(${exe} ${googletest_LIBRARIES} ${ARGN})
+    add_dependencies(${exe} googletest)
 
     # add target for running test
     string(REPLACE "/" "_" _testname ${exe})
-    add_custom_target(test_${_testname}
-                    COMMAND ${exe}
-                    ARGS --gtest_print_time
-                    DEPENDS ${exe}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
-                    VERBATIM
-                    COMMENT "Runnint gtest test(s) ${exe}")
-    # add dependency to 'test' target
-    add_dependencies(test test_${_testname})
+    add_test(
+        NAME test_${_testname}
+        COMMAND ${exe} --gtest_print_time
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
+    )
 endmacro(flann_add_cuda_gtest)
 
 macro(flann_add_pyunit file)
@@ -91,27 +113,10 @@ macro(flann_add_pyunit file)
 
     # add target for running test
     string(REPLACE "/" "_" _testname ${file})
-    add_custom_target(pyunit_${_testname}
-                    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/bin/run_test.py ${_file_name}
-                    DEPENDS ${_file_name}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
-                    VERBATIM
-                    COMMENT "Running pyunit test(s) ${file}" )
+    add_test(
+        NAME pyunit_${_testname}
+        COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/bin/run_test.py ${_file_name}
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
+    )
     # add dependency to 'test' target
-    add_dependencies(pyunit_${_testname} flann)
-    add_dependencies(test pyunit_${_testname})
 endmacro(flann_add_pyunit)
-
-
-
-macro(flann_download_test_data _name _md5)
-    string(REPLACE "/" "_" _dataset_name dataset_${_name})
-    
-    add_custom_target(${_dataset_name}
-        COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/bin/download_checkmd5.py http://people.cs.ubc.ca/~mariusm/uploads/FLANN/datasets/${_name} ${TEST_OUTPUT_PATH}/${_name} ${_md5}
-        VERBATIM)
-
-    # Also make sure that downloads are done before we run any tests
-    add_dependencies(tests ${_dataset_name})
-
-endmacro(flann_download_test_data)

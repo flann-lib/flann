@@ -362,11 +362,14 @@ protected:
          * Node points (only for terminal nodes)
          */
         std::vector<PointInfo> points;
-
-		Node(){
-			pivot = NULL;
-			pivot_index = SIZE_MAX;
-		}
+        /**
+         * constructor
+         */
+	Node()
+        {
+		pivot = NULL;
+		pivot_index = SIZE_MAX;
+	}
         /**
          * destructor
          * calling Node destructor explicitly
@@ -376,7 +379,7 @@ protected:
         	for(size_t i=0; i<childs.size(); i++){
         		childs[i]->~Node();
 				pivot = NULL;
-				pivot_index = -1;
+				pivot_index = SIZE_MAX;
         	}
         };
 

@@ -28,8 +28,8 @@ protected:
 		k_nn_ = 3;
 		printf("Reading test data...");
 		fflush(stdout);
-		flann::load_from_file(data, "brief100K.h5", "dataset");
-		flann::load_from_file(query, "brief100K.h5", "query");
+		flann::load_from_file(data, "../datasets/brief100K.h5", "dataset");
+		flann::load_from_file(query, "../datasets/brief100K.h5", "query");
 
 		dists = flann::Matrix<DistanceType>(new DistanceType[query.rows * k_nn_], query.rows, k_nn_);
 		indices = flann::Matrix<size_t>(new size_t[query.rows * k_nn_], query.rows, k_nn_);
@@ -37,7 +37,7 @@ protected:
 		printf("done\n");
 
 		// The matches are bogus so we compute them the hard way
-		//    flann::load_from_file(match,"brief100K.h5","indices");
+		//    flann::load_from_file(match,"../datasets/brief100K.h5","indices");
 
 		flann::Index<Distance> index(data, flann::LinearIndexParams());
 		index.buildIndex();

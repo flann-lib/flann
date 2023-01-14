@@ -35,6 +35,7 @@
 #include <thrust/partition.h>
 #include <thrust/unique.h>
 #include <thrust/scan.h>
+#include <thrust/execution_policy.h>
 #include <flann/util/cutil_math.h>
 #include <stdlib.h>
 
@@ -43,7 +44,7 @@
 namespace flann
 {
 //      template< typename T >
-//      void print_vector(  const thrust::device_vector<T>& v )
+//      void print_vector(  const flann::cuda::device_vector_noinit<T>& v )
 //      {
 //              for( int i=0; i< v.size(); i++ )
 //              {
@@ -52,7 +53,7 @@ namespace flann
 //      }
 //
 //      template< typename T1, typename T2 >
-//      void print_vector(  const thrust::device_vector<T1>& v1, const thrust::device_vector<T2>& v2 )
+//      void print_vector(  const flann::cuda::device_vector_noinit<T1>& v1, const flann::cuda::device_vector_noinit<T2>& v2 )
 //      {
 //              for( int i=0; i< v1.size(); i++ )
 //              {
@@ -61,7 +62,7 @@ namespace flann
 //      }
 //
 //      template< typename T1, typename T2, typename T3 >
-//      void print_vector(  const thrust::device_vector<T1>& v1, const thrust::device_vector<T2>& v2, const thrust::device_vector<T3>& v3 )
+//      void print_vector(  const flann::cuda::device_vector_noinit<T1>& v1, const flann::cuda::device_vector_noinit<T2>& v2, const flann::cuda::device_vector_noinit<T3>& v3 )
 //      {
 //              for( int i=0; i< v1.size(); i++ )
 //              {
@@ -70,7 +71,7 @@ namespace flann
 //      }
 //
 //      template< typename T >
-//      void print_vector_by_index(  const thrust::device_vector<T>& v,const thrust::device_vector<int>& ind )
+//      void print_vector_by_index(  const flann::cuda::device_vector_noinit<T>& v,const flann::cuda::device_vector_noinit<int>& ind )
 //      {
 //              for( int i=0; i< v.size(); i++ )
 //              {
@@ -95,6 +96,108 @@ namespace flann
 // }
 namespace cuda
 {
+	// flann::cuda::device_vector_noinit is used to take place of thrust::device_vector
+	// as thrust::device_vector always uses default stream, and always contains a fill
+	template<typename T>
+	class device_vector_noinit
+	{
+	private:
+		thrust::device_ptr<T> m_ptr;
+		size_t m_size;
+
+	public:
+		device_vector_noinit()
+		{
+			m_size = 0;
+		}
+
+		~device_vector_noinit()
+		{
+			if (m_size)
+				thrust::device_free(m_ptr);
+			m_size = 0;
+		}
+
+		device_vector_noinit(size_t s)
+		{
+			m_size = s;
+			if (s)
+				m_ptr = thrust::device_malloc<T>(s);
+		}
+
+		template<typename DerivedPolicy>
+		device_vector_noinit(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, size_t s, T t)
+		{
+			m_size = s;
+			if (s)
+			{
+				m_ptr = thrust::device_malloc<T>(s);
+				thrust::fill(exec, m_ptr, m_ptr + m_size, t);
+			}
+		}
+
+		size_t size() const
+		{
+			return m_size;
+		}
+
+		void resize(size_t s)
+		{
+			if (m_size)
+				thrust::device_free(m_ptr);
+			m_size = s;
+			if (s)
+				m_ptr = thrust::device_malloc<T>(s);
+		}
+
+		template<typename DerivedPolicy>
+		void append(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, size_t n, T t)
+		{
+			if (n == 0)
+				return;
+
+			if (m_size)
+			{
+				thrust::device_ptr<T> new_ptr = thrust::device_malloc<T>(m_size + n);
+
+				thrust::copy(exec, m_ptr, m_ptr + m_size, new_ptr);
+				thrust::fill(exec, new_ptr + m_size, new_ptr + m_size + n, t);
+
+				thrust::device_free(m_ptr);
+				m_ptr = new_ptr;
+
+				m_size = m_size + n;
+			}
+			else
+			{
+				resize(n);
+				thrust::fill(exec, m_ptr, m_ptr + n, t);
+				m_size = n;
+			}
+		}
+
+		thrust::device_ptr<T> begin() const
+		{
+			return m_ptr;
+		}
+
+		thrust::device_ptr<T> end() const
+		{
+			return m_ptr + m_size;
+		}
+
+		auto back() const
+		{
+			return m_ptr[m_size - 1];
+		}
+
+		auto operator [] (const size_t i) const
+		{
+			return m_ptr[i];
+		}
+	};
+
+
 namespace kd_tree_builder_detail
 {
 //! normal node: contains the split dimension and value
@@ -401,48 +504,52 @@ std::ostream& operator <<(std::ostream& stream, const cuda::kd_tree_builder_deta
 class CudaKdTreeBuilder
 {
 public:
-    CudaKdTreeBuilder( const thrust::device_vector<float4>& points, int max_leaf_size ) : /*out_of_space_(1,0),node_count_(1,1),*/ max_leaf_size_(max_leaf_size)
+    CudaKdTreeBuilder( const flann::cuda::device_vector_noinit<float4>& points, int max_leaf_size, cudaStream_t stream ) : /*out_of_space_(1,0),node_count_(1,1),*/ max_leaf_size_(max_leaf_size)
     {
         points_=&points;
-        int prealloc = points.size()/max_leaf_size_*16;
-        allocation_info_.resize(3);
-        allocation_info_[NodeCount]=1;
-        allocation_info_[NodesAllocated]=prealloc;
-        allocation_info_[OutOfSpace]=0;
+	gpu_stream = stream;
+        int prealloc = max((int)points.size()/max_leaf_size_*16, 1);
+	thrust::host_vector<int> alloc_info(3);
+	alloc_info[0] = 1;
+	alloc_info[1] = prealloc;
+	alloc_info[2] = 0;
+	allocation_info_.resize(3);
+	thrust::detail::two_system_copy(thrust::host, thrust::cuda::par.on(gpu_stream), alloc_info.begin(), alloc_info.end(), allocation_info_.begin());
 
         //              std::cout<<points_->size()<<std::endl;
 
-        child1_=new thrust::device_vector<int>(prealloc,-1);
-        parent_=new thrust::device_vector<int>(prealloc,-1);
-        cuda::kd_tree_builder_detail::SplitInfo s;
+	child1_ = new flann::cuda::device_vector_noinit<int>(thrust::cuda::par.on(gpu_stream), prealloc, -1);
+	parent_ = new flann::cuda::device_vector_noinit<int>(thrust::cuda::par.on(gpu_stream), prealloc, -1);
+	cuda::kd_tree_builder_detail::SplitInfo s;
         s.left=0;
         s.right=0;
-        splits_=new thrust::device_vector<cuda::kd_tree_builder_detail::SplitInfo>(prealloc,s);
-        s.right=points.size();
-        (*splits_)[0]=s;
+		splits_ = new flann::cuda::device_vector_noinit<cuda::kd_tree_builder_detail::SplitInfo>(thrust::cuda::par.on(gpu_stream), prealloc, s);
+		s.right=points.size();
+        //(*splits_)[0]=s;
+		thrust::detail::two_system_copy(thrust::host, thrust::cuda::par.on(gpu_stream), &s, &s + 1, splits_->begin());
 
-        aabb_min_=new thrust::device_vector<float4>(prealloc);
-        aabb_max_=new thrust::device_vector<float4>(prealloc);
+        aabb_min_=new flann::cuda::device_vector_noinit<float4>(prealloc);
+        aabb_max_=new flann::cuda::device_vector_noinit<float4>(prealloc);
 
-        index_x_=new thrust::device_vector<int>(points_->size());
-        index_y_=new thrust::device_vector<int>(points_->size());
-        index_z_=new thrust::device_vector<int>(points_->size());
+        index_x_=new flann::cuda::device_vector_noinit<int>(points_->size());
+        index_y_=new flann::cuda::device_vector_noinit<int>(points_->size());
+        index_z_=new flann::cuda::device_vector_noinit<int>(points_->size());
 
-        owners_x_=new thrust::device_vector<int>(points_->size(),0);
-        owners_y_=new thrust::device_vector<int>(points_->size(),0);
-        owners_z_=new thrust::device_vector<int>(points_->size(),0);
+        owners_x_=new flann::cuda::device_vector_noinit<int>(thrust::cuda::par.on(gpu_stream), points_->size(),0);
+        owners_y_=new flann::cuda::device_vector_noinit<int>(thrust::cuda::par.on(gpu_stream), points_->size(),0);
+        owners_z_=new flann::cuda::device_vector_noinit<int>(thrust::cuda::par.on(gpu_stream), points_->size(),0);
 
-        leftright_x_ = new thrust::device_vector<int>(points_->size(),0);
-        leftright_y_ = new thrust::device_vector<int>(points_->size(),0);
-        leftright_z_ = new thrust::device_vector<int>(points_->size(),0);
+        leftright_x_ = new flann::cuda::device_vector_noinit<int>(thrust::cuda::par.on(gpu_stream), points_->size(),0);
+        leftright_y_ = new flann::cuda::device_vector_noinit<int>(thrust::cuda::par.on(gpu_stream), points_->size(),0);
+        leftright_z_ = new flann::cuda::device_vector_noinit<int>(thrust::cuda::par.on(gpu_stream), points_->size(),0);
 
-        tmp_index_=new thrust::device_vector<int>(points_->size());
-        tmp_owners_=new thrust::device_vector<int>(points_->size());
-        tmp_misc_=new thrust::device_vector<int>(points_->size());
+        tmp_index_=new flann::cuda::device_vector_noinit<int>(points_->size());
+        tmp_owners_=new flann::cuda::device_vector_noinit<int>(points_->size());
+        tmp_misc_=new flann::cuda::device_vector_noinit<int>(points_->size());
 
-        points_x_=new thrust::device_vector<float>(points_->size());
-        points_y_=new thrust::device_vector<float>(points_->size());
-        points_z_=new thrust::device_vector<float>(points_->size());
+        points_x_=new flann::cuda::device_vector_noinit<float>(points_->size());
+        points_y_=new flann::cuda::device_vector_noinit<float>(points_->size());
+        points_z_=new flann::cuda::device_vector_noinit<float>(points_->size());
         delete_node_info_=false;
     }
 
@@ -455,7 +562,7 @@ public:
             delete aabb_min_;
             delete aabb_max_;
             delete index_x_;
-        }
+		}
 
         delete index_y_;
         delete index_z_;
@@ -486,28 +593,49 @@ public:
         //              std::cout<<"buildTree()"<<std::endl;
         //              sleep(1);
         //              Util::Timer stepTimer;
-        thrust::transform( points_->begin(), points_->end(), thrust::make_zip_iterator(thrust::make_tuple(points_x_->begin(), points_y_->begin(),points_z_->begin()) ), cuda::kd_tree_builder_detail::pointxyz_to_px_py_pz() );
+        thrust::transform(thrust::cuda::par.on(gpu_stream), points_->begin(), points_->end(), thrust::make_zip_iterator(thrust::make_tuple(points_x_->begin(), points_y_->begin(),points_z_->begin()) ), cuda::kd_tree_builder_detail::pointxyz_to_px_py_pz() );
 
         thrust::counting_iterator<int> it(0);
-        thrust::copy( it, it+points_->size(), index_x_->begin() );
+        thrust::copy(thrust::cuda::par.on(gpu_stream), it, it+points_->size(), index_x_->begin() );
 
-        thrust::copy( index_x_->begin(), index_x_->end(), index_y_->begin() );
-        thrust::copy( index_x_->begin(), index_x_->end(), index_z_->begin() );
+        thrust::copy(thrust::cuda::par.on(gpu_stream), index_x_->begin(), index_x_->end(), index_y_->begin() );
+        thrust::copy(thrust::cuda::par.on(gpu_stream), index_x_->begin(), index_x_->end(), index_z_->begin() );
 
-        thrust::device_vector<float> tmpv(points_->size());
+        flann::cuda::device_vector_noinit<float> tmpv(points_->size());
 
         // create sorted index list -> can be used to compute AABBs in O(1)
-        thrust::copy(points_x_->begin(), points_x_->end(), tmpv.begin());
-        thrust::sort_by_key( tmpv.begin(), tmpv.end(), index_x_->begin() );
-        thrust::copy(points_y_->begin(), points_y_->end(), tmpv.begin());
-        thrust::sort_by_key( tmpv.begin(), tmpv.end(), index_y_->begin() );
-        thrust::copy(points_z_->begin(), points_z_->end(), tmpv.begin());
-        thrust::sort_by_key( tmpv.begin(), tmpv.end(), index_z_->begin() );
+        thrust::copy(thrust::cuda::par.on(gpu_stream), points_x_->begin(), points_x_->end(), tmpv.begin());
+        thrust::sort_by_key(thrust::cuda::par.on(gpu_stream), tmpv.begin(), tmpv.end(), index_x_->begin() );
+        thrust::copy(thrust::cuda::par.on(gpu_stream), points_y_->begin(), points_y_->end(), tmpv.begin());
+        thrust::sort_by_key(thrust::cuda::par.on(gpu_stream), tmpv.begin(), tmpv.end(), index_y_->begin() );
+        thrust::copy(thrust::cuda::par.on(gpu_stream), points_z_->begin(), points_z_->end(), tmpv.begin());
+        thrust::sort_by_key(thrust::cuda::par.on(gpu_stream), tmpv.begin(), tmpv.end(), index_z_->begin() );
 
+		int idxx, idxy, idxz;
+		float xx, yy, zz;
+		float4 xyzw;
 
-        (*aabb_min_)[0]=make_float4((*points_x_)[(*index_x_)[0]],(*points_y_)[(*index_y_)[0]],(*points_z_)[(*index_z_)[0]],0);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, index_x_->begin(), index_x_->begin() + 1, &idxx);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, index_y_->begin(), index_y_->begin() + 1, &idxy);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, index_z_->begin(), index_z_->begin() + 1, &idxz);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, points_x_->begin() + idxx, points_x_->begin() + idxx + 1, &xx);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, points_y_->begin() + idxy, points_y_->begin() + idxy + 1, &yy);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, points_z_->begin() + idxz, points_z_->begin() + idxz + 1, &zz);
+		xyzw = make_float4(xx, yy, zz, 0);
+		thrust::detail::two_system_copy(thrust::host, thrust::cuda::par.on(gpu_stream), &xyzw, &xyzw + 1, aabb_min_->begin());
 
-        (*aabb_max_)[0]=make_float4((*points_x_)[(*index_x_)[points_->size()-1]],(*points_y_)[(*index_y_)[points_->size()-1]],(*points_z_)[(*index_z_)[points_->size()-1]],0);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, index_x_->end() - 1, index_x_->end(), &idxx);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, index_y_->end() - 1, index_y_->end(), &idxy);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, index_z_->end() - 1, index_z_->end(), &idxz);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, points_x_->begin() + idxx, points_x_->begin() + idxx + 1, &xx);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, points_y_->begin() + idxy, points_y_->begin() + idxy + 1, &yy);
+		thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, points_z_->begin() + idxz, points_z_->begin() + idxz + 1, &zz);
+		xyzw = make_float4(xx, yy, zz, 0);
+		thrust::detail::two_system_copy(thrust::host, thrust::cuda::par.on(gpu_stream), &xyzw, &xyzw + 1, aabb_max_->begin());
+
+        //(*aabb_min_)[0]=make_float4((*points_x_)[(*index_x_)[0]],(*points_y_)[(*index_y_)[0]],(*points_z_)[(*index_z_)[0]],0);
+
+        //(*aabb_max_)[0]=make_float4((*points_x_)[(*index_x_)[points_->size()-1]],(*points_y_)[(*index_y_)[points_->size()-1]],(*points_z_)[(*index_z_)[points_->size()-1]],0);
         #ifdef PRINT_DEBUG_TIMING
         cudaDeviceSynchronize();
         std::cout<<" initial stuff:"<<stepTimer.elapsed()<<std::endl;
@@ -526,11 +654,12 @@ public:
             sn.splits=thrust::raw_pointer_cast(&(*splits_)[0]);
 
             thrust::counting_iterator<int> cit(0);
-            thrust::for_each( thrust::make_zip_iterator(thrust::make_tuple( parent_->begin(), child1_->begin(),  splits_->begin(), aabb_min_->begin(), aabb_max_->begin(), cit  )),
+            thrust::for_each(thrust::cuda::par.on(gpu_stream), thrust::make_zip_iterator(thrust::make_tuple( parent_->begin(), child1_->begin(),  splits_->begin(), aabb_min_->begin(), aabb_max_->begin(), cit  )),
                               thrust::make_zip_iterator(thrust::make_tuple( parent_->begin()+last_node_count, child1_->begin()+last_node_count,splits_->begin()+last_node_count, aabb_min_->begin()+last_node_count, aabb_max_->begin()+last_node_count,cit+last_node_count  )),
                               sn   );
             // copy allocation info to host
-            thrust::host_vector<int> alloc_info = allocation_info_;
+            thrust::host_vector<int> alloc_info(allocation_info_.size());
+			thrust::detail::two_system_copy(thrust::cuda::par.on(gpu_stream), thrust::host, allocation_info_.begin(), allocation_info_.end(), alloc_info.begin());
 
             if( last_node_count == alloc_info[NodeCount] ) { // no more nodes were split -> done
                 break;
@@ -542,7 +671,8 @@ public:
                 resize_node_vectors(alloc_info[NodesAllocated]*2);
                 alloc_info[OutOfSpace]=0;
                 alloc_info[NodesAllocated]*=2;
-                allocation_info_=alloc_info;
+				thrust::detail::two_system_copy(thrust::host, thrust::cuda::par.on(gpu_stream), alloc_info.begin(), alloc_info.end(), allocation_info_.begin());
+				//allocation_info_=alloc_info;
             }
             #ifdef PRINT_DEBUG_TIMING
             cudaDeviceSynchronize();
@@ -564,7 +694,7 @@ public:
                                                                       thrust::raw_pointer_cast(&(*leftright_z_)[0])
                                                                       );
             thrust::counting_iterator<int> ci0(0);
-            thrust::for_each( thrust::make_zip_iterator( thrust::make_tuple( ci0, index_x_->begin(), index_y_->begin(), index_z_->begin()) ),
+            thrust::for_each(thrust::cuda::par.on(gpu_stream), thrust::make_zip_iterator( thrust::make_tuple( ci0, index_x_->begin(), index_y_->begin(), index_z_->begin()) ),
                               thrust::make_zip_iterator( thrust::make_tuple( ci0+points_->size(), index_x_->end(), index_y_->end(), index_z_->end()) ),sno  );
 
             #ifdef PRINT_DEBUG_TIMING
@@ -607,17 +737,17 @@ protected:
 
     //! takes the partitioned nodes, and sets the left-/right info of leaf nodes, as well as the AABBs
     void
-    update_leftright_and_aabb( const thrust::device_vector<float>& x, const thrust::device_vector<float>& y,const thrust::device_vector<float>& z,
-                               const thrust::device_vector<int>& ix, const thrust::device_vector<int>& iy,const thrust::device_vector<int>& iz,
-                               const thrust::device_vector<int>& owners,
-                               thrust::device_vector<cuda::kd_tree_builder_detail::SplitInfo>& splits, thrust::device_vector<float4>& aabbMin,thrust::device_vector<float4>& aabbMax)
+    update_leftright_and_aabb( const flann::cuda::device_vector_noinit<float>& x, const flann::cuda::device_vector_noinit<float>& y,const flann::cuda::device_vector_noinit<float>& z,
+                               const flann::cuda::device_vector_noinit<int>& ix, const flann::cuda::device_vector_noinit<int>& iy,const flann::cuda::device_vector_noinit<int>& iz,
+                               const flann::cuda::device_vector_noinit<int>& owners,
+                               flann::cuda::device_vector_noinit<cuda::kd_tree_builder_detail::SplitInfo>& splits, flann::cuda::device_vector_noinit<float4>& aabbMin,flann::cuda::device_vector_noinit<float4>& aabbMax)
     {
-        thrust::device_vector<int>* labelsUnique=tmp_owners_;
-        thrust::device_vector<int>* countsUnique=tmp_index_;
+        flann::cuda::device_vector_noinit<int>* labelsUnique=tmp_owners_;
+        flann::cuda::device_vector_noinit<int>* countsUnique=tmp_index_;
 		// assume: points of each node are continuous in the array
 		
 		// find which nodes are here, and where each node's points begin and end
-        int unique_labels = thrust::unique_by_key_copy( owners.begin(), owners.end(), thrust::counting_iterator<int>(0), labelsUnique->begin(), countsUnique->begin()).first - labelsUnique->begin();
+        int unique_labels = thrust::unique_by_key_copy(thrust::cuda::par.on(gpu_stream), owners.begin(), owners.end(), thrust::counting_iterator<int>(0), labelsUnique->begin(), countsUnique->begin()).first - labelsUnique->begin();
 
 		// update the info
         cuda::kd_tree_builder_detail::SetLeftAndRightAndAABB s;
@@ -636,7 +766,7 @@ protected:
         s.aabbMax=thrust::raw_pointer_cast(&aabbMax[0]);
 
         thrust::counting_iterator<int> it(0);
-        thrust::for_each(it, it+unique_labels, s);
+        thrust::for_each(thrust::cuda::par.on(gpu_stream), it, it+unique_labels, s);
     }
 
     //! Separates the left and right children of each node into continuous parts of the array.
@@ -646,12 +776,12 @@ protected:
     //! for all the single nodes.
     //! (basically the split primitive according to sengupta et al)
     //! about twice as fast as thrust::partition
-    void separate_left_and_right_children( thrust::device_vector<int>& key_in, thrust::device_vector<int>& val_in, thrust::device_vector<int>& key_out, thrust::device_vector<int>& val_out, thrust::device_vector<int>& left_right_marks, bool scatter_val_out=true )
+    void separate_left_and_right_children( flann::cuda::device_vector_noinit<int>& key_in, flann::cuda::device_vector_noinit<int>& val_in, flann::cuda::device_vector_noinit<int>& key_out, flann::cuda::device_vector_noinit<int>& val_out, flann::cuda::device_vector_noinit<int>& left_right_marks, bool scatter_val_out=true )
     {
-        thrust::device_vector<int>* f_tmp = &val_out;
-        thrust::device_vector<int>* addr_tmp = tmp_misc_;
+        flann::cuda::device_vector_noinit<int>* f_tmp = &val_out;
+        flann::cuda::device_vector_noinit<int>* addr_tmp = tmp_misc_;
 
-        thrust::exclusive_scan( /*thrust::make_transform_iterator(*/ left_right_marks.begin() /*,cuda::kd_tree_builder_detail::IsEven*/
+        thrust::exclusive_scan(thrust::cuda::par.on(gpu_stream), /*thrust::make_transform_iterator(*/ left_right_marks.begin() /*,cuda::kd_tree_builder_detail::IsEven*/
                                                                      /*())*/, /*thrust::make_transform_iterator(*/ left_right_marks.end() /*,cuda::kd_tree_builder_detail::IsEven*/
                                                                      /*())*/,     f_tmp->begin() );
         cuda::kd_tree_builder_detail::set_addr3 sa;
@@ -659,10 +789,10 @@ protected:
         sa.f_=thrust::raw_pointer_cast(&(*f_tmp)[0]);
         sa.npoints_=key_in.size();
         thrust::counting_iterator<int> it(0);
-        thrust::transform(it, it+val_in.size(), addr_tmp->begin(), sa);
+        thrust::transform(thrust::cuda::par.on(gpu_stream), it, it+val_in.size(), addr_tmp->begin(), sa);
 
-        thrust::scatter(key_in.begin(), key_in.end(), addr_tmp->begin(), key_out.begin());
-        if( scatter_val_out ) thrust::scatter(val_in.begin(), val_in.end(), addr_tmp->begin(), val_out.begin());
+        thrust::scatter(thrust::cuda::par.on(gpu_stream), key_in.begin(), key_in.end(), addr_tmp->begin(), key_out.begin());
+        if( scatter_val_out ) thrust::scatter(thrust::cuda::par.on(gpu_stream), val_in.begin(), val_in.end(), addr_tmp->begin(), val_out.begin());
     }
 
     //! allocates additional space in all the node-related vectors.
@@ -670,33 +800,34 @@ protected:
     void resize_node_vectors( size_t new_size )
     {
         size_t add = new_size - child1_->size();
-        child1_->insert(child1_->end(), add, -1);
-        parent_->insert(parent_->end(), add, -1);
+        child1_->append(thrust::cuda::par.on(gpu_stream), add, -1);
+        parent_->append(thrust::cuda::par.on(gpu_stream), add, -1);
         cuda::kd_tree_builder_detail::SplitInfo s;
         s.left=0;
         s.right=0;
-        splits_->insert(splits_->end(), add, s);
-        float4 f;
-        aabb_min_->insert(aabb_min_->end(), add, f);
-        aabb_max_->insert(aabb_max_->end(), add, f);
+        splits_->append(thrust::cuda::par.on(gpu_stream), add, s);
+        float4 f=make_float4(0.0f, 0.0f, 0.0f, 0.0f);
+        aabb_min_->append(thrust::cuda::par.on(gpu_stream), add, f);
+        aabb_max_->append(thrust::cuda::par.on(gpu_stream), add, f);
     }
 
+	cudaStream_t gpu_stream;
 
-    const thrust::device_vector<float4>* points_;
+    const flann::cuda::device_vector_noinit<float4>* points_;
 	
 	// tree data, those are stored per-node
 	
 	//! left child of each node. (right child==left child + 1, due to the alloc mechanism)
 	//! child1_[node]==-1 if node is a leaf node
-    thrust::device_vector<int>* child1_;
+    flann::cuda::device_vector_noinit<int>* child1_;
 	//! parent node of each node
-    thrust::device_vector<int>* parent_;
+    flann::cuda::device_vector_noinit<int>* parent_;
 	//! split info (dim/value or left/right pointers)
-    thrust::device_vector<cuda::kd_tree_builder_detail::SplitInfo>* splits_;
+    flann::cuda::device_vector_noinit<cuda::kd_tree_builder_detail::SplitInfo>* splits_;
 	//! min aabb value of each node
-    thrust::device_vector<float4>* aabb_min_;
+    flann::cuda::device_vector_noinit<float4>* aabb_min_;
 	//! max aabb value of each node
-    thrust::device_vector<float4>* aabb_max_;
+    flann::cuda::device_vector_noinit<float4>* aabb_max_;
 
     enum AllocationInfo
     {
@@ -705,22 +836,22 @@ protected:
         OutOfSpace=2
     };
     // those were put into a single vector of 3 elements so that only one mem transfer will be needed for all three of them
-    //  thrust::device_vector<int> out_of_space_;
-    //  thrust::device_vector<int> node_count_;
-    //  thrust::device_vector<int> nodes_allocated_;
-    thrust::device_vector<int> allocation_info_;
+    //  flann::cuda::device_vector_noinit<int> out_of_space_;
+    //  flann::cuda::device_vector_noinit<int> node_count_;
+    //  flann::cuda::device_vector_noinit<int> nodes_allocated_;
+    flann::cuda::device_vector_noinit<int> allocation_info_;
 	
     int max_leaf_size_;
 
 	// coordinate values of the points
-    thrust::device_vector<float>* points_x_, * points_y_, * points_z_;
+    flann::cuda::device_vector_noinit<float>* points_x_, * points_y_, * points_z_;
 	// indices
-    thrust::device_vector<int>* index_x_,  * index_y_,  * index_z_;
+    flann::cuda::device_vector_noinit<int>* index_x_,  * index_y_,  * index_z_;
 	// owner node
-    thrust::device_vector<int>* owners_x_, * owners_y_, * owners_z_;
+    flann::cuda::device_vector_noinit<int>* owners_x_, * owners_y_, * owners_z_;
 	// contains info about whether a point was partitioned to the left or right child after a split
-    thrust::device_vector<int>* leftright_x_, * leftright_y_, * leftright_z_;
-    thrust::device_vector<int>* tmp_index_, * tmp_owners_, * tmp_misc_;
+    flann::cuda::device_vector_noinit<int>* leftright_x_, * leftright_y_, * leftright_z_;
+    flann::cuda::device_vector_noinit<int>* tmp_index_, * tmp_owners_, * tmp_misc_;
     bool delete_node_info_;
 };
 

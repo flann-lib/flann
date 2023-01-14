@@ -112,9 +112,7 @@ public:
 
 	virtual ~NNIndex()
 	{
-		if (data_ptr_) {
-			delete[] data_ptr_;
-		}
+		delete[] data_ptr_;
 	}
 
 
@@ -267,9 +265,7 @@ public:
 
     	if (save_dataset) {
     		if (Archive::is_loading::value) {
-    			if (data_ptr_) {
-    				delete[] data_ptr_;
-    			}
+    			delete[] data_ptr_;
     			data_ptr_ = new ElementType[size_*veclen_];
     			points_.resize(size_);
         		for (size_t i=0;i<size_;++i) {
@@ -370,7 +366,7 @@ public:
      * @param params
      * @return
      */
-    int knnSearch(const Matrix<ElementType>& queries,
+	virtual int knnSearch(const Matrix<ElementType>& queries,
                                  Matrix<int>& indices,
                                  Matrix<DistanceType>& dists,
                                  size_t knn,
@@ -397,7 +393,7 @@ public:
      * @param[in] knn Number of nearest neighbors to return
      * @param[in] params Search parameters
      */
-    int knnSearch(const Matrix<ElementType>& queries,
+	virtual int knnSearch(const Matrix<ElementType>& queries,
 					std::vector< std::vector<size_t> >& indices,
 					std::vector<std::vector<DistanceType> >& dists,
     				size_t knn,
@@ -493,7 +489,7 @@ public:
      * @param params
      * @return
      */
-    int knnSearch(const Matrix<ElementType>& queries,
+	virtual int knnSearch(const Matrix<ElementType>& queries,
                                  std::vector< std::vector<int> >& indices,
                                  std::vector<std::vector<DistanceType> >& dists,
                                  size_t knn,
@@ -518,7 +514,7 @@ public:
      * @param[in] params Search parameters
      * @return Number of neighbors found
      */
-    int radiusSearch(const Matrix<ElementType>& queries,
+	virtual int radiusSearch(const Matrix<ElementType>& queries,
     		Matrix<size_t>& indices,
     		Matrix<DistanceType>& dists,
     		float radius,
@@ -601,7 +597,7 @@ public:
      * @param params
      * @return
      */
-    int radiusSearch(const Matrix<ElementType>& queries,
+	virtual int radiusSearch(const Matrix<ElementType>& queries,
                                     Matrix<int>& indices,
                                     Matrix<DistanceType>& dists,
                                     float radius,
@@ -628,7 +624,7 @@ public:
      * @param[in] params Search parameters
      * @return Number of neighbors found
      */
-    int radiusSearch(const Matrix<ElementType>& queries,
+	virtual int radiusSearch(const Matrix<ElementType>& queries,
     		std::vector< std::vector<size_t> >& indices,
     		std::vector<std::vector<DistanceType> >& dists,
     		float radius,
@@ -707,7 +703,7 @@ public:
      * @param params
      * @return
      */
-    int radiusSearch(const Matrix<ElementType>& queries,
+	virtual int radiusSearch(const Matrix<ElementType>& queries,
                                     std::vector< std::vector<int> >& indices,
                                     std::vector<std::vector<DistanceType> >& dists,
                                     float radius,

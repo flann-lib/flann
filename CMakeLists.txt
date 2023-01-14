@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.12)
 
 if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)
@@ -8,9 +8,10 @@ project(flann)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
-set(FLANN_VERSION 1.9.1)
+set(FLANN_VERSION 1.9.2)
 DISSECT_VERSION()
 GET_OS_INFO()
+ENABLE_TESTING()
 
 
 # detect if using the Clang compiler
@@ -116,10 +117,10 @@ endif()
 
 
 if (BUILD_TESTS)
-find_package(GTest)
-if (NOT GTEST_FOUND)
-	message(WARNING "gtest library not found, some tests will not be run")
-endif()
+# find_package(GTest)
+# if (NOT GTEST_FOUND)
+# 	message(WARNING "gtest library not found, some tests will not be run")
+# endif()
 endif()
 
 
@@ -158,6 +159,10 @@ if (BUILD_CUDA_LIB)
         set(BUILD_CUDA_LIB OFF)
     endif(CUDA_FOUND)
 endif(BUILD_CUDA_LIB)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LZ4 REQUIRED liblz4)
+include_directories(${LZ4_INCLUDE_DIRS})
 
 #set the C/C++ include path to the "include" directory
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/cpp)
