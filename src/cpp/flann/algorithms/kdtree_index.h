@@ -259,6 +259,9 @@ protected:
             ind[i] = int(i);
         }
 
+        auto seed = get_param(index_params_, "random_seed", 0);
+        std::mt19937 g(seed);
+        
         mean_ = new DistanceType[veclen_];
         var_ = new DistanceType[veclen_];
 
@@ -266,8 +269,6 @@ protected:
         /* Construct the randomized trees. */
         for (int i = 0; i < trees_; i++) {
             /* Randomize the order of vectors to allow for unbiased sampling. */
-            std::random_device rd;
-            std::mt19937 g(rd());
             std::shuffle(ind.begin(), ind.end(), g);
             tree_roots_[i] = divideTree(&ind[0], int(size_) );
         }
