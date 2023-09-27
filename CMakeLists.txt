@@ -62,6 +62,9 @@ option(USE_MPI "Use MPI" OFF)
 
 set(NVCC_COMPILER_BINDIR "" CACHE PATH  "Directory where nvcc should look for C++ compiler. This is passed to nvcc through the --compiler-bindir option.")
 
+# pkg-config dependencies to be generated into the .pc file
+set(PKGCONFIG_EXTERNAL_DEPS_LIST "")
+
 if (NOT BUILD_C_BINDINGS)
     set(BUILD_PYTHON_BINDINGS OFF)
     set(BUILD_MATLAB_BINDINGS OFF)
@@ -81,6 +84,7 @@ if (NOT HDF5_FOUND)
 	message(WARNING "hdf5 library not found, some tests will not be run")
 else()
     include_directories(${HDF5_INCLUDE_DIR})
+    list(APPEND PKGCONFIG_EXTERNAL_DEPS_LIST "hdf5")
 endif()
 
 if (USE_MPI OR HDF5_IS_PARALLEL)
@@ -150,6 +154,10 @@ endif(BUILD_CUDA_LIB)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LZ4 REQUIRED liblz4)
 include_directories(${LZ4_INCLUDE_DIRS})
+# flann is exposing lz4 headers e.g. in `util/serialization.h`
+# we need lz4 to appear in `Requires` (not `Requires.private`) in the
+# `.pc` file, see https://people.freedesktop.org/~dbn/pkg-config-guide.html
+list(APPEND PKGCONFIG_EXTERNAL_DEPS_LIST "liblz4")
 
 #set the C/C++ include path to the "include" directory
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/cpp)
