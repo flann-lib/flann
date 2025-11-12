@@ -4,6 +4,8 @@ FLANN - Fast Library for Approximate Nearest Neighbors
 FLANN is a library for performing fast approximate nearest neighbor searches in high dimensional spaces. It contains a collection of algorithms we found to work best for nearest neighbor search and a system for automatically choosing the best algorithm and optimum parameters depending on the dataset.
 FLANN is written in C++ and contains bindings for the following languages: C, MATLAB, Python, and Ruby.
 
+> **OpenCL GPU Acceleration:** This fork includes experimental OpenCL-accelerated implementations (K-Means and Hierarchical clustering) providing 3.7x-9.4x search speedup on compatible GPUs. See [README_OPENCL.md](README_OPENCL.md) for details, benchmarks, and usage instructions.
+
 
 Documentation
 -------------

@@ -17,6 +17,15 @@ if (HDF5_FOUND)
     flann_add_gtest(flann_linear_test flann_linear_test.cpp flann_cpp ${TEST_LIBRARIES})
     flann_add_gtest(flann_kdtree_test flann_kdtree_test.cpp flann_cpp ${TEST_LIBRARIES})
     flann_add_gtest(flann_kmeans_test flann_kmeans_test.cpp flann_cpp ${TEST_LIBRARIES})
+    
+    if (BUILD_OpenCL_LIB)
+        flann_add_gtest(flann_kmeans_opencl_test flann_kmeans_opencl_test.cpp flann_cpp ${TEST_LIBRARIES})
+        target_link_libraries(flann_kmeans_opencl_test ${OpenCL_LIBRARIES})
+
+        flann_add_gtest(flann_hierarchical_opencl_test flann_hierarchical_opencl_test.cpp flann_cpp ${TEST_LIBRARIES})
+        target_link_libraries(flann_hierarchical_opencl_test ${OpenCL_LIBRARIES})
+    endif()
+    
     flann_add_gtest(flann_kdtree_single_test flann_kdtree_single_test.cpp flann_cpp ${TEST_LIBRARIES})
     flann_add_gtest(flann_hierarchical_test flann_hierarchical_test.cpp flann_cpp ${TEST_LIBRARIES})
     flann_add_gtest(flann_lsh_test flann_lsh_test.cpp flann_cpp ${TEST_LIBRARIES})
@@ -35,9 +44,8 @@ if (HDF5_FOUND AND BUILD_CUDA_LIB)
     flann_add_cuda_gtest(flann_cuda_test flann_cuda_test.cu flann_cpp ${HDF5_LIBRARIES} flann_cuda)
 endif()
 
-
 #---------- pyunit tests --------------
-if (BUILD_PYTHON_BINDINGS) 
+if (BUILD_PYTHON_BINDINGS)
     flann_add_pyunit(test_nn.py)
     flann_add_pyunit(test_nn_index.py)
     flann_add_pyunit(test_index_save.py)

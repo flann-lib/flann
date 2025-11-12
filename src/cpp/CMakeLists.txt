@@ -20,7 +20,7 @@ else()
 endif()
 
 add_library(flann_cpp SHARED ${CPP_SOURCES})
-target_link_libraries(flann_cpp ${LZ4_LINK_LIBRARIES})
+target_link_libraries(flann_cpp PUBLIC ${LZ4_LINK_LIBRARIES})
 # export lz4 headers, so that MSVC to creates flann_cpp.lib
 set_target_properties(flann_cpp PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
 
@@ -81,7 +81,7 @@ endif()
 
 if (BUILD_C_BINDINGS)
     add_library(flann_s STATIC ${C_SOURCES})
-    target_link_libraries(flann_s ${LZ4_LINK_LIBRARIES})
+    target_link_libraries(flann_s PUBLIC ${LZ4_LINK_LIBRARIES})
     if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
         set_target_properties(flann_s PROPERTIES COMPILE_FLAGS -fPIC)
     endif()
@@ -93,11 +93,11 @@ if (BUILD_C_BINDINGS)
     endif()
 
     add_library(flann SHARED ${C_SOURCES})
-    target_link_libraries(flann ${LZ4_LINK_LIBRARIES})
+    target_link_libraries(flann PUBLIC ${LZ4_LINK_LIBRARIES})
     list(APPEND flann_install_targets flann)
 
     if(MINGW AND OPENMP_FOUND)
-        target_link_libraries(flann gomp)
+        target_link_libraries(flann PUBLIC gomp)
     endif()
 
     set_target_properties(flann PROPERTIES
@@ -105,6 +105,17 @@ if (BUILD_C_BINDINGS)
        SOVERSION ${FLANN_SOVERSION}
        DEFINE_SYMBOL FLANN_EXPORTS
     )
+endif()
+
+if (BUILD_OpenCL_LIB)
+    set_property(TARGET flann_cpp PROPERTY COMPILE_DEFINITIONS FLANN_USE_OPENCL)
+    set_property(TARGET flann_cpp_s PROPERTY COMPILE_DEFINITIONS FLANN_USE_OPENCL)
+    set_property(TARGET flann PROPERTY COMPILE_DEFINITIONS FLANN_USE_OPENCL)
+    set_property(TARGET flann_s PROPERTY COMPILE_DEFINITIONS FLANN_USE_OPENCL)
+    target_link_libraries(flann_cpp PUBLIC ${OpenCL_LIBRARIES})
+    target_link_libraries(flann_cpp_s PUBLIC ${OpenCL_LIBRARIES})
+    target_link_libraries(flann PUBLIC ${OpenCL_LIBRARIES})
+    target_link_libraries(flann_s PUBLIC ${OpenCL_LIBRARIES})
 endif()
 
 if(WIN32)

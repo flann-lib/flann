@@ -36,6 +36,20 @@ else()
     message("hdf5 library not found, not compiling flann_example.cpp")
 endif()
 
+# OpenCL example (no HDF5 required - uses synthetic data)
+if (BUILD_OpenCL_LIB)
+    add_executable(flann_opencl_example flann_opencl_example.cpp)
+    target_link_libraries(flann_opencl_example ${LZ4_LINK_LIBRARIES})
+    target_link_libraries(flann_opencl_example flann_cpp ${OpenCL_LIBRARIES})
+
+    add_dependencies(examples flann_opencl_example)
+    install (TARGETS flann_opencl_example DESTINATION bin)
+
+    message(STATUS "Building OpenCL example: flann_opencl_example")
+else()
+    message("BUILD_OpenCL_LIB is OFF, not compiling flann_opencl_example.cpp")
+endif()
+
 
 
 
